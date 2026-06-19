@@ -1,0 +1,16 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.db
+# Node
+node_modules/
+dist/
+# Env
+.env
+# Secrets
+secrets/*.json
+secrets/*.key
+# Runtime data
+backend/data/photos/
+backend/data/tts/

@@ -1,0 +1,15 @@
+.git
+.gitignore
+**/__pycache__
+**/*.pyc
+**/.venv
+**/venv
+**/node_modules
+**/dist
+**/*.db
+**/*.tsbuildinfo
+.env
+backend/data
+# Secrets
+secrets/*.json
+secrets/*.key

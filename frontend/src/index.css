@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 접근성 기본값: 키보드 포커스를 항상 또렷하게 (KWCAG) */
+:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+body { margin: 0; font-family: system-ui, "Apple SD Gothic Neo", sans-serif; background: #f8fafc; }

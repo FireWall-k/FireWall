@@ -1,0 +1,79 @@
+name: jobcard
+
+services:
+  ai_service:
+    build:
+      context: ./ai_service
+      dockerfile: Dockerfile
+    container_name: jobcard-ai
+    ports:
+      - "8001:8001"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      ARASAAC_API_BASE: "https://api.arasaac.org"
+      ARASAAC_LANGS: "ko,en,es"
+      ARASAAC_SEARCH_TIMEOUT: "1.5"
+      ARASAAC_KEYWORD_SEARCH_LIMIT: "4"
+      ARASAAC_TERM_SEARCH_LIMIT: "3"
+      # OpenAI(LLM) — 키가 있으면 맥락적응 분해 + AI 코칭이 켜지고, 없으면 규칙 기반 폴백.
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      OPENAI_MODEL: "${OPENAI_MODEL:-gpt-4o-mini}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://api.openai.com/v1}"
+      LLM_TIMEOUT: "${LLM_TIMEOUT:-20}"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jobcard-api
+    ports:
+      - "8000:8000"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      AI_BASE_URL: "http://ai_service:8001"
+      AI_TIMEOUT: "15"
+      DATABASE_URL: "sqlite:////app/data/jobcard.db"
+      CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173"
+      PUBLIC_BACKEND_URL: "http://localhost:8000"
+      # Google Cloud Text-to-Speech 기본 사용 설정
+      GOOGLE_APPLICATION_CREDENTIALS: "/app/secrets/google-tts.json"
+      GOOGLE_TTS_LANGUAGE: "ko-KR"
+      GOOGLE_TTS_VOICE: "ko-KR-Standard-A"
+      GOOGLE_TTS_SPEAKING_RATE: "0.9"
+      GOOGLE_TTS_PITCH: "0"
+      TTS_CACHE_DIR: "/app/data/tts"
+      PHOTO_DIR: "/app/data/photos"
+      MAX_PHOTO_BYTES: "5242880"
+    volumes:
+      - ./backend/data:/app/data
+      # Google 서비스 계정 JSON 파일을 ./secrets/google-tts.json 위치에 넣으세요.
+      # 이 파일은 ZIP에 포함하지 않았고, .gitignore로 제외되어야 합니다.
+      - ./secrets:/app/secrets:ro
+    depends_on:
+      ai_service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: "http://localhost:8000"
+    container_name: jobcard-web
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
