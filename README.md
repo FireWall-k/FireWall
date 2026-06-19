@@ -1,11 +1,6 @@
 # 잡카드 (JOB CARD) — ARASAAC + Google TTS API 버전
 
-발달장애인 직무 현장 AI 코칭 플랫폼의 **end-to-end MVP 하네스**입니다.
-
-> ⚠️ **보안 공지 (v0.3)**
-> - 이전 제출본의 `secrets/google-tts.json`에 **실제 Google 서비스 계정 개인키**가 포함돼 있었습니다. 해당 키는 제거했고, 자리표시자 `secrets/google-tts.json.example`로 대체했습니다.
-> - 노출된 키는 **이미 유출된 것으로 간주**하고 Google Cloud Console에서 즉시 폐기·재발급하세요.
-> - v0.3부터 **토큰 기반 인증 + 자원 소유권 검사**가 추가되어, 데모 고정 사용자 방식이 제거되었습니다.
+발달장애인 직무 현장 AI 코칭 플랫폼입니다.
 
 ```text
 직무 입력
