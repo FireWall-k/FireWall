@@ -128,13 +128,13 @@ def _needs_symbol_fix(symbol_url: str | None) -> bool:
 
 
 def _resolve_symbol_url(step: Step) -> str | None:
-    if not _needs_symbol_fix(step.symbol_url):
-        return step.symbol_url
-    candidates = ai_client.map_symbols([step.sentence]).get("symbols", [])
-    for candidate in candidates:
-        image_url = candidate.get("image_url")
-        if image_url and not _needs_symbol_fix(image_url):
-            return image_url
+    # if not _needs_symbol_fix(step.symbol_url):
+    #     return step.symbol_url
+    # candidates = ai_client.map_symbols([step.sentence]).get("symbols", [])
+    # for candidate in candidates:
+    #     image_url = candidate.get("image_url")
+    #     if image_url and not _needs_symbol_fix(image_url):
+    #         return image_url
     return step.symbol_url
 
 

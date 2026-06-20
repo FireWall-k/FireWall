@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import type { ReactNode } from "react";
 
 // 동작(action_type)을 색·아이콘·라벨로 시각화한다(기능 4).

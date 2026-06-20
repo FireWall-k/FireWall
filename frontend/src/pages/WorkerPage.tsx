@@ -13,11 +13,12 @@ export default function WorkerPage() {
   const [stepIdx, setStepIdx] = useState(0);
   const [replayCount, setReplayCount] = useState(0);
   const [needHelp, setNeedHelp] = useState(false);
-  const stepStartRef = useRef<number>(Date.now());
+  const stepStartRef = useRef<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [allDone, setAllDone] = useState(false);
 
   useEffect(() => {
+    stepStartRef.current = Date.now();
     api.today()
       .then((c) => setCards(c))
       .catch((e) => setError(e instanceof AuthError ? "다시 로그인해 주세요." : (e instanceof Error ? e.message : "불러오지 못했습니다.")));
