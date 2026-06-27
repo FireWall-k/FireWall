@@ -9,7 +9,7 @@ import {
   YAxis,
 } from "recharts";
 import { AlertCircle, BarChart3, CheckCircle2, Clock, RotateCcw, Sparkles, Trash2 } from "lucide-react";
-import { api, AuthError, type Coaching, type Dashboard, type DashboardWorker, type TaskSummary } from "../api";
+import { api, AuthError, type Coaching, type Dashboard, type TaskSummary, type Worker } from "../api";
 
 const StatCard = ({
   icon,
@@ -63,29 +63,28 @@ function formatCreatedAt(iso: string) {
 }
 
 function DashboardPage() {
-  const [tasks, setTasks] = useState<TaskSummary[]>([]);
+  // 근로자 중심: 근로자 먼저 고르고 → 그 근로자의 직무를 본다.
+  const [allWorkers, setAllWorkers] = useState<Worker[]>([]);
+  const [workerId, setWorkerId] = useState<string>("");
+  const [workerTasks, setWorkerTasks] = useState<TaskSummary[]>([]);
   const [taskId, setTaskId] = useState<string>("");
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [coaching, setCoaching] = useState<Coaching | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 1:N — 선택한 직무를 배정받은 근로자 목록 + 현재 보고 있는 근로자
-  const [workers, setWorkers] = useState<DashboardWorker[]>([]);
-  const [workerId, setWorkerId] = useState<string>("");
-
+  // 사업주의 전체 근로자 목록을 불러와 첫 근로자를 고른다.
   useEffect(() => {
     let alive = true;
-    api.listTasks()
-      .then((list) => {
+    api.listWorkers()
+      .then((ws) => {
         if (!alive) return;
-        setTasks(list);
-        const firstPublished = list.find((t) => t.status === "published") ?? list[0];
-        setTaskId(firstPublished?.id ?? "");
+        setAllWorkers(ws);
+        setWorkerId(ws[0]?.id ?? "");
       })
       .catch((e) => {
         if (!alive) return;
-        setError(e instanceof AuthError ? "다시 로그인해 주세요." : e instanceof Error ? e.message : "직무 목록을 불러오지 못했습니다.");
+        setError(e instanceof AuthError ? "다시 로그인해 주세요." : e instanceof Error ? e.message : "근로자 목록을 불러오지 못했습니다.");
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -93,32 +92,32 @@ function DashboardPage() {
     return () => { alive = false; };
   }, []);
 
-  // 직무가 바뀌면 그 직무를 배정받은 근로자 목록을 불러와 첫 근로자를 고른다.
+  // 근로자가 바뀌면 그 근로자에게 배정된 직무 목록을 불러와 첫 직무를 고른다.
   useEffect(() => {
-    if (!taskId) {
-      setWorkers([]);
-      setWorkerId("");
+    if (!workerId) {
+      setWorkerTasks([]);
+      setTaskId("");
       return;
     }
     let alive = true;
     setDashboard(null);
     setCoaching(null);
-    api.dashboardWorkers(taskId)
-      .then((ws) => {
+    api.workerTasks(workerId)
+      .then((ts) => {
         if (!alive) return;
-        setWorkers(ws);
-        setWorkerId(ws[0]?.worker_id ?? "");
+        setWorkerTasks(ts);
+        setTaskId(ts[0]?.id ?? "");
       })
       .catch((e) => {
         if (!alive) return;
-        setWorkers([]);
-        setWorkerId("");
-        setError(e instanceof AuthError ? "다시 로그인해 주세요." : e instanceof Error ? e.message : "근로자 목록을 불러오지 못했습니다.");
+        setWorkerTasks([]);
+        setTaskId("");
+        setError(e instanceof AuthError ? "다시 로그인해 주세요." : e instanceof Error ? e.message : "직무 목록을 불러오지 못했습니다.");
       });
     return () => { alive = false; };
-  }, [taskId]);
+  }, [workerId]);
 
-  // 선택된 (직무, 근로자)의 수행 데이터와 코칭을 불러온다.
+  // 선택된 (근로자, 직무)의 수행 데이터와 코칭을 불러온다.
   useEffect(() => {
     if (!taskId || !workerId) return;
     let alive = true;
@@ -154,6 +153,13 @@ function DashboardPage() {
   const replayTotal = dashboard?.steps.reduce((sum, step) => sum + step.replay_count, 0) ?? 0;
   const stuckTotal = dashboard?.stuck_steps.length ?? 0;
 
+  function selectWorker(id: string) {
+    setWorkerId(id);
+    setDashboard(null);
+    setCoaching(null);
+    setError(null);
+  }
+
   function selectTask(id: string) {
     setTaskId(id);
     setDashboard(null);
@@ -163,16 +169,15 @@ function DashboardPage() {
 
   async function deleteCurrentTask() {
     if (!taskId) return;
-    const current = tasks.find((t) => t.id === taskId);
+    const current = workerTasks.find((t) => t.id === taskId);
     if (!window.confirm(`'${current?.title ?? "이 직무"}'를 삭제할까요?\n수행 기록도 함께 삭제되며 되돌릴 수 없습니다.`)) {
       return;
     }
     try {
       await api.deleteTask(taskId);
-      const remaining = tasks.filter((t) => t.id !== taskId);
-      setTasks(remaining);
-      const next = remaining.find((t) => t.status === "published") ?? remaining[0];
-      setTaskId(next?.id ?? "");
+      const remaining = workerTasks.filter((t) => t.id !== taskId);
+      setWorkerTasks(remaining);
+      setTaskId(remaining[0]?.id ?? "");
       setDashboard(null);
       setCoaching(null);
       setError(null);
@@ -181,7 +186,7 @@ function DashboardPage() {
     }
   }
 
-  if (loading) return <EmptyState message="직무 목록을 불러오는 중입니다…" />;
+  if (loading) return <EmptyState message="근로자 목록을 불러오는 중입니다…" />;
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -192,29 +197,31 @@ function DashboardPage() {
             백엔드 수행 로그를 집계해 완료율, 반복 청취, 막힘 단계를 보여줘요.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={taskId}
-            onChange={(e) => selectTask(e.target.value)}
-            className="rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm text-ink-900 focus:border-moss-500 focus:outline-none"
-            aria-label="대시보드 직무 선택"
-          >
-            {tasks.map((t) => (
-              <option key={t.id} value={t.id}>
-                {formatCreatedAt(t.created_at)} · {t.title} {t.status === "published" ? "(게시됨)" : "(초안)"}
-              </option>
-            ))}
-          </select>
-          {workers.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {allWorkers.length > 0 && (
             <select
               value={workerId}
-              onChange={(e) => setWorkerId(e.target.value)}
+              onChange={(e) => selectWorker(e.target.value)}
               className="rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm text-ink-900 focus:border-moss-500 focus:outline-none"
               aria-label="대시보드 근로자 선택"
             >
-              {workers.map((w) => (
-                <option key={w.worker_id} value={w.worker_id}>
-                  {w.display_name} (코드 {w.access_code}){w.status === "done" ? " · 완료" : ""}
+              {allWorkers.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.display_name} (코드 {w.access_code})
+                </option>
+              ))}
+            </select>
+          )}
+          {workerTasks.length > 0 && (
+            <select
+              value={taskId}
+              onChange={(e) => selectTask(e.target.value)}
+              className="rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm text-ink-900 focus:border-moss-500 focus:outline-none"
+              aria-label="대시보드 직무 선택"
+            >
+              {workerTasks.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {formatCreatedAt(t.created_at)} · {t.title} {t.status === "published" ? "(게시됨)" : "(초안)"}
                 </option>
               ))}
             </select>
@@ -234,12 +241,12 @@ function DashboardPage() {
       </header>
 
       {error && <div role="alert" className="mb-5 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</div>}
-      {!tasks.length && <EmptyState message="아직 생성된 직무가 없습니다. 먼저 직무 입력 화면에서 직무를 만들어 주세요." />}
-      {tasks.length > 0 && taskId && !workers.length && !error && (
-        <EmptyState message="아직 이 직무를 배정받은 근로자가 없습니다. 직무를 게시하고 근로자에게 보내면 여기에 표시됩니다." />
+      {!allWorkers.length && <EmptyState message="아직 등록된 근로자가 없습니다. ‘직무 입력·검토’ 화면에서 근로자를 추가하고 직무를 보내 주세요." />}
+      {allWorkers.length > 0 && workerId && !workerTasks.length && !error && (
+        <EmptyState message="이 근로자에게 배정된 직무가 없습니다. ‘직무 입력·검토’ 화면에서 직무를 보내 주세요." />
       )}
-      {tasks.length > 0 && taskId && workers.length > 0 && !dashboard && !error && (
-        <EmptyState message="선택한 근로자의 수행 로그를 불러오는 중입니다…" />
+      {workerTasks.length > 0 && taskId && !dashboard && !error && (
+        <EmptyState message="선택한 직무의 수행 로그를 불러오는 중입니다…" />
       )}
       {dashboard && (
         <>

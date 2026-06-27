@@ -194,6 +194,29 @@ def create_worker(payload: WorkerCreate, db: Session = Depends(get_db),
     return WorkerOut(id=worker.id, display_name=worker.display_name, access_code=worker.access_code)
 
 
+@app.get("/api/workers/{worker_id}/tasks", response_model=list[TaskSummaryOut])
+def worker_tasks(worker_id: str, db: Session = Depends(get_db),
+                 user: dict = Depends(require_employer)) -> list[TaskSummaryOut]:
+    """특정 근로자에게 배정된 직무 목록(중복 제거, 최신순). 근로자 중심 대시보드용."""
+    worker = db.get(Worker, worker_id)
+    if worker is None or worker.employer_id != user["sub"]:
+        raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
+    task_ids = list({
+        a.task_id for a in db.scalars(
+            select(Assignment).where(Assignment.worker_id == worker_id)
+        ).all()
+    })
+    if not task_ids:
+        return []
+    tasks = db.scalars(
+        select(Task).where(Task.id.in_(task_ids)).order_by(Task.created_at.desc())
+    ).all()
+    return [
+        TaskSummaryOut(id=t.id, title=t.title, status=t.status, created_at=t.created_at)
+        for t in tasks
+    ]
+
+
 # --- 사업주: 직무 생성(AI 분해 트리거) ---
 @app.post("/api/tasks", response_model=TaskOut, status_code=201)
 def create_task(payload: TaskCreate, db: Session = Depends(get_db),

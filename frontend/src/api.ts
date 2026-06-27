@@ -214,6 +214,7 @@ export const api = {
       body: JSON.stringify({ worker_id: worker_id ?? null }),
     }),
   listWorkers: () => req<Worker[]>("/api/workers"),
+  workerTasks: (workerId: string) => req<TaskSummary[]>(`/api/workers/${workerId}/tasks`),
   createWorker: (display_name: string, access_code: string) =>
     req<Worker>("/api/workers", {
       method: "POST",
