@@ -37,7 +37,8 @@ services:
     environment:
       PYTHONUNBUFFERED: "1"
       AI_BASE_URL: "http://ai_service:8001"
-      AI_TIMEOUT: "6"
+      # LLM(OpenAI) 분해는 10초 이상 걸릴 수 있어 넉넉히 둔다. 규칙 기반만 쓸 땐 6초로도 충분했음.
+      AI_TIMEOUT: "30"
       DATABASE_URL: "sqlite:////app/data/jobcard.db"
       CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173"
       PUBLIC_BACKEND_URL: "http://localhost:8000"
