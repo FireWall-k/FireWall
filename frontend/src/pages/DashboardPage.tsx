@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertCircle, BarChart3, CheckCircle2, Clock, RotateCcw, Sparkles } from "lucide-react";
+import { AlertCircle, BarChart3, CheckCircle2, Clock, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { api, AuthError, type Coaching, type Dashboard, type TaskSummary } from "../api";
 
 const StatCard = ({
@@ -132,29 +132,62 @@ function DashboardPage() {
     setError(null);
   }
 
+  async function deleteCurrentTask() {
+    if (!taskId) return;
+    const current = tasks.find((t) => t.id === taskId);
+    if (!window.confirm(`'${current?.title ?? "이 직무"}'를 삭제할까요?\n수행 기록도 함께 삭제되며 되돌릴 수 없습니다.`)) {
+      return;
+    }
+    try {
+      await api.deleteTask(taskId);
+      const remaining = tasks.filter((t) => t.id !== taskId);
+      setTasks(remaining);
+      const next = remaining.find((t) => t.status === "published") ?? remaining[0];
+      setTaskId(next?.id ?? "");
+      setDashboard(null);
+      setCoaching(null);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof AuthError ? "다시 로그인해 주세요." : e instanceof Error ? e.message : "직무 삭제에 실패했습니다.");
+    }
+  }
+
   if (loading) return <EmptyState message="직무 목록을 불러오는 중입니다…" />;
 
   return (
     <div className="mx-auto max-w-6xl">
-      <header className="mb-7 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <header className="sticky top-0 z-20 -mx-8 mb-6 flex flex-col gap-4 border-b border-paper-200 bg-paper-50/95 px-8 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="font-display text-2xl font-semibold text-ink-900">수행 대시보드</h1>
           <p className="mt-1 text-sm text-ink-500">
             백엔드 수행 로그를 집계해 완료율, 반복 청취, 막힘 단계를 보여줘요.
           </p>
         </div>
-        <select
-          value={taskId}
-          onChange={(e) => selectTask(e.target.value)}
-          className="rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm text-ink-900 focus:border-moss-500 focus:outline-none"
-          aria-label="대시보드 직무 선택"
-        >
-          {tasks.map((t) => (
-            <option key={t.id} value={t.id}>
-              {formatCreatedAt(t.created_at)} · {t.title} {t.status === "published" ? "(게시됨)" : "(초안)"}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          <select
+            value={taskId}
+            onChange={(e) => selectTask(e.target.value)}
+            className="rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm text-ink-900 focus:border-moss-500 focus:outline-none"
+            aria-label="대시보드 직무 선택"
+          >
+            {tasks.map((t) => (
+              <option key={t.id} value={t.id}>
+                {formatCreatedAt(t.created_at)} · {t.title} {t.status === "published" ? "(게시됨)" : "(초안)"}
+              </option>
+            ))}
+          </select>
+          {taskId && (
+            <button
+              type="button"
+              onClick={deleteCurrentTask}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm font-medium text-signal-red hover:bg-signal-red/5"
+              aria-label="선택한 직무 삭제"
+            >
+              <Trash2 size={15} />
+              삭제
+            </button>
+          )}
+        </div>
       </header>
 
       {error && <div role="alert" className="mb-5 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</div>}

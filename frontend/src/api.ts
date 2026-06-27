@@ -166,6 +166,7 @@ export const api = {
     }),
   coaching: (taskId: string) => req<Coaching>(`/api/dashboard/tasks/${taskId}/coaching`),
   getTask: (id: string) => req<Task>(`/api/tasks/${id}`),
+  deleteTask: (id: string) => req<{ ok: boolean }>(`/api/tasks/${id}`, { method: "DELETE" }),
   updateStep: (taskId: string, stepId: string, patch: Partial<Pick<Step, "sentence" | "symbol_url">>) =>
     req<Step>(`/api/tasks/${taskId}/steps/${stepId}`, { method: "PATCH", body: JSON.stringify(patch) }),
   publish: (id: string) => req<Task>(`/api/tasks/${id}/publish`, { method: "POST" }),

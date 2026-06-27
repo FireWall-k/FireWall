@@ -17,13 +17,11 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from pathlib import Path
-from urllib.parse import urlparse
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 import ai_client
@@ -119,29 +117,10 @@ def _ensure_seed() -> None:
         db.close()
 
 
-# --- 상징 보정 ---
-def _needs_symbol_fix(symbol_url: str | None) -> bool:
-    if not symbol_url:
-        return True
-    host = urlparse(symbol_url).netloc.lower()
-    return "placehold.co" in host or "placeholder" in host
-
-
-def _resolve_symbol_url(step: Step) -> str | None:
-    # if not _needs_symbol_fix(step.symbol_url):
-    #     return step.symbol_url
-    # candidates = ai_client.map_symbols([step.sentence]).get("symbols", [])
-    # for candidate in candidates:
-    #     image_url = candidate.get("image_url")
-    #     if image_url and not _needs_symbol_fix(image_url):
-    #         return image_url
-    return step.symbol_url
-
-
 def _step_to_out(s: Step) -> StepOut:
     return StepOut(
         id=s.id, order=s.order_index, sentence=s.sentence,
-        action_type=s.action_type, symbol_url=_resolve_symbol_url(s),
+        action_type=s.action_type, symbol_url=s.symbol_url,
         symbol_source=s.symbol_source, needs_fallback=s.needs_fallback,
         tts_audio_url=s.tts_audio_url,
     )
@@ -242,6 +221,22 @@ def list_tasks(db: Session = Depends(get_db),
 def get_task(task_id: str, db: Session = Depends(get_db),
              user: dict = Depends(require_employer)) -> TaskOut:
     return _task_out(_owned_task(task_id, user["sub"], db))
+
+
+@app.delete("/api/tasks/{task_id}")
+def delete_task(task_id: str, db: Session = Depends(get_db),
+                user: dict = Depends(require_employer)) -> dict:
+    """직무를 삭제한다. 단계는 cascade로 함께 지워지고, 배정/수행 로그는 명시적으로 정리한다."""
+    task = _owned_task(task_id, user["sub"], db)
+    assignment_ids = [a.id for a in db.scalars(
+        select(Assignment).where(Assignment.task_id == task_id)
+    ).all()]
+    if assignment_ids:
+        db.execute(delete(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids)))
+        db.execute(delete(Assignment).where(Assignment.task_id == task_id))
+    db.delete(task)  # Step은 Task.steps의 cascade="all, delete-orphan"으로 함께 삭제됨
+    db.commit()
+    return {"ok": True}
 
 
 @app.patch("/api/tasks/{task_id}/steps/{step_id}", response_model=StepOut)
