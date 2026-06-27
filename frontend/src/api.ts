@@ -214,7 +214,9 @@ export const api = {
       body: JSON.stringify({ worker_id: worker_id ?? null }),
     }),
   listWorkers: () => req<Worker[]>("/api/workers"),
-  workerTasks: (workerId: string) => req<TaskSummary[]>(`/api/workers/${workerId}/tasks`),
+  workerTasks: (workerId: string, date?: string) =>
+    req<TaskSummary[]>(`/api/workers/${workerId}/tasks${date ? `?date=${date}` : ""}`),
+  workerActiveDates: (workerId: string) => req<string[]>(`/api/workers/${workerId}/active-dates`),
   createWorker: (display_name: string, access_code: string) =>
     req<Worker>("/api/workers", {
       method: "POST",

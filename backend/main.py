@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 import ai_client
@@ -195,17 +195,21 @@ def create_worker(payload: WorkerCreate, db: Session = Depends(get_db),
 
 
 @app.get("/api/workers/{worker_id}/tasks", response_model=list[TaskSummaryOut])
-def worker_tasks(worker_id: str, db: Session = Depends(get_db),
+def worker_tasks(worker_id: str, date: str | None = None,
+                 db: Session = Depends(get_db),
                  user: dict = Depends(require_employer)) -> list[TaskSummaryOut]:
-    """특정 근로자에게 배정된 직무 목록(중복 제거, 최신순). 근로자 중심 대시보드용."""
+    """특정 근로자에게 배정된 직무 목록(중복 제거, 최신순).
+
+    date(YYYY-MM-DD)를 주면 그 날짜에 배정된 직무만 반환한다(달력 보기용).
+    날짜 비교는 저장 기준인 UTC 일자로 한다(worker_today와 동일 기준).
+    """
     worker = db.get(Worker, worker_id)
     if worker is None or worker.employer_id != user["sub"]:
         raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
-    task_ids = list({
-        a.task_id for a in db.scalars(
-            select(Assignment).where(Assignment.worker_id == worker_id)
-        ).all()
-    })
+    assignment_query = select(Assignment).where(Assignment.worker_id == worker_id)
+    if date:
+        assignment_query = assignment_query.where(func.date(Assignment.assigned_date) == date)
+    task_ids = list({a.task_id for a in db.scalars(assignment_query).all()})
     if not task_ids:
         return []
     tasks = db.scalars(
@@ -215,6 +219,21 @@ def worker_tasks(worker_id: str, db: Session = Depends(get_db),
         TaskSummaryOut(id=t.id, title=t.title, status=t.status, created_at=t.created_at)
         for t in tasks
     ]
+
+
+@app.get("/api/workers/{worker_id}/active-dates", response_model=list[str])
+def worker_active_dates(worker_id: str, db: Session = Depends(get_db),
+                        user: dict = Depends(require_employer)) -> list[str]:
+    """근로자에게 배정이 있는 날짜(YYYY-MM-DD) 목록. 달력에서 활동일 표시용."""
+    worker = db.get(Worker, worker_id)
+    if worker is None or worker.employer_id != user["sub"]:
+        raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
+    rows = db.scalars(
+        select(func.date(Assignment.assigned_date))
+        .where(Assignment.worker_id == worker_id)
+        .distinct()
+    ).all()
+    return sorted({str(r) for r in rows if r})
 
 
 @app.delete("/api/workers/{worker_id}")

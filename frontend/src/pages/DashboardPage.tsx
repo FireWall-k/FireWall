@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertCircle, BarChart3, CheckCircle2, Clock, RotateCcw, Sparkles, Trash2 } from "lucide-react";
+import { AlertCircle, BarChart3, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { api, AuthError, type Coaching, type Dashboard, type TaskSummary, type Worker } from "../api";
 
 const StatCard = ({
@@ -62,6 +62,79 @@ function formatCreatedAt(iso: string) {
   return `${mm}/${dd} ${hh}:${min}`;
 }
 
+function ymd(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+function MiniCalendar({
+  selected,
+  activeDates,
+  onPick,
+}: {
+  selected: string;
+  activeDates: string[];
+  onPick: (date: string) => void;
+}) {
+  const sel = new Date(`${selected}T00:00:00`);
+  const [view, setView] = useState(new Date(sel.getFullYear(), sel.getMonth(), 1));
+  const todayYmd = ymd(new Date());
+  const active = new Set(activeDates);
+  const year = view.getFullYear();
+  const month = view.getMonth();
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < firstWeekday; i += 1) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d += 1) cells.push(d);
+
+  return (
+    <div className="absolute right-0 top-full z-30 mt-2 w-72 rounded-xl border border-paper-200 bg-white p-3 shadow-lg">
+      <div className="mb-2 flex items-center justify-between">
+        <button onClick={() => setView(new Date(year, month - 1, 1))} className="rounded p-1 text-ink-500 hover:bg-paper-100" aria-label="이전 달">
+          <ChevronLeft size={16} />
+        </button>
+        <span className="text-sm font-semibold text-ink-900">{year}년 {month + 1}월</span>
+        <button onClick={() => setView(new Date(year, month + 1, 1))} className="rounded p-1 text-ink-500 hover:bg-paper-100" aria-label="다음 달">
+          <ChevronRight size={16} />
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-0.5 text-center">
+        {WEEKDAYS.map((w) => (
+          <div key={w} className="py-1 text-xs font-medium text-ink-500">{w}</div>
+        ))}
+        {cells.map((d, i) => {
+          if (d === null) return <div key={`empty-${i}`} />;
+          const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+          const isSel = dateStr === selected;
+          const isToday = dateStr === todayYmd;
+          const hasData = active.has(dateStr);
+          return (
+            <button
+              key={dateStr}
+              onClick={() => onPick(dateStr)}
+              className={
+                "relative aspect-square rounded-lg text-sm " +
+                (isSel
+                  ? "bg-moss-500 font-bold text-white"
+                  : isToday
+                    ? "bg-paper-100 font-semibold text-ink-900"
+                    : "text-ink-700 hover:bg-paper-100")
+              }
+            >
+              {d}
+              {hasData && !isSel && (
+                <span className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-moss-500" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function DashboardPage() {
   // 근로자 중심: 근로자 먼저 고르고 → 그 근로자의 직무를 본다.
   const [allWorkers, setAllWorkers] = useState<Worker[]>([]);
@@ -72,6 +145,11 @@ function DashboardPage() {
   const [coaching, setCoaching] = useState<Coaching | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 달력: 선택한 날짜(기본 오늘)의 직무만 본다. activeDates는 달력에 활동일 표시용.
+  const [selectedDate, setSelectedDate] = useState<string>(() => ymd(new Date()));
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [activeDates, setActiveDates] = useState<string[]>([]);
 
   // 사업주의 전체 근로자 목록을 불러와 첫 근로자를 고른다.
   useEffect(() => {
@@ -92,7 +170,20 @@ function DashboardPage() {
     return () => { alive = false; };
   }, []);
 
-  // 근로자가 바뀌면 그 근로자에게 배정된 직무 목록을 불러와 첫 직무를 고른다.
+  // 근로자가 바뀌면 그 근로자의 활동일(달력 표시용)을 불러온다.
+  useEffect(() => {
+    if (!workerId) {
+      setActiveDates([]);
+      return;
+    }
+    let alive = true;
+    api.workerActiveDates(workerId)
+      .then((ds) => { if (alive) setActiveDates(ds); })
+      .catch(() => { if (alive) setActiveDates([]); });
+    return () => { alive = false; };
+  }, [workerId]);
+
+  // (근로자, 날짜)가 정해지면 그 날짜에 배정된 직무 목록을 불러와 첫 직무를 고른다.
   useEffect(() => {
     if (!workerId) {
       setWorkerTasks([]);
@@ -102,7 +193,7 @@ function DashboardPage() {
     let alive = true;
     setDashboard(null);
     setCoaching(null);
-    api.workerTasks(workerId)
+    api.workerTasks(workerId, selectedDate)
       .then((ts) => {
         if (!alive) return;
         setWorkerTasks(ts);
@@ -115,7 +206,7 @@ function DashboardPage() {
         setError(e instanceof AuthError ? "다시 로그인해 주세요." : e instanceof Error ? e.message : "직무 목록을 불러오지 못했습니다.");
       });
     return () => { alive = false; };
-  }, [workerId]);
+  }, [workerId, selectedDate]);
 
   // 선택된 (근로자, 직무)의 수행 데이터와 코칭을 불러온다.
   useEffect(() => {
@@ -155,6 +246,8 @@ function DashboardPage() {
 
   function selectWorker(id: string) {
     setWorkerId(id);
+    setSelectedDate(ymd(new Date())); // 근로자를 바꾸면 '오늘' 업무로 리셋
+    setShowCalendar(false);
     setDashboard(null);
     setCoaching(null);
     setError(null);
@@ -198,6 +291,29 @@ function DashboardPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {allWorkers.length > 0 && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowCalendar((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm font-medium text-ink-700 hover:bg-paper-100"
+                aria-label="날짜 선택 달력 열기"
+              >
+                <CalendarDays size={15} />
+                {selectedDate === ymd(new Date()) ? "오늘" : selectedDate}
+              </button>
+              {showCalendar && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setShowCalendar(false)} />
+                  <MiniCalendar
+                    selected={selectedDate}
+                    activeDates={activeDates}
+                    onPick={(d) => { setSelectedDate(d); setShowCalendar(false); }}
+                  />
+                </>
+              )}
+            </div>
+          )}
           {allWorkers.length > 0 && (
             <select
               value={workerId}
@@ -243,7 +359,13 @@ function DashboardPage() {
       {error && <div role="alert" className="mb-5 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</div>}
       {!allWorkers.length && <EmptyState message="아직 등록된 근로자가 없습니다. ‘직무 입력·검토’ 화면에서 근로자를 추가하고 직무를 보내 주세요." />}
       {allWorkers.length > 0 && workerId && !workerTasks.length && !error && (
-        <EmptyState message="이 근로자에게 배정된 직무가 없습니다. ‘직무 입력·검토’ 화면에서 직무를 보내 주세요." />
+        <EmptyState
+          message={
+            selectedDate === ymd(new Date())
+              ? "이 근로자에게 오늘 배정된 직무가 없습니다. 달력에서 다른 날짜를 선택해 보세요."
+              : `${selectedDate}에 이 근로자에게 배정된 직무가 없습니다. 달력에서 다른 날짜를 선택해 보세요.`
+          }
+        />
       )}
       {workerTasks.length > 0 && taskId && !dashboard && !error && (
         <EmptyState message="선택한 직무의 수행 로그를 불러오는 중입니다…" />
