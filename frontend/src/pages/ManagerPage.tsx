@@ -120,6 +120,23 @@ export default function ManagerPage() {
     }
   }
 
+  async function handleDeleteWorker(workerId: string, name: string) {
+    if (!window.confirm(`근로자 '${name}'을(를) 삭제할까요?\n이 근로자의 배정·수행 기록도 함께 삭제됩니다.`)) {
+      return;
+    }
+    setError(null);
+    setNotice(null);
+    try {
+      await api.deleteWorker(workerId);
+      const remaining = workers.filter((w) => w.id !== workerId);
+      setWorkers(remaining);
+      if (selectedWorkerId === workerId) setSelectedWorkerId(remaining[0]?.id ?? "");
+      setNotice(`근로자 '${name}'을(를) 삭제했습니다.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "근로자 삭제에 실패했습니다.");
+    }
+  }
+
   async function handlePublishAndAssign() {
     if (!task) return;
     if (!selectedWorkerId) {
@@ -373,6 +390,33 @@ export default function ManagerPage() {
                 + 근로자 추가
               </button>
             </div>
+
+            {/* 등록된 근로자 목록 + 삭제 */}
+            {workers.length > 0 && (
+              <div className="mt-3 border-t border-slate-200 pt-3">
+                <p className="mb-2 text-xs font-medium text-slate-500">등록된 근로자</p>
+                <ul className="flex flex-wrap gap-2">
+                  {workers.map((w) => (
+                    <li
+                      key={w.id}
+                      className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white py-1 pl-3 pr-1.5 text-sm text-slate-700"
+                    >
+                      <span>
+                        {w.display_name} <span className="text-slate-400">({w.access_code})</span>
+                      </span>
+                      <button
+                        onClick={() => handleDeleteWorker(w.id, w.display_name)}
+                        className="rounded-full p-0.5 text-slate-300 hover:bg-red-50 hover:text-red-600"
+                        aria-label={`근로자 ${w.display_name} 삭제`}
+                        title="근로자 삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </section>
       )}

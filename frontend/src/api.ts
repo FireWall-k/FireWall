@@ -220,6 +220,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ display_name, access_code }),
     }),
+  deleteWorker: (id: string) => req<{ ok: boolean }>(`/api/workers/${id}`, { method: "DELETE" }),
   today: () => req<TodayCard[]>("/api/worker/me/today"),
   logStep: (body: {
     assignment_id: string;
