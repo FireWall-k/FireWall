@@ -1,10 +1,11 @@
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate } from "react-router-dom";
-import { Briefcase, BarChart3, LogOut, Tablet, UserRound } from "lucide-react";
+import { Briefcase, BarChart3, LogOut, Tablet, UserRound, Users } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { clearAuth, getAuth, type AuthState, type Role } from "./api";
 import LoginPage from "./pages/LoginPage";
 import ManagerPage from "./pages/ManagerPage";
 import DashboardPage from "./pages/DashboardPage";
+import WorkersPage from "./pages/WorkersPage";
 import WorkerPage from "./pages/WorkerPage";
 
 const navItem =
@@ -81,6 +82,15 @@ function Shell({ auth, onLogout, children }: { auth: AuthState; onLogout: () => 
               직무 입력 · 검토
             </NavLink>
             <NavLink
+              to="/workers"
+              className={({ isActive }) =>
+                `${navItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
+              }
+            >
+              <Users size={17} />
+              근로자 관리
+            </NavLink>
+            <NavLink
               to="/dashboard"
               className={({ isActive }) =>
                 `${navItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
@@ -155,6 +165,14 @@ function AppRoutes() {
         element={
           <RequireAuth auth={auth} role="employer">
             {auth && <Shell auth={auth} onLogout={handleLogout}><ManagerPage /></Shell>}
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/workers"
+        element={
+          <RequireAuth auth={auth} role="employer">
+            {auth && <Shell auth={auth} onLogout={handleLogout}><WorkersPage /></Shell>}
           </RequireAuth>
         }
       />
