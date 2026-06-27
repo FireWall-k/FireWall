@@ -9,7 +9,7 @@ import {
   YAxis,
 } from "recharts";
 import { AlertCircle, BarChart3, CheckCircle2, Clock, RotateCcw, Sparkles, Trash2 } from "lucide-react";
-import { api, AuthError, type Coaching, type Dashboard, type TaskSummary } from "../api";
+import { api, AuthError, type Coaching, type Dashboard, type DashboardWorker, type TaskSummary } from "../api";
 
 const StatCard = ({
   icon,
@@ -70,6 +70,10 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 1:N — 선택한 직무를 배정받은 근로자 목록 + 현재 보고 있는 근로자
+  const [workers, setWorkers] = useState<DashboardWorker[]>([]);
+  const [workerId, setWorkerId] = useState<string>("");
+
   useEffect(() => {
     let alive = true;
     api.listTasks()
@@ -89,12 +93,38 @@ function DashboardPage() {
     return () => { alive = false; };
   }, []);
 
+  // 직무가 바뀌면 그 직무를 배정받은 근로자 목록을 불러와 첫 근로자를 고른다.
   useEffect(() => {
-    if (!taskId) return;
+    if (!taskId) {
+      setWorkers([]);
+      setWorkerId("");
+      return;
+    }
+    let alive = true;
+    setDashboard(null);
+    setCoaching(null);
+    api.dashboardWorkers(taskId)
+      .then((ws) => {
+        if (!alive) return;
+        setWorkers(ws);
+        setWorkerId(ws[0]?.worker_id ?? "");
+      })
+      .catch((e) => {
+        if (!alive) return;
+        setWorkers([]);
+        setWorkerId("");
+        setError(e instanceof AuthError ? "다시 로그인해 주세요." : e instanceof Error ? e.message : "근로자 목록을 불러오지 못했습니다.");
+      });
+    return () => { alive = false; };
+  }, [taskId]);
+
+  // 선택된 (직무, 근로자)의 수행 데이터와 코칭을 불러온다.
+  useEffect(() => {
+    if (!taskId || !workerId) return;
     let alive = true;
     Promise.all([
-      api.dashboard(taskId),
-      api.coaching(taskId).catch(() => null),
+      api.dashboard(taskId, workerId),
+      api.coaching(taskId, workerId).catch(() => null),
     ])
       .then(([d, c]) => {
         if (!alive) return;
@@ -106,10 +136,9 @@ function DashboardPage() {
         setDashboard(null);
         setCoaching(null);
         setError(e instanceof AuthError ? "다시 로그인해 주세요." : e instanceof Error ? e.message : "대시보드를 불러오지 못했습니다.");
-      })
-
+      });
     return () => { alive = false; };
-  }, [taskId]);
+  }, [taskId, workerId]);
 
   const chartData = useMemo(
     () => dashboard?.steps.map((s) => ({
@@ -176,6 +205,20 @@ function DashboardPage() {
               </option>
             ))}
           </select>
+          {workers.length > 0 && (
+            <select
+              value={workerId}
+              onChange={(e) => setWorkerId(e.target.value)}
+              className="rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm text-ink-900 focus:border-moss-500 focus:outline-none"
+              aria-label="대시보드 근로자 선택"
+            >
+              {workers.map((w) => (
+                <option key={w.worker_id} value={w.worker_id}>
+                  {w.display_name}{w.status === "done" ? " · 완료" : ""}
+                </option>
+              ))}
+            </select>
+          )}
           {taskId && (
             <button
               type="button"
@@ -192,7 +235,12 @@ function DashboardPage() {
 
       {error && <div role="alert" className="mb-5 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</div>}
       {!tasks.length && <EmptyState message="아직 생성된 직무가 없습니다. 먼저 직무 입력 화면에서 직무를 만들어 주세요." />}
-      {tasks.length > 0 && taskId && !dashboard && !error && <EmptyState message="선택한 직무의 수행 로그를 불러오는 중입니다…" />}
+      {tasks.length > 0 && taskId && !workers.length && !error && (
+        <EmptyState message="아직 이 직무를 배정받은 근로자가 없습니다. 직무를 게시하고 근로자에게 보내면 여기에 표시됩니다." />
+      )}
+      {tasks.length > 0 && taskId && workers.length > 0 && !dashboard && !error && (
+        <EmptyState message="선택한 근로자의 수행 로그를 불러오는 중입니다…" />
+      )}
       {dashboard && (
         <>
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

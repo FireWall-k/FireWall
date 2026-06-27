@@ -43,6 +43,7 @@ from schemas import (
     CoachingOut,
     CoachingSuggestionOut,
     DashboardOut,
+    DashboardWorkerOut,
     EmployerLogin,
     PerformanceLogCreate,
     StepOut,
@@ -411,21 +412,54 @@ def create_log(payload: PerformanceLogCreate, db: Session = Depends(get_db),
 
 
 # --- 사업주: 대시보드 집계 ---
+def _logs_by_step(task_id: str, worker_id: str | None, db: Session) -> dict[str, PerformanceLog]:
+    """직무의 수행 로그를 step_id 기준으로 모은다.
+
+    worker_id를 주면 해당 근로자의 배정만 집계한다. 한 직무를 여러 근로자에게
+    배정한 경우(1:N), worker_id 없이 모으면 같은 step_id가 덮어써져 한 명분만
+    남으므로, 대시보드는 항상 근로자를 지정해 호출한다.
+    """
+    query = select(Assignment).where(Assignment.task_id == task_id)
+    if worker_id:
+        query = query.where(Assignment.worker_id == worker_id)
+    assignment_ids = [a.id for a in db.scalars(query).all()]
+    if not assignment_ids:
+        return {}
+    logs = db.scalars(
+        select(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids))
+    ).all()
+    return {log.step_id: log for log in logs}
+
+
+@app.get("/api/dashboard/tasks/{task_id}/workers", response_model=list[DashboardWorkerOut])
+def dashboard_workers(task_id: str, db: Session = Depends(get_db),
+                      user: dict = Depends(require_employer)) -> list[DashboardWorkerOut]:
+    """이 직무를 배정받은 근로자 목록(중복 제거). 대시보드 근로자 선택용."""
+    _owned_task(task_id, user["sub"], db)
+    assignments = db.scalars(
+        select(Assignment).where(Assignment.task_id == task_id).order_by(Assignment.assigned_date)
+    ).all()
+    out: list[DashboardWorkerOut] = []
+    seen: set[str] = set()
+    for a in assignments:
+        if a.worker_id in seen:
+            continue
+        seen.add(a.worker_id)
+        worker = db.get(Worker, a.worker_id)
+        if worker is None:
+            continue
+        out.append(DashboardWorkerOut(
+            worker_id=worker.id, display_name=worker.display_name, status=a.status,
+        ))
+    return out
+
+
 @app.get("/api/dashboard/tasks/{task_id}", response_model=DashboardOut)
-def dashboard(task_id: str, db: Session = Depends(get_db),
+def dashboard(task_id: str, worker_id: str | None = None,
+              db: Session = Depends(get_db),
               user: dict = Depends(require_employer)) -> DashboardOut:
     task = _owned_task(task_id, user["sub"], db)
-
-    assignment_ids = [a.id for a in db.scalars(
-        select(Assignment).where(Assignment.task_id == task_id)
-    ).all()]
-
-    logs = []
-    if assignment_ids:
-        logs = db.scalars(
-            select(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids))
-        ).all()
-    logs_by_step: dict[str, PerformanceLog] = {log.step_id: log for log in logs}
+    logs_by_step = _logs_by_step(task_id, worker_id, db)
 
     step_stats: list[StepStat] = []
     stuck_steps: list[int] = []
@@ -453,20 +487,12 @@ def dashboard(task_id: str, db: Session = Depends(get_db),
 
 
 @app.get("/api/dashboard/tasks/{task_id}/coaching", response_model=CoachingOut)
-def task_coaching(task_id: str, db: Session = Depends(get_db),
+def task_coaching(task_id: str, worker_id: str | None = None,
+                  db: Session = Depends(get_db),
                   user: dict = Depends(require_employer)) -> CoachingOut:
     """근로자 수행 데이터를 바탕으로 사업주용 AI 개선 제안을 돌려준다(기능 2)."""
     task = _owned_task(task_id, user["sub"], db)
-
-    assignment_ids = [a.id for a in db.scalars(
-        select(Assignment).where(Assignment.task_id == task_id)
-    ).all()]
-    logs = []
-    if assignment_ids:
-        logs = db.scalars(
-            select(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids))
-        ).all()
-    logs_by_step: dict[str, PerformanceLog] = {log.step_id: log for log in logs}
+    logs_by_step = _logs_by_step(task_id, worker_id, db)
 
     steps_payload = []
     for s in task.steps:

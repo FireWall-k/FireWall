@@ -93,6 +93,12 @@ export interface Dashboard {
   steps: StepStat[];
 }
 
+export interface DashboardWorker {
+  worker_id: string;
+  display_name: string;
+  status: string;
+}
+
 export class AuthError extends Error {}
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
@@ -170,7 +176,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ raw_input, ...context }),
     }),
-  coaching: (taskId: string) => req<Coaching>(`/api/dashboard/tasks/${taskId}/coaching`),
+  coaching: (taskId: string, workerId?: string) =>
+    req<Coaching>(`/api/dashboard/tasks/${taskId}/coaching${workerId ? `?worker_id=${workerId}` : ""}`),
   getTask: (id: string) => req<Task>(`/api/tasks/${id}`),
   deleteTask: (id: string) => req<{ ok: boolean }>(`/api/tasks/${id}`, { method: "DELETE" }),
   updateStep: (taskId: string, stepId: string, patch: Partial<Pick<Step, "sentence" | "symbol_url">>) =>
@@ -217,7 +224,9 @@ export const api = {
     replay_count: number;
     stuck: boolean;
   }) => req<{ ok: boolean }>("/api/performance-logs", { method: "POST", body: JSON.stringify(body) }),
-  dashboard: (id: string) => req<Dashboard>(`/api/dashboard/tasks/${id}`),
+  dashboard: (id: string, workerId?: string) =>
+    req<Dashboard>(`/api/dashboard/tasks/${id}${workerId ? `?worker_id=${workerId}` : ""}`),
+  dashboardWorkers: (id: string) => req<DashboardWorker[]>(`/api/dashboard/tasks/${id}/workers`),
   searchArasaac: (term: string, langs: string[] = ["en", "es"], limit = 3) =>
     req<ArasaacSearchResult>("/api/arasaac/search", {
       method: "POST",
