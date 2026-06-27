@@ -214,7 +214,7 @@ function DashboardPage() {
             >
               {workers.map((w) => (
                 <option key={w.worker_id} value={w.worker_id}>
-                  {w.display_name}{w.status === "done" ? " · 완료" : ""}
+                  {w.display_name} (코드 {w.access_code}){w.status === "done" ? " · 완료" : ""}
                 </option>
               ))}
             </select>

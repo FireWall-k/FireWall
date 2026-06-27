@@ -290,6 +290,34 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
     return _step_to_out(step)
 
 
+@app.delete("/api/tasks/{task_id}/steps/{step_id}", response_model=TaskOut)
+def delete_step(task_id: str, step_id: str, db: Session = Depends(get_db),
+                user: dict = Depends(require_employer)) -> TaskOut:
+    """단계를 삭제하고 남은 단계의 순서를 1부터 다시 매긴다."""
+    task = _owned_task(task_id, user["sub"], db)
+    step = db.get(Step, step_id)
+    if step is None or step.task_id != task_id:
+        raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
+    if len(task.steps) <= 1:
+        raise HTTPException(
+            status_code=400,
+            detail="마지막 단계는 삭제할 수 없습니다. 직무 자체를 삭제하려면 대시보드를 이용하세요.",
+        )
+    # 이 단계를 참조하는 수행 로그를 먼저 정리한다(게시 후 삭제 대비).
+    db.execute(delete(PerformanceLog).where(PerformanceLog.step_id == step_id))
+    db.delete(step)
+    db.flush()
+    # 남은 단계 순서 재정렬(1,2,3…).
+    remaining = db.scalars(
+        select(Step).where(Step.task_id == task_id).order_by(Step.order_index)
+    ).all()
+    for i, s in enumerate(remaining, start=1):
+        s.order_index = i
+    db.commit()
+    db.refresh(task)
+    return _task_out(task)
+
+
 @app.post("/api/tasks/{task_id}/publish", response_model=TaskOut)
 def publish_task(task_id: str, db: Session = Depends(get_db),
                  user: dict = Depends(require_employer)) -> TaskOut:
@@ -449,7 +477,8 @@ def dashboard_workers(task_id: str, db: Session = Depends(get_db),
         if worker is None:
             continue
         out.append(DashboardWorkerOut(
-            worker_id=worker.id, display_name=worker.display_name, status=a.status,
+            worker_id=worker.id, display_name=worker.display_name,
+            access_code=worker.access_code, status=a.status,
         ))
     return out
 

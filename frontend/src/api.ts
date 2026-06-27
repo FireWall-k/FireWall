@@ -96,6 +96,7 @@ export interface Dashboard {
 export interface DashboardWorker {
   worker_id: string;
   display_name: string;
+  access_code: string;
   status: string;
 }
 
@@ -182,6 +183,8 @@ export const api = {
   deleteTask: (id: string) => req<{ ok: boolean }>(`/api/tasks/${id}`, { method: "DELETE" }),
   updateStep: (taskId: string, stepId: string, patch: Partial<Pick<Step, "sentence" | "symbol_url">>) =>
     req<Step>(`/api/tasks/${taskId}/steps/${stepId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  deleteStep: (taskId: string, stepId: string) =>
+    req<Task>(`/api/tasks/${taskId}/steps/${stepId}`, { method: "DELETE" }),
   publish: (id: string) => req<Task>(`/api/tasks/${id}/publish`, { method: "POST" }),
   uploadStepPhoto: async (taskId: string, stepId: string, file: File): Promise<Step> => {
     const a = getAuth();

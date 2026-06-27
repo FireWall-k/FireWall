@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { api, type Task, type Worker } from "../api";
 import { ActionChip } from "../actions";
 
 const SAMPLE =
-  "택배 상자를 크기별로 분류하고, 큰 상자는 A구역으로 옮겨주세요. 그리고 5개씩 쌓아주세요. 마지막에 수량을 확인하세요.";
+  "ex) 택배 상자를 크기별로 분류하고, 큰 상자는 A구역으로 옮겨주세요. 그리고 5개씩 쌓아주세요. 마지막에 수량을 확인하세요.";
 
 export default function ManagerPage() {
   const [rawInput, setRawInput] = useState(SAMPLE);
@@ -68,6 +69,21 @@ export default function ManagerPage() {
       setTask({ ...task, steps: task.steps.map((s) => (s.id === stepId ? updated : s)) });
     } catch (e) {
       setError(e instanceof Error ? e.message : "사진 업로드에 실패했습니다.");
+    }
+  }
+
+  async function handleDeleteStep(stepId: string) {
+    if (!task) return;
+    if (task.steps.length <= 1) {
+      setError("마지막 단계는 삭제할 수 없습니다.");
+      return;
+    }
+    if (!window.confirm("이 단계를 삭제할까요?")) return;
+    setError(null);
+    try {
+      setTask(await api.deleteStep(task.id, stepId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "단계 삭제에 실패했습니다.");
     }
   }
 
@@ -294,6 +310,15 @@ export default function ManagerPage() {
                     <span>상징: {s.symbol_source === "photo" ? "직접 등록한 사진" : s.symbol_source}</span>
                   </div>
                 </div>
+                <button
+                  onClick={() => handleDeleteStep(s.id)}
+                  disabled={task.steps.length <= 1}
+                  className="mt-1 shrink-0 rounded p-1.5 text-slate-300 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-300"
+                  aria-label={`${s.order}단계 삭제`}
+                  title={task.steps.length <= 1 ? "마지막 단계는 삭제할 수 없습니다" : "이 단계 삭제"}
+                >
+                  <Trash2 size={16} />
+                </button>
               </li>
             ))}
           </ol>

@@ -114,6 +114,7 @@ class DashboardWorkerOut(BaseModel):
     """대시보드에서 직무별로 어떤 근로자를 볼지 고르기 위한 목록 항목."""
     worker_id: str
     display_name: str
+    access_code: str
     status: str
 
 
