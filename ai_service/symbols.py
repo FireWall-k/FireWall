@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 
 from arasaac import search_term
 from schemas import MapSymbolsResult, Symbol
@@ -57,13 +58,26 @@ _STOPWORDS = {
 }
 
 
+# 구역/위치 지시어는 보편 AAC 상징이 없어 검색하면 엉뚱한 그림이 매칭된다
+# (예: "area A" → 파티 나팔). 한국어("A구역")·영어("area B", "zone 1") 모두
+# 검색에서 제외해 needs_fallback으로 떨어뜨리고, 사업주의 실제 현장 사진 등록으로 유도한다.
+_REGION_PATTERNS = [
+    re.compile(r"구역|구획|섹션"),
+    re.compile(r"^(area|zone|section|sector|aisle)\b", re.IGNORECASE),
+]
+
+
+def _is_region_term(keyword: str) -> bool:
+    return any(p.search(keyword) for p in _REGION_PATTERNS)
+
+
 def _normalize_keyword(keyword: str) -> str:
     return keyword.strip().strip(".,!?;:()[]{}\"'")
 
 
 def _query_candidates(keyword: str) -> list[str]:
     keyword = _normalize_keyword(keyword)
-    if not keyword or keyword in _STOPWORDS:
+    if not keyword or keyword in _STOPWORDS or _is_region_term(keyword):
         return []
 
     # 한국어 원문은 ARASAAC 검색 성공률이 낮으므로, 매핑 사전이 있으면 보정 후보를 먼저 둔다.
