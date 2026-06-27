@@ -51,6 +51,12 @@ class AssignRequest(BaseModel):
     worker_id: str | None = None
 
 
+class WorkerCreate(BaseModel):
+    display_name: str = Field(min_length=1, max_length=50)
+    # 접속 코드는 근로자 로그인 키. 현장 디바이스 공유를 가정한 짧은 코드.
+    access_code: str = Field(min_length=1, max_length=32)
+
+
 class PerformanceLogCreate(BaseModel):
     assignment_id: str
     step_id: str
@@ -96,6 +102,12 @@ class AssignmentOut(BaseModel):
     task_id: str
     worker_id: str
     status: str
+
+
+class WorkerOut(BaseModel):
+    id: str
+    display_name: str
+    access_code: str
 
 
 class TodayCardOut(BaseModel):

@@ -53,7 +53,9 @@ from schemas import (
     TaskSummaryOut,
     TodayCardOut,
     TokenOut,
+    WorkerCreate,
     WorkerLogin,
+    WorkerOut,
 )
 from photos import MAX_PHOTO_BYTES, get_photo_dir, save_photo, sniff_image
 from tts import get_tts_cache_dir, synthesize_tts_url
@@ -161,6 +163,34 @@ def worker_login(payload: WorkerLogin, db: Session = Depends(get_db)) -> TokenOu
         raise HTTPException(status_code=401, detail="접속 코드가 올바르지 않습니다.")
     return TokenOut(token=make_token(worker.id, "worker"), role="worker",
                     display_name=worker.display_name)
+
+
+# --- 사업주: 근로자 관리 ---
+@app.get("/api/workers", response_model=list[WorkerOut])
+def list_workers(db: Session = Depends(get_db),
+                 user: dict = Depends(require_employer)) -> list[WorkerOut]:
+    workers = db.scalars(
+        select(Worker).where(Worker.employer_id == user["sub"]).order_by(Worker.created_at)
+    ).all()
+    return [WorkerOut(id=w.id, display_name=w.display_name, access_code=w.access_code)
+            for w in workers]
+
+
+@app.post("/api/workers", response_model=WorkerOut, status_code=201)
+def create_worker(payload: WorkerCreate, db: Session = Depends(get_db),
+                  user: dict = Depends(require_employer)) -> WorkerOut:
+    # 접속 코드는 로그인 키라 전역 unique. 중복이면 다른 코드를 받도록 409로 막는다.
+    if db.scalar(select(Worker).where(Worker.access_code == payload.access_code)) is not None:
+        raise HTTPException(status_code=409, detail="이미 사용 중인 접속 코드입니다. 다른 코드를 입력해 주세요.")
+    worker = Worker(
+        employer_id=user["sub"],
+        display_name=payload.display_name,
+        access_code=payload.access_code,
+    )
+    db.add(worker)
+    db.commit()
+    db.refresh(worker)
+    return WorkerOut(id=worker.id, display_name=worker.display_name, access_code=worker.access_code)
 
 
 # --- 사업주: 직무 생성(AI 분해 트리거) ---
@@ -298,6 +328,18 @@ def assign_task(task_id: str, payload: AssignRequest = AssignRequest(),
         if len(workers) != 1:
             raise HTTPException(status_code=400, detail="배정할 근로자를 지정해 주세요.")
         worker = workers[0]
+
+    # 같은 직무를 같은 근로자에게 이미(미완료로) 배정했다면 중복 생성하지 않고 그대로 돌려준다.
+    existing = db.scalar(
+        select(Assignment).where(
+            Assignment.task_id == task_id,
+            Assignment.worker_id == worker.id,
+            Assignment.status != "done",
+        )
+    )
+    if existing is not None:
+        return AssignmentOut(id=existing.id, task_id=existing.task_id,
+                             worker_id=existing.worker_id, status=existing.status)
 
     a = Assignment(task_id=task_id, worker_id=worker.id, status="assigned")
     db.add(a)

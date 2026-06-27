@@ -139,6 +139,12 @@ export interface TaskSummary {
   created_at: string;
 }
 
+export interface Worker {
+  id: string;
+  display_name: string;
+  access_code: string;
+}
+
 export interface TaskContext {
   business_type?: string;
   work_environment?: string;
@@ -196,6 +202,12 @@ export const api = {
     req<{ id: string }>(`/api/tasks/${id}/assignments`, {
       method: "POST",
       body: JSON.stringify({ worker_id: worker_id ?? null }),
+    }),
+  listWorkers: () => req<Worker[]>("/api/workers"),
+  createWorker: (display_name: string, access_code: string) =>
+    req<Worker>("/api/workers", {
+      method: "POST",
+      body: JSON.stringify({ display_name, access_code }),
     }),
   today: () => req<TodayCard[]>("/api/worker/me/today"),
   logStep: (body: {
