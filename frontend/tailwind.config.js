@@ -37,9 +37,9 @@ export default {
         },
       },
       fontFamily: {
-        display: ["'Fraunces'", "serif"],
-        body: ["'Inter'", "sans-serif"],
-        worker: ["'Pretendard'", "'Inter'", "sans-serif"],
+        display: ["'Gmarket Sans'", "'Pretendard'", "sans-serif"],
+        body: ["'Pretendard'", "sans-serif"],
+        worker: ["'Pretendard'", "sans-serif"],
       },
       fontSize: {
         "worker-sentence": ["2.75rem", { lineHeight: "1.3", fontWeight: "700" }],
