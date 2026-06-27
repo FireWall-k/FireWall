@@ -48,6 +48,20 @@ function formatDuration(sec: number) {
   return rest ? `${min}분 ${rest}초` : `${min}분`;
 }
 
+// 같은 이름의 직무를 드롭다운에서 구별하기 위해 생성 시각을 "M/D HH:mm"로 보여준다.
+function formatCreatedAt(iso: string) {
+  // 백엔드는 UTC로 저장하지만 직렬화 문자열에 tz 표시(Z/+09:00)가 없을 수 있다.
+  // 그대로 두면 브라우저가 현지 시각으로 오해하므로, tz가 없으면 UTC(Z)로 간주한다.
+  const hasTz = /[zZ]|[+-]\d{2}:?\d{2}$/.test(iso);
+  const d = new Date(hasTz ? iso : `${iso}Z`);
+  if (Number.isNaN(d.getTime())) return "";
+  const mm = d.getMonth() + 1;
+  const dd = d.getDate();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${mm}/${dd} ${hh}:${min}`;
+}
+
 function DashboardPage() {
   const [tasks, setTasks] = useState<TaskSummary[]>([]);
   const [taskId, setTaskId] = useState<string>("");
@@ -137,7 +151,7 @@ function DashboardPage() {
         >
           {tasks.map((t) => (
             <option key={t.id} value={t.id}>
-              {t.title} {t.status === "published" ? "(게시됨)" : "(초안)"}
+              {formatCreatedAt(t.created_at)} · {t.title} {t.status === "published" ? "(게시됨)" : "(초안)"}
             </option>
           ))}
         </select>

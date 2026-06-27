@@ -136,6 +136,7 @@ export interface TaskSummary {
   id: string;
   title: string;
   status: string;
+  created_at: string;
 }
 
 export interface TaskContext {

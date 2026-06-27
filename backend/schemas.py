@@ -1,6 +1,8 @@
 """백엔드 API 입출력 스키마 (프론트엔드 대면 계약)."""
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel, Field, field_validator
 
 MAX_RAW_INPUT = 2000
@@ -86,6 +88,7 @@ class TaskSummaryOut(BaseModel):
     id: str
     title: str
     status: str
+    created_at: datetime
 
 
 class AssignmentOut(BaseModel):

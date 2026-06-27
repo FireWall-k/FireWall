@@ -232,7 +232,10 @@ def list_tasks(db: Session = Depends(get_db),
     tasks = db.scalars(
         select(Task).where(Task.employer_id == user["sub"]).order_by(Task.created_at.desc())
     ).all()
-    return [TaskSummaryOut(id=t.id, title=t.title, status=t.status) for t in tasks]
+    return [
+        TaskSummaryOut(id=t.id, title=t.title, status=t.status, created_at=t.created_at)
+        for t in tasks
+    ]
 
 
 @app.get("/api/tasks/{task_id}", response_model=TaskOut)
