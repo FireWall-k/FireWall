@@ -17,13 +17,11 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from pathlib import Path
-from urllib.parse import urlparse
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 import ai_client
@@ -45,6 +43,7 @@ from schemas import (
     CoachingOut,
     CoachingSuggestionOut,
     DashboardOut,
+    DashboardWorkerOut,
     EmployerLogin,
     PerformanceLogCreate,
     StepOut,
@@ -55,7 +54,9 @@ from schemas import (
     TaskSummaryOut,
     TodayCardOut,
     TokenOut,
+    WorkerCreate,
     WorkerLogin,
+    WorkerOut,
 )
 from photos import MAX_PHOTO_BYTES, get_photo_dir, save_photo, sniff_image
 from tts import get_tts_cache_dir, synthesize_tts_url
@@ -119,29 +120,10 @@ def _ensure_seed() -> None:
         db.close()
 
 
-# --- 상징 보정 ---
-def _needs_symbol_fix(symbol_url: str | None) -> bool:
-    if not symbol_url:
-        return True
-    host = urlparse(symbol_url).netloc.lower()
-    return "placehold.co" in host or "placeholder" in host
-
-
-def _resolve_symbol_url(step: Step) -> str | None:
-    if not _needs_symbol_fix(step.symbol_url):
-        return step.symbol_url
-    candidates = ai_client.map_symbols([step.sentence]).get("symbols", [])
-    for candidate in candidates:
-        image_url = candidate.get("image_url")
-        if image_url and not _needs_symbol_fix(image_url):
-            return image_url
-    return step.symbol_url
-
-
 def _step_to_out(s: Step) -> StepOut:
     return StepOut(
         id=s.id, order=s.order_index, sentence=s.sentence,
-        action_type=s.action_type, symbol_url=_resolve_symbol_url(s),
+        action_type=s.action_type, symbol_url=s.symbol_url,
         symbol_source=s.symbol_source, needs_fallback=s.needs_fallback,
         tts_audio_url=s.tts_audio_url,
     )
@@ -182,6 +164,94 @@ def worker_login(payload: WorkerLogin, db: Session = Depends(get_db)) -> TokenOu
         raise HTTPException(status_code=401, detail="접속 코드가 올바르지 않습니다.")
     return TokenOut(token=make_token(worker.id, "worker"), role="worker",
                     display_name=worker.display_name)
+
+
+# --- 사업주: 근로자 관리 ---
+@app.get("/api/workers", response_model=list[WorkerOut])
+def list_workers(db: Session = Depends(get_db),
+                 user: dict = Depends(require_employer)) -> list[WorkerOut]:
+    workers = db.scalars(
+        select(Worker).where(Worker.employer_id == user["sub"]).order_by(Worker.created_at)
+    ).all()
+    return [WorkerOut(id=w.id, display_name=w.display_name, access_code=w.access_code)
+            for w in workers]
+
+
+@app.post("/api/workers", response_model=WorkerOut, status_code=201)
+def create_worker(payload: WorkerCreate, db: Session = Depends(get_db),
+                  user: dict = Depends(require_employer)) -> WorkerOut:
+    # 접속 코드는 로그인 키라 전역 unique. 중복이면 다른 코드를 받도록 409로 막는다.
+    if db.scalar(select(Worker).where(Worker.access_code == payload.access_code)) is not None:
+        raise HTTPException(status_code=409, detail="이미 사용 중인 접속 코드입니다. 다른 코드를 입력해 주세요.")
+    worker = Worker(
+        employer_id=user["sub"],
+        display_name=payload.display_name,
+        access_code=payload.access_code,
+    )
+    db.add(worker)
+    db.commit()
+    db.refresh(worker)
+    return WorkerOut(id=worker.id, display_name=worker.display_name, access_code=worker.access_code)
+
+
+@app.get("/api/workers/{worker_id}/tasks", response_model=list[TaskSummaryOut])
+def worker_tasks(worker_id: str, date: str | None = None,
+                 db: Session = Depends(get_db),
+                 user: dict = Depends(require_employer)) -> list[TaskSummaryOut]:
+    """특정 근로자에게 배정된 직무 목록(중복 제거, 최신순).
+
+    date(YYYY-MM-DD)를 주면 그 날짜에 배정된 직무만 반환한다(달력 보기용).
+    날짜 비교는 저장 기준인 UTC 일자로 한다(worker_today와 동일 기준).
+    """
+    worker = db.get(Worker, worker_id)
+    if worker is None or worker.employer_id != user["sub"]:
+        raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
+    assignment_query = select(Assignment).where(Assignment.worker_id == worker_id)
+    if date:
+        assignment_query = assignment_query.where(func.date(Assignment.assigned_date) == date)
+    task_ids = list({a.task_id for a in db.scalars(assignment_query).all()})
+    if not task_ids:
+        return []
+    tasks = db.scalars(
+        select(Task).where(Task.id.in_(task_ids)).order_by(Task.created_at.desc())
+    ).all()
+    return [
+        TaskSummaryOut(id=t.id, title=t.title, status=t.status, created_at=t.created_at)
+        for t in tasks
+    ]
+
+
+@app.get("/api/workers/{worker_id}/active-dates", response_model=list[str])
+def worker_active_dates(worker_id: str, db: Session = Depends(get_db),
+                        user: dict = Depends(require_employer)) -> list[str]:
+    """근로자에게 배정이 있는 날짜(YYYY-MM-DD) 목록. 달력에서 활동일 표시용."""
+    worker = db.get(Worker, worker_id)
+    if worker is None or worker.employer_id != user["sub"]:
+        raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
+    rows = db.scalars(
+        select(func.date(Assignment.assigned_date))
+        .where(Assignment.worker_id == worker_id)
+        .distinct()
+    ).all()
+    return sorted({str(r) for r in rows if r})
+
+
+@app.delete("/api/workers/{worker_id}")
+def delete_worker(worker_id: str, db: Session = Depends(get_db),
+                  user: dict = Depends(require_employer)) -> dict:
+    """근로자를 삭제한다. 그 근로자의 배정과 수행 로그도 함께 정리한다(직무는 유지)."""
+    worker = db.get(Worker, worker_id)
+    if worker is None or worker.employer_id != user["sub"]:
+        raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
+    assignment_ids = [a.id for a in db.scalars(
+        select(Assignment).where(Assignment.worker_id == worker_id)
+    ).all()]
+    if assignment_ids:
+        db.execute(delete(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids)))
+        db.execute(delete(Assignment).where(Assignment.worker_id == worker_id))
+    db.delete(worker)
+    db.commit()
+    return {"ok": True}
 
 
 # --- 사업주: 직무 생성(AI 분해 트리거) ---
@@ -232,13 +302,32 @@ def list_tasks(db: Session = Depends(get_db),
     tasks = db.scalars(
         select(Task).where(Task.employer_id == user["sub"]).order_by(Task.created_at.desc())
     ).all()
-    return [TaskSummaryOut(id=t.id, title=t.title, status=t.status) for t in tasks]
+    return [
+        TaskSummaryOut(id=t.id, title=t.title, status=t.status, created_at=t.created_at)
+        for t in tasks
+    ]
 
 
 @app.get("/api/tasks/{task_id}", response_model=TaskOut)
 def get_task(task_id: str, db: Session = Depends(get_db),
              user: dict = Depends(require_employer)) -> TaskOut:
     return _task_out(_owned_task(task_id, user["sub"], db))
+
+
+@app.delete("/api/tasks/{task_id}")
+def delete_task(task_id: str, db: Session = Depends(get_db),
+                user: dict = Depends(require_employer)) -> dict:
+    """직무를 삭제한다. 단계는 cascade로 함께 지워지고, 배정/수행 로그는 명시적으로 정리한다."""
+    task = _owned_task(task_id, user["sub"], db)
+    assignment_ids = [a.id for a in db.scalars(
+        select(Assignment).where(Assignment.task_id == task_id)
+    ).all()]
+    if assignment_ids:
+        db.execute(delete(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids)))
+        db.execute(delete(Assignment).where(Assignment.task_id == task_id))
+    db.delete(task)  # Step은 Task.steps의 cascade="all, delete-orphan"으로 함께 삭제됨
+    db.commit()
+    return {"ok": True}
 
 
 @app.patch("/api/tasks/{task_id}/steps/{step_id}", response_model=StepOut)
@@ -259,6 +348,34 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
     db.commit()
     db.refresh(step)
     return _step_to_out(step)
+
+
+@app.delete("/api/tasks/{task_id}/steps/{step_id}", response_model=TaskOut)
+def delete_step(task_id: str, step_id: str, db: Session = Depends(get_db),
+                user: dict = Depends(require_employer)) -> TaskOut:
+    """단계를 삭제하고 남은 단계의 순서를 1부터 다시 매긴다."""
+    task = _owned_task(task_id, user["sub"], db)
+    step = db.get(Step, step_id)
+    if step is None or step.task_id != task_id:
+        raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
+    if len(task.steps) <= 1:
+        raise HTTPException(
+            status_code=400,
+            detail="마지막 단계는 삭제할 수 없습니다. 직무 자체를 삭제하려면 대시보드를 이용하세요.",
+        )
+    # 이 단계를 참조하는 수행 로그를 먼저 정리한다(게시 후 삭제 대비).
+    db.execute(delete(PerformanceLog).where(PerformanceLog.step_id == step_id))
+    db.delete(step)
+    db.flush()
+    # 남은 단계 순서 재정렬(1,2,3…).
+    remaining = db.scalars(
+        select(Step).where(Step.task_id == task_id).order_by(Step.order_index)
+    ).all()
+    for i, s in enumerate(remaining, start=1):
+        s.order_index = i
+    db.commit()
+    db.refresh(task)
+    return _task_out(task)
 
 
 @app.post("/api/tasks/{task_id}/publish", response_model=TaskOut)
@@ -300,6 +417,18 @@ def assign_task(task_id: str, payload: AssignRequest = AssignRequest(),
         if len(workers) != 1:
             raise HTTPException(status_code=400, detail="배정할 근로자를 지정해 주세요.")
         worker = workers[0]
+
+    # 같은 직무를 같은 근로자에게 이미(미완료로) 배정했다면 중복 생성하지 않고 그대로 돌려준다.
+    existing = db.scalar(
+        select(Assignment).where(
+            Assignment.task_id == task_id,
+            Assignment.worker_id == worker.id,
+            Assignment.status != "done",
+        )
+    )
+    if existing is not None:
+        return AssignmentOut(id=existing.id, task_id=existing.task_id,
+                             worker_id=existing.worker_id, status=existing.status)
 
     a = Assignment(task_id=task_id, worker_id=worker.id, status="assigned")
     db.add(a)
@@ -371,21 +500,55 @@ def create_log(payload: PerformanceLogCreate, db: Session = Depends(get_db),
 
 
 # --- 사업주: 대시보드 집계 ---
+def _logs_by_step(task_id: str, worker_id: str | None, db: Session) -> dict[str, PerformanceLog]:
+    """직무의 수행 로그를 step_id 기준으로 모은다.
+
+    worker_id를 주면 해당 근로자의 배정만 집계한다. 한 직무를 여러 근로자에게
+    배정한 경우(1:N), worker_id 없이 모으면 같은 step_id가 덮어써져 한 명분만
+    남으므로, 대시보드는 항상 근로자를 지정해 호출한다.
+    """
+    query = select(Assignment).where(Assignment.task_id == task_id)
+    if worker_id:
+        query = query.where(Assignment.worker_id == worker_id)
+    assignment_ids = [a.id for a in db.scalars(query).all()]
+    if not assignment_ids:
+        return {}
+    logs = db.scalars(
+        select(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids))
+    ).all()
+    return {log.step_id: log for log in logs}
+
+
+@app.get("/api/dashboard/tasks/{task_id}/workers", response_model=list[DashboardWorkerOut])
+def dashboard_workers(task_id: str, db: Session = Depends(get_db),
+                      user: dict = Depends(require_employer)) -> list[DashboardWorkerOut]:
+    """이 직무를 배정받은 근로자 목록(중복 제거). 대시보드 근로자 선택용."""
+    _owned_task(task_id, user["sub"], db)
+    assignments = db.scalars(
+        select(Assignment).where(Assignment.task_id == task_id).order_by(Assignment.assigned_date)
+    ).all()
+    out: list[DashboardWorkerOut] = []
+    seen: set[str] = set()
+    for a in assignments:
+        if a.worker_id in seen:
+            continue
+        seen.add(a.worker_id)
+        worker = db.get(Worker, a.worker_id)
+        if worker is None:
+            continue
+        out.append(DashboardWorkerOut(
+            worker_id=worker.id, display_name=worker.display_name,
+            access_code=worker.access_code, status=a.status,
+        ))
+    return out
+
+
 @app.get("/api/dashboard/tasks/{task_id}", response_model=DashboardOut)
-def dashboard(task_id: str, db: Session = Depends(get_db),
+def dashboard(task_id: str, worker_id: str | None = None,
+              db: Session = Depends(get_db),
               user: dict = Depends(require_employer)) -> DashboardOut:
     task = _owned_task(task_id, user["sub"], db)
-
-    assignment_ids = [a.id for a in db.scalars(
-        select(Assignment).where(Assignment.task_id == task_id)
-    ).all()]
-
-    logs = []
-    if assignment_ids:
-        logs = db.scalars(
-            select(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids))
-        ).all()
-    logs_by_step: dict[str, PerformanceLog] = {log.step_id: log for log in logs}
+    logs_by_step = _logs_by_step(task_id, worker_id, db)
 
     step_stats: list[StepStat] = []
     stuck_steps: list[int] = []
@@ -413,20 +576,12 @@ def dashboard(task_id: str, db: Session = Depends(get_db),
 
 
 @app.get("/api/dashboard/tasks/{task_id}/coaching", response_model=CoachingOut)
-def task_coaching(task_id: str, db: Session = Depends(get_db),
+def task_coaching(task_id: str, worker_id: str | None = None,
+                  db: Session = Depends(get_db),
                   user: dict = Depends(require_employer)) -> CoachingOut:
     """근로자 수행 데이터를 바탕으로 사업주용 AI 개선 제안을 돌려준다(기능 2)."""
     task = _owned_task(task_id, user["sub"], db)
-
-    assignment_ids = [a.id for a in db.scalars(
-        select(Assignment).where(Assignment.task_id == task_id)
-    ).all()]
-    logs = []
-    if assignment_ids:
-        logs = db.scalars(
-            select(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids))
-        ).all()
-    logs_by_step: dict[str, PerformanceLog] = {log.step_id: log for log in logs}
+    logs_by_step = _logs_by_step(task_id, worker_id, db)
 
     steps_payload = []
     for s in task.steps:

@@ -11,10 +11,10 @@ services:
     environment:
       PYTHONUNBUFFERED: "1"
       ARASAAC_API_BASE: "https://api.arasaac.org"
-      ARASAAC_LANGS: "ko,en,es"
-      ARASAAC_SEARCH_TIMEOUT: "1.5"
-      ARASAAC_KEYWORD_SEARCH_LIMIT: "4"
-      ARASAAC_TERM_SEARCH_LIMIT: "3"
+      ARASAAC_LANGS: "en"
+      ARASAAC_SEARCH_TIMEOUT: "0.5"
+      ARASAAC_KEYWORD_SEARCH_LIMIT: "1"
+      ARASAAC_TERM_SEARCH_LIMIT: "1"
       # OpenAI(LLM) — 키가 있으면 맥락적응 분해 + AI 코칭이 켜지고, 없으면 규칙 기반 폴백.
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       OPENAI_MODEL: "${OPENAI_MODEL:-gpt-4o-mini}"
@@ -37,7 +37,8 @@ services:
     environment:
       PYTHONUNBUFFERED: "1"
       AI_BASE_URL: "http://ai_service:8001"
-      AI_TIMEOUT: "15"
+      # LLM(OpenAI) 분해는 10초 이상 걸릴 수 있어 넉넉히 둔다. 규칙 기반만 쓸 땐 6초로도 충분했음.
+      AI_TIMEOUT: "30"
       DATABASE_URL: "sqlite:////app/data/jobcard.db"
       CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173"
       PUBLIC_BACKEND_URL: "http://localhost:8000"

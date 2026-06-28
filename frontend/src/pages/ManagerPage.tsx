@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { api, type Task } from "../api";
+import { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
+import { api, type Task, type Worker } from "../api";
 import { ActionChip } from "../actions";
 
 const SAMPLE =
-  "택배 상자를 크기별로 분류하고, 큰 상자는 A구역으로 옮겨주세요. 그리고 5개씩 쌓아주세요. 마지막에 수량을 확인하세요.";
+  "ex) 택배 상자를 크기별로 분류하고, 큰 상자는 A구역으로 옮겨주세요. 그리고 5개씩 쌓아주세요. 마지막에 수량을 확인하세요.";
 
 export default function ManagerPage() {
   const [rawInput, setRawInput] = useState(SAMPLE);
@@ -16,6 +17,23 @@ export default function ManagerPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // 1:N — 사업주의 근로자 목록 + 배정 대상 선택 + 인라인 추가
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [selectedWorkerId, setSelectedWorkerId] = useState("");
+  const [newWorkerName, setNewWorkerName] = useState("");
+  const [newWorkerCode, setNewWorkerCode] = useState("");
+
+  useEffect(() => {
+    api.listWorkers()
+      .then((ws) => {
+        setWorkers(ws);
+        if (ws.length) setSelectedWorkerId((cur) => cur || ws[0].id);
+      })
+      .catch(() => {
+        // 근로자 목록 로드 실패는 직무 작성 자체를 막지 않는다.
+      });
+  }, []);
 
   async function handleDecompose() {
     setBusy(true);
@@ -54,6 +72,21 @@ export default function ManagerPage() {
     }
   }
 
+  async function handleDeleteStep(stepId: string) {
+    if (!task) return;
+    if (task.steps.length <= 1) {
+      setError("마지막 단계는 삭제할 수 없습니다.");
+      return;
+    }
+    if (!window.confirm("이 단계를 삭제할까요?")) return;
+    setError(null);
+    try {
+      setTask(await api.deleteStep(task.id, stepId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "단계 삭제에 실패했습니다.");
+    }
+  }
+
   async function handleRemovePhoto(stepId: string) {
     if (!task) return;
     setError(null);
@@ -65,17 +98,64 @@ export default function ManagerPage() {
     }
   }
 
-  async function handlePublishAndAssign() {
-    if (!task) return;
+  async function handleAddWorker() {
+    if (!newWorkerName.trim() || !newWorkerCode.trim()) {
+      setError("근로자 이름과 접속 코드를 입력해 주세요.");
+      return;
+    }
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
-      await api.publish(task.id);
-      await api.assign(task.id);
-      setNotice("게시하고 근로자에게 배정했습니다. ‘근로자 · 오늘 할 일’ 탭에서 확인하세요.");
-      setTask({ ...task, status: "published" });
+      const w = await api.createWorker(newWorkerName.trim(), newWorkerCode.trim());
+      setWorkers((prev) => [...prev, w]);
+      setSelectedWorkerId(w.id);
+      setNewWorkerName("");
+      setNewWorkerCode("");
+      setNotice(`근로자 '${w.display_name}'을(를) 추가했습니다.`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "게시에 실패했습니다.");
+      setError(e instanceof Error ? e.message : "근로자 추가에 실패했습니다.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDeleteWorker(workerId: string, name: string) {
+    if (!window.confirm(`근로자 '${name}'을(를) 삭제할까요?\n이 근로자의 배정·수행 기록도 함께 삭제됩니다.`)) {
+      return;
+    }
+    setError(null);
+    setNotice(null);
+    try {
+      await api.deleteWorker(workerId);
+      const remaining = workers.filter((w) => w.id !== workerId);
+      setWorkers(remaining);
+      if (selectedWorkerId === workerId) setSelectedWorkerId(remaining[0]?.id ?? "");
+      setNotice(`근로자 '${name}'을(를) 삭제했습니다.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "근로자 삭제에 실패했습니다.");
+    }
+  }
+
+  async function handlePublishAndAssign() {
+    if (!task) return;
+    if (!selectedWorkerId) {
+      setError("보낼 근로자를 선택해 주세요.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      if (task.status !== "published") {
+        await api.publish(task.id);
+        setTask({ ...task, status: "published" });
+      }
+      await api.assign(task.id, selectedWorkerId);
+      const w = workers.find((x) => x.id === selectedWorkerId);
+      setNotice(`'${w?.display_name ?? "근로자"}'님에게 보냈습니다. 다른 근로자에게도 보낼 수 있어요.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "게시/배정에 실패했습니다.");
     } finally {
       setBusy(false);
     }
@@ -247,16 +327,97 @@ export default function ManagerPage() {
                     <span>상징: {s.symbol_source === "photo" ? "직접 등록한 사진" : s.symbol_source}</span>
                   </div>
                 </div>
+                <button
+                  onClick={() => handleDeleteStep(s.id)}
+                  disabled={task.steps.length <= 1}
+                  className="mt-1 shrink-0 rounded p-1.5 text-slate-300 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-300"
+                  aria-label={`${s.order}단계 삭제`}
+                  title={task.steps.length <= 1 ? "마지막 단계는 삭제할 수 없습니다" : "이 단계 삭제"}
+                >
+                  <Trash2 size={16} />
+                </button>
               </li>
             ))}
           </ol>
-          <button
-            onClick={handlePublishAndAssign}
-            disabled={busy || task.status === "published"}
-            className="mt-4 rounded-lg bg-green-700 px-4 py-2 font-semibold text-white disabled:opacity-50"
-          >
-            {task.status === "published" ? "배정 완료됨" : "게시하고 근로자에게 보내기"}
-          </button>
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <h3 className="text-sm font-bold text-slate-900">근로자에게 보내기</h3>
+
+            {workers.length > 0 ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <select
+                  value={selectedWorkerId}
+                  onChange={(e) => setSelectedWorkerId(e.target.value)}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                  aria-label="배정할 근로자 선택"
+                >
+                  {workers.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.display_name} (코드 {w.access_code})
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handlePublishAndAssign}
+                  disabled={busy || !selectedWorkerId}
+                  className="rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  {busy ? "처리 중…" : "게시하고 보내기"}
+                </button>
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-slate-500">
+                등록된 근로자가 없습니다. 아래에서 먼저 추가해 주세요.
+              </p>
+            )}
+
+            {/* 인라인 근로자 추가 (1:N) — 별도 관리 화면 없이 여기서 바로 등록 */}
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
+              <input
+                value={newWorkerName} onChange={(e) => setNewWorkerName(e.target.value)}
+                placeholder="새 근로자 이름" aria-label="새 근로자 이름"
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+              <input
+                value={newWorkerCode} onChange={(e) => setNewWorkerCode(e.target.value)}
+                placeholder="접속 코드 (예: 5678)" aria-label="새 근로자 접속 코드"
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+              <button
+                onClick={handleAddWorker}
+                disabled={busy || !newWorkerName.trim() || !newWorkerCode.trim()}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
+              >
+                + 근로자 추가
+              </button>
+            </div>
+
+            {/* 등록된 근로자 목록 + 삭제 */}
+            {workers.length > 0 && (
+              <div className="mt-3 border-t border-slate-200 pt-3">
+                <p className="mb-2 text-xs font-medium text-slate-500">등록된 근로자</p>
+                <ul className="flex flex-wrap gap-2">
+                  {workers.map((w) => (
+                    <li
+                      key={w.id}
+                      className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white py-1 pl-3 pr-1.5 text-sm text-slate-700"
+                    >
+                      <span>
+                        {w.display_name} <span className="text-slate-400">({w.access_code})</span>
+                      </span>
+                      <button
+                        onClick={() => handleDeleteWorker(w.id, w.display_name)}
+                        className="rounded-full p-0.5 text-slate-300 hover:bg-red-50 hover:text-red-600"
+                        aria-label={`근로자 ${w.display_name} 삭제`}
+                        title="근로자 삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </section>
       )}
     </div>

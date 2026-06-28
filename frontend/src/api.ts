@@ -93,6 +93,13 @@ export interface Dashboard {
   steps: StepStat[];
 }
 
+export interface DashboardWorker {
+  worker_id: string;
+  display_name: string;
+  access_code: string;
+  status: string;
+}
+
 export class AuthError extends Error {}
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
@@ -136,6 +143,13 @@ export interface TaskSummary {
   id: string;
   title: string;
   status: string;
+  created_at: string;
+}
+
+export interface Worker {
+  id: string;
+  display_name: string;
+  access_code: string;
 }
 
 export interface TaskContext {
@@ -163,10 +177,14 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ raw_input, ...context }),
     }),
-  coaching: (taskId: string) => req<Coaching>(`/api/dashboard/tasks/${taskId}/coaching`),
+  coaching: (taskId: string, workerId?: string) =>
+    req<Coaching>(`/api/dashboard/tasks/${taskId}/coaching${workerId ? `?worker_id=${workerId}` : ""}`),
   getTask: (id: string) => req<Task>(`/api/tasks/${id}`),
+  deleteTask: (id: string) => req<{ ok: boolean }>(`/api/tasks/${id}`, { method: "DELETE" }),
   updateStep: (taskId: string, stepId: string, patch: Partial<Pick<Step, "sentence" | "symbol_url">>) =>
     req<Step>(`/api/tasks/${taskId}/steps/${stepId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  deleteStep: (taskId: string, stepId: string) =>
+    req<Task>(`/api/tasks/${taskId}/steps/${stepId}`, { method: "DELETE" }),
   publish: (id: string) => req<Task>(`/api/tasks/${id}/publish`, { method: "POST" }),
   uploadStepPhoto: async (taskId: string, stepId: string, file: File): Promise<Step> => {
     const a = getAuth();
@@ -195,6 +213,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ worker_id: worker_id ?? null }),
     }),
+  listWorkers: () => req<Worker[]>("/api/workers"),
+  workerTasks: (workerId: string, date?: string) =>
+    req<TaskSummary[]>(`/api/workers/${workerId}/tasks${date ? `?date=${date}` : ""}`),
+  workerActiveDates: (workerId: string) => req<string[]>(`/api/workers/${workerId}/active-dates`),
+  createWorker: (display_name: string, access_code: string) =>
+    req<Worker>("/api/workers", {
+      method: "POST",
+      body: JSON.stringify({ display_name, access_code }),
+    }),
+  deleteWorker: (id: string) => req<{ ok: boolean }>(`/api/workers/${id}`, { method: "DELETE" }),
   today: () => req<TodayCard[]>("/api/worker/me/today"),
   logStep: (body: {
     assignment_id: string;
@@ -203,7 +231,9 @@ export const api = {
     replay_count: number;
     stuck: boolean;
   }) => req<{ ok: boolean }>("/api/performance-logs", { method: "POST", body: JSON.stringify(body) }),
-  dashboard: (id: string) => req<Dashboard>(`/api/dashboard/tasks/${id}`),
+  dashboard: (id: string, workerId?: string) =>
+    req<Dashboard>(`/api/dashboard/tasks/${id}${workerId ? `?worker_id=${workerId}` : ""}`),
+  dashboardWorkers: (id: string) => req<DashboardWorker[]>(`/api/dashboard/tasks/${id}/workers`),
   searchArasaac: (term: string, langs: string[] = ["en", "es"], limit = 3) =>
     req<ArasaacSearchResult>("/api/arasaac/search", {
       method: "POST",

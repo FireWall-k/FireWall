@@ -10,20 +10,23 @@ export default function WorkerPage() {
   const [cards, setCards] = useState<TodayCard[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [cardIdx, setCardIdx] = useState(0); // 오늘 받은 여러 직무 중 현재 보는 직무
   const [stepIdx, setStepIdx] = useState(0);
   const [replayCount, setReplayCount] = useState(0);
   const [needHelp, setNeedHelp] = useState(false);
-  const stepStartRef = useRef<number>(Date.now());
+  const stepStartRef = useRef<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [allDone, setAllDone] = useState(false);
+  const [jobDone, setJobDone] = useState(false); // 현재 직무 완료(다음 직무 대기)
+  const [allDone, setAllDone] = useState(false); // 오늘 받은 모든 직무 완료
 
   useEffect(() => {
+    stepStartRef.current = Date.now();
     api.today()
       .then((c) => setCards(c))
       .catch((e) => setError(e instanceof AuthError ? "다시 로그인해 주세요." : (e instanceof Error ? e.message : "불러오지 못했습니다.")));
   }, []);
 
-  const card = cards?.[0] ?? null;
+  const card = cards?.[cardIdx] ?? null;
   const step = card?.steps[stepIdx] ?? null;
   const total = card?.steps.length ?? 0;
 
@@ -77,13 +80,27 @@ export default function WorkerPage() {
     audioRef.current?.pause();
     window.speechSynthesis?.cancel();
     if (stepIdx + 1 >= total) {
-      setAllDone(true);
+      // 이 직무의 마지막 단계 완료 → 다음 직무가 있으면 대기 화면, 없으면 전체 완료
+      if (cardIdx + 1 >= (cards?.length ?? 0)) {
+        setAllDone(true);
+      } else {
+        setJobDone(true);
+      }
     } else {
       setStepIdx((i) => i + 1);
       setReplayCount(0);
       setNeedHelp(false);
       stepStartRef.current = Date.now();
     }
+  }
+
+  function startNextJob() {
+    setCardIdx((i) => i + 1);
+    setStepIdx(0);
+    setReplayCount(0);
+    setNeedHelp(false);
+    setJobDone(false);
+    stepStartRef.current = Date.now();
   }
 
   if (error)
@@ -93,6 +110,19 @@ export default function WorkerPage() {
     return (
       <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-slate-600">
         오늘 받은 일이 아직 없어요. 사업주가 일을 보내면 여기에 나타납니다.
+      </div>
+    );
+
+  if (jobDone)
+    return (
+      <div className="rounded-2xl border-2 border-green-600 bg-green-50 p-10 text-center">
+        <div className="text-6xl">👏</div>
+        <p className="mt-4 text-worker-lg font-bold text-green-800">"{card.task_title}" 일을 마쳤어요!</p>
+        <p className="mt-2 text-worker text-green-700">다음 일이 {(cards?.length ?? 0) - cardIdx - 1}개 남았어요.</p>
+        <button onClick={startNextJob}
+          className="mt-6 min-h-touch w-full rounded-2xl bg-green-700 text-worker-lg font-bold text-white">
+          다음 일 시작하기 →
+        </button>
       </div>
     );
 
@@ -107,11 +137,18 @@ export default function WorkerPage() {
 
   return (
     <div className="mx-auto max-w-md">
-      <div className="mb-3 flex items-center justify-between">
-        <span className="text-base font-medium text-slate-500">{card.task_title}</span>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-base font-bold text-slate-700">
-          {progressLabel}
-        </span>
+      <div className="mb-3">
+        {(cards?.length ?? 0) > 1 && (
+          <p className="mb-2 text-center text-base font-bold text-green-700">
+            오늘 할 일 {cards?.length}개 중 {cardIdx + 1}번째
+          </p>
+        )}
+        <div className="flex items-center justify-between">
+          <span className="text-base font-medium text-slate-500">{card.task_title}</span>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-base font-bold text-slate-700">
+            {progressLabel}
+          </span>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">

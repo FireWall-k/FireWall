@@ -1,6 +1,8 @@
 """백엔드 API 입출력 스키마 (프론트엔드 대면 계약)."""
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel, Field, field_validator
 
 MAX_RAW_INPUT = 2000
@@ -49,6 +51,12 @@ class AssignRequest(BaseModel):
     worker_id: str | None = None
 
 
+class WorkerCreate(BaseModel):
+    display_name: str = Field(min_length=1, max_length=50)
+    # 접속 코드는 근로자 로그인 키. 현장 디바이스 공유를 가정한 짧은 코드.
+    access_code: str = Field(min_length=1, max_length=32)
+
+
 class PerformanceLogCreate(BaseModel):
     assignment_id: str
     step_id: str
@@ -86,12 +94,27 @@ class TaskSummaryOut(BaseModel):
     id: str
     title: str
     status: str
+    created_at: datetime
 
 
 class AssignmentOut(BaseModel):
     id: str
     task_id: str
     worker_id: str
+    status: str
+
+
+class WorkerOut(BaseModel):
+    id: str
+    display_name: str
+    access_code: str
+
+
+class DashboardWorkerOut(BaseModel):
+    """대시보드에서 직무별로 어떤 근로자를 볼지 고르기 위한 목록 항목."""
+    worker_id: str
+    display_name: str
+    access_code: str
     status: str
 
 
