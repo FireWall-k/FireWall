@@ -1,0 +1,119 @@
+{
+  "_comment": "직무 분해 평가용 정답셋(사무직·카페 도메인). raw_input은 사업주가 입력하는 원문, expect는 채점 기준. 자유롭게 추가/수정하세요.",
+  "rubric_weights": {
+    "steps_in_range": 1.0,
+    "sentence_brevity": 1.0,
+    "imperative_ending": 1.0,
+    "symbol_query_quality": 1.5,
+    "action_typed": 1.0,
+    "keyword_coverage": 1.5
+  },
+  "brevity_max_chars": 20,
+  "cases": [
+    {
+      "id": "cafe_close",
+      "domain": "cafe",
+      "raw_input": "마감 시간에 테이블을 닦고, 컵을 정리한 뒤 쓰레기를 버려주세요.",
+      "context": {"business_type": "카페", "work_environment": "홀"},
+      "expect": {"min_steps": 3, "max_steps": 4, "must_have_keywords": ["테이블", "컵", "쓰레기"]}
+    },
+    {
+      "id": "cafe_drink",
+      "domain": "cafe",
+      "raw_input": "주문이 들어오면 컵에 얼음을 담고, 음료를 부은 다음 뚜껑을 닫아 손님에게 주세요.",
+      "context": {"business_type": "카페", "work_environment": "바"},
+      "expect": {"min_steps": 4, "max_steps": 5, "must_have_keywords": ["컵", "음료"]}
+    },
+    {
+      "id": "cafe_restock",
+      "domain": "cafe",
+      "raw_input": "냉장고에서 우유를 꺼내 진열대에 채우고, 수량을 확인하세요.",
+      "context": {"business_type": "카페", "work_environment": "창고"},
+      "expect": {"min_steps": 3, "max_steps": 4, "must_have_keywords": ["우유", "수량"]}
+    },
+    {
+      "id": "office_mail",
+      "domain": "office",
+      "raw_input": "도착한 우편물을 부서별로 분류하고, 각 부서 자리에 가져다 놓으세요.",
+      "context": {"business_type": "사무직", "work_environment": "사무실"},
+      "expect": {"min_steps": 2, "max_steps": 3, "must_have_keywords": ["우편물", "분류"]}
+    },
+    {
+      "id": "office_copy",
+      "domain": "office",
+      "raw_input": "서류를 복사기에 넣고 10장씩 복사한 뒤, 클립으로 묶어 책상에 정리해주세요.",
+      "context": {"business_type": "사무직", "work_environment": "사무실"},
+      "expect": {"min_steps": 3, "max_steps": 5, "must_have_keywords": ["서류", "복사"]}
+    },
+    {
+      "id": "office_supply",
+      "domain": "office",
+      "raw_input": "비품 상자에서 볼펜과 메모지를 꺼내 책상마다 한 개씩 놓고, 부족한 것을 확인하세요.",
+      "context": {"business_type": "사무직", "work_environment": "사무실"},
+      "expect": {"min_steps": 3, "max_steps": 4, "must_have_keywords": ["볼펜", "확인"]}
+    },
+    {
+      "id": "cafe_simple_clean",
+      "domain": "cafe",
+      "raw_input": "바닥을 쓸고 닦아주세요.",
+      "context": {"business_type": "카페", "work_environment": "홀"},
+      "expect": {"min_steps": 1, "max_steps": 2, "must_have_keywords": ["바닥"]}
+    },
+    {
+      "id": "office_shred",
+      "domain": "office",
+      "raw_input": "오래된 서류를 모아 파쇄기에 넣어 파쇄하고, 파쇄된 종이를 비닐봉투에 담아 버려주세요.",
+      "context": {"business_type": "사무직", "work_environment": "사무실"},
+      "expect": {"min_steps": 3, "max_steps": 4, "must_have_keywords": ["서류", "종이"]}
+    },
+    {
+      "id": "cafe_dishwash",
+      "domain": "cafe",
+      "raw_input": "사용한 컵과 접시를 물로 씻고, 수건으로 닦아 선반에 올려주세요.",
+      "context": {"business_type": "카페", "work_environment": "바"},
+      "expect": {"min_steps": 3, "max_steps": 4, "must_have_keywords": ["컵", "접시", "수건"]}
+    },
+    {
+      "id": "cafe_open",
+      "domain": "cafe",
+      "raw_input": "앞치마를 입고, 냉장고에서 우유를 꺼내 진열대에 넣어주세요.",
+      "context": {"business_type": "카페", "work_environment": "창고"},
+      "expect": {"min_steps": 2, "max_steps": 3, "must_have_keywords": ["앞치마", "우유"]}
+    },
+    {
+      "id": "cafe_empty_trash",
+      "domain": "cafe",
+      "raw_input": "쓰레기통을 비우고, 빗자루로 바닥을 쓸어주세요.",
+      "context": {"business_type": "카페", "work_environment": "홀"},
+      "expect": {"min_steps": 2, "max_steps": 3, "must_have_keywords": ["쓰레기", "바닥"]}
+    },
+    {
+      "id": "cafe_serve_bread",
+      "domain": "cafe",
+      "raw_input": "빵을 봉투에 담고, 손님에게 주세요.",
+      "context": {"business_type": "카페", "work_environment": "바"},
+      "expect": {"min_steps": 2, "max_steps": 2, "must_have_keywords": ["빵", "봉투"]}
+    },
+    {
+      "id": "office_water",
+      "domain": "office",
+      "raw_input": "컵에 물을 따르고, 책상에 가져다 놓아주세요.",
+      "context": {"business_type": "사무직", "work_environment": "사무실"},
+      "expect": {"min_steps": 2, "max_steps": 3, "must_have_keywords": ["컵", "물"]}
+    },
+    {
+      "id": "office_phone_memo",
+      "domain": "office",
+      "raw_input": "전화가 오면 받고, 종이에 메모하세요.",
+      "context": {"business_type": "사무직", "work_environment": "사무실"},
+      "expect": {"min_steps": 2, "max_steps": 2, "must_have_keywords": ["전화", "종이"]}
+    },
+    {
+      "id": "office_books",
+      "domain": "office",
+      "raw_input": "반납된 책을 모아 책장에 꽂아주세요.",
+      "context": {"business_type": "사무직", "work_environment": "사무실"},
+      "expect": {"min_steps": 2, "max_steps": 3, "must_have_keywords": ["책"]}
+    }
+  ]
+}
