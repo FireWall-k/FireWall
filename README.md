@@ -63,18 +63,17 @@ jobcard-api
 jobcard-ai
 ```
 
-DB와 TTS 캐시는 호스트의 `backend/data/` 폴더에 유지됩니다. 초기화가 필요하면 아래 명령을 실행합니다.
+DB와 TTS 캐시는 Docker named volume `jobcard-data`에 유지됩니다(macOS 바인드 마운트에서 SQLite가 `disk I/O error`를 내는 문제를 피하기 위해 리눅스 VM 내부 볼륨을 사용). 초기화가 필요하면 `-v` 옵션으로 볼륨까지 함께 제거합니다.
+
+```bash
+docker compose down -v
+```
+
+특정 볼륨만 제거하려면 다음을 실행합니다(OS 공통).
 
 ```bash
 docker compose down
-rm -rf backend/data
-```
-
-Windows PowerShell에서는 다음처럼 삭제합니다.
-
-```powershell
-docker compose down
-Remove-Item -Recurse -Force .\backend\data
+docker volume rm jobcard_jobcard-data
 ```
 
 ## AAC: ARASAAC 연동
@@ -84,8 +83,8 @@ Remove-Item -Recurse -Force .\backend\data
 기본 동작:
 
 1. AI 분해 결과의 키워드 후보를 받음
-2. 한국어 직무 용어를 영어/스페인어 후보로 보정
-3. `ARASAAC_LANGS=en,es` 순서로 검색
+2. 한국어 직무 용어를 영어 후보로 보정(`symbols.py`의 한국어→영어 사전)
+3. `ARASAAC_LANGS=en`으로 검색(LLM이 symbol_query를 한국어·영어로 함께 제공)
 4. 성공하면 `https://api.arasaac.org/v1/pictograms/{id}?download=false` 이미지를 사용
 5. 실패하면 `needs_fallback=true`로 반환하여 사업주 사진 등록 흐름으로 넘길 수 있음
 
@@ -93,10 +92,10 @@ Remove-Item -Recurse -Force .\backend\data
 
 ```env
 ARASAAC_API_BASE=https://api.arasaac.org
-ARASAAC_LANGS=en,es
-ARASAAC_SEARCH_TIMEOUT=1.5
-ARASAAC_KEYWORD_SEARCH_LIMIT=4
-ARASAAC_TERM_SEARCH_LIMIT=3
+ARASAAC_LANGS=en
+ARASAAC_SEARCH_TIMEOUT=2.5          # ARASAAC 응답이 ~1초 걸려 넉넉히 둠(0.5초는 자주 타임아웃)
+ARASAAC_KEYWORD_SEARCH_LIMIT=2      # 한국어가 안 잡히면 영어 백업 검색까지 시도
+ARASAAC_TERM_SEARCH_LIMIT=1
 ```
 
 ## TTS: Google Cloud Text-to-Speech API
@@ -185,7 +184,7 @@ npm run dev
 ```bash
 curl -X POST http://localhost:8000/api/arasaac/search \
     -H "Content-Type: application/json" \
-    -d '{"term":"box","langs":["en","es"],"limit":3}'
+    -d '{"term":"box","langs":["en"],"limit":3}'
 ```
 
 응답 예시:
@@ -223,7 +222,7 @@ curl -X POST http://localhost:8000/api/arasaac/search \
 
 | 영역 | 현재 상태 | 다음 고도화 |
 | --- | --- | --- |
-| LLM 분해 | **구현됨**: OPENAI_API_KEY 설정 시 맥락적응 LLM 분해(업종·환경·근로자 특성 반영, 구체 명사 symbol_query 생성). 미설정 시 규칙 기반 폴백 | 프롬프트 튜닝, 다중 모델, 분해 품질 평가셋 |
+| LLM 분해 | **구현됨**: OPENAI_API_KEY 설정 시 맥락적응 LLM 분해(업종·환경·근로자 특성 반영, 구체 명사 symbol_query 생성). 미설정 시 규칙 기반 폴백. **분해 품질 평가 하네스(`ai_service/eval/`)로 정량 채점** | 프롬프트 튜닝 자동화, 다중 모델 비교 |
 | AAC 상징 | ARASAAC 검색 연동 + 한국어 후보 사전 | 자체 사진 DB/상징 후보 선택 UI 추가 |
 | TTS | Google Cloud TTS API 연동, 실패 시 브라우저 fallback | 음성 선택 UI, SSML 발음 보정 추가 |
 | 인증 | **구현됨**: 토큰 기반 로그인 + 역할(사업주/근로자) + 자원 소유권 검사 | 관리자 역할, 비밀번호 정책, 리프레시 토큰 |
@@ -275,7 +274,7 @@ GET  /api/dashboard/tasks/{id} # (사업주) 집계
 1. **맥락적응 직무 분해(기능 1)** — 직무 생성 시 업종·작업 환경·근로자 특성을 함께 보내면, LLM이 한 단계=한 동작의 명령형 문장과 AAC 그림 검색용 구체 명사(symbol_query)를 생성합니다. 고정 키워드 매핑보다 상징 적중률이 올라갑니다.
 2. **사업주 AI 코칭(기능 2)** — 근로자의 막힘·다시듣기·소요시간을 분석해 단계별 개선책(문장 쉽게/사진 교체/단계 분할)을 제안합니다.
 
-상징(그림) 검색 품질도 개선했습니다: ARASAAC `bestsearch` 우선 사용 + 검색어와 키워드가 정확히 일치하는 픽토그램 우선 선택(첫 결과 무비판 사용 제거) + 다국어 검색(`ko,en,es`). LLM은 `symbol_query`를 한국어·영어로 함께 제공해 한국어 픽토그램 적중률을 높입니다. 단일 객체 픽토그램의 한계를 보완하기 위해, **단계별 실제 사진 업로드**도 구현했습니다(기능 5). 사업주가 검토 화면에서 현장 사진을 올리면 ARASAAC 자동 상징을 대체하며, 매직바이트 검증·UUID 파일명·5MB 상한으로 안전하게 저장됩니다(jpg/png/webp/gif, SVG 불허).
+상징(그림) 검색 품질도 개선했습니다: ARASAAC `bestsearch` 우선 사용 + 검색어와 키워드가 정확히 일치하는 픽토그램 우선 선택(첫 결과 무비판 사용 제거) + 영어 픽토그램 검색(`en`). LLM은 `symbol_query`를 한국어·영어로 함께 제공하고, 한국어가 안 잡히면 영어 후보를 백업으로 검색해 픽토그램 적중률을 높입니다. 단일 객체 픽토그램의 한계를 보완하기 위해, **단계별 실제 사진 업로드**도 구현했습니다(기능 5). 사업주가 검토 화면에서 현장 사진을 올리면 ARASAAC 자동 상징을 대체하며, 매직바이트 검증·UUID 파일명·5MB 상한으로 안전하게 저장됩니다(jpg/png/webp/gif, SVG 불허).
 
 또한 **동작 시각화**(기능 4)로, 단계의 동작(확인/옮기기/쌓기/분류/담기/청소)을 색·아이콘·라벨 칩으로 그림 위에 표시합니다. 같은 객체 그림이라도 동작이 구분되며, 결정론적이라(네트워크 의존 없음) 폴백 상징에도 항상 적용됩니다.
 
