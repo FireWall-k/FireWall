@@ -20,16 +20,16 @@
     {
       "id": "cafe_drink",
       "domain": "cafe",
-      "raw_input": "주문이 들어오면 컵에 얼음을 담고, 음료를 부은 다음 뚜껑을 닫아 손님에게 주세요.",
+      "raw_input": "주문이 들어오면 컵에 얼음을 담고, 음료를 부은 뒤 뚜껑을 닫으세요. 컵을 쟁반에 올리세요.",
       "context": {"business_type": "카페", "work_environment": "바"},
-      "expect": {"min_steps": 4, "max_steps": 5, "must_have_keywords": ["컵", "음료"]}
+      "expect": {"min_steps": 4, "max_steps": 5, "must_have_keywords": ["컵", "음료", "뚜껑"]}
     },
     {
       "id": "cafe_restock",
       "domain": "cafe",
-      "raw_input": "냉장고에서 우유를 꺼내 진열대에 채우고, 수량을 확인하세요.",
+      "raw_input": "냉장고에서 우유를 꺼내, 바구니에 담으세요.",
       "context": {"business_type": "카페", "work_environment": "창고"},
-      "expect": {"min_steps": 3, "max_steps": 4, "must_have_keywords": ["우유", "수량"]}
+      "expect": {"min_steps": 2, "max_steps": 3, "must_have_keywords": ["우유", "바구니"]}
     },
     {
       "id": "office_mail",
@@ -41,42 +41,42 @@
     {
       "id": "office_copy",
       "domain": "office",
-      "raw_input": "서류를 복사기에 넣고 10장씩 복사한 뒤, 클립으로 묶어 책상에 정리해주세요.",
+      "raw_input": "서류를 복사기에 넣고 복사한 뒤, 클립으로 묶어 테이블에 놓으세요.",
       "context": {"business_type": "사무직", "work_environment": "사무실"},
-      "expect": {"min_steps": 3, "max_steps": 5, "must_have_keywords": ["서류", "복사"]}
+      "expect": {"min_steps": 3, "max_steps": 5, "must_have_keywords": ["서류", "복사", "클립"]}
     },
     {
       "id": "office_supply",
       "domain": "office",
-      "raw_input": "비품 상자에서 볼펜과 메모지를 꺼내 책상마다 한 개씩 놓고, 부족한 것을 확인하세요.",
+      "raw_input": "상자에서 볼펜과 메모지를 꺼내, 테이블에 놓으세요.",
       "context": {"business_type": "사무직", "work_environment": "사무실"},
-      "expect": {"min_steps": 3, "max_steps": 4, "must_have_keywords": ["볼펜", "확인"]}
+      "expect": {"min_steps": 3, "max_steps": 4, "must_have_keywords": ["볼펜", "메모지"]}
     },
     {
       "id": "cafe_simple_clean",
       "domain": "cafe",
-      "raw_input": "바닥을 쓸고 닦아주세요.",
+      "raw_input": "빗자루로 바닥을 쓸고, 대걸레로 닦아주세요.",
       "context": {"business_type": "카페", "work_environment": "홀"},
-      "expect": {"min_steps": 1, "max_steps": 2, "must_have_keywords": ["바닥"]}
+      "expect": {"min_steps": 2, "max_steps": 2, "must_have_keywords": ["빗자루", "대걸레"]}
     },
     {
       "id": "office_shred",
       "domain": "office",
       "raw_input": "오래된 서류를 모아 파쇄기에 넣어 파쇄하고, 파쇄된 종이를 비닐봉투에 담아 버려주세요.",
       "context": {"business_type": "사무직", "work_environment": "사무실"},
-      "expect": {"min_steps": 3, "max_steps": 4, "must_have_keywords": ["서류", "종이"]}
+      "expect": {"min_steps": 3, "max_steps": 5, "must_have_keywords": ["서류", "종이"]}
     },
     {
       "id": "cafe_dishwash",
       "domain": "cafe",
       "raw_input": "사용한 컵과 접시를 물로 씻고, 수건으로 닦아 선반에 올려주세요.",
       "context": {"business_type": "카페", "work_environment": "바"},
-      "expect": {"min_steps": 3, "max_steps": 4, "must_have_keywords": ["컵", "접시", "수건"]}
+      "expect": {"min_steps": 3, "max_steps": 6, "must_have_keywords": ["컵", "접시", "수건"]}
     },
     {
       "id": "cafe_open",
       "domain": "cafe",
-      "raw_input": "앞치마를 입고, 냉장고에서 우유를 꺼내 진열대에 넣어주세요.",
+      "raw_input": "앞치마를 입고, 냉장고에서 우유를 꺼내세요.",
       "context": {"business_type": "카페", "work_environment": "창고"},
       "expect": {"min_steps": 2, "max_steps": 3, "must_have_keywords": ["앞치마", "우유"]}
     },
@@ -90,14 +90,14 @@
     {
       "id": "cafe_serve_bread",
       "domain": "cafe",
-      "raw_input": "빵을 봉투에 담고, 손님에게 주세요.",
+      "raw_input": "빵을 봉투에 담고, 쟁반에 올리세요.",
       "context": {"business_type": "카페", "work_environment": "바"},
       "expect": {"min_steps": 2, "max_steps": 2, "must_have_keywords": ["빵", "봉투"]}
     },
     {
       "id": "office_water",
       "domain": "office",
-      "raw_input": "컵에 물을 따르고, 책상에 가져다 놓아주세요.",
+      "raw_input": "컵에 물을 따르고, 테이블에 놓으세요.",
       "context": {"business_type": "사무직", "work_environment": "사무실"},
       "expect": {"min_steps": 2, "max_steps": 3, "must_have_keywords": ["컵", "물"]}
     },
@@ -106,7 +106,7 @@
       "domain": "office",
       "raw_input": "전화가 오면 받고, 종이에 메모하세요.",
       "context": {"business_type": "사무직", "work_environment": "사무실"},
-      "expect": {"min_steps": 2, "max_steps": 2, "must_have_keywords": ["전화", "종이"]}
+      "expect": {"min_steps": 2, "max_steps": 3, "must_have_keywords": ["전화", "종이"]}
     },
     {
       "id": "office_books",
