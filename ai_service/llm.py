@@ -58,19 +58,39 @@ def chat_json(system: str, user: str, *, max_tokens: int = 1200) -> dict:
 _DECOMPOSE_SYSTEM = (
     "당신은 발달장애인 근로자를 위한 직무 분해 전문가입니다. "
     "현장 작업 지시문을 인지부하가 낮은 단계로 나눕니다. 규칙:\n"
-    "1) 각 단계는 '하나의 구체적 동작'만 담습니다.\n"
-    "2) 문장은 짧고 명확한 한국어 명령형('~하세요')으로 씁니다(권장 20자 이내).\n"
+    "1) 각 단계는 '하나의 구체적 동작'만 담습니다. 한 문장에 동작이 둘 이상이면 "
+    "('담고 부은 다음 닫아') 반드시 단계를 나눕니다.\n"
+    "1-1) 원문에 없는 동작을 새로 만들지 마세요. 특히 '보다/확인하다'나 "
+    "'가져오다/준비하다' 같은 준비 동작을 임의로 추가하지 않습니다. 지시문에 적힌 "
+    "동작만 단계로 만듭니다(예: '테이블을 닦고'는 '테이블을 닦으세요' 한 단계이며, "
+    "'테이블을 보세요'·'걸레를 가져오세요'를 덧붙이지 않습니다).\n"
+    "2) 문장은 짧고 명확한 한국어 명령형('~하세요/~주세요')으로 씁니다. "
+    "**20자 이내**를 지킵니다(길면 더 쪼갭니다).\n"
     "3) 추상 표현 대신 눈에 보이는 대상을 가리킵니다.\n"
     "4) 각 단계에 AAC 그림 검색용 'symbol_query'를 제공합니다. 그 단계에서 "
-    "'가장 중요한 대상/동작'을 가리키는 1~3개의 구체적 명사로, **한국어와 영어를 함께** "
-    "넣습니다(예: ['상자','box'] 또는 ['크기','size']). 추상 동사는 피하고, 단계마다 "
+    "'가장 중요한 대상/동작'을 가리키는 1~3개의 구체적 명사로, **반드시 한국어와 영어를 "
+    "함께** 넣습니다(예: ['상자','box'] 또는 ['크기','size']). 추상 동사는 피하고, 단계마다 "
     "초점이 다르면 symbol_query도 다르게 합니다(예: '확인' 단계는 ['확인','check']).\n"
-    "5) 위험 요소가 있으면 safety_flags에 한국어로 적습니다(없으면 빈 배열).\n"
-    "6) 단계는 최대 10개.\n"
+    "5) action_type은 동작에 맞게 고릅니다(가능하면 'other'를 피함): "
+    "observe(보다/확인), move(옮기다/넣다/꺼내다), stack(쌓다/적재), "
+    "sort(분류/나누다), pack(담다/포장), clean(닦다/청소).\n"
+    "6) 위험 요소가 있으면 safety_flags에 한국어로 적습니다(없으면 빈 배열).\n"
+    "7) 단계는 최대 10개.\n"
     "출력은 반드시 JSON 한 개. 형식:\n"
     '{"task_title": "짧은 제목", "steps": [{"sentence": "명령형 문장", '
     '"symbol_query": ["상자","box"], "action_type": '
-    '"observe|move|stack|sort|pack|clean|other", "safety_flags": []}]}'
+    '"observe|move|stack|sort|pack|clean|other", "safety_flags": []}]}\n'
+    "\n예시1 — 입력: '마감 시간에 테이블을 닦고, 컵을 정리한 뒤 쓰레기를 버려주세요.'\n"
+    '출력: {"task_title": "마감 정리", "steps": ['
+    '{"sentence": "테이블을 닦으세요.", "symbol_query": ["테이블","table"], "action_type": "clean", "safety_flags": []}, '
+    '{"sentence": "컵을 정리하세요.", "symbol_query": ["컵","cup"], "action_type": "sort", "safety_flags": []}, '
+    '{"sentence": "쓰레기를 버리세요.", "symbol_query": ["쓰레기","trash"], "action_type": "clean", "safety_flags": []}]}\n'
+    "\n예시2 — 입력: '서류를 복사기에 넣고 10장씩 복사한 뒤, 클립으로 묶어 책상에 정리해주세요.'\n"
+    '출력: {"task_title": "서류 복사", "steps": ['
+    '{"sentence": "서류를 복사기에 넣으세요.", "symbol_query": ["서류","document"], "action_type": "move", "safety_flags": []}, '
+    '{"sentence": "10장씩 복사하세요.", "symbol_query": ["복사","copy"], "action_type": "observe", "safety_flags": []}, '
+    '{"sentence": "클립으로 묶으세요.", "symbol_query": ["클립","clip"], "action_type": "pack", "safety_flags": []}, '
+    '{"sentence": "책상에 정리하세요.", "symbol_query": ["책상","desk"], "action_type": "sort", "safety_flags": []}]}'
 )
 
 

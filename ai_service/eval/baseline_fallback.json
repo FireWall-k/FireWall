@@ -1,0 +1,201 @@
+{
+  "mode": "규칙기반 폴백(LLM 키 없음)",
+  "total": 60.2,
+  "cases": [
+    {
+      "id": "cafe_close",
+      "score": 57.1,
+      "n_steps": 2,
+      "metrics": {
+        "steps_in_range": 0.0,
+        "sentence_brevity": 1.0,
+        "imperative_ending": 0.5,
+        "symbol_query_quality": 0.0,
+        "action_typed": 1.0,
+        "keyword_coverage": 1.0
+      }
+    },
+    {
+      "id": "cafe_drink",
+      "score": 59.5,
+      "n_steps": 3,
+      "metrics": {
+        "steps_in_range": 0.0,
+        "sentence_brevity": 1.0,
+        "imperative_ending": 0.6666666666666666,
+        "symbol_query_quality": 0.0,
+        "action_typed": 1.0,
+        "keyword_coverage": 1.0
+      }
+    },
+    {
+      "id": "cafe_restock",
+      "score": 50.0,
+      "n_steps": 1,
+      "metrics": {
+        "steps_in_range": 0.0,
+        "sentence_brevity": 0.0,
+        "imperative_ending": 1.0,
+        "symbol_query_quality": 0.0,
+        "action_typed": 1.0,
+        "keyword_coverage": 1.0
+      }
+    },
+    {
+      "id": "office_mail",
+      "score": 71.4,
+      "n_steps": 2,
+      "metrics": {
+        "steps_in_range": 1.0,
+        "sentence_brevity": 1.0,
+        "imperative_ending": 0.5,
+        "symbol_query_quality": 0.0,
+        "action_typed": 1.0,
+        "keyword_coverage": 1.0
+      }
+    },
+    {
+      "id": "office_copy",
+      "score": 57.1,
+      "n_steps": 2,
+      "metrics": {
+        "steps_in_range": 0.0,
+        "sentence_brevity": 1.0,
+        "imperative_ending": 0.5,
+        "symbol_query_quality": 0.0,
+        "action_typed": 1.0,
+        "keyword_coverage": 1.0
+      }
+    },
+    {
+      "id": "office_supply",
+      "score": 50.0,
+      "n_steps": 1,
+      "metrics": {
+        "steps_in_range": 0.0,
+        "sentence_brevity": 0.0,
+        "imperative_ending": 1.0,
+        "symbol_query_quality": 0.0,
+        "action_typed": 1.0,
+        "keyword_coverage": 1.0
+      }
+    },
+    {
+      "id": "cafe_simple_clean",
+      "score": 64.3,
+      "n_steps": 2,
+      "metrics": {
+        "steps_in_range": 1.0,
+        "sentence_brevity": 1.0,
+        "imperative_ending": 0.5,
+        "symbol_query_quality": 0.0,
+        "action_typed": 0.5,
+        "keyword_coverage": 1.0
+      }
+    },
+    {
+      "id": "office_shred",
+      "score": 42.9,
+      "n_steps": 2,
+      "metrics": {
+        "steps_in_range": 0.0,
+        "sentence_brevity": 0.0,
+        "imperative_ending": 0.5,
+        "symbol_query_quality": 0.0,
+        "action_typed": 1.0,
+        "keyword_coverage": 1.0
+      }
+    },
+    {
+      "id": "cafe_dishwash",
+      "score": 57.1,
+      "n_steps": 2,
+      "metrics": {
+        "steps_in_range": 0.0,
+        "sentence_brevity": 1.0,
+        "imperative_ending": 0.5,
+        "symbol_query_quality": 0.0,
+        "action_typed": 1.0,
+        "keyword_coverage": 1.0
+      }
+    },
+    {
+      "id": "cafe_open",
+      "score": 64.3,
+      "n_steps": 2,
+      "metrics": {
+        "steps_in_range": 1.0,
+        "sentence_brevity": 1.0,
+        "imperative_ending": 0.5,
+        "symbol_query_quality": 0.0,
+        "action_typed": 0.5,
+        "keyword_coverage": 1.0
+      }
+    },
+    {
+      "id": "cafe_empty_trash",
+      "score": 64.3,
+      "n_steps": 2,
+      "metrics": {
+        "steps_in_range": 1.0,
+        "sentence_brevity": 1.0,
+        "imperative_ending": 0.5,
+        "symbol_query_quality": 0.0,
+        "action_typed": 0.5,
+        "keyword_coverage": 1.0
+      }
+    },
+    {
+      "id": "cafe_serve_bread",
+      "score": 71.4,
+      "n_steps": 2,
+      "metrics": {
+        "steps_in_range": 1.0,
+        "sentence_brevity": 1.0,
+        "imperative_ending": 0.5,
+        "symbol_query_quality": 0.0,
+        "action_typed": 1.0,
+        "keyword_coverage": 1.0
+      }
+    },
+    {
+      "id": "office_water",
+      "score": 64.3,
+      "n_steps": 2,
+      "metrics": {
+        "steps_in_range": 1.0,
+        "sentence_brevity": 1.0,
+        "imperative_ending": 0.5,
+        "symbol_query_quality": 0.0,
+        "action_typed": 0.5,
+        "keyword_coverage": 1.0
+      }
+    },
+    {
+      "id": "office_phone_memo",
+      "score": 64.3,
+      "n_steps": 2,
+      "metrics": {
+        "steps_in_range": 1.0,
+        "sentence_brevity": 1.0,
+        "imperative_ending": 0.5,
+        "symbol_query_quality": 0.0,
+        "action_typed": 0.5,
+        "keyword_coverage": 1.0
+      }
+    },
+    {
+      "id": "office_books",
+      "score": 64.3,
+      "n_steps": 1,
+      "metrics": {
+        "steps_in_range": 0.0,
+        "sentence_brevity": 1.0,
+        "imperative_ending": 1.0,
+        "symbol_query_quality": 0.0,
+        "action_typed": 1.0,
+        "keyword_coverage": 1.0
+      }
+    }
+  ]
+}

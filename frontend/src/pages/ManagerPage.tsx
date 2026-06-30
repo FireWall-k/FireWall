@@ -4,10 +4,10 @@ import { api, type Task, type Worker } from "../api";
 import { ActionChip } from "../actions";
 
 const SAMPLE =
-  "ex) 택배 상자를 크기별로 분류하고, 큰 상자는 A구역으로 옮겨주세요. 그리고 5개씩 쌓아주세요. 마지막에 수량을 확인하세요.";
+  "예: 택배 상자를 크기별로 분류하고, 큰 상자는 A구역으로 옮겨주세요. 그리고 5개씩 쌓아주세요. 마지막에 수량을 확인하세요.";
 
 export default function ManagerPage() {
-  const [rawInput, setRawInput] = useState(SAMPLE);
+  const [rawInput, setRawInput] = useState("");
   const [businessType, setBusinessType] = useState("");
   const [workEnvironment, setWorkEnvironment] = useState("");
   const [workerNote, setWorkerNote] = useState("");
@@ -185,6 +185,7 @@ export default function ManagerPage() {
           rows={4}
           value={rawInput}
           onChange={(e) => setRawInput(e.target.value)}
+          placeholder={SAMPLE}
           aria-label="직무 내용"
         />
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">

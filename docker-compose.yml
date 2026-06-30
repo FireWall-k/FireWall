@@ -12,8 +12,11 @@ services:
       PYTHONUNBUFFERED: "1"
       ARASAAC_API_BASE: "https://api.arasaac.org"
       ARASAAC_LANGS: "en"
-      ARASAAC_SEARCH_TIMEOUT: "0.5"
-      ARASAAC_KEYWORD_SEARCH_LIMIT: "1"
+      # ARASAAC 응답이 보통 ~1초 걸려 0.5초로는 자주 타임아웃→빈 이미지가 됐다. 넉넉히 둔다.
+      ARASAAC_SEARCH_TIMEOUT: "2.5"
+      # 2로 두면 symbol_query의 [한국어, 영어] 중 한국어가 ARASAAC에서 안 잡혀도
+      # 영어 단어를 백업으로 검색해 이미지를 찾는다(빈 이미지 fallback 최소화).
+      ARASAAC_KEYWORD_SEARCH_LIMIT: "2"
       ARASAAC_TERM_SEARCH_LIMIT: "1"
       # OpenAI(LLM) — 키가 있으면 맥락적응 분해 + AI 코칭이 켜지고, 없으면 규칙 기반 폴백.
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
@@ -52,7 +55,9 @@ services:
       PHOTO_DIR: "/app/data/photos"
       MAX_PHOTO_BYTES: "5242880"
     volumes:
-      - ./backend/data:/app/data
+      # SQLite는 macOS 바인드 마운트(VirtioFS)에서 'disk I/O error'를 내므로
+      # DB/사진/TTS 데이터는 Docker named volume에 둔다(리눅스 VM 내부 I/O로 회피).
+      - jobcard-data:/app/data
       # Google 서비스 계정 JSON 파일을 ./secrets/google-tts.json 위치에 넣으세요.
       # 이 파일은 ZIP에 포함하지 않았고, .gitignore로 제외되어야 합니다.
       - ./secrets:/app/secrets:ro
@@ -78,3 +83,6 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+
+volumes:
+  jobcard-data:

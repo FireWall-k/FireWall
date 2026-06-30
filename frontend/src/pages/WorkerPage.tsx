@@ -44,9 +44,9 @@ export default function WorkerPage() {
     window.speechSynthesis.speak(u);
   }
 
-  function playTts() {
+  // 실제 음성 재생만 담당(다시듣기 카운트와 분리 → 자동재생이 stuck 신호를 오염시키지 않음).
+  function playStep() {
     if (!step) return;
-    setReplayCount((n) => n + 1);
     if (step.tts_audio_url) {
       window.speechSynthesis?.cancel();
       audioRef.current?.pause();
@@ -57,6 +57,19 @@ export default function WorkerPage() {
     }
     playBrowserTts(step.sentence);
   }
+
+  // '다시 듣기' 버튼: 사용자가 직접 누른 재생이므로 replayCount를 올린다.
+  function playTts() {
+    setReplayCount((n) => n + 1);
+    playStep();
+  }
+
+  // 단계가 바뀌면(첫 진입 포함) 다시듣기를 누르지 않아도 1회 자동 재생한다.
+  useEffect(() => {
+    if (!step) return;
+    playStep();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step?.id]);
 
   async function completeStep() {
     if (!card || !step) return;
