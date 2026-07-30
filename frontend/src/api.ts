@@ -185,6 +185,13 @@ export const api = {
     req<Step>(`/api/tasks/${taskId}/steps/${stepId}`, { method: "PATCH", body: JSON.stringify(patch) }),
   deleteStep: (taskId: string, stepId: string) =>
     req<Task>(`/api/tasks/${taskId}/steps/${stepId}`, { method: "DELETE" }),
+  addStep: (taskId: string, sentence: string) =>
+    req<Task>(`/api/tasks/${taskId}/steps`, { method: "POST", body: JSON.stringify({ sentence }) }),
+  reorderSteps: (taskId: string, stepIds: string[]) =>
+    req<Task>(`/api/tasks/${taskId}/steps/reorder`, {
+      method: "PATCH",
+      body: JSON.stringify({ step_ids: stepIds }),
+    }),
   publish: (id: string) => req<Task>(`/api/tasks/${id}/publish`, { method: "POST" }),
   uploadStepPhoto: async (taskId: string, stepId: string, file: File): Promise<Step> => {
     const a = getAuth();

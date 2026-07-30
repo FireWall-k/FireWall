@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { api, type Task, type Worker } from "../api";
 import { ActionChip } from "../actions";
 
@@ -23,6 +23,11 @@ export default function ManagerPage() {
   const [selectedWorkerId, setSelectedWorkerId] = useState("");
   const [newWorkerName, setNewWorkerName] = useState("");
   const [newWorkerCode, setNewWorkerCode] = useState("");
+
+  // 단계 드래그 정렬 + 단계 직접 추가
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [newStepSentence, setNewStepSentence] = useState("");
 
   useEffect(() => {
     api.listWorkers()
@@ -84,6 +89,40 @@ export default function ManagerPage() {
       setTask(await api.deleteStep(task.id, stepId));
     } catch (e) {
       setError(e instanceof Error ? e.message : "단계 삭제에 실패했습니다.");
+    }
+  }
+
+  // 드래그로 놓았을 때: 로컬 순서를 즉시 반영(낙관적)하고 서버에 확정 요청.
+  async function handleDropOn(toIndex: number) {
+    const from = dragIndex;
+    setDragIndex(null);
+    setDragOverIndex(null);
+    if (from === null || from === toIndex || !task) return;
+    const reordered = [...task.steps];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(toIndex, 0, moved);
+    const prev = task;
+    setTask({ ...task, steps: reordered.map((s, i) => ({ ...s, order: i + 1 })) });
+    setError(null);
+    try {
+      setTask(await api.reorderSteps(task.id, reordered.map((s) => s.id)));
+    } catch (e) {
+      setTask(prev); // 실패 시 원래 순서로 원복
+      setError(e instanceof Error ? e.message : "순서 변경에 실패했습니다.");
+    }
+  }
+
+  async function handleAddStep() {
+    if (!task || !newStepSentence.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      setTask(await api.addStep(task.id, newStepSentence.trim()));
+      setNewStepSentence("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "단계 추가에 실패했습니다.");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -275,14 +314,38 @@ export default function ManagerPage() {
             검토 · 수정 <span className="text-sm font-normal text-slate-500">({task.steps.length}단계)</span>
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            근로자가 보게 될 화면과 같은 순서입니다. 문장을 다듬을 수 있습니다.
+            근로자가 보게 될 화면과 같은 순서입니다. 손잡이를 끌어 순서를 바꾸고, 문장을 다듬거나 단계를 추가할 수 있습니다.
           </p>
           <ol className="mt-3 space-y-3">
-            {task.steps.map((s) => (
+            {task.steps.map((s, idx) => (
               <li
                 key={s.id}
-                className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragOverIndex !== idx) setDragOverIndex(idx);
+                }}
+                onDrop={() => handleDropOn(idx)}
+                className={
+                  "flex items-start gap-2 rounded-lg border bg-white p-3 transition-colors " +
+                  (dragOverIndex === idx && dragIndex !== null && dragIndex !== idx
+                    ? "border-blue-400 ring-2 ring-blue-200 "
+                    : "border-slate-200 ") +
+                  (dragIndex === idx ? "opacity-50" : "")
+                }
               >
+                <span
+                  draggable
+                  onDragStart={() => setDragIndex(idx)}
+                  onDragEnd={() => {
+                    setDragIndex(null);
+                    setDragOverIndex(null);
+                  }}
+                  className="mt-1 cursor-grab text-slate-300 hover:text-slate-500 active:cursor-grabbing"
+                  aria-label={`${s.order}단계 순서 이동 손잡이`}
+                  title="드래그해서 순서 변경"
+                >
+                  <GripVertical size={18} />
+                </span>
                 <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700">
                   {s.order}
                 </span>
@@ -340,6 +403,28 @@ export default function ManagerPage() {
               </li>
             ))}
           </ol>
+
+          {/* 단계 직접 추가 — 문장을 입력하면 서버가 상징·음성을 붙여 맨 끝에 추가한다 */}
+          <div className="mt-3 flex items-center gap-2">
+            <input
+              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-base"
+              value={newStepSentence}
+              onChange={(e) => setNewStepSentence(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAddStep();
+              }}
+              placeholder="단계 문장을 입력해 추가 (예: 바닥을 쓸어주세요)"
+              aria-label="새 단계 문장"
+            />
+            <button
+              onClick={handleAddStep}
+              disabled={busy || !newStepSentence.trim()}
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
+            >
+              <Plus size={16} /> 단계 추가
+            </button>
+          </div>
+
           <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
             <h3 className="text-sm font-bold text-slate-900">근로자에게 보내기</h3>
 

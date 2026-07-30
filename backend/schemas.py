@@ -46,6 +46,24 @@ class StepUpdate(BaseModel):
     symbol_url: str | None = Field(default=None, max_length=2000)
 
 
+class StepCreate(BaseModel):
+    # 사업주가 검토 화면에서 직접 추가하는 단계. 문장만 받고, 상징/TTS는 서버가 붙인다.
+    sentence: str = Field(min_length=1, max_length=500)
+    action_type: str = Field(default="other", max_length=20)
+
+    @field_validator("sentence")
+    @classmethod
+    def _not_blank(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("문장을 입력해 주세요.")
+        return v
+
+
+class StepReorder(BaseModel):
+    # 새 순서대로 나열된 단계 id 전체. 서버가 이 순서로 order_index를 1..N 재부여한다.
+    step_ids: list[str] = Field(min_length=1)
+
+
 class AssignRequest(BaseModel):
     # 미지정 시 사업주의 근로자가 정확히 1명일 때만 자동 배정한다.
     worker_id: str | None = None

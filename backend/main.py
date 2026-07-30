@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import os
+import re
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -46,7 +47,9 @@ from schemas import (
     DashboardWorkerOut,
     EmployerLogin,
     PerformanceLogCreate,
+    StepCreate,
     StepOut,
+    StepReorder,
     StepStat,
     StepUpdate,
     TaskCreate,
@@ -255,6 +258,19 @@ def delete_worker(worker_id: str, db: Session = Depends(get_db),
 
 
 # --- 사업주: 직무 생성(AI 분해 트리거) ---
+def _pick_symbol(terms: list[str]) -> dict:
+    """상징 후보 term들로 ARASAAC를 조회해 가장 적합한 상징 1개를 고른다.
+
+    폴백이 아닌(이미지가 있는) 첫 상징을 우선하고, 없으면 첫 후보를 사용한다.
+    직무 최초 생성(create_task)과 단계 수동 추가(add_step)가 함께 쓴다.
+    """
+    symbols = ai_client.map_symbols(terms[:4]).get("symbols", [])
+    sym = next((s for s in symbols if not s.get("needs_fallback") and s.get("image_url")), None)
+    if sym is None:
+        sym = symbols[0] if symbols else {}
+    return sym
+
+
 @app.post("/api/tasks", response_model=TaskOut, status_code=201)
 def create_task(payload: TaskCreate, db: Session = Depends(get_db),
                 user: dict = Depends(require_employer)) -> TaskOut:
@@ -278,10 +294,7 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
         # LLM이 제공한 구체 명사(symbol_query)를 우선 사용, 없으면 키워드로 폴백.
         symbol_terms = step.get("symbol_query") or [k["term"] for k in step.get("keywords", [])]
         symbol_terms = symbol_terms[:4] or [sentence[:12]]
-        symbols = ai_client.map_symbols(symbol_terms).get("symbols", [])
-        sym = next((s for s in symbols if not s.get("needs_fallback") and s.get("image_url")), None)
-        if sym is None:
-            sym = symbols[0] if symbols else {}
+        sym = _pick_symbol(symbol_terms)
         db.add(Step(
             task_id=task.id, order_index=step["order"], sentence=sentence,
             action_type=step.get("action_type", "other"),
@@ -328,6 +341,52 @@ def delete_task(task_id: str, db: Session = Depends(get_db),
     db.delete(task)  # Step은 Task.steps의 cascade="all, delete-orphan"으로 함께 삭제됨
     db.commit()
     return {"ok": True}
+
+
+@app.post("/api/tasks/{task_id}/steps", response_model=TaskOut, status_code=201)
+def add_step(task_id: str, payload: StepCreate, db: Session = Depends(get_db),
+             user: dict = Depends(require_employer)) -> TaskOut:
+    """검토 화면에서 사업주가 단계를 직접 추가한다.
+
+    맨 끝에 붙이며(순서는 이후 드래그로 조정), 상징/TTS는 서버가 생성한다.
+    LLM symbol_query가 없으므로 문장에서 한글/영문 단어를 뽑아 상징 후보로 쓴다.
+    """
+    task = _owned_task(task_id, user["sub"], db)
+    sentence = payload.sentence.strip()
+    terms = re.findall(r"[가-힣A-Za-z]+", sentence) or [sentence[:12]]
+    sym = _pick_symbol(terms)
+    next_order = max((s.order_index for s in task.steps), default=0) + 1
+    db.add(Step(
+        task_id=task.id, order_index=next_order, sentence=sentence,
+        action_type=payload.action_type or "other",
+        symbol_url=sym.get("image_url"),
+        symbol_source=sym.get("source", "fallback"),
+        needs_fallback=sym.get("needs_fallback", True),
+        tts_audio_url=synthesize_tts_url(sentence),
+    ))
+    db.commit()
+    db.refresh(task)
+    return _task_out(task)
+
+
+@app.patch("/api/tasks/{task_id}/steps/reorder", response_model=TaskOut)
+def reorder_steps(task_id: str, payload: StepReorder, db: Session = Depends(get_db),
+                  user: dict = Depends(require_employer)) -> TaskOut:
+    """단계 순서를 새로 지정한다.
+
+    step_ids는 이 직무의 모든 단계를 정확히 한 번씩 포함해야 한다(부분 순서 불가).
+    받은 순서대로 order_index를 1..N으로 재부여한다.
+    """
+    task = _owned_task(task_id, user["sub"], db)
+    current_ids = {s.id for s in task.steps}
+    if len(payload.step_ids) != len(current_ids) or set(payload.step_ids) != current_ids:
+        raise HTTPException(status_code=400, detail="순서 목록이 현재 단계와 일치하지 않습니다.")
+    order_by_id = {sid: i for i, sid in enumerate(payload.step_ids, start=1)}
+    for s in task.steps:
+        s.order_index = order_by_id[s.id]
+    db.commit()
+    db.refresh(task)
+    return _task_out(task)
 
 
 @app.patch("/api/tasks/{task_id}/steps/{step_id}", response_model=StepOut)

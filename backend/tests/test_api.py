@@ -168,3 +168,64 @@ def test_create_task_accepts_context(client, employer_token):
         "work_environment": "주방, 미끄러운 바닥", "worker_note": "큰 글씨 필요"},
         headers=auth(employer_token))
     assert r.status_code == 201, r.text
+
+
+# ---------- 단계 추가 / 순서 변경 (검토 화면) ----------
+def test_add_step_appends_at_end(client, employer_token):
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기고 수량을 확인하세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    assert len(task["steps"]) == 2
+
+    add = client.post(f"/api/tasks/{task['id']}/steps",
+                      json={"sentence": "바닥을 쓸어주세요."}, headers=auth(employer_token))
+    assert add.status_code == 201, add.text
+    steps = add.json()["steps"]
+    assert len(steps) == 3
+    # 맨 끝에 order=3으로 추가
+    assert steps[2]["sentence"] == "바닥을 쓸어주세요."
+    assert [s["order"] for s in steps] == [1, 2, 3]
+
+
+def test_add_step_rejects_blank(client, employer_token):
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"}, headers=auth(employer_token))
+    task = r.json()
+    add = client.post(f"/api/tasks/{task['id']}/steps",
+                      json={"sentence": "   "}, headers=auth(employer_token))
+    assert add.status_code == 422, add.text
+
+
+def test_reorder_steps(client, employer_token):
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기고 수량을 확인하세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    ids = [s["id"] for s in task["steps"]]
+    # 순서 뒤집기
+    rr = client.patch(f"/api/tasks/{task['id']}/steps/reorder",
+                      json={"step_ids": [ids[1], ids[0]]}, headers=auth(employer_token))
+    assert rr.status_code == 200, rr.text
+    steps = rr.json()["steps"]
+    assert [s["id"] for s in steps] == [ids[1], ids[0]]
+    assert [s["order"] for s in steps] == [1, 2]
+
+
+def test_reorder_rejects_mismatched_ids(client, employer_token):
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기고 수량을 확인하세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    ids = [s["id"] for s in task["steps"]]
+    # 일부만 보내면 400 (전체 단계를 정확히 포함해야 함)
+    bad = client.patch(f"/api/tasks/{task['id']}/steps/reorder",
+                       json={"step_ids": [ids[0]]}, headers=auth(employer_token))
+    assert bad.status_code == 400, bad.text
+
+
+def test_add_and_reorder_require_ownership(client, employer_token, worker_token):
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"}, headers=auth(employer_token))
+    task = r.json()
+    # 근로자 토큰으로는 추가/정렬 불가(역할)
+    assert client.post(f"/api/tasks/{task['id']}/steps",
+                       json={"sentence": "x"}, headers=auth(worker_token)).status_code == 403
+    assert client.patch(f"/api/tasks/{task['id']}/steps/reorder",
+                        json={"step_ids": [task["steps"][0]["id"]]},
+                        headers=auth(worker_token)).status_code == 403
