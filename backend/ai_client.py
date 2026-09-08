@@ -47,24 +47,36 @@ def map_symbols(keywords: list[str], context: dict | None = None) -> dict:
         ]}
 
 
-def search_arasaac(term: str, langs: list[str] | None = None, limit: int = 1) -> dict:
-    """ARASAAC 단어 검색 결과를 돌려준다.
+def search_aac(
+    query: str,
+    context: dict | None = None,
+    limit: int = 5,
+) -> dict:
+    """자체 AAC 데이터셋에서 검색한다.
 
-    AI 하네스가 죽어 있거나 네트워크가 막히면 빈 결과로 안전하게 떨어진다.
+    AI 하네스가 죽어 있거나 요청에 실패하면 빈 결과로 안전하게 떨어진다.
     """
     try:
         resp = httpx.post(
-            f"{AI_BASE_URL}/ai/arasaac/search",
-            json={"term": term, "langs": langs or [], "limit": limit},
+            f"{AI_BASE_URL}/ai/aac/search",
+            json={
+                "query": query,
+                "context": context or {},
+                "limit": limit,
+            },
             timeout=TIMEOUT,
         )
         resp.raise_for_status()
         return resp.json()
+
     except Exception as e:  # noqa: BLE001
-        logger.warning("search_arasaac fallback: %s", e)
-        return {"term": term, "matches": []}
+        logger.warning("search_aac fallback: %s", e)
 
-
+        return {
+            "query": query,
+            "matches": [],
+        }
+    
 def coaching(task_title: str, steps: list[dict], context: dict | None = None) -> dict:
     """단계별 수행 데이터 -> {summary, suggestions[]}.
 

@@ -12,8 +12,20 @@ export default function ManagerPage() {
   const [workEnvironment, setWorkEnvironment] = useState("");
   const [workerNote, setWorkerNote] = useState("");
   const [task, setTask] = useState<Task | null>(null);
-  const [arasaacTerm, setArasaacTerm] = useState("box");
-  const [arasaacResult, setArasaacResult] = useState<{ term: string; matches: { language: string; pictogram_id: string; image_url: string }[] } | null>(null);
+  const [aacQuery, setAacQuery] = useState("상품을 선반에 놓는다");
+
+  const [aacResult, setAacResult] = useState<{
+    query: string;
+    matches: {
+      asset_id: string;
+      group_id: string;
+      job: string;
+      asset_type: string;
+      label: string;
+      image_url: string;
+      score: number;
+    }[];
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -200,13 +212,26 @@ export default function ManagerPage() {
     }
   }
 
-  async function handleArasaacSearch() {
-    setBusy(true);
-    setError(null);
+  async function handleAacSearch() {
+    if (!aacQuery.trim()) return;
+
     try {
-      setArasaacResult(await api.searchArasaac(arasaacTerm));
+      setBusy(true);
+      setError(null);
+
+      const result = await api.searchAac(
+        aacQuery.trim(),
+        undefined,
+        5,
+      );
+
+      setAacResult(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "ARASAAC 조회에 실패했습니다.");
+      setError(
+        e instanceof Error
+          ? e.message
+          : "AAC 검색에 실패했습니다.",
+      );
     } finally {
       setBusy(false);
     }
@@ -257,37 +282,73 @@ export default function ManagerPage() {
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="text-lg font-bold text-slate-900">ARASAAC 조회</h2>
+        <h2 className="text-lg font-bold text-slate-900">
+          자체 AAC 검색
+        </h2>
+
         <p className="mt-1 text-sm text-slate-600">
-          백엔드를 거쳐 ARASAAC pictogram 검색을 직접 확인합니다.
+          프로젝트에서 제작한 직무 AAC 이미지 중
+          작업 문장과 가장 가까운 이미지를 검색합니다.
         </p>
+
         <div className="mt-3 flex gap-2">
           <input
             className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-base"
-            value={arasaacTerm}
-            onChange={(e) => setArasaacTerm(e.target.value)}
-            aria-label="ARASAAC 검색어"
+            value={aacQuery}
+            onChange={(e) => setAacQuery(e.target.value)}
+            aria-label="AAC 검색어"
+            placeholder="예: 상품을 선반에 놓는다"
           />
+
           <button
-            onClick={handleArasaacSearch}
-            disabled={busy || !arasaacTerm.trim()}
+            onClick={handleAacSearch}
+            disabled={busy || !aacQuery.trim()}
             className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-50"
           >
             검색
           </button>
         </div>
-        {arasaacResult && (
+
+        {aacResult && (
           <div className="mt-4 space-y-3">
-            <div className="text-sm text-slate-600">검색어: {arasaacResult.term}</div>
+            <div className="text-sm text-slate-600">
+              검색어: {aacResult.query}
+            </div>
+
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {arasaacResult.matches.map((match) => (
-                <a key={`${match.language}-${match.pictogram_id}`} href={match.image_url} target="_blank" rel="noreferrer" className="rounded-lg border border-slate-200 p-3 hover:bg-slate-50">
-                  <img src={match.image_url} alt="" className="h-24 w-full rounded border border-slate-100 object-contain" />
-                  <div className="mt-2 text-xs text-slate-500">{match.language}</div>
-                  <div className="text-sm font-medium text-slate-900">ID {match.pictogram_id}</div>
+              {aacResult.matches.map((match) => (
+                <a
+                  key={match.asset_id}
+                  href={match.image_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-lg border border-slate-200 p-3 hover:bg-slate-50"
+                >
+                  <img
+                    src={match.image_url}
+                    alt={match.label}
+                    className="h-32 w-full rounded border border-slate-100 object-contain"
+                  />
+
+                  <div className="mt-2 text-xs text-slate-500">
+                    {match.job}
+                  </div>
+
+                  <div className="text-sm font-medium text-slate-900">
+                    {match.label}
+                  </div>
+
+                  <div className="mt-1 text-xs text-slate-400">
+                    {match.asset_id}
+                  </div>
+
+                  <div className="text-xs text-slate-400">
+                    유사도 {Math.round(match.score * 100)}%
+                  </div>
                 </a>
               ))}
-              {arasaacResult.matches.length === 0 && (
+
+              {aacResult.matches.length === 0 && (
                 <div className="rounded-lg border border-dashed border-slate-300 p-3 text-sm text-slate-500">
                   결과가 없습니다.
                 </div>

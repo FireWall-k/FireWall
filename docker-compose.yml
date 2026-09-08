@@ -10,14 +10,8 @@ services:
       - "8001:8001"
     environment:
       PYTHONUNBUFFERED: "1"
-      ARASAAC_API_BASE: "https://api.arasaac.org"
-      ARASAAC_LANGS: "en"
-      # ARASAAC 응답이 보통 ~1초 걸려 0.5초로는 자주 타임아웃→빈 이미지가 됐다. 넉넉히 둔다.
-      ARASAAC_SEARCH_TIMEOUT: "2.5"
-      # 2로 두면 symbol_query의 [한국어, 영어] 중 한국어가 ARASAAC에서 안 잡혀도
-      # 영어 단어를 백업으로 검색해 이미지를 찾는다(빈 이미지 fallback 최소화).
-      ARASAAC_KEYWORD_SEARCH_LIMIT: "2"
-      ARASAAC_TERM_SEARCH_LIMIT: "1"
+      AAC_DATA_DIR: "/app/aac"
+      AAC_MATCH_THRESHOLD: "0.28"
       # OpenAI(LLM) — 키가 있으면 맥락적응 분해 + AI 코칭이 켜지고, 없으면 규칙 기반 폴백.
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       OPENAI_MODEL: "${OPENAI_MODEL:-gpt-4o-mini}"
@@ -29,6 +23,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    volumes:
+      - ./data/aac:/app/aac:ro
 
   backend:
     build:
@@ -40,6 +36,8 @@ services:
     environment:
       PYTHONUNBUFFERED: "1"
       AI_BASE_URL: "http://ai_service:8001"
+      # 자체 AAC 이미지 경로
+      AAC_DATA_DIR: "/app/aac"
       # LLM(OpenAI) 분해는 10초 이상 걸릴 수 있어 넉넉히 둔다. 규칙 기반만 쓸 땐 6초로도 충분했음.
       AI_TIMEOUT: "30"
       DATABASE_URL: "sqlite:////app/data/jobcard.db"
@@ -55,6 +53,7 @@ services:
       PHOTO_DIR: "/app/data/photos"
       MAX_PHOTO_BYTES: "5242880"
     volumes:
+      - ./data/aac:/app/aac:ro
       # SQLite는 macOS 바인드 마운트(VirtioFS)에서 'disk I/O error'를 내므로
       # DB/사진/TTS 데이터는 Docker named volume에 둔다(리눅스 VM 내부 I/O로 회피).
       - jobcard-data:/app/data

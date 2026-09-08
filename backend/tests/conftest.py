@@ -49,8 +49,14 @@ def _fake_map_symbols(keywords, context=None) -> dict:
 def _patch_ai(monkeypatch):
     monkeypatch.setattr(ai_client, "decompose", _fake_decompose)
     monkeypatch.setattr(ai_client, "map_symbols", _fake_map_symbols)
-    monkeypatch.setattr(ai_client, "search_arasaac",
-                        lambda term, langs=None, limit=1: {"term": term, "matches": []})
+    monkeypatch.setattr(
+        ai_client,
+        "search_aac",
+        lambda query, context=None, limit=5: {
+            "query": query,
+            "matches": [],
+        },
+    )
     monkeypatch.setattr(ai_client, "coaching",
                         lambda title, steps, context=None: {
                             "summary": "1개 단계에서 개선이 필요해 보입니다.",

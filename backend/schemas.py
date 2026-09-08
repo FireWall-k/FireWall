@@ -83,10 +83,10 @@ class PerformanceLogCreate(BaseModel):
     stuck: bool = False
 
 
-class ArasaacSearchRequest(BaseModel):
-    term: str = Field(min_length=1, max_length=100)
-    langs: list[str] = []
-    limit: int = Field(default=1, ge=1, le=10)
+class AacSearchRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=200)
+    job: str | None = Field(default=None, max_length=40)
+    limit: int = Field(default=5, ge=1, le=20)
 
 
 # --- 응답 ---
@@ -162,16 +162,19 @@ class DashboardOut(BaseModel):
     steps: list[StepStat]
 
 
-class ArasaacMatch(BaseModel):
-    language: str
-    term: str
-    pictogram_id: str
+class AacMatch(BaseModel):
+    asset_id: str
+    group_id: str
+    job: str
+    asset_type: str
+    label: str
     image_url: str
+    score: float
 
 
-class ArasaacSearchResult(BaseModel):
-    term: str
-    matches: list[ArasaacMatch]
+class AacSearchResult(BaseModel):
+    query: str
+    matches: list[AacMatch]
 
 
 # --- 사업주용 AI 코칭 ---

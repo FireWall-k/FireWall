@@ -47,28 +47,32 @@ class MapSymbolsRequest(BaseModel):
     context: dict = {}
 
 
-class ArasaacSearchRequest(BaseModel):
-    term: str
-    langs: list[str] = []
-    limit: int = 1
+class AacSearchRequest(BaseModel):
+    query: str
+    context: dict = {}
+    limit: int = Field(default=5, ge=1, le=20)
 
 
-class ArasaacMatch(BaseModel):
-    language: str
-    term: str
-    pictogram_id: str
+class AacMatch(BaseModel):
+    asset_id: str
+    group_id: str
+    job: str
+    asset_type: str
+    label: str
     image_url: str
+    score: float
 
 
-class ArasaacSearchResult(BaseModel):
-    term: str
-    matches: list[ArasaacMatch]
+class AacSearchResult(BaseModel):
+    query: str
+    matches: list[AacMatch]
 
 
 class Symbol(BaseModel):
     keyword: str
     image_url: str | None = None
-    source: Literal["ARASAAC", "KAAC", "fallback"] = "fallback"
+    #source: Literal["ARASAAC", "KAAC", "fallback"] = "fallback"
+    source: Literal["LOCAL_AAC", "fallback"] = "fallback"
     confidence: float = 0.0
     needs_fallback: bool = False
     external_id: str | None = None

@@ -71,16 +71,19 @@ export interface StepStat {
   stuck: boolean;
 }
 
-export interface ArasaacMatch {
-  language: string;
-  term: string;
-  pictogram_id: string;
+export interface AacMatch {
+  asset_id: string;
+  group_id: string;
+  job: string;
+  asset_type: string;
+  label: string;
   image_url: string;
+  score: number;
 }
 
-export interface ArasaacSearchResult {
-  term: string;
-  matches: ArasaacMatch[];
+export interface AacSearchResult {
+  query: string;
+  matches: AacMatch[];
 }
 
 export interface Dashboard {
@@ -241,9 +244,13 @@ export const api = {
   dashboard: (id: string, workerId?: string) =>
     req<Dashboard>(`/api/dashboard/tasks/${id}${workerId ? `?worker_id=${workerId}` : ""}`),
   dashboardWorkers: (id: string) => req<DashboardWorker[]>(`/api/dashboard/tasks/${id}/workers`),
-  searchArasaac: (term: string, langs: string[] = ["en", "es"], limit = 3) =>
-    req<ArasaacSearchResult>("/api/arasaac/search", {
-      method: "POST",
-      body: JSON.stringify({ term, langs, limit }),
+  searchAac: (query: string, job?: string, limit = 5) =>
+  req<AacSearchResult>("/api/aac/search", {
+    method: "POST",
+    body: JSON.stringify({
+      query,
+      job: job || null,
+      limit,
     }),
+  }),
 };

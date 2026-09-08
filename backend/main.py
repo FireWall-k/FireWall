@@ -24,6 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
+from aac_assets import get_aac_image_dir, public_aac_url
 
 import ai_client
 from auth import (
@@ -36,9 +37,9 @@ from auth import (
 from database import Base, engine, get_db
 from models import Assignment, Employer, PerformanceLog, Step, Task, Worker
 from schemas import (
-    ArasaacMatch,
-    ArasaacSearchRequest,
-    ArasaacSearchResult,
+    AacMatch,
+    AacSearchRequest,
+    AacSearchResult,
     AssignmentOut,
     AssignRequest,
     CoachingOut,
@@ -80,6 +81,15 @@ app.mount("/api/tts", StaticFiles(directory=str(get_tts_cache_dir())), name="tts
 # 사업주가 올린 단계별 실제 사진 제공. URL 예: http://localhost:8000/api/photos/<uuid>.png
 app.mount("/api/photos", StaticFiles(directory=str(get_photo_dir())), name="photos")
 
+# 프로젝트 자체 제작 AAC 이미지 제공
+app.mount(
+    "/api/aac/images",
+    StaticFiles(
+        directory=str(get_aac_image_dir()),
+        check_dir=False,
+    ),
+    name="aac-images",
+)
 
 def _cors_origins() -> list[str]:
     raw = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
@@ -258,16 +268,38 @@ def delete_worker(worker_id: str, db: Session = Depends(get_db),
 
 
 # --- 사업주: 직무 생성(AI 분해 트리거) ---
-def _pick_symbol(terms: list[str]) -> dict:
-    """상징 후보 term들로 ARASAAC를 조회해 가장 적합한 상징 1개를 고른다.
+def _pick_symbol(
+    terms: list[str],
+    context: dict | None = None,
+) -> dict:
+    """작업 단계에 가장 적합한 자체 AAC 이미지를 선택한다."""
 
-    폴백이 아닌(이미지가 있는) 첫 상징을 우선하고, 없으면 첫 후보를 사용한다.
-    직무 최초 생성(create_task)과 단계 수동 추가(add_step)가 함께 쓴다.
-    """
-    symbols = ai_client.map_symbols(terms[:4]).get("symbols", [])
-    sym = next((s for s in symbols if not s.get("needs_fallback") and s.get("image_url")), None)
+    symbols = ai_client.map_symbols(
+        terms[:4],
+        context=context or {},
+    ).get("symbols", [])
+
+    sym = next(
+        (
+            s
+            for s in symbols
+            if not s.get("needs_fallback")
+            and s.get("image_url")
+        ),
+        None,
+    )
+
     if sym is None:
         sym = symbols[0] if symbols else {}
+
+    sym = dict(sym)
+
+    # /api/aac/images/... 를
+    # http://localhost:8000/api/aac/images/... 로 변환
+    sym["image_url"] = public_aac_url(
+        sym.get("image_url")
+    )
+
     return sym
 
 
@@ -294,7 +326,13 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
         # LLM이 제공한 구체 명사(symbol_query)를 우선 사용, 없으면 키워드로 폴백.
         symbol_terms = step.get("symbol_query") or [k["term"] for k in step.get("keywords", [])]
         symbol_terms = symbol_terms[:4] or [sentence[:12]]
-        sym = _pick_symbol(symbol_terms)
+        sym = _pick_symbol(
+            symbol_terms,
+            context={
+                **context,
+                "sentence": sentence,
+            },
+        )
         db.add(Step(
             task_id=task.id, order_index=step["order"], sentence=sentence,
             action_type=step.get("action_type", "other"),
@@ -447,14 +485,42 @@ def publish_task(task_id: str, db: Session = Depends(get_db),
     return _task_out(task)
 
 
-@app.post("/api/arasaac/search", response_model=ArasaacSearchResult)
-def search_arasaac(payload: ArasaacSearchRequest,
-                   user: dict = Depends(require_employer)) -> ArasaacSearchResult:
-    result = ai_client.search_arasaac(payload.term.strip(), langs=payload.langs or [],
-                                      limit=payload.limit)
-    return ArasaacSearchResult(
-        term=result.get("term", payload.term.strip()),
-        matches=[ArasaacMatch(**m) for m in result.get("matches", [])],
+@app.post("/api/aac/search", response_model=AacSearchResult)
+def search_aac(
+    payload: AacSearchRequest,
+    user: dict = Depends(require_employer),
+) -> AacSearchResult:
+
+    context = {
+        "job": payload.job or ""
+    }
+
+    result = ai_client.search_aac(
+        payload.query.strip(),
+        context=context,
+        limit=payload.limit,
+    )
+
+    matches = []
+
+    for item in result.get("matches", []):
+        row = dict(item)
+
+        row["image_url"] = (
+            public_aac_url(row.get("image_url"))
+            or ""
+        )
+
+        matches.append(
+            AacMatch(**row)
+        )
+
+    return AacSearchResult(
+        query=result.get(
+            "query",
+            payload.query.strip(),
+        ),
+        matches=matches,
     )
 
 
@@ -676,7 +742,7 @@ async def upload_step_photo(task_id: str, step_id: str,
                             file: UploadFile = File(...),
                             db: Session = Depends(get_db),
                             user: dict = Depends(require_employer)) -> StepOut:
-    """단계에 실제 현장 사진을 올려 ARASAAC 자동 상징을 대체한다(기능 5)."""
+    """단계에 실제 현장 사진을 올려 자체 AAC 자동 상징을 대체한다(기능 5)."""
     _owned_task(task_id, user["sub"], db)
     step = db.get(Step, step_id)
     if step is None or step.task_id != task_id:

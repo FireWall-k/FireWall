@@ -1,51 +1,57 @@
-"""map_symbols 관련성 선택 테스트 (search_term 목)."""
+"""Project-owned AAC mapping tests (no external network/API)."""
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import symbols  # noqa: E402
+from local_aac import search_assets  # noqa: E402
 
 
-def test_prefers_exact_match_term(monkeypatch):
-    # 첫 후보는 fuzzy, 두 번째 후보는 exact → exact 선택 + 높은 confidence
-    def fake_search(term, langs=None, timeout=None):
-        if term == "box":
-            return [{"language": "en", "term": "box", "pictogram_id": "2",
-                     "image_url": "http://img/2", "exact": True, "matched_keyword": "box"}]
-        return [{"language": "en", "term": term, "pictogram_id": "9",
-                 "image_url": "http://img/9", "exact": False, "matched_keyword": "x"}]
-    monkeypatch.setattr(symbols, "search_term", fake_search)
-    monkeypatch.setattr(symbols, "ARASAAC_KEYWORD_SEARCH_LIMIT", 4)
-    monkeypatch.setattr(symbols, "ARASAAC_TERM_SEARCH_LIMIT", 3)
+def test_local_aac_retail_exact_action():
+    res = symbols.map_symbols(
+        ["상품", "선반", "놓기"],
+        {
+            "business_type": "대형마트",
+            "sentence": "상품을 선반에 놓으세요",
+            "action_type": "move",
+        },
+    )
 
-    res = symbols.map_symbols(["box"], {})
     s = res.symbols[0]
-    assert s.source == "ARASAAC"
-    assert s.external_id == "2"
-    assert s.confidence == 0.95
+
+    assert s.source == "LOCAL_AAC"
+    assert s.external_id == "RETAIL_029"
     assert s.needs_fallback is False
+    assert s.image_url
+    assert s.image_url.startswith("/api/aac/images/retail/")
 
 
-def test_fallback_when_no_match(monkeypatch):
-    monkeypatch.setattr(symbols, "search_term", lambda *a, **k: [])
-    monkeypatch.setattr(symbols, "ARASAAC_KEYWORD_SEARCH_LIMIT", 4)
-    res = symbols.map_symbols(["unknownthing"], {})
+def test_job_context_disambiguates_same_action():
+    result = search_assets(
+        "같은 상품끼리 모으세요",
+        {
+            "business_type": "마트",
+            "action_type": "sort",
+        },
+        3,
+    )
+
+    assert result[0]["asset_id"] == "RETAIL_017"
+    assert result[0]["job"] == "retail"
+
+
+def test_fallback_when_no_relevant_match(monkeypatch):
+    monkeypatch.setenv("AAC_MATCH_THRESHOLD", "0.95")
+
+    res = symbols.map_symbols(
+        ["완전히없는검색어zzqx"],
+        {
+            "sentence": "완전히없는검색어zzqx"
+        },
+    )
+
     s = res.symbols[0]
+
     assert s.needs_fallback is True
     assert s.source == "fallback"
-
-
-def test_search_limit_caps_network_calls(monkeypatch):
-    calls = {"n": 0}
-    def fake_search(term, langs=None, timeout=None):
-        calls["n"] += 1
-        return [{"language": "en", "term": term, "pictogram_id": "1",
-                 "image_url": "u", "exact": True, "matched_keyword": term}]
-    monkeypatch.setattr(symbols, "search_term", fake_search)
-    monkeypatch.setattr(symbols, "ARASAAC_KEYWORD_SEARCH_LIMIT", 1)  # 1개만 검색
-    res = symbols.map_symbols(["box", "size", "count"], {})
-    # 첫 키워드만 검색, 나머지는 폴백
-    assert res.symbols[0].needs_fallback is False
-    assert res.symbols[1].needs_fallback is True
-    assert res.symbols[2].needs_fallback is True
