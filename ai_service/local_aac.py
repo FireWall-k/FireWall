@@ -130,6 +130,29 @@ def _verb_lemmas(text: str) -> set[str]:
     return found
 
 
+# 같은 도구를 부르는 다른 이름. 질의와 자산 라벨이 다른 단어를 쓰면 못 만난다
+# ("대걸레로 닦으세요" vs "밀대로 바닥을 닦는다"). 그룹 안의 단어는 서로 같은 것으로 본다.
+# 애매한 단어는 넣지 않는다('걸레'는 대걸레도 행주도 될 수 있어 제외).
+_TOOL_SYNONYMS: tuple[frozenset[str], ...] = (
+    frozenset({"대걸레", "밀대"}),
+    frozenset({"수세미", "스펀지", "스폰지"}),
+    frozenset({"빗자루", "비"}),
+    frozenset({"행주", "마른행주"}),
+    frozenset({"솔", "브러시"}),
+)
+_TOOL_SYNONYM_MAP: dict[str, frozenset[str]] = {
+    word: group for group in _TOOL_SYNONYMS for word in group
+}
+
+
+def _expand_tools(words: set[str]) -> set[str]:
+    """도구 이름을 동의어까지 넓힌다. {'대걸레'} -> {'대걸레', '밀대'}."""
+    out = set(words)
+    for w in words:
+        out |= _TOOL_SYNONYM_MAP.get(w, frozenset())
+    return out
+
+
 def infer_job(context: dict | None = None, query: str = "") -> str | None:
     ctx = context or {}
     haystack = " ".join(
@@ -190,7 +213,18 @@ def load_assets() -> list[dict]:
         lemmas = {w for w in extra_terms if isinstance(w, str) and w.endswith("다")}
         if frame.get("verb"):
             lemmas.add(frame["verb"])
-        asset["_kw_tokens"] = _tokens(keyword_text) | lemmas
+
+        # 도구(instrument)는 그림을 가르는 강한 신호다 — "대걸레로"가 "밀대로 바닥을
+        # 닦는다"를 끌어올려야 한다. 라벨에서 뽑은 도구 명사와 인덱스의 instrument를
+        # 동의어까지 넓혀 따로 든다.
+        tools: set[str] = set()
+        if frame.get("instrument"):
+            tools |= _tokens(frame["instrument"])
+        tools |= _tokens(label) & set(_TOOL_SYNONYM_MAP)
+        tools = _expand_tools(tools)
+        asset["_tools"] = tools
+
+        asset["_kw_tokens"] = _tokens(keyword_text) | lemmas | tools
         # 이 자산이 나타내는 동작들. 질의에서 뽑은 원형과 직접 비교한다.
         asset["_lemmas"] = lemmas
 
@@ -270,6 +304,17 @@ def _text_similarity(q_norm: str, q_tokens: set[str], q_bigrams: set[str],
 # 따로 더한다.
 _VERB_MATCH_BONUS = 0.10
 
+# 도구는 '검색 가능하게'만 하고 '가산점'은 주지 않는다.
+#
+# frame.instrument 와 도구 동의어(대걸레↔밀대)를 자산의 검색어 바구니(_kw_tokens)에
+# 넣고, 질의 쪽 도구도 동의어까지 넓혀 토큰에 더한다. 그러면 "대걸레로 닦으세요"가
+# Jaccard 유사도로 "밀대로 바닥을 닦는다"를 끌어올린다 — 실측 top1 0.951→0.952.
+#
+# 별도 가산점(_TOOL_MATCH_BONUS)은 시도했다가 되돌렸다(0.06 → full top1 0.940, r@3 0.976).
+# "수세미로 세면대를 닦으세요"가 '차체를 스펀지로 닦는다'로 갔다 — 수세미↔스펀지
+# 동의어에 가산점이 붙으니 세차 자산이 세면대 자산을 이겼다. 동사 가산점(_VERB_MATCH_BONUS)
+# 과 달리 도구는 여러 동작에 공유돼서, 밀어올리면 잡음이 된다.
+
 # frame.object / frame.object_detail 로 가산점을 주는 것은 시도했다가 되돌렸다.
 #
 # 실패 사례를 보면 대상이 갈라줄 것 같았다 — "포장 테이프를 챙기세요"에 '빈 포장 봉투를
@@ -291,14 +336,16 @@ class _QueryFeatures:
     예전에는 자산마다 형태소 추출을 다시 해서 질의 하나에 401번 돌았다.
     """
 
-    __slots__ = ("norm", "tokens", "bigrams", "lemmas")
+    __slots__ = ("norm", "tokens", "bigrams", "lemmas", "tools")
 
     def __init__(self, query: str) -> None:
         self.norm = _normalize(query)
         self.lemmas = _verb_lemmas(query)
+        # 질의에 도구 이름이 있으면 동의어까지 넓혀 둔다("대걸레" -> {"대걸레","밀대"}).
+        self.tools = _expand_tools(_tokens(query) & set(_TOOL_SYNONYM_MAP))
         # 활용형에서 뽑은 원형을 토큰에 더한다. 자산 검색어는 원형이라 이게 없으면
         # "갈아주세요"와 "갈다"가 만나지 못한다.
-        self.tokens = _tokens(query) | self.lemmas
+        self.tokens = _tokens(query) | self.lemmas | self.tools
         self.bigrams = _bigrams(query)
 
 
