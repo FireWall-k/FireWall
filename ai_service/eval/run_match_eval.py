@@ -170,7 +170,7 @@ def run(only_case: str | None = None, only_job: str | None = None,
 
     return {
         "query_mode": query_mode,
-        "threshold": float(os.getenv("AAC_MATCH_THRESHOLD", "0.14")),
+        "threshold": float(os.getenv("AAC_MATCH_THRESHOLD", "0.22")),
         "min_margin": float(os.getenv("AAC_MATCH_MIN_MARGIN", "0.02")),
         "n_cases": len(rows),
         "n_normal": len(normal),

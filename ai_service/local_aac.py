@@ -67,6 +67,69 @@ def _jaccard(a: set[str], b: set[str]) -> float:
     return len(a & b) / len(a | b)
 
 
+# 어간 끝 모음이 어미와 만나 줄어드는 형태. '세우-'+'어' → '세워', '하-'+'여' → '해'.
+_STEM_CONTRACTIONS = {"우": "워", "오": "와", "이": "여", "하": "해", "리": "려", "기": "겨"}
+
+
+def _stem_variants(stem: str) -> tuple[str, ...]:
+    """어간의 표면형 후보. 활용형에서 어간을 찾아내기 위한 것이다."""
+    if not stem:
+        return ()
+    contracted = _STEM_CONTRACTIONS.get(stem[-1])
+    if contracted:
+        return (stem, stem[:-1] + contracted)
+    return (stem,)
+
+
+@lru_cache(maxsize=1)
+def _verb_stem_map() -> tuple[tuple[str, str], ...]:
+    """(어간 표면형, 원형) 목록. 긴 어간이 먼저 오도록 정렬한다.
+
+    인덱스에 있는 동사만 대상으로 하는 닫힌 사전이다. 일반적인 한국어 형태소 분석
+    없이도, 우리가 실제로 쓰는 300여 개 동사에 대해서는 활용형에서 원형을 되찾을 수 있다.
+    """
+    lemmas: set[str] = set()
+    for entry in load_index().values():
+        verb = (entry.get("frame") or {}).get("verb")
+        if verb:
+            lemmas.add(verb)
+        # 검색어에도 '갈다', '비질하다' 같은 원형이 들어 있다('갈다'는 두 글자다).
+        for word in entry.get("keywords_ko", []):
+            if isinstance(word, str) and word.endswith("다") and len(word) >= 2:
+                lemmas.add(word)
+
+    pairs: set[tuple[str, str]] = set()
+    for lemma in lemmas:
+        stem = lemma[:-1]  # '다'를 뗀다
+        if len(stem) < 1:
+            continue
+        for surface in _stem_variants(stem):
+            pairs.add((surface, lemma))
+    # 긴 어간 우선 — '준비하'가 '준'보다 먼저 걸려야 한다.
+    return tuple(sorted(pairs, key=lambda p: -len(p[0])))
+
+
+def _verb_lemmas(text: str) -> set[str]:
+    """활용형 문장에서 동사 원형을 뽑는다.
+
+    "원두를 갈아주세요" → {'갈다'}. 자산 쪽 검색어는 원형('갈다')이라 이 변환이 없으면
+    질의 토큰('갈아주')과 영영 만나지 못한다 — 인덱스를 만들어도 아무 효과가 없다.
+    """
+    found: set[str] = set()
+    for word in _TOKEN_RE.findall(text):
+        for surface, lemma in _verb_stem_map():
+            # 어간만 덜렁 있는 게 아니라 뒤에 어미가 붙어 있어야 동사로 본다.
+            if len(word) <= len(surface) or not word.startswith(surface):
+                continue
+            # 한 글자 어간('갈','개')은 아무 단어에나 걸리기 쉽다. 어미가 두 글자 이상
+            # 붙어 있을 때만 인정한다('갈아주세요'는 통과, '갈색'은 탈락).
+            if len(surface) == 1 and len(word) < 3:
+                continue
+            found.add(lemma)
+            break  # 가장 긴 어간 하나만
+    return found
+
+
 def infer_job(context: dict | None = None, query: str = "") -> str | None:
     ctx = context or {}
     haystack = " ".join(
@@ -82,17 +145,59 @@ def infer_job(context: dict | None = None, query: str = "") -> str | None:
 
 
 @lru_cache(maxsize=1)
+def load_index() -> dict[str, dict]:
+    """구조화 인덱스(aac_index.json)를 id -> 항목으로 읽는다.
+
+    scripts/build_aac_index.py 가 만드는 파생 데이터다. 없어도 동작해야 한다 —
+    원본 자산만으로도 예전처럼 라벨 유사도 매칭은 된다(품질은 떨어진다).
+    """
+    path = get_data_dir() / "aac_index.json"
+    if not path.exists():
+        return {}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return {e["id"]: e for e in payload.get("entries", [])}
+
+
+@lru_cache(maxsize=1)
 def load_assets() -> list[dict]:
     path = get_data_dir() / "aac_assets.json"
     payload = json.loads(path.read_text(encoding="utf-8"))
     assets = payload.get("assets", [])
+    index = load_index()
     for asset in assets:
         label = str(asset.get("label", ""))
-        extra = " ".join(asset.get("keywords", []) + asset.get("aliases", []))
-        searchable = f"{label} {extra}".strip()
-        asset["_norm"] = _normalize(searchable)
-        asset["_tokens"] = _tokens(searchable)
-        asset["_bigrams"] = _bigrams(searchable)
+        entry = index.get(asset["id"], {})
+        frame = entry.get("frame") or {}
+
+        # 라벨과 검색어는 따로 채점한다. 한 바구니에 넣으면 Jaccard 분모가 커져
+        # 모든 점수가 희석되고, 검색어가 많은 자산일수록 손해를 본다(실측 top1 -0.18).
+        # 검색어는 도움만 주고 깎지는 않아야 한다.
+        asset["_norm"] = _normalize(label)
+        asset["_tokens"] = _tokens(label)
+        asset["_bigrams"] = _bigrams(label)
+
+        # 인덱스 검색어는 '라벨에 없는 다른 표현'이다(분쇄한다→갈다, 박스→상자).
+        # 라벨만으로는 못 찾던 질의를 여기서 받는다.
+        extra_terms = (
+            asset.get("keywords", []) + asset.get("aliases", [])
+            + entry.get("keywords_ko", []) + entry.get("keywords_en", [])
+        )
+        keyword_text = " ".join(extra_terms).strip()
+        asset["_kw_norm"] = _normalize(keyword_text)
+        asset["_kw_bigrams"] = _bigrams(keyword_text)
+        # 동사 원형은 _tokens의 어미 제거로 뭉개지므로("분쇄하다"→"분쇄하") 따로 넣는다.
+        # 질의에서 뽑은 원형과 같은 형태여야 만난다.
+        lemmas = {w for w in extra_terms if isinstance(w, str) and w.endswith("다")}
+        if frame.get("verb"):
+            lemmas.add(frame["verb"])
+        asset["_kw_tokens"] = _tokens(keyword_text) | lemmas
+        # 이 자산이 나타내는 동작들. 질의에서 뽑은 원형과 직접 비교한다.
+        asset["_lemmas"] = lemmas
+
+        # 프레임은 점수가 아니라 '무엇과 비교할지'를 정하는 데 쓴다.
+        asset["_frame"] = frame
+        asset["_is_object_card"] = bool(frame.get("is_object_card"))
+        asset["_verb_class"] = frame.get("verb_class")
     return assets
 
 
@@ -138,22 +243,126 @@ def _containment(q_norm: str, label_norm: str, q_tokens: set[str], a_tokens: set
     return 0.0
 
 
-def _relevance(asset: dict, query: str) -> float:
-    """질의와 자산 텍스트의 순수 유사도. 맥락 가중치가 섞이지 않는다."""
-    q_norm = _normalize(query)
+# 검색어로 맞은 것은 라벨로 맞은 것보다 약한 증거로 본다(라벨이 그 그림의 정의다).
+#
+# 스윕해 보니 이 값이 높을수록 나빠진다(0.9에서 full top1 0.939, 0.6에서 0.951).
+# 검색어를 가방으로 묶어 유사도를 재면 관련 없는 단어까지 분모에 들어가 잡음이 된다.
+# 인덱스의 값어치는 여기가 아니라 동사 원형(_lemmas)과 is_object_card에 있다 —
+# 그 둘은 가방이 아니라 직접 비교하기 때문이다.
+_KEYWORD_WEIGHT = 0.6
+
+
+def _text_similarity(q_norm: str, q_tokens: set[str], q_bigrams: set[str],
+                     t_norm: str, t_tokens: set[str], t_bigrams: set[str]) -> float:
+    """질의와 대상 텍스트 한 덩어리의 유사도."""
+    if not t_norm:
+        return 0.0
+    token_score = _jaccard(q_tokens, t_tokens)
+    bigram_score = _jaccard(q_bigrams, t_bigrams)
+    seq_score = SequenceMatcher(None, q_norm.replace(" ", ""), t_norm.replace(" ", "")).ratio()
+    containment = _containment(q_norm, t_norm, q_tokens, t_tokens)
+    return 0.38 * token_score + 0.34 * bigram_score + 0.20 * seq_score + 0.08 * containment
+
+
+# 질의 동사 원형이 자산의 동사와 같을 때 주는 가산점.
+# Jaccard 가방 안에서는 이 신호가 희석돼 묻힌다("갈다" 하나가 검색어 7개 중 1개로
+# 계산되면 0.05 남짓이다). 동작이 같다는 것은 그림 선택에서 가장 직접적인 근거이므로
+# 따로 더한다.
+_VERB_MATCH_BONUS = 0.10
+
+
+class _QueryFeatures:
+    """질의를 한 번만 분석해 자산 401개에 재사용한다.
+
+    예전에는 자산마다 형태소 추출을 다시 해서 질의 하나에 401번 돌았다.
+    """
+
+    __slots__ = ("norm", "tokens", "bigrams", "lemmas")
+
+    def __init__(self, query: str) -> None:
+        self.norm = _normalize(query)
+        self.lemmas = _verb_lemmas(query)
+        # 활용형에서 뽑은 원형을 토큰에 더한다. 자산 검색어는 원형이라 이게 없으면
+        # "갈아주세요"와 "갈다"가 만나지 못한다.
+        self.tokens = _tokens(query) | self.lemmas
+        self.bigrams = _bigrams(query)
+
+
+def _relevance(asset: dict, qf: _QueryFeatures) -> float:
+    """질의와 자산의 순수 유사도. 맥락 가중치가 섞이지 않는다.
+
+    라벨과 검색어를 각각 재고 높은 쪽을 쓴다. 합치지 않는 이유는 검색어를 라벨에 이어
+    붙이면 Jaccard 분모가 커져 점수가 희석되기 때문이다 — 검색어를 많이 가진 자산이
+    오히려 손해를 본다. max를 쓰면 검색어는 도움만 주고 깎지 않는다.
+    """
+    q_norm, q_tokens, q_bigrams = qf.norm, qf.tokens, qf.bigrams
     if not q_norm:
         return 0.0
-    q_tokens = _tokens(query)
-    q_bigrams = _bigrams(query)
-    label_norm = asset["_norm"]
 
-    token_score = _jaccard(q_tokens, asset["_tokens"])
-    bigram_score = _jaccard(q_bigrams, asset["_bigrams"])
-    seq_score = SequenceMatcher(None, q_norm.replace(" ", ""), label_norm.replace(" ", "")).ratio()
+    label_score = _text_similarity(
+        q_norm, q_tokens, q_bigrams,
+        asset["_norm"], asset["_tokens"], asset["_bigrams"],
+    )
+    keyword_score = _text_similarity(
+        q_norm, q_tokens, q_bigrams,
+        asset.get("_kw_norm", ""), asset.get("_kw_tokens", set()),
+        asset.get("_kw_bigrams", set()),
+    )
+    score = max(label_score, _KEYWORD_WEIGHT * keyword_score)
 
-    containment = _containment(q_norm, label_norm, q_tokens, asset["_tokens"])
+    # 동작이 같으면 직접 가산한다. "원두를 갈아주세요"의 '갈다'가 CAFE_013의 검색어
+    # '갈다'와 만나도, Jaccard 안에서는 검색어 7개 중 1개라 묻힌다.
+    if qf.lemmas and qf.lemmas & asset.get("_lemmas", set()):
+        score += _VERB_MATCH_BONUS
+    return score
 
-    return 0.38 * token_score + 0.34 * bigram_score + 0.20 * seq_score + 0.08 * containment
+
+# 한국어 종결어미. 이걸로 끝나면 '무엇을 하라'는 지시문이고, 아니면 명사구다.
+_SENTENCE_ENDINGS = ("세요", "십시오", "주십시오", "합니다", "습니다", "해요", "요", "다", "라", "자")
+
+# 지시문에 사물 카드가 걸렸을 때 관련도를 깎는 비율. 가산점이 아니라 곱셈인 이유는
+# 확신이 클수록 더 크게 깎여야 하기 때문이다(도구 카드는 점수가 높을수록 더 위험하다).
+_OBJECT_CARD_PENALTY = 0.55
+
+
+# 질의의 action_type과 자산의 verb_class가 서로 달라도 정답인 조합들.
+# 정답셋의 정답 쌍을 실측해서 정했다(둘 다 구체적인 66건 중 일치 55 / 불일치 11).
+# 불일치는 '물건을 옮기고 정리한다' 계열에 몰려 있었다 — 담다/넣다/놓다는 사람마다
+# move로도 pack으로도 분류한다. 이 묶음 안에서는 벌점을 주지 않는다.
+_COMPATIBLE_CLASSES: tuple[frozenset[str], ...] = (
+    frozenset({"move", "pack", "stack", "sort"}),
+    frozenset({"observe", "operate"}),
+)
+
+# 동사 계열이 어긋날 때 관련도를 깎는 비율. 하드 페널티가 아닌 이유는 불일치가
+# '틀렸다'가 아니라 '틀렸을 가능성이 높다'이기 때문이다(실측 5:1).
+_VERB_CLASS_PENALTY = 0.85
+
+
+def _verb_class_penalty(asset: dict, action_type: str | None) -> float:
+    """동작 계열이 맞지 않으면 1보다 작은 값을 돌려준다(곱한다)."""
+    if not action_type or action_type == "other":
+        return 1.0
+    verb_class = asset.get("_verb_class")
+    # 사물 카드이거나 인덱스에 없으면 판단 근거가 없다 — 깎지 않는다.
+    if not verb_class or verb_class == "other":
+        return 1.0
+    if verb_class == action_type:
+        return 1.0
+    for group in _COMPATIBLE_CLASSES:
+        if action_type in group and verb_class in group:
+            return 1.0
+    return _VERB_CLASS_PENALTY
+
+
+def _is_instruction(text: str) -> bool:
+    """질의가 '무엇을 하라'는 문장인가, 아니면 물건 이름인가.
+
+    작업 단계는 항상 지시문이다("얼음통을 씻어주세요"). 반면 사업주가 검색창에 직접
+    치는 것은 대개 명사구다("얼음통"). 사물 카드는 후자에만 맞다.
+    """
+    stripped = text.strip().rstrip(".!?？！ ").strip()
+    return stripped.endswith(_SENTENCE_ENDINGS)
 
 
 def _tiebreak(asset: dict, preferred_job: str | None, action_type: str | None) -> float:
@@ -177,9 +386,21 @@ def _tiebreak(asset: dict, preferred_job: str | None, action_type: str | None) -
     return bonus
 
 
-def _score_asset(asset: dict, query: str, preferred_job: str | None, action_type: str | None) -> float:
-    score = _relevance(asset, query) + _tiebreak(asset, preferred_job, action_type)
-    return max(0.0, min(score, 1.0))
+def _score_asset(asset: dict, qf: _QueryFeatures, preferred_job: str | None,
+                 action_type: str | None, is_instruction: bool = False) -> float:
+    relevance = _relevance(asset, qf)
+
+    # 사물 카드 게이트 — 지시문에는 동작 그림이 맞다. "얼음통을 씻어주세요"에 도구
+    # 카드 '얼음통'이 붙으면 근로자는 통을 보기만 하고 무엇을 할지 모른다.
+    # 가중치(±0.015)로는 못 막았다 — 실측 격차가 0.05~0.15였다.
+    if is_instruction and asset.get("_is_object_card"):
+        relevance *= _OBJECT_CARD_PENALTY
+
+    # 동사 호환성 — 명사만 겹치면 동작이 달라도 올라오던 것을 누른다.
+    # "넘어진 상품을 세워주세요"에 "냉동 상품을 냉동 진열대에 놓는다"가 붙던 문제.
+    relevance *= _verb_class_penalty(asset, action_type)
+
+    return max(0.0, min(relevance + _tiebreak(asset, preferred_job, action_type), 1.0))
 
 
 def _dedupe(ranked: list[tuple[float, dict]]) -> list[tuple[float, dict]]:
@@ -210,10 +431,14 @@ def search_assets(query: str, context: dict | None = None, limit: int = 5) -> li
     ctx = context or {}
     preferred_job = infer_job(ctx, query)
     action_type = str(ctx.get("action_type") or "") or None
+    # 단계 문장이 있으면 그것으로 판단한다. query에는 symbol_query가 섞여 있어
+    # 문장 형태가 흐려지기 때문이다.
+    is_instruction = _is_instruction(str(ctx.get("sentence") or query))
+    qf = _QueryFeatures(query)  # 질의 분석은 한 번만 — 자산마다 다시 하면 401번 돈다.
 
     ranked: list[tuple[float, dict]] = []
     for asset in load_assets():
-        score = _score_asset(asset, query, preferred_job, action_type)
+        score = _score_asset(asset, qf, preferred_job, action_type, is_instruction)
         if score <= 0:
             continue
         ranked.append((score, asset))
@@ -253,7 +478,7 @@ def decide(results: list[dict]) -> dict:
     반환: {"match": dict|None, "reason": str, "candidates": list, "margin": float}
       reason — "accepted" | "no_candidate" | "low_score" | "low_margin"
     """
-    threshold = float(os.getenv("AAC_MATCH_THRESHOLD", "0.14"))
+    threshold = float(os.getenv("AAC_MATCH_THRESHOLD", "0.22"))
     min_margin = float(os.getenv("AAC_MATCH_MIN_MARGIN", "0.02"))
 
     if not results:

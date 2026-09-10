@@ -85,6 +85,41 @@ def test_tool_mention_does_not_beat_the_action():
     assert results[0]["asset_type"] == "action"
 
 
+def test_object_card_loses_to_action_for_an_instruction():
+    """지시문에는 동작 그림이 맞다. 도구 그림이 붙으면 무엇을 할지 알 수 없다.
+
+    "얼음통을 씻어주세요"에 도구 카드 '얼음통'이 붙으면 근로자는 통을 보기만 한다.
+    문장에 물건 이름이 있다고 그 물건 그림을 끌어오면 안 된다.
+    """
+    query = "얼음통을 씻어주세요."
+    results = search_assets(
+        query,
+        {"business_type": "카페", "sentence": query, "action_type": "clean"},
+        5,
+    )
+    assert results[0]["asset_id"] != "CAFE_TOOL_014"  # 도구 카드 '얼음통'
+
+
+def test_object_card_wins_when_the_query_is_the_object_itself():
+    """반대로 사물 자체를 찾을 때는 사물 카드가 맞다(검색창에 명사를 친 경우)."""
+    results = search_assets("얼음통", {"business_type": "카페"}, 3)
+    assert results[0]["asset_id"] == "CAFE_TOOL_014"
+
+
+def test_verb_class_conflict_is_penalized():
+    """동작 계열이 어긋나면 깎는다 — 명사만 겹쳐 올라오는 것을 막는다."""
+    from local_aac import _verb_class_penalty, load_assets
+
+    by = {a["id"]: a for a in load_assets()}
+    # RETAIL_048 '냉동 상품을 냉동 진열대에 놓는다'는 move 계열이다.
+    assert _verb_class_penalty(by["RETAIL_048"], "clean") < 1.0
+    # 같은 계열이거나 판단 근거가 없으면 깎지 않는다.
+    assert _verb_class_penalty(by["RETAIL_048"], "move") == 1.0
+    assert _verb_class_penalty(by["RETAIL_048"], "other") == 1.0
+    # move/pack/sort는 사람마다 다르게 분류해 정답 쌍에서도 섞였다 — 호환으로 둔다.
+    assert _verb_class_penalty(by["RETAIL_048"], "pack") == 1.0
+
+
 def test_short_label_containment_is_length_normalized():
     """포함 보정은 '언급됨'이 아니라 '거의 같은 말'일 때만 커야 한다."""
     from local_aac import _containment
@@ -101,24 +136,45 @@ def test_short_label_containment_is_length_normalized():
 def test_margin_gate_declines_a_near_tie(monkeypatch):
     """1·2순위 점수가 붙어 있으면 채택하지 않는다(동전 던지기 방지).
 
-    "원두를 갈아주세요"는 '원두를 준비한다'와 '원두를 분쇄한다'가 완전 동점이라
-    자산 id 정렬순으로 갈렸다. 이런 건 사람이 골라야 한다.
+    "박스 아래쪽을 테이프로 막으세요"는 '박스 바닥에 테이프를 붙인다'와
+    '박스 가운데에 테이프를 붙인다'가 거의 동점이다. 붙이는 위치가 다르므로
+    아무거나 고르면 안 된다 — 사람이 골라야 한다.
     """
     from local_aac import search_for_step_detailed
 
     monkeypatch.setenv("AAC_MATCH_THRESHOLD", "0.10")
     monkeypatch.setenv("AAC_MATCH_MIN_MARGIN", "0.02")
 
-    query = "원두를 갈아주세요"
+    query = "박스 아래쪽을 테이프로 막으세요."
     decision = search_for_step_detailed(
-        ["원두", "coffee bean"],
-        {"business_type": "카페", "sentence": query},
+        ["테이프", "tape"],
+        {"business_type": "포장", "sentence": query, "action_type": "pack"},
     )
 
     assert decision["match"] is None
     assert decision["reason"] == "low_margin"
     # 거절했어도 후보는 넘겨야 한다 — 검토 화면에서 사람이 고를 수 있도록.
     assert len(decision["candidates"]) >= 2
+
+
+def test_conjugated_verb_matches_the_lemma():
+    """활용형 질의가 사전형 검색어와 만나야 한다.
+
+    "갈아주세요"는 토큰으로 '갈아주'가 되고 인덱스 검색어는 '갈다'라, 형태를 맞추지
+    않으면 교집합이 0이다. 그래서 예전에는 '원두를 준비한다'와 완전 동점(0.000)으로
+    갈려 자산 id 정렬순으로 오답이 뽑혔다.
+    """
+    from local_aac import _verb_lemmas
+
+    assert "갈다" in _verb_lemmas("원두를 갈아주세요")
+
+    results = search_assets(
+        "원두를 갈아주세요",
+        {"business_type": "카페", "sentence": "원두를 갈아주세요", "action_type": "other"},
+        3,
+    )
+    assert results[0]["asset_id"] == "CAFE_013"  # 원두를 분쇄한다
+    assert results[0]["score"] - results[1]["score"] > 0.02  # 더는 동점이 아니다
 
 
 def test_margin_gate_accepts_a_clear_winner(monkeypatch):
@@ -164,8 +220,9 @@ def test_map_symbols_returns_candidates_when_it_cannot_choose(monkeypatch):
     monkeypatch.setenv("AAC_MATCH_MIN_MARGIN", "0.02")
 
     res = symbols.map_symbols(
-        ["원두", "coffee bean"],
-        {"business_type": "카페", "sentence": "원두를 갈아주세요"},
+        ["테이프", "tape"],
+        {"business_type": "포장", "sentence": "박스 아래쪽을 테이프로 막으세요.",
+         "action_type": "pack"},
     )
     s = res.symbols[0]
 
