@@ -79,14 +79,42 @@ python scripts/build_aac_index.py --resume --batch-size 8 # 누락분 이어서
 `source_digest`는 원본 자산의 `id+label` 해시입니다. 원본을 바꿨는데 인덱스를 재생성하지
 않으면 이 값이 어긋납니다.
 
-### 알려진 품질 흠 (검수 전)
+### 검수 (`scripts/review_aac_index.py`)
 
-- 붙여 쓴 복합명사를 과하게 자르는 경우가 있습니다(`얼음통` → `object: "통"`).
-- 일부 항목의 `keywords_ko`가 일반적입니다(`용기`, `저장소`).
-- `verb_class` 경계가 애매한 경우가 있습니다(`모으다` → `stack` vs `sort`).
+401건을 눈으로 훑는 대신 자동 점검으로 형태 오류를 잡고, 플래그된 것만 사람이 본다.
+현재 매칭이 쓰는 프레임 필드는 `verb` / `verb_class` / `is_object_card` / `keywords_ko`
+뿐이므로 점검도 이 넷에 집중한다.
 
-검수한 항목은 `reviewed: true`로 바꿉니다. 재생성 시 `--resume`은 기존 항목을 건드리지
-않으므로 검수 결과가 보존됩니다.
+```bash
+python scripts/review_aac_index.py                 # 점검만
+python scripts/review_aac_index.py --fix           # 기계적 수정 적용
+python scripts/review_aac_index.py --list needs-human
+```
+
+`reviewed` 값:
+
+| 값 | 뜻 |
+|----|----|
+| `true` | 사람이 확인함 |
+| `"auto"` | 규칙이 수정함(활용형 verb → 사전형, `도구` 접두사 제거 등) |
+| `"checked"` | 자동 점검 통과, 사람 미확인 |
+| `false` | 미검토 |
+
+재생성 시 `--resume`은 기존 항목을 건드리지 않으므로 검수 결과가 보존된다.
+
+**2026-09-11 1차 검수:** 자동 수정 22건(verb 형태 5, `도구` 접두사 오염 15, verb_class
+누락 2), 사람 확인 7건. **매칭 지표는 변동 없었다** — 정답셋이 걸린 실패는 이 항목들과
+무관했다. 즉 검수는 품질 정리이지 성능 개선이 아니다.
+
+### 남은 흠 (2차 검수 대상)
+
+- `object` 에 붙여 쓴 복합명사를 과하게 자름(`얼음통` → `"통"`).
+- `object_detail` 이 저신호다 — `사용한`, `잘못된`, `정상` 같은 관형어나 `부품`, `작업`
+  같은 복합명사 조각이 대부분. **매칭에 쓰려면 이 필드를 다시 만들어야 한다.**
+- `verb_class` 경계 애매(`모으다` → `stack` vs `sort`).
+
+> `object` / `object_detail` 을 매칭에 쓰는 실험은 실패했다(회귀). 자산 쪽 품질 문제가
+> 아니라 **질의 쪽에 대상 추출이 없어서**다. `ai_service/local_aac.py` 의 관련 주석 참고.
 
 ## 원본 이미지 재가져오기
 
