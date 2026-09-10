@@ -66,6 +66,11 @@ class Task(Base):
     employer_id: Mapped[str] = mapped_column(ForeignKey("employers.id"), index=True)
     title: Mapped[str] = mapped_column(String, default="")
     raw_input: Mapped[str] = mapped_column(Text, default="")
+    # 직무 생성 시 사업주가 입력한 현장 맥락. AAC 검색이 업종을 추론하는 데 쓴다.
+    # 저장하지 않으면 나중에(검토 화면 후보 조회, 단계 직접 추가) 같은 조건으로
+    # 재검색할 수 없어, 생성 시 판정과 후보 목록이 어긋난다.
+    business_type: Mapped[str] = mapped_column(String, default="")
+    work_environment: Mapped[str] = mapped_column(String, default="")
     # draft -> published -> archived
     status: Mapped[str] = mapped_column(String, default="draft")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)

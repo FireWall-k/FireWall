@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -44,6 +45,8 @@ class TaskCreate(BaseModel):
 class StepUpdate(BaseModel):
     sentence: str | None = Field(default=None, max_length=500)
     symbol_url: str | None = Field(default=None, max_length=2000)
+    # 검토 화면에서 AAC 후보를 직접 고른 경우 "LOCAL_AAC". 생략하면 기존처럼 fallback.
+    symbol_source: Literal["LOCAL_AAC", "fallback"] | None = None
 
 
 class StepCreate(BaseModel):
@@ -175,6 +178,18 @@ class AacMatch(BaseModel):
 class AacSearchResult(BaseModel):
     query: str
     matches: list[AacMatch]
+
+
+class StepSymbolCandidates(BaseModel):
+    """단계에 붙일 AAC 후보. 자동 채택을 못 했을 때 사업주가 직접 고른다.
+
+    reason으로 왜 자동 채택하지 않았는지 알려준다.
+      low_margin  — 후보들 점수가 붙어 있어 못 고름. 후보를 보여주고 사람이 선택.
+      low_score / no_candidate — 쓸 만한 후보가 없음. 실제 현장 사진을 권한다.
+    """
+    step_id: str
+    reason: Literal["accepted", "no_candidate", "low_score", "low_margin"]
+    candidates: list[AacMatch]
 
 
 # --- 사업주용 AI 코칭 ---

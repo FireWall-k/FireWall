@@ -86,6 +86,15 @@ export interface AacSearchResult {
   matches: AacMatch[];
 }
 
+/** 자동으로 그림을 못 고른 이유. low_margin이면 후보를 보여주고 사람이 고른다. */
+export type MatchReason = "accepted" | "no_candidate" | "low_score" | "low_margin";
+
+export interface StepSymbolCandidates {
+  step_id: string;
+  reason: MatchReason;
+  candidates: AacMatch[];
+}
+
 export interface Dashboard {
   task_id: string;
   task_title: string;
@@ -184,8 +193,14 @@ export const api = {
     req<Coaching>(`/api/dashboard/tasks/${taskId}/coaching${workerId ? `?worker_id=${workerId}` : ""}`),
   getTask: (id: string) => req<Task>(`/api/tasks/${id}`),
   deleteTask: (id: string) => req<{ ok: boolean }>(`/api/tasks/${id}`, { method: "DELETE" }),
-  updateStep: (taskId: string, stepId: string, patch: Partial<Pick<Step, "sentence" | "symbol_url">>) =>
-    req<Step>(`/api/tasks/${taskId}/steps/${stepId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  updateStep: (
+    taskId: string,
+    stepId: string,
+    patch: Partial<Pick<Step, "sentence" | "symbol_url" | "symbol_source">>,
+  ) => req<Step>(`/api/tasks/${taskId}/steps/${stepId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  /** 자동 채택하지 못한 단계에 붙일 AAC 후보를 가져온다(검토 화면 후보 선택용). */
+  stepSymbolCandidates: (taskId: string, stepId: string) =>
+    req<StepSymbolCandidates>(`/api/tasks/${taskId}/steps/${stepId}/symbol-candidates`),
   deleteStep: (taskId: string, stepId: string) =>
     req<Task>(`/api/tasks/${taskId}/steps/${stepId}`, { method: "DELETE" }),
   addStep: (taskId: string, sentence: string) =>

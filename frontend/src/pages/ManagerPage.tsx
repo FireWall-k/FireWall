@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
-import { api, type Task, type Worker } from "../api";
+import { api, type AacMatch, type StepSymbolCandidates, type Task, type Worker } from "../api";
 import { ActionChip } from "../actions";
 
 const SAMPLE =
@@ -36,6 +36,9 @@ export default function ManagerPage() {
   const [newWorkerName, setNewWorkerName] = useState("");
   const [newWorkerCode, setNewWorkerCode] = useState("");
 
+  // 그림을 자동으로 못 고른 단계의 후보 목록 (stepId -> 후보/사유)
+  const [stepCandidates, setStepCandidates] = useState<Record<string, StepSymbolCandidates>>({});
+
   // 단계 드래그 정렬 + 단계 직접 추가
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -69,6 +72,43 @@ export default function ManagerPage() {
     }
   }
 
+  // 그림이 안 붙은 단계의 후보를 가져온다. 서버가 자동 채택을 못 한 경우
+  // (후보 점수가 붙어 있어 고르지 못함) 사업주가 직접 고를 수 있게 한다.
+  useEffect(() => {
+    if (!task) return;
+    let cancelled = false;
+    const pending = task.steps.filter((s) => s.needs_fallback && !stepCandidates[s.id]);
+    if (pending.length === 0) return;
+
+    (async () => {
+      const fetched = await Promise.all(
+        pending.map((s) =>
+          api.stepSymbolCandidates(task.id, s.id).catch(
+            // 실패해도 빈 결과를 기록해 둔다. 기록하지 않으면 이 단계가 계속
+            // pending으로 남아 effect가 무한히 다시 조회한다.
+            (): StepSymbolCandidates => ({
+              step_id: s.id,
+              reason: "no_candidate",
+              candidates: [],
+            }),
+          ),
+        ),
+      );
+      if (cancelled) return;
+      setStepCandidates((prev) => {
+        const next = { ...prev };
+        fetched.forEach((c) => {
+          next[c.step_id] = c;
+        });
+        return next;
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [task, stepCandidates]);
+
   async function handleEditSentence(stepId: string, sentence: string) {
     if (!task) return;
     const updated = await api.updateStep(task.id, stepId, { sentence });
@@ -76,6 +116,26 @@ export default function ManagerPage() {
       ...task,
       steps: task.steps.map((s) => (s.id === stepId ? updated : s)),
     });
+    // 문장이 바뀌면 후보도 달라진다. 캐시를 버려 다시 받아오게 한다.
+    setStepCandidates((prev) => {
+      const next = { ...prev };
+      delete next[stepId];
+      return next;
+    });
+  }
+
+  async function handlePickCandidate(stepId: string, match: AacMatch) {
+    if (!task) return;
+    setError(null);
+    try {
+      const updated = await api.updateStep(task.id, stepId, {
+        symbol_url: match.image_url,
+        symbol_source: "LOCAL_AAC",
+      });
+      setTask({ ...task, steps: task.steps.map((s) => (s.id === stepId ? updated : s)) });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "그림 선택에 실패했습니다.");
+    }
   }
 
   async function handleUploadPhoto(stepId: string, file: File) {
@@ -451,6 +511,42 @@ export default function ManagerPage() {
                     <ActionChip action={s.action_type} className="text-[11px] !px-2 !py-0.5" />
                     <span>상징: {s.symbol_source === "photo" ? "직접 등록한 사진" : s.symbol_source}</span>
                   </div>
+
+                  {/* 자동으로 못 고른 단계 — 후보가 있으면 사업주가 직접 고르게 한다.
+                      후보가 없으면(쓸 만한 그림이 없음) 현장 사진을 권한다. */}
+                  {s.needs_fallback && stepCandidates[s.id] && (
+                    stepCandidates[s.id].candidates.length > 0 ? (
+                      <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2">
+                        <p className="text-[11px] font-medium text-amber-800">
+                          비슷한 그림이 여러 개예요. 맞는 것을 골라 주세요.
+                        </p>
+                        <div className="mt-1.5 flex flex-wrap gap-2">
+                          {stepCandidates[s.id].candidates.map((c) => (
+                            <button
+                              key={c.asset_id}
+                              type="button"
+                              onClick={() => handlePickCandidate(s.id, c)}
+                              className="w-20 rounded border border-slate-200 bg-white p-1 text-left hover:border-blue-400 hover:ring-2 hover:ring-blue-200"
+                              title={`${c.label} 선택`}
+                            >
+                              <img
+                                src={c.image_url}
+                                alt={c.label}
+                                className="h-16 w-full rounded object-contain"
+                              />
+                              <span className="mt-0.5 block text-[10px] leading-tight text-slate-600">
+                                {c.label}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-[11px] text-amber-700">
+                        맞는 그림이 없어요. 실제 현장 사진을 올리면 가장 잘 전달됩니다.
+                      </p>
+                    )
+                  )}
                 </div>
                 <button
                   onClick={() => handleDeleteStep(s.id)}

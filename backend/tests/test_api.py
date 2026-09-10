@@ -187,6 +187,182 @@ def test_add_step_appends_at_end(client, employer_token):
     assert [s["order"] for s in steps] == [1, 2, 3]
 
 
+# ---------- 맥락 저장/재사용 ----------
+def test_task_stores_context_for_later_searches(client, employer_token):
+    """생성 시 맥락을 저장해야 나중에 같은 조건으로 재검색할 수 있다."""
+    from database import SessionLocal
+    from models import Task
+
+    r = client.post("/api/tasks", json={
+        "raw_input": "상자를 옮기세요", "business_type": "카페",
+        "work_environment": "홀"}, headers=auth(employer_token))
+    assert r.status_code == 201, r.text
+
+    with SessionLocal() as db:
+        task = db.get(Task, r.json()["id"])
+        assert task.business_type == "카페"
+        assert task.work_environment == "홀"
+
+
+def test_candidate_lookup_uses_the_same_context_as_creation(client, employer_token,
+                                                            monkeypatch):
+    """후보 조회가 생성 때와 같은 맥락으로 검색해야 한다.
+
+    맥락이 빠지면 업종 가중치가 달라져, 생성 때 채택된 단계가 후보 조회에서는
+    경합으로 보이는 식으로 어긋난다.
+    """
+    import ai_client
+
+    seen: list[dict] = []
+    real = ai_client.map_symbols
+
+    def spy(keywords, context=None):
+        seen.append(dict(context or {}))
+        return real(keywords, context)
+
+    monkeypatch.setattr(ai_client, "map_symbols", spy)
+
+    r = client.post("/api/tasks", json={
+        "raw_input": "상자를 옮기세요", "business_type": "카페",
+        "work_environment": "홀"}, headers=auth(employer_token))
+    task = r.json()
+    creation_ctx = seen[0]
+
+    seen.clear()
+    client.get(f"/api/tasks/{task['id']}/steps/{task['steps'][0]['id']}/symbol-candidates",
+               headers=auth(employer_token))
+    lookup_ctx = seen[0]
+
+    assert lookup_ctx["business_type"] == creation_ctx["business_type"] == "카페"
+    assert lookup_ctx["work_environment"] == creation_ctx["work_environment"] == "홀"
+
+
+def test_added_step_uses_the_tasks_context(client, employer_token, monkeypatch):
+    """검토 화면에서 추가한 단계도 같은 업종 맥락으로 그림을 찾아야 한다."""
+    import ai_client
+
+    seen: list[dict] = []
+    real = ai_client.map_symbols
+    monkeypatch.setattr(ai_client, "map_symbols",
+                        lambda k, context=None: (seen.append(dict(context or {})),
+                                                 real(k, context))[1])
+
+    r = client.post("/api/tasks", json={
+        "raw_input": "상자를 옮기세요", "business_type": "포장",
+        "work_environment": "작업장"}, headers=auth(employer_token))
+    task = r.json()
+
+    seen.clear()
+    add = client.post(f"/api/tasks/{task['id']}/steps",
+                      json={"sentence": "박스 뚜껑을 덮으세요."}, headers=auth(employer_token))
+    assert add.status_code == 201, add.text
+    assert seen[0]["business_type"] == "포장"
+    assert seen[0]["work_environment"] == "작업장"
+
+
+# ---------- AAC 후보 선택 (검토 화면) ----------
+def test_symbol_candidates_returns_shortlist(client, employer_token, monkeypatch):
+    """자동 채택을 못 한 단계는 후보와 사유를 돌려줘야 한다."""
+    import ai_client
+    from conftest import fake_map_symbols_with_candidates
+
+    r = client.post("/api/tasks", json={"raw_input": "원두를 갈아주세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    step_id = task["steps"][0]["id"]
+
+    monkeypatch.setattr(ai_client, "map_symbols", fake_map_symbols_with_candidates)
+    got = client.get(f"/api/tasks/{task['id']}/steps/{step_id}/symbol-candidates",
+                     headers=auth(employer_token))
+    assert got.status_code == 200, got.text
+    body = got.json()
+    assert body["step_id"] == step_id
+    assert body["reason"] == "low_margin"
+    assert [c["asset_id"] for c in body["candidates"]] == ["CAFE_007", "CAFE_013"]
+    # 상대 경로가 브라우저가 볼 수 있는 절대 URL로 바뀌어야 한다.
+    assert body["candidates"][0]["image_url"].startswith("http")
+
+
+def test_symbol_candidates_empty_when_nothing_fits(client, employer_token):
+    """쓸 만한 후보가 없으면 빈 목록 — 프론트는 현장 사진을 권한다."""
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    step_id = task["steps"][0]["id"]
+
+    got = client.get(f"/api/tasks/{task['id']}/steps/{step_id}/symbol-candidates",
+                     headers=auth(employer_token))
+    assert got.status_code == 200, got.text
+    assert got.json()["candidates"] == []
+    assert got.json()["reason"] == "no_candidate"
+
+
+def test_symbol_candidates_rejects_other_employers_task(client, employer_token):
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    step_id = task["steps"][0]["id"]
+
+    other = make_token("other-employer", "employer")
+    got = client.get(f"/api/tasks/{task['id']}/steps/{step_id}/symbol-candidates",
+                     headers=auth(other))
+    assert got.status_code == 404, got.text
+
+
+def test_symbol_candidates_404_for_unknown_step(client, employer_token):
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    got = client.get(f"/api/tasks/{task['id']}/steps/no-such-step/symbol-candidates",
+                     headers=auth(employer_token))
+    assert got.status_code == 404, got.text
+
+
+def test_picking_an_aac_candidate_records_local_aac_source(client, employer_token):
+    """후보를 고르면 출처가 LOCAL_AAC로 남아야 한다(사진/폴백과 구분)."""
+    r = client.post("/api/tasks", json={"raw_input": "원두를 갈아주세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    step_id = task["steps"][0]["id"]
+
+    patched = client.patch(
+        f"/api/tasks/{task['id']}/steps/{step_id}",
+        json={"symbol_url": "http://localhost:8000/api/aac/images/cafe/CAFE_013.webp",
+              "symbol_source": "LOCAL_AAC"},
+        headers=auth(employer_token))
+    assert patched.status_code == 200, patched.text
+    body = patched.json()
+    assert body["symbol_source"] == "LOCAL_AAC"
+    assert body["needs_fallback"] is False
+
+
+def test_symbol_source_defaults_to_fallback(client, employer_token):
+    """symbol_source를 안 주면 기존 동작(fallback)을 유지한다."""
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    step_id = task["steps"][0]["id"]
+
+    patched = client.patch(f"/api/tasks/{task['id']}/steps/{step_id}",
+                           json={"symbol_url": "http://example.test/x.webp"},
+                           headers=auth(employer_token))
+    assert patched.status_code == 200, patched.text
+    assert patched.json()["symbol_source"] == "fallback"
+
+
+def test_symbol_source_rejects_unknown_value(client, employer_token):
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    step_id = task["steps"][0]["id"]
+
+    patched = client.patch(f"/api/tasks/{task['id']}/steps/{step_id}",
+                           json={"symbol_url": "http://example.test/x.webp",
+                                 "symbol_source": "photo"},
+                           headers=auth(employer_token))
+    assert patched.status_code == 422, patched.text
+
+
 def test_add_step_rejects_blank(client, employer_token):
     r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"}, headers=auth(employer_token))
     task = r.json()
