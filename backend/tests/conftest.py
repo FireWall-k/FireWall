@@ -30,8 +30,10 @@ def _fake_decompose(raw_input: str, context=None) -> dict:
         "task_title": "테스트 직무",
         "steps": [
             {"order": 1, "sentence": "상자를 옮기세요.", "action_type": "move",
+             "symbol_query": ["상자", "box"],
              "keywords": [{"term": "상자", "pos": "noun"}]},
             {"order": 2, "sentence": "수량을 확인하세요.", "action_type": "observe",
+             "symbol_query": ["수량", "quantity"],
              "keywords": [{"term": "수량", "pos": "noun"}]},
         ],
     }

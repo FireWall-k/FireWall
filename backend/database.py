@@ -42,6 +42,9 @@ _ADDED_COLUMNS: dict[str, dict[str, str]] = {
         "business_type": "VARCHAR DEFAULT ''",
         "work_environment": "VARCHAR DEFAULT ''",
     },
+    "steps": {
+        "symbol_query": "TEXT DEFAULT ''",
+    },
 }
 
 

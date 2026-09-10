@@ -237,6 +237,84 @@ def test_candidate_lookup_uses_the_same_context_as_creation(client, employer_tok
     assert lookup_ctx["work_environment"] == creation_ctx["work_environment"] == "홀"
 
 
+def test_step_stores_symbol_query_from_decompose(client, employer_token):
+    """생성 시 쓴 검색어를 저장해야 후보 조회가 같은 질의를 재현한다."""
+    from database import SessionLocal
+    from models import Step, Task
+
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"},
+                    headers=auth(employer_token))
+    with SessionLocal() as db:
+        task = db.get(Task, r.json()["id"])
+        steps = sorted(task.steps, key=lambda s: s.order_index)
+        assert steps[0].symbol_query == "상자,box"
+        assert steps[1].symbol_query == "수량,quantity"
+
+
+def test_candidate_lookup_reuses_stored_symbol_query(client, employer_token, monkeypatch):
+    """후보 조회는 문장이 아니라 저장된 symbol_query로 검색해야 한다.
+
+    안 그러면 생성('상자','box')과 조회('상자를','옮기세요')가 다른 질의라 판정이 어긋난다.
+    """
+    import ai_client
+
+    seen: list[list[str]] = []
+    real = ai_client.map_symbols
+    monkeypatch.setattr(ai_client, "map_symbols",
+                        lambda kw, context=None: (seen.append(list(kw)), real(kw, context))[1])
+
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    seen.clear()
+    client.get(f"/api/tasks/{task['id']}/steps/{task['steps'][0]['id']}/symbol-candidates",
+               headers=auth(employer_token))
+    assert seen[0] == ["상자", "box"]
+
+
+def test_editing_sentence_clears_stale_symbol_query(client, employer_token):
+    """문장을 고치면 옛 symbol_query는 무의미하다 — 비워서 새 문장에서 다시 뽑게 한다."""
+    from database import SessionLocal
+    from models import Step
+
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    step_id = task["steps"][0]["id"]
+
+    client.patch(f"/api/tasks/{task['id']}/steps/{step_id}",
+                 json={"sentence": "바닥을 쓸어주세요."}, headers=auth(employer_token))
+    with SessionLocal() as db:
+        assert db.get(Step, step_id).symbol_query == ""
+
+
+def test_accepted_rematch_is_offered_as_a_single_candidate(client, employer_token, monkeypatch):
+    """생성 땐 폴백이었는데 재조회 시 매칭이 있으면 그 그림을 후보로 돌려준다."""
+    import ai_client
+
+    def accepted_now(keywords, context=None):
+        return {"symbols": [{
+            "keyword": "바닥", "image_url": "/api/aac/images/cafe/CAFE_080.webp",
+            "source": "LOCAL_AAC", "confidence": 0.33, "needs_fallback": False,
+            "reason": "accepted", "external_id": "CAFE_080",
+            "resolved_keyword": "바닥을 빗자루로 쓸어낸다", "candidates": [],
+        }]}
+
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    monkeypatch.setattr(ai_client, "map_symbols", accepted_now)
+
+    got = client.get(
+        f"/api/tasks/{task['id']}/steps/{task['steps'][0]['id']}/symbol-candidates",
+        headers=auth(employer_token))
+    body = got.json()
+    assert body["reason"] == "accepted"
+    assert len(body["candidates"]) == 1
+    assert body["candidates"][0]["asset_id"] == "CAFE_080"
+    assert body["candidates"][0]["image_url"].startswith("http")
+
+
 def test_added_step_uses_the_tasks_context(client, employer_token, monkeypatch):
     """검토 화면에서 추가한 단계도 같은 업종 맥락으로 그림을 찾아야 한다."""
     import ai_client

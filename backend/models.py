@@ -89,6 +89,11 @@ class Step(Base):
     order_index: Mapped[int] = mapped_column(Integer)
     sentence: Mapped[str] = mapped_column(Text)
     action_type: Mapped[str] = mapped_column(String, default="other")
+    # LLM 분해가 준 구체 명사(["바닥","floor"] 등). 직무 생성 시 AAC 검색에 쓴 질의를
+    # 그대로 저장한다. 검토 화면에서 후보를 다시 조회할 때 같은 질의를 써야 판정이
+    # 어긋나지 않는다(안 그러면 "생성 땐 그림 없음, 후보 조회 땐 매칭 있음"이 된다).
+    # 문장을 수정하면 이 값은 무의미해지므로 update_step 에서 비운다.
+    symbol_query: Mapped[str] = mapped_column(Text, default="")  # "," 로 이은 문자열
     symbol_url: Mapped[str | None] = mapped_column(String, nullable=True)
     symbol_source: Mapped[str] = mapped_column(String, default="fallback")
     needs_fallback: Mapped[bool] = mapped_column(Boolean, default=False)

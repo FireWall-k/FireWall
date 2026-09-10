@@ -48,9 +48,35 @@ def test_adds_missing_columns_to_existing_table(legacy_db, monkeypatch):
 
     applied = database.apply_pending_columns()
 
-    assert set(applied) == {"tasks.business_type", "tasks.work_environment"}
+    assert "tasks.business_type" in applied
+    assert "tasks.work_environment" in applied
     after = {c["name"] for c in inspect(legacy_db).get_columns("tasks")}
     assert {"business_type", "work_environment"} <= after
+
+
+def test_adds_step_symbol_query_column(legacy_db, monkeypatch):
+    """steps 테이블에도 symbol_query 컬럼을 추가해야 한다(구 DB에서 후보 조회가 안 깨지게)."""
+    import database
+
+    with legacy_db.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE steps (
+                id VARCHAR PRIMARY KEY, task_id VARCHAR, order_index INTEGER,
+                sentence TEXT, action_type VARCHAR, symbol_url VARCHAR,
+                symbol_source VARCHAR, needs_fallback BOOLEAN, tts_audio_url VARCHAR
+            )
+        """))
+        conn.execute(text(
+            "INSERT INTO steps (id, task_id, order_index, sentence) "
+            "VALUES ('s1', 't1', 1, '상자를 옮기세요')"
+        ))
+    monkeypatch.setattr(database, "engine", legacy_db)
+
+    applied = database.apply_pending_columns()
+    assert "steps.symbol_query" in applied
+    with legacy_db.connect() as conn:
+        val = conn.execute(text("SELECT symbol_query FROM steps WHERE id='s1'")).scalar()
+    assert val == ""
 
 
 def test_existing_rows_get_a_usable_default(legacy_db, monkeypatch):

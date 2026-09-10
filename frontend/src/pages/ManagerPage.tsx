@@ -475,8 +475,15 @@ export default function ManagerPage() {
                     <img src={s.symbol_url} alt={s.sentence}
                          className="h-16 w-16 rounded border border-slate-200 object-contain" />
                   ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded border border-dashed border-amber-400 bg-amber-50 text-center text-[10px] text-amber-700">
-                      사진 권장
+                    // 아래 후보 영역이 "그림 고르기"를 안내하는 동안에는 "사진 권장"을
+                    // 함께 띄우지 않는다(상충). 후보가 없을 때만 사진을 권한다.
+                    <div className={
+                      "flex h-16 w-16 items-center justify-center rounded border border-dashed text-center text-[10px] "
+                      + (stepCandidates[s.id]?.candidates.length
+                         ? "border-slate-300 bg-slate-50 text-slate-400"
+                         : "border-amber-400 bg-amber-50 text-amber-700")
+                    }>
+                      {stepCandidates[s.id]?.candidates.length ? "그림 선택" : "사진 권장"}
                     </div>
                   )}
                   <label className="cursor-pointer text-[11px] font-medium text-blue-700 hover:underline">
@@ -512,41 +519,64 @@ export default function ManagerPage() {
                     <span>상징: {s.symbol_source === "photo" ? "직접 등록한 사진" : s.symbol_source}</span>
                   </div>
 
-                  {/* 자동으로 못 고른 단계 — 후보가 있으면 사업주가 직접 고르게 한다.
-                      후보가 없으면(쓸 만한 그림이 없음) 현장 사진을 권한다. */}
-                  {s.needs_fallback && stepCandidates[s.id] && (
-                    stepCandidates[s.id].candidates.length > 0 ? (
-                      <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2">
-                        <p className="text-[11px] font-medium text-amber-800">
-                          비슷한 그림이 여러 개예요. 맞는 것을 골라 주세요.
-                        </p>
-                        <div className="mt-1.5 flex flex-wrap gap-2">
-                          {stepCandidates[s.id].candidates.map((c) => (
-                            <button
-                              key={c.asset_id}
-                              type="button"
-                              onClick={() => handlePickCandidate(s.id, c)}
-                              className="w-20 rounded border border-slate-200 bg-white p-1 text-left hover:border-blue-400 hover:ring-2 hover:ring-blue-200"
-                              title={`${c.label} 선택`}
-                            >
-                              <img
-                                src={c.image_url}
-                                alt={c.label}
-                                className="h-16 w-full rounded object-contain"
-                              />
-                              <span className="mt-0.5 block text-[10px] leading-tight text-slate-600">
-                                {c.label}
-                              </span>
+                  {/* 자동으로 못 고른 단계 — 재조회 결과에 따라 다르게 안내한다.
+                      accepted : 쓸 만한 매칭을 찾음 → 한 번에 적용
+                      low_margin: 비슷한 게 여럿 → 사업주가 선택
+                      그 외    : 쓸 만한 그림 없음 → 현장 사진 권장 */}
+                  {s.needs_fallback && stepCandidates[s.id] && (() => {
+                    const sc = stepCandidates[s.id];
+                    if (sc.reason === "accepted" && sc.candidates.length === 1) {
+                      const c = sc.candidates[0];
+                      return (
+                        <div className="mt-2 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2">
+                          <img src={c.image_url} alt={c.label}
+                               className="h-14 w-14 shrink-0 rounded border border-slate-200 object-contain" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-medium text-emerald-800">
+                              찾은 그림이 있어요: {c.label}
+                            </p>
+                            <button type="button" onClick={() => handlePickCandidate(s.id, c)}
+                                    className="mt-1 rounded bg-emerald-600 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-emerald-700">
+                              이 그림 적용
                             </button>
-                          ))}
+                          </div>
                         </div>
-                      </div>
-                    ) : (
+                      );
+                    }
+                    if (sc.candidates.length > 0) {
+                      // low_margin: 후보들이 다 그럴듯한데 순위만 못 매김
+                      // low_score : 딱 맞는 건 없지만 비슷한 걸 보여주고 판단을 맡김
+                      const tie = sc.reason === "low_margin";
+                      return (
+                        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2">
+                          <p className="text-[11px] font-medium text-amber-800">
+                            {tie
+                              ? "비슷한 그림이 여러 개예요. 맞는 것을 골라 주세요."
+                              : "딱 맞는 그림이 없어요. 아래에서 고르거나 현장 사진을 올리세요."}
+                          </p>
+                          <div className="mt-1.5 flex flex-wrap gap-2">
+                            {sc.candidates.map((c) => (
+                              <button key={c.asset_id} type="button"
+                                      onClick={() => handlePickCandidate(s.id, c)}
+                                      className="w-20 rounded border border-slate-200 bg-white p-1 text-left hover:border-blue-400 hover:ring-2 hover:ring-blue-200"
+                                      title={`${c.label} 선택`}>
+                                <img src={c.image_url} alt={c.label}
+                                     className="h-16 w-full rounded object-contain" />
+                                <span className="mt-0.5 block text-[10px] leading-tight text-slate-600">
+                                  {c.label}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
                       <p className="mt-2 text-[11px] text-amber-700">
                         맞는 그림이 없어요. 실제 현장 사진을 올리면 가장 잘 전달됩니다.
                       </p>
-                    )
-                  )}
+                    );
+                  })()}
                 </div>
                 <button
                   onClick={() => handleDeleteStep(s.id)}
