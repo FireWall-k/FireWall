@@ -12,7 +12,7 @@ export default function ManagerPage() {
   const [workEnvironment, setWorkEnvironment] = useState("");
   const [workerNote, setWorkerNote] = useState("");
   const [task, setTask] = useState<Task | null>(null);
-  const [aacQuery, setAacQuery] = useState("상품을 선반에 놓는다");
+  const [aacQuery, setAacQuery] = useState("");
 
   const [aacResult, setAacResult] = useState<{
     query: string;
@@ -516,7 +516,13 @@ export default function ManagerPage() {
                   />
                   <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
                     <ActionChip action={s.action_type} className="text-[11px] !px-2 !py-0.5" />
-                    <span>상징: {s.symbol_source === "photo" ? "직접 등록한 사진" : s.symbol_source}</span>
+                    {/* 그림이 붙은 단계만 출처를 보여준다. 폴백 상태는 아래 후보 영역이
+                        이미 설명하므로 "상징: fallback"은 중복 노이즈였다. */}
+                    {s.symbol_url && (
+                      <span>
+                        그림: {s.symbol_source === "photo" ? "직접 올린 사진" : "그림 카드"}
+                      </span>
+                    )}
                   </div>
 
                   {/* 자동으로 못 고른 단계 — 재조회 결과에 따라 다르게 안내한다.
@@ -530,10 +536,10 @@ export default function ManagerPage() {
                       return (
                         <div className="mt-2 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2">
                           <img src={c.image_url} alt={c.label}
-                               className="h-14 w-14 shrink-0 rounded border border-slate-200 object-contain" />
+                               className="h-14 w-14 shrink-0 rounded border border-slate-200 bg-white object-contain" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-[11px] font-medium text-emerald-800">
-                              찾은 그림이 있어요: {c.label}
+                            <p className="break-keep text-[11px] font-medium text-emerald-800">
+                              찾은 그림: {c.label}
                             </p>
                             <button type="button" onClick={() => handlePickCandidate(s.id, c)}
                                     className="mt-1 rounded bg-emerald-600 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-emerald-700">
@@ -554,15 +560,15 @@ export default function ManagerPage() {
                               ? "비슷한 그림이 여러 개예요. 맞는 것을 골라 주세요."
                               : "딱 맞는 그림이 없어요. 아래에서 고르거나 현장 사진을 올리세요."}
                           </p>
-                          <div className="mt-1.5 flex flex-wrap gap-2">
+                          <div className="mt-1.5 grid max-w-sm grid-cols-3 gap-2">
                             {sc.candidates.map((c) => (
                               <button key={c.asset_id} type="button"
                                       onClick={() => handlePickCandidate(s.id, c)}
-                                      className="w-20 rounded border border-slate-200 bg-white p-1 text-left hover:border-blue-400 hover:ring-2 hover:ring-blue-200"
+                                      className="rounded border border-slate-200 bg-white p-1 hover:border-blue-400 hover:ring-2 hover:ring-blue-200"
                                       title={`${c.label} 선택`}>
                                 <img src={c.image_url} alt={c.label}
-                                     className="h-16 w-full rounded object-contain" />
-                                <span className="mt-0.5 block text-[10px] leading-tight text-slate-600">
+                                     className="aspect-square w-full rounded object-contain" />
+                                <span className="mt-0.5 block break-keep text-center text-[10px] leading-tight text-slate-600">
                                   {c.label}
                                 </span>
                               </button>
