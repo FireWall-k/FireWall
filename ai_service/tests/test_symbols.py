@@ -247,6 +247,27 @@ def test_map_symbols_omits_candidates_when_accepted():
     assert s.candidates == []
 
 
+def test_asset_keywords_from_data_are_searchable():
+    """aac_assets.json에 채워진 keywords/aliases/objects(ta3woong님 브랜치 병합분)가
+    실제로 검색에 쓰여야 한다. 병합 전에는 이 필드가 전부 비어 있어 데드 코드였다.
+    """
+    from local_aac import load_assets
+
+    with_keywords = sum(1 for a in load_assets() if a.get("keywords") or a.get("aliases"))
+    assert with_keywords > 300, "asset 데이터에 keywords/aliases가 채워져 있어야 한다"
+
+
+def test_retail_barcode_matches_after_merged_keywords():
+    """병합 전에는 "바코드를 찍어 계산하세요"가 1순위 오답이었다. 병합된 keywords가
+    이를 고쳤는지 회귀 테스트로 고정한다.
+    """
+    query = "바코드를 찍어 계산하세요."
+    results = search_assets(
+        query, {"business_type": "마트", "sentence": query, "action_type": "observe"}, 3,
+    )
+    assert results[0]["asset_id"] == "RETAIL_060"
+
+
 def test_fallback_when_no_relevant_match(monkeypatch):
     monkeypatch.setenv("AAC_MATCH_THRESHOLD", "0.95")
 

@@ -25,9 +25,25 @@
 - `asset_type`: `action | tool | support`
 - `variant`: 동일 행동 이미지의 변형 번호
 - `label`: 한국어 행동/사물 라벨
-- `keywords`, `aliases`: 향후 수동 보강용 검색어 (현재 401건 모두 비어 있음 → `aac_index.json` 참고)
+- `keywords`, `aliases`, `objects`, `action`, `search_text`: `scripts/enrich_aac_metadata.py`가
+  채운 검색/분류 보강 필드(2026-09-14, `feature/local-aac` 병합분). 이전에는 401건 전부
+  비어 있던 데드 필드였다 — `ai_service/local_aac.py`의 `load_assets()`가 이 필드들을
+  원래도 읽고 있었으므로 데이터만 채워지면 코드 변경 없이 검색에 반영된다.
 - `image`: `images/` 기준 상대 경로
 - `source_file`: 원본 추적용 파일명
+
+## 두 개의 보강 파이프라인이 공존합니다
+
+같은 문제(라벨만으로는 검색이 부실함)를 두 갈래로 풀었고, 둘 다 살려서 씁니다.
+
+| | `scripts/enrich_aac_metadata.py` | `scripts/build_aac_index.py` |
+|---|---|---|
+| 저장 위치 | `aac_assets.json`에 직접(`keywords`/`aliases`/`objects`/`action`) | 별도 파일 `aac_index.json` |
+| 성격 | 사람이 보강 가능한 원본 필드 | LLM이 만든 재생성 가능한 파생 데이터 |
+| `local_aac.py` 사용처 | 검색어 가방(Jaccard) | 동사 원형 직접매칭, 사물카드 게이트 등 |
+
+새 자산을 넣거나 라벨을 고치면 **둘 다** 다시 돌리는 게 안전합니다. 어느 한쪽만
+돌리면 그 자산만 검색 품질이 떨어집니다.
 
 ## 구조화 인덱스 (`aac_index.json`)
 

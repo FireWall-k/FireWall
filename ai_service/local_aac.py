@@ -201,8 +201,11 @@ def load_assets() -> list[dict]:
 
         # 인덱스 검색어는 '라벨에 없는 다른 표현'이다(분쇄한다→갈다, 박스→상자).
         # 라벨만으로는 못 찾던 질의를 여기서 받는다.
+        # objects(팀원 ta3woong 브랜치 병합분)도 같은 바구니에 넣는다 — 대상 명사를
+        # 가산점으로 쓰면 회귀했지만(cd3972e), 검색 가능하게만 하는 건 keywords/aliases와
+        # 같은 안전한 패턴이라 여기서는 그대로 넣는다.
         extra_terms = (
-            asset.get("keywords", []) + asset.get("aliases", [])
+            asset.get("keywords", []) + asset.get("aliases", []) + asset.get("objects", [])
             + entry.get("keywords_ko", []) + entry.get("keywords_en", [])
         )
         keyword_text = " ".join(extra_terms).strip()
@@ -445,6 +448,19 @@ def _tiebreak(asset: dict, preferred_job: str | None, action_type: str | None) -
             bonus -= _ASSET_TYPE_TIEBREAK
 
     return bonus
+
+
+# ta3woong님 브랜치(feature/local-aac, 26e00ec)의 "specificity penalty" 아이디어를
+# 이식해 봤다가 되돌렸다 — 질의에 없는 세부 조건(냉장/불량/배송 등)이 자산에만 있으면
+# 감점하는 것. 방향은 내가 되돌린 object 가산점(cd3972e)과 반대(가산이 아니라 감점)라
+# 다를 줄 알았는데, 실측하니 아주 작은 크기(0.03)에서도 즉시 회귀했다(top1 0.964→0.952).
+#
+# 원인: 정답 자체가 세부 조건 단어를 쓰고 질의가 그걸 다른 말로 바꿔 쓰면 정답이 벌점을
+# 받는다. 예) "상태가 안 좋은 제품을 빼내세요"의 정답은 "불량 제품을 골라낸다"인데
+# 질의가 "불량"이라고 안 썼다는 이유로 벌점을 먹고, "다른 제품을 골라낸다"(오답, 벌점 없음)
+# 에게 진다. 세부 조건 유무가 아니라 그 단어를 '질의가 그대로 썼는지'만 보는 게 문제라,
+# 사업주가 다르게 말하는 표현일수록(정확히 이 프로젝트의 골든셋 작성 원칙과 충돌한다)
+# 더 크게 틀린다. 크기를 조절해서 될 문제가 아니라 메커니즘 자체가 안 맞는다.
 
 
 def _score_asset(asset: dict, qf: _QueryFeatures, preferred_job: str | None,
