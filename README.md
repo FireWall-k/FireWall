@@ -65,6 +65,13 @@ jobcard-ai
 
 DB와 TTS 캐시는 Docker named volume `jobcard-data`에 유지됩니다(macOS 바인드 마운트에서 SQLite가 `disk I/O error`를 내는 문제를 피하기 위해 리눅스 VM 내부 볼륨을 사용). 초기화가 필요하면 `-v` 옵션으로 볼륨까지 함께 제거합니다.
 
+> **스키마 변경**: 정식 마이그레이션 도구(Alembic)는 아직 없습니다. `create_all()`은 없는
+> *테이블*만 만들고 기존 테이블에 *컬럼*은 추가하지 않으므로, 모델에 컬럼을 늘리면 이미
+> 만들어진 DB에서 조회가 깨집니다. 그 구멍은 `backend/database.py`의
+> `apply_pending_columns()`가 서버 기동 시 `ALTER TABLE`로 메웁니다.
+> **컬럼을 추가하면 `_ADDED_COLUMNS`에도 등록**하고, 기존 행이 채워지도록 NULL 허용이거나
+> 기본값이 있어야 합니다. 컬럼 삭제·타입 변경은 지원하지 않습니다(그때는 Alembic 도입).
+
 ```bash
 docker compose down -v
 ```

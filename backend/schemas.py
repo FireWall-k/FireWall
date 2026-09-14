@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -44,6 +45,26 @@ class TaskCreate(BaseModel):
 class StepUpdate(BaseModel):
     sentence: str | None = Field(default=None, max_length=500)
     symbol_url: str | None = Field(default=None, max_length=2000)
+    # 검토 화면에서 AAC 후보를 직접 고른 경우 "LOCAL_AAC". 생략하면 기존처럼 fallback.
+    symbol_source: Literal["LOCAL_AAC", "fallback"] | None = None
+
+
+class StepCreate(BaseModel):
+    # 사업주가 검토 화면에서 직접 추가하는 단계. 문장만 받고, 상징/TTS는 서버가 붙인다.
+    sentence: str = Field(min_length=1, max_length=500)
+    action_type: str = Field(default="other", max_length=20)
+
+    @field_validator("sentence")
+    @classmethod
+    def _not_blank(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("문장을 입력해 주세요.")
+        return v
+
+
+class StepReorder(BaseModel):
+    # 새 순서대로 나열된 단계 id 전체. 서버가 이 순서로 order_index를 1..N 재부여한다.
+    step_ids: list[str] = Field(min_length=1)
 
 
 class AssignRequest(BaseModel):
@@ -65,10 +86,10 @@ class PerformanceLogCreate(BaseModel):
     stuck: bool = False
 
 
-class ArasaacSearchRequest(BaseModel):
-    term: str = Field(min_length=1, max_length=100)
-    langs: list[str] = []
-    limit: int = Field(default=1, ge=1, le=10)
+class AacSearchRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=200)
+    job: str | None = Field(default=None, max_length=40)
+    limit: int = Field(default=5, ge=1, le=20)
 
 
 # --- 응답 ---
@@ -144,16 +165,31 @@ class DashboardOut(BaseModel):
     steps: list[StepStat]
 
 
-class ArasaacMatch(BaseModel):
-    language: str
-    term: str
-    pictogram_id: str
+class AacMatch(BaseModel):
+    asset_id: str
+    group_id: str
+    job: str
+    asset_type: str
+    label: str
     image_url: str
+    score: float
 
 
-class ArasaacSearchResult(BaseModel):
-    term: str
-    matches: list[ArasaacMatch]
+class AacSearchResult(BaseModel):
+    query: str
+    matches: list[AacMatch]
+
+
+class StepSymbolCandidates(BaseModel):
+    """단계에 붙일 AAC 후보. 자동 채택을 못 했을 때 사업주가 직접 고른다.
+
+    reason으로 왜 자동 채택하지 않았는지 알려준다.
+      low_margin  — 후보들 점수가 붙어 있어 못 고름. 후보를 보여주고 사람이 선택.
+      low_score / no_candidate — 쓸 만한 후보가 없음. 실제 현장 사진을 권한다.
+    """
+    step_id: str
+    reason: Literal["accepted", "no_candidate", "low_score", "low_margin"]
+    candidates: list[AacMatch]
 
 
 # --- 사업주용 AI 코칭 ---

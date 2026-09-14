@@ -14,12 +14,12 @@ import logging
 from fastapi import FastAPI, HTTPException
 
 import llm
-from arasaac import search_term
+from local_aac import search_assets
 from decompose import decompose
 from schemas import (
-    ArasaacMatch,
-    ArasaacSearchRequest,
-    ArasaacSearchResult,
+    AacMatch,
+    AacSearchRequest,
+    AacSearchResult,
     CoachingRequest,
     CoachingResult,
     CoachingSuggestion,
@@ -78,17 +78,28 @@ def ai_map_symbols(req: MapSymbolsRequest) -> MapSymbolsResult:
                 len(result.symbols), fallback_count)
     return result
 
+@app.post("/ai/aac/search", response_model=AacSearchResult)
+def ai_aac_search(req: AacSearchRequest) -> AacSearchResult:
+    query = req.query.strip()
 
-@app.post("/ai/arasaac/search", response_model=ArasaacSearchResult)
-def ai_arasaac_search(req: ArasaacSearchRequest) -> ArasaacSearchResult:
-    if not req.term.strip():
-        raise HTTPException(status_code=422, detail="term이 비어 있습니다.")
+    if not query:
+        raise HTTPException(
+            status_code=422,
+            detail="query가 비어 있습니다."
+        )
 
-    matches = search_term(req.term.strip(), langs=req.langs or None)
-    limited = matches[: max(req.limit, 1)]
-    return ArasaacSearchResult(
-        term=req.term.strip(),
-        matches=[ArasaacMatch(**match) for match in limited],
+    matches = search_assets(
+        query,
+        req.context,
+        limit=req.limit
+    )
+
+    return AacSearchResult(
+        query=query,
+        matches=[
+            AacMatch(**match)
+            for match in matches
+        ],
     )
 
 

@@ -71,16 +71,28 @@ export interface StepStat {
   stuck: boolean;
 }
 
-export interface ArasaacMatch {
-  language: string;
-  term: string;
-  pictogram_id: string;
+export interface AacMatch {
+  asset_id: string;
+  group_id: string;
+  job: string;
+  asset_type: string;
+  label: string;
   image_url: string;
+  score: number;
 }
 
-export interface ArasaacSearchResult {
-  term: string;
-  matches: ArasaacMatch[];
+export interface AacSearchResult {
+  query: string;
+  matches: AacMatch[];
+}
+
+/** 자동으로 그림을 못 고른 이유. low_margin이면 후보를 보여주고 사람이 고른다. */
+export type MatchReason = "accepted" | "no_candidate" | "low_score" | "low_margin";
+
+export interface StepSymbolCandidates {
+  step_id: string;
+  reason: MatchReason;
+  candidates: AacMatch[];
 }
 
 export interface Dashboard {
@@ -181,10 +193,23 @@ export const api = {
     req<Coaching>(`/api/dashboard/tasks/${taskId}/coaching${workerId ? `?worker_id=${workerId}` : ""}`),
   getTask: (id: string) => req<Task>(`/api/tasks/${id}`),
   deleteTask: (id: string) => req<{ ok: boolean }>(`/api/tasks/${id}`, { method: "DELETE" }),
-  updateStep: (taskId: string, stepId: string, patch: Partial<Pick<Step, "sentence" | "symbol_url">>) =>
-    req<Step>(`/api/tasks/${taskId}/steps/${stepId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  updateStep: (
+    taskId: string,
+    stepId: string,
+    patch: Partial<Pick<Step, "sentence" | "symbol_url" | "symbol_source">>,
+  ) => req<Step>(`/api/tasks/${taskId}/steps/${stepId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  /** 자동 채택하지 못한 단계에 붙일 AAC 후보를 가져온다(검토 화면 후보 선택용). */
+  stepSymbolCandidates: (taskId: string, stepId: string) =>
+    req<StepSymbolCandidates>(`/api/tasks/${taskId}/steps/${stepId}/symbol-candidates`),
   deleteStep: (taskId: string, stepId: string) =>
     req<Task>(`/api/tasks/${taskId}/steps/${stepId}`, { method: "DELETE" }),
+  addStep: (taskId: string, sentence: string) =>
+    req<Task>(`/api/tasks/${taskId}/steps`, { method: "POST", body: JSON.stringify({ sentence }) }),
+  reorderSteps: (taskId: string, stepIds: string[]) =>
+    req<Task>(`/api/tasks/${taskId}/steps/reorder`, {
+      method: "PATCH",
+      body: JSON.stringify({ step_ids: stepIds }),
+    }),
   publish: (id: string) => req<Task>(`/api/tasks/${id}/publish`, { method: "POST" }),
   uploadStepPhoto: async (taskId: string, stepId: string, file: File): Promise<Step> => {
     const a = getAuth();
@@ -234,9 +259,13 @@ export const api = {
   dashboard: (id: string, workerId?: string) =>
     req<Dashboard>(`/api/dashboard/tasks/${id}${workerId ? `?worker_id=${workerId}` : ""}`),
   dashboardWorkers: (id: string) => req<DashboardWorker[]>(`/api/dashboard/tasks/${id}/workers`),
-  searchArasaac: (term: string, langs: string[] = ["en", "es"], limit = 3) =>
-    req<ArasaacSearchResult>("/api/arasaac/search", {
-      method: "POST",
-      body: JSON.stringify({ term, langs, limit }),
+  searchAac: (query: string, job?: string, limit = 5) =>
+  req<AacSearchResult>("/api/aac/search", {
+    method: "POST",
+    body: JSON.stringify({
+      query,
+      job: job || null,
+      limit,
     }),
+  }),
 };

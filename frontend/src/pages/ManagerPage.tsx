@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
-import { api, type Task, type Worker } from "../api";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { api, type AacMatch, type StepSymbolCandidates, type Task, type Worker } from "../api";
 import { ActionChip } from "../actions";
 
 const SAMPLE =
@@ -12,8 +12,20 @@ export default function ManagerPage() {
   const [workEnvironment, setWorkEnvironment] = useState("");
   const [workerNote, setWorkerNote] = useState("");
   const [task, setTask] = useState<Task | null>(null);
-  const [arasaacTerm, setArasaacTerm] = useState("box");
-  const [arasaacResult, setArasaacResult] = useState<{ term: string; matches: { language: string; pictogram_id: string; image_url: string }[] } | null>(null);
+  const [aacQuery, setAacQuery] = useState("");
+
+  const [aacResult, setAacResult] = useState<{
+    query: string;
+    matches: {
+      asset_id: string;
+      group_id: string;
+      job: string;
+      asset_type: string;
+      label: string;
+      image_url: string;
+      score: number;
+    }[];
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -23,6 +35,14 @@ export default function ManagerPage() {
   const [selectedWorkerId, setSelectedWorkerId] = useState("");
   const [newWorkerName, setNewWorkerName] = useState("");
   const [newWorkerCode, setNewWorkerCode] = useState("");
+
+  // 그림을 자동으로 못 고른 단계의 후보 목록 (stepId -> 후보/사유)
+  const [stepCandidates, setStepCandidates] = useState<Record<string, StepSymbolCandidates>>({});
+
+  // 단계 드래그 정렬 + 단계 직접 추가
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [newStepSentence, setNewStepSentence] = useState("");
 
   useEffect(() => {
     api.listWorkers()
@@ -52,6 +72,43 @@ export default function ManagerPage() {
     }
   }
 
+  // 그림이 안 붙은 단계의 후보를 가져온다. 서버가 자동 채택을 못 한 경우
+  // (후보 점수가 붙어 있어 고르지 못함) 사업주가 직접 고를 수 있게 한다.
+  useEffect(() => {
+    if (!task) return;
+    let cancelled = false;
+    const pending = task.steps.filter((s) => s.needs_fallback && !stepCandidates[s.id]);
+    if (pending.length === 0) return;
+
+    (async () => {
+      const fetched = await Promise.all(
+        pending.map((s) =>
+          api.stepSymbolCandidates(task.id, s.id).catch(
+            // 실패해도 빈 결과를 기록해 둔다. 기록하지 않으면 이 단계가 계속
+            // pending으로 남아 effect가 무한히 다시 조회한다.
+            (): StepSymbolCandidates => ({
+              step_id: s.id,
+              reason: "no_candidate",
+              candidates: [],
+            }),
+          ),
+        ),
+      );
+      if (cancelled) return;
+      setStepCandidates((prev) => {
+        const next = { ...prev };
+        fetched.forEach((c) => {
+          next[c.step_id] = c;
+        });
+        return next;
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [task, stepCandidates]);
+
   async function handleEditSentence(stepId: string, sentence: string) {
     if (!task) return;
     const updated = await api.updateStep(task.id, stepId, { sentence });
@@ -59,6 +116,26 @@ export default function ManagerPage() {
       ...task,
       steps: task.steps.map((s) => (s.id === stepId ? updated : s)),
     });
+    // 문장이 바뀌면 후보도 달라진다. 캐시를 버려 다시 받아오게 한다.
+    setStepCandidates((prev) => {
+      const next = { ...prev };
+      delete next[stepId];
+      return next;
+    });
+  }
+
+  async function handlePickCandidate(stepId: string, match: AacMatch) {
+    if (!task) return;
+    setError(null);
+    try {
+      const updated = await api.updateStep(task.id, stepId, {
+        symbol_url: match.image_url,
+        symbol_source: "LOCAL_AAC",
+      });
+      setTask({ ...task, steps: task.steps.map((s) => (s.id === stepId ? updated : s)) });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "그림 선택에 실패했습니다.");
+    }
   }
 
   async function handleUploadPhoto(stepId: string, file: File) {
@@ -84,6 +161,40 @@ export default function ManagerPage() {
       setTask(await api.deleteStep(task.id, stepId));
     } catch (e) {
       setError(e instanceof Error ? e.message : "단계 삭제에 실패했습니다.");
+    }
+  }
+
+  // 드래그로 놓았을 때: 로컬 순서를 즉시 반영(낙관적)하고 서버에 확정 요청.
+  async function handleDropOn(toIndex: number) {
+    const from = dragIndex;
+    setDragIndex(null);
+    setDragOverIndex(null);
+    if (from === null || from === toIndex || !task) return;
+    const reordered = [...task.steps];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(toIndex, 0, moved);
+    const prev = task;
+    setTask({ ...task, steps: reordered.map((s, i) => ({ ...s, order: i + 1 })) });
+    setError(null);
+    try {
+      setTask(await api.reorderSteps(task.id, reordered.map((s) => s.id)));
+    } catch (e) {
+      setTask(prev); // 실패 시 원래 순서로 원복
+      setError(e instanceof Error ? e.message : "순서 변경에 실패했습니다.");
+    }
+  }
+
+  async function handleAddStep() {
+    if (!task || !newStepSentence.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      setTask(await api.addStep(task.id, newStepSentence.trim()));
+      setNewStepSentence("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "단계 추가에 실패했습니다.");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -161,13 +272,26 @@ export default function ManagerPage() {
     }
   }
 
-  async function handleArasaacSearch() {
-    setBusy(true);
-    setError(null);
+  async function handleAacSearch() {
+    if (!aacQuery.trim()) return;
+
     try {
-      setArasaacResult(await api.searchArasaac(arasaacTerm));
+      setBusy(true);
+      setError(null);
+
+      const result = await api.searchAac(
+        aacQuery.trim(),
+        undefined,
+        5,
+      );
+
+      setAacResult(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "ARASAAC 조회에 실패했습니다.");
+      setError(
+        e instanceof Error
+          ? e.message
+          : "AAC 검색에 실패했습니다.",
+      );
     } finally {
       setBusy(false);
     }
@@ -218,37 +342,73 @@ export default function ManagerPage() {
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="text-lg font-bold text-slate-900">ARASAAC 조회</h2>
+        <h2 className="text-lg font-bold text-slate-900">
+          자체 AAC 검색
+        </h2>
+
         <p className="mt-1 text-sm text-slate-600">
-          백엔드를 거쳐 ARASAAC pictogram 검색을 직접 확인합니다.
+          프로젝트에서 제작한 직무 AAC 이미지 중
+          작업 문장과 가장 가까운 이미지를 검색합니다.
         </p>
+
         <div className="mt-3 flex gap-2">
           <input
             className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-base"
-            value={arasaacTerm}
-            onChange={(e) => setArasaacTerm(e.target.value)}
-            aria-label="ARASAAC 검색어"
+            value={aacQuery}
+            onChange={(e) => setAacQuery(e.target.value)}
+            aria-label="AAC 검색어"
+            placeholder="예: 상품을 선반에 놓는다"
           />
+
           <button
-            onClick={handleArasaacSearch}
-            disabled={busy || !arasaacTerm.trim()}
+            onClick={handleAacSearch}
+            disabled={busy || !aacQuery.trim()}
             className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-50"
           >
             검색
           </button>
         </div>
-        {arasaacResult && (
+
+        {aacResult && (
           <div className="mt-4 space-y-3">
-            <div className="text-sm text-slate-600">검색어: {arasaacResult.term}</div>
+            <div className="text-sm text-slate-600">
+              검색어: {aacResult.query}
+            </div>
+
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {arasaacResult.matches.map((match) => (
-                <a key={`${match.language}-${match.pictogram_id}`} href={match.image_url} target="_blank" rel="noreferrer" className="rounded-lg border border-slate-200 p-3 hover:bg-slate-50">
-                  <img src={match.image_url} alt="" className="h-24 w-full rounded border border-slate-100 object-contain" />
-                  <div className="mt-2 text-xs text-slate-500">{match.language}</div>
-                  <div className="text-sm font-medium text-slate-900">ID {match.pictogram_id}</div>
+              {aacResult.matches.map((match) => (
+                <a
+                  key={match.asset_id}
+                  href={match.image_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-lg border border-slate-200 p-3 hover:bg-slate-50"
+                >
+                  <img
+                    src={match.image_url}
+                    alt={match.label}
+                    className="h-32 w-full rounded border border-slate-100 object-contain"
+                  />
+
+                  <div className="mt-2 text-xs text-slate-500">
+                    {match.job}
+                  </div>
+
+                  <div className="text-sm font-medium text-slate-900">
+                    {match.label}
+                  </div>
+
+                  <div className="mt-1 text-xs text-slate-400">
+                    {match.asset_id}
+                  </div>
+
+                  <div className="text-xs text-slate-400">
+                    유사도 {Math.round(match.score * 100)}%
+                  </div>
                 </a>
               ))}
-              {arasaacResult.matches.length === 0 && (
+
+              {aacResult.matches.length === 0 && (
                 <div className="rounded-lg border border-dashed border-slate-300 p-3 text-sm text-slate-500">
                   결과가 없습니다.
                 </div>
@@ -275,14 +435,38 @@ export default function ManagerPage() {
             검토 · 수정 <span className="text-sm font-normal text-slate-500">({task.steps.length}단계)</span>
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            근로자가 보게 될 화면과 같은 순서입니다. 문장을 다듬을 수 있습니다.
+            근로자가 보게 될 화면과 같은 순서입니다. 손잡이를 끌어 순서를 바꾸고, 문장을 다듬거나 단계를 추가할 수 있습니다.
           </p>
           <ol className="mt-3 space-y-3">
-            {task.steps.map((s) => (
+            {task.steps.map((s, idx) => (
               <li
                 key={s.id}
-                className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragOverIndex !== idx) setDragOverIndex(idx);
+                }}
+                onDrop={() => handleDropOn(idx)}
+                className={
+                  "flex items-start gap-2 rounded-lg border bg-white p-3 transition-colors " +
+                  (dragOverIndex === idx && dragIndex !== null && dragIndex !== idx
+                    ? "border-blue-400 ring-2 ring-blue-200 "
+                    : "border-slate-200 ") +
+                  (dragIndex === idx ? "opacity-50" : "")
+                }
               >
+                <span
+                  draggable
+                  onDragStart={() => setDragIndex(idx)}
+                  onDragEnd={() => {
+                    setDragIndex(null);
+                    setDragOverIndex(null);
+                  }}
+                  className="mt-1 cursor-grab text-slate-300 hover:text-slate-500 active:cursor-grabbing"
+                  aria-label={`${s.order}단계 순서 이동 손잡이`}
+                  title="드래그해서 순서 변경"
+                >
+                  <GripVertical size={18} />
+                </span>
                 <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700">
                   {s.order}
                 </span>
@@ -291,8 +475,15 @@ export default function ManagerPage() {
                     <img src={s.symbol_url} alt={s.sentence}
                          className="h-16 w-16 rounded border border-slate-200 object-contain" />
                   ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded border border-dashed border-amber-400 bg-amber-50 text-center text-[10px] text-amber-700">
-                      사진 권장
+                    // 아래 후보 영역이 "그림 고르기"를 안내하는 동안에는 "사진 권장"을
+                    // 함께 띄우지 않는다(상충). 후보가 없을 때만 사진을 권한다.
+                    <div className={
+                      "flex h-16 w-16 items-center justify-center rounded border border-dashed text-center text-[10px] "
+                      + (stepCandidates[s.id]?.candidates.length
+                         ? "border-slate-300 bg-slate-50 text-slate-400"
+                         : "border-amber-400 bg-amber-50 text-amber-700")
+                    }>
+                      {stepCandidates[s.id]?.candidates.length ? "그림 선택" : "사진 권장"}
                     </div>
                   )}
                   <label className="cursor-pointer text-[11px] font-medium text-blue-700 hover:underline">
@@ -325,8 +516,73 @@ export default function ManagerPage() {
                   />
                   <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
                     <ActionChip action={s.action_type} className="text-[11px] !px-2 !py-0.5" />
-                    <span>상징: {s.symbol_source === "photo" ? "직접 등록한 사진" : s.symbol_source}</span>
+                    {/* 그림이 붙은 단계만 출처를 보여준다. 폴백 상태는 아래 후보 영역이
+                        이미 설명하므로 "상징: fallback"은 중복 노이즈였다. */}
+                    {s.symbol_url && (
+                      <span>
+                        그림: {s.symbol_source === "photo" ? "직접 올린 사진" : "그림 카드"}
+                      </span>
+                    )}
                   </div>
+
+                  {/* 자동으로 못 고른 단계 — 재조회 결과에 따라 다르게 안내한다.
+                      accepted : 쓸 만한 매칭을 찾음 → 한 번에 적용
+                      low_margin: 비슷한 게 여럿 → 사업주가 선택
+                      그 외    : 쓸 만한 그림 없음 → 현장 사진 권장 */}
+                  {s.needs_fallback && stepCandidates[s.id] && (() => {
+                    const sc = stepCandidates[s.id];
+                    if (sc.reason === "accepted" && sc.candidates.length === 1) {
+                      const c = sc.candidates[0];
+                      return (
+                        <div className="mt-2 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2">
+                          <img src={c.image_url} alt={c.label}
+                               className="h-14 w-14 shrink-0 rounded border border-slate-200 bg-white object-contain" />
+                          <div className="min-w-0 flex-1">
+                            <p className="break-keep text-[11px] font-medium text-emerald-800">
+                              찾은 그림: {c.label}
+                            </p>
+                            <button type="button" onClick={() => handlePickCandidate(s.id, c)}
+                                    className="mt-1 rounded bg-emerald-600 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-emerald-700">
+                              이 그림 적용
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+                    if (sc.candidates.length > 0) {
+                      // low_margin: 후보들이 다 그럴듯한데 순위만 못 매김
+                      // low_score : 딱 맞는 건 없지만 비슷한 걸 보여주고 판단을 맡김
+                      const tie = sc.reason === "low_margin";
+                      return (
+                        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2">
+                          <p className="text-[11px] font-medium text-amber-800">
+                            {tie
+                              ? "비슷한 그림이 여러 개예요. 맞는 것을 골라 주세요."
+                              : "딱 맞는 그림이 없어요. 아래에서 고르거나 현장 사진을 올리세요."}
+                          </p>
+                          <div className="mt-1.5 grid max-w-sm grid-cols-3 gap-2">
+                            {sc.candidates.map((c) => (
+                              <button key={c.asset_id} type="button"
+                                      onClick={() => handlePickCandidate(s.id, c)}
+                                      className="rounded border border-slate-200 bg-white p-1 hover:border-blue-400 hover:ring-2 hover:ring-blue-200"
+                                      title={`${c.label} 선택`}>
+                                <img src={c.image_url} alt={c.label}
+                                     className="aspect-square w-full rounded object-contain" />
+                                <span className="mt-0.5 block break-keep text-center text-[10px] leading-tight text-slate-600">
+                                  {c.label}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <p className="mt-2 text-[11px] text-amber-700">
+                        맞는 그림이 없어요. 실제 현장 사진을 올리면 가장 잘 전달됩니다.
+                      </p>
+                    );
+                  })()}
                 </div>
                 <button
                   onClick={() => handleDeleteStep(s.id)}
@@ -340,6 +596,28 @@ export default function ManagerPage() {
               </li>
             ))}
           </ol>
+
+          {/* 단계 직접 추가 — 문장을 입력하면 서버가 상징·음성을 붙여 맨 끝에 추가한다 */}
+          <div className="mt-3 flex items-center gap-2">
+            <input
+              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-base"
+              value={newStepSentence}
+              onChange={(e) => setNewStepSentence(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAddStep();
+              }}
+              placeholder="단계 문장을 입력해 추가 (예: 바닥을 쓸어주세요)"
+              aria-label="새 단계 문장"
+            />
+            <button
+              onClick={handleAddStep}
+              disabled={busy || !newStepSentence.trim()}
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
+            >
+              <Plus size={16} /> 단계 추가
+            </button>
+          </div>
+
           <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
             <h3 className="text-sm font-bold text-slate-900">근로자에게 보내기</h3>
 

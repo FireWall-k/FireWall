@@ -3,7 +3,10 @@
 export type TaskStatus = "draft" | "under_review" | "published" | "archived";
 export type ActionType = "observe" | "move" | "stack" | "pick" | "place" | "check" | "other";
 export type SafetyFlag = "unclear" | "hazardous";
-export type SymbolSource = "ARASAAC" | "KAAC" | "fallback";
+export type SymbolSource =
+  | "LOCAL_AAC"
+  | "photo"
+  | "fallback";
 
 export interface Keyword {
   term: string;

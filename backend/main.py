@@ -13,7 +13,9 @@
 """
 from __future__ import annotations
 
+import logging
 import os
+import re
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -23,6 +25,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
+from aac_assets import get_aac_image_dir, public_aac_url
 
 import ai_client
 from auth import (
@@ -32,12 +35,12 @@ from auth import (
     require_worker,
     verify_password,
 )
-from database import Base, engine, get_db
+from database import Base, apply_pending_columns, engine, get_db
 from models import Assignment, Employer, PerformanceLog, Step, Task, Worker
 from schemas import (
-    ArasaacMatch,
-    ArasaacSearchRequest,
-    ArasaacSearchResult,
+    AacMatch,
+    AacSearchRequest,
+    AacSearchResult,
     AssignmentOut,
     AssignRequest,
     CoachingOut,
@@ -46,8 +49,11 @@ from schemas import (
     DashboardWorkerOut,
     EmployerLogin,
     PerformanceLogCreate,
+    StepCreate,
     StepOut,
+    StepReorder,
     StepStat,
+    StepSymbolCandidates,
     StepUpdate,
     TaskCreate,
     TaskOut,
@@ -62,9 +68,16 @@ from photos import MAX_PHOTO_BYTES, get_photo_dir, save_photo, sniff_image
 from tts import get_tts_cache_dir, synthesize_tts_url
 
 
+logger = logging.getLogger("jobcard.backend")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    # create_all은 기존 테이블에 컬럼을 추가하지 않는다. 모델에 새로 생긴 컬럼을 메운다.
+    added = apply_pending_columns()
+    if added:
+        logger.info("DB 컬럼 추가: %s", ", ".join(added))
     _ensure_seed()
     yield
 
@@ -77,6 +90,15 @@ app.mount("/api/tts", StaticFiles(directory=str(get_tts_cache_dir())), name="tts
 # 사업주가 올린 단계별 실제 사진 제공. URL 예: http://localhost:8000/api/photos/<uuid>.png
 app.mount("/api/photos", StaticFiles(directory=str(get_photo_dir())), name="photos")
 
+# 프로젝트 자체 제작 AAC 이미지 제공
+app.mount(
+    "/api/aac/images",
+    StaticFiles(
+        directory=str(get_aac_image_dir()),
+        check_dir=False,
+    ),
+    name="aac-images",
+)
 
 def _cors_origins() -> list[str]:
     raw = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
@@ -254,7 +276,66 @@ def delete_worker(worker_id: str, db: Session = Depends(get_db),
     return {"ok": True}
 
 
+def _step_search_terms(step: "Step") -> list[str]:
+    """단계의 AAC 검색어. 저장된 symbol_query가 있으면 그걸 쓴다(생성 때와 같은 질의),
+    없으면 문장에서 뽑는다(사업주가 직접 추가했거나 문장을 수정한 경우)."""
+    stored = [t.strip() for t in (step.symbol_query or "").split(",") if t.strip()]
+    if stored:
+        return stored[:4]
+    terms = re.findall(r"[가-힣A-Za-z]+", step.sentence) or [step.sentence[:12]]
+    return terms[:4]
+
+
+def _task_context(task: Task, sentence: str, action_type: str) -> dict:
+    """AAC 검색용 맥락. 직무 생성 시와 같은 조건을 재현한다.
+
+    같은 문장이라도 업종 맥락이 있고 없고에 따라 순위와 채택 여부가 달라진다.
+    생성·후보조회·단계추가가 모두 이 함수를 거쳐야 결과가 어긋나지 않는다.
+    """
+    return {
+        "business_type": task.business_type or "",
+        "work_environment": task.work_environment or "",
+        "sentence": sentence,
+        "action_type": action_type,
+    }
+
+
 # --- 사업주: 직무 생성(AI 분해 트리거) ---
+def _pick_symbol(
+    terms: list[str],
+    context: dict | None = None,
+) -> dict:
+    """작업 단계에 가장 적합한 자체 AAC 이미지를 선택한다."""
+
+    symbols = ai_client.map_symbols(
+        terms[:4],
+        context=context or {},
+    ).get("symbols", [])
+
+    sym = next(
+        (
+            s
+            for s in symbols
+            if not s.get("needs_fallback")
+            and s.get("image_url")
+        ),
+        None,
+    )
+
+    if sym is None:
+        sym = symbols[0] if symbols else {}
+
+    sym = dict(sym)
+
+    # /api/aac/images/... 를
+    # http://localhost:8000/api/aac/images/... 로 변환
+    sym["image_url"] = public_aac_url(
+        sym.get("image_url")
+    )
+
+    return sym
+
+
 @app.post("/api/tasks", response_model=TaskOut, status_code=201)
 def create_task(payload: TaskCreate, db: Session = Depends(get_db),
                 user: dict = Depends(require_employer)) -> TaskOut:
@@ -268,8 +349,11 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
     except Exception as e:  # noqa: BLE001 - AI 하네스 장애는 502로 명확히 전달
         raise HTTPException(status_code=502, detail=f"AI 분해 서비스 오류: {e}")
 
+    # 맥락을 저장해 둔다. 나중에 후보 재검색/단계 추가가 같은 조건으로 돌아야 한다.
     task = Task(employer_id=user["sub"], title=decomposed.get("task_title", "직무"),
-                raw_input=payload.raw_input, status="draft")
+                raw_input=payload.raw_input, status="draft",
+                business_type=context["business_type"],
+                work_environment=context["work_environment"])
     db.add(task)
     db.flush()
 
@@ -278,13 +362,21 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
         # LLM이 제공한 구체 명사(symbol_query)를 우선 사용, 없으면 키워드로 폴백.
         symbol_terms = step.get("symbol_query") or [k["term"] for k in step.get("keywords", [])]
         symbol_terms = symbol_terms[:4] or [sentence[:12]]
-        symbols = ai_client.map_symbols(symbol_terms).get("symbols", [])
-        sym = next((s for s in symbols if not s.get("needs_fallback") and s.get("image_url")), None)
-        if sym is None:
-            sym = symbols[0] if symbols else {}
+        sym = _pick_symbol(
+            symbol_terms,
+            context={
+                **context,
+                "sentence": sentence,
+                # action_type이 있어야 AAC 검색이 도구/보조 카드보다 동작 카드를 선호한다.
+                # 빠뜨리면 "테이블을 닦으세요"에 행주 사진이 붙는다.
+                "action_type": step.get("action_type", "other"),
+            },
+        )
         db.add(Step(
             task_id=task.id, order_index=step["order"], sentence=sentence,
             action_type=step.get("action_type", "other"),
+            # 검토 화면 후보 조회가 같은 질의를 재현하도록 저장한다.
+            symbol_query=",".join(symbol_terms),
             symbol_url=sym.get("image_url"),
             symbol_source=sym.get("source", "fallback"),
             needs_fallback=sym.get("needs_fallback", True),
@@ -330,6 +422,54 @@ def delete_task(task_id: str, db: Session = Depends(get_db),
     return {"ok": True}
 
 
+@app.post("/api/tasks/{task_id}/steps", response_model=TaskOut, status_code=201)
+def add_step(task_id: str, payload: StepCreate, db: Session = Depends(get_db),
+             user: dict = Depends(require_employer)) -> TaskOut:
+    """검토 화면에서 사업주가 단계를 직접 추가한다.
+
+    맨 끝에 붙이며(순서는 이후 드래그로 조정), 상징/TTS는 서버가 생성한다.
+    LLM symbol_query가 없으므로 문장에서 한글/영문 단어를 뽑아 상징 후보로 쓴다.
+    """
+    task = _owned_task(task_id, user["sub"], db)
+    sentence = payload.sentence.strip()
+    action_type = payload.action_type or "other"
+    terms = re.findall(r"[가-힣A-Za-z]+", sentence) or [sentence[:12]]
+    # 직무 생성 때와 같은 맥락으로 검색해야 나중에 추가한 단계만 다른 그림이 붙지 않는다.
+    sym = _pick_symbol(terms, context=_task_context(task, sentence, action_type))
+    next_order = max((s.order_index for s in task.steps), default=0) + 1
+    db.add(Step(
+        task_id=task.id, order_index=next_order, sentence=sentence,
+        action_type=action_type,
+        symbol_url=sym.get("image_url"),
+        symbol_source=sym.get("source", "fallback"),
+        needs_fallback=sym.get("needs_fallback", True),
+        tts_audio_url=synthesize_tts_url(sentence),
+    ))
+    db.commit()
+    db.refresh(task)
+    return _task_out(task)
+
+
+@app.patch("/api/tasks/{task_id}/steps/reorder", response_model=TaskOut)
+def reorder_steps(task_id: str, payload: StepReorder, db: Session = Depends(get_db),
+                  user: dict = Depends(require_employer)) -> TaskOut:
+    """단계 순서를 새로 지정한다.
+
+    step_ids는 이 직무의 모든 단계를 정확히 한 번씩 포함해야 한다(부분 순서 불가).
+    받은 순서대로 order_index를 1..N으로 재부여한다.
+    """
+    task = _owned_task(task_id, user["sub"], db)
+    current_ids = {s.id for s in task.steps}
+    if len(payload.step_ids) != len(current_ids) or set(payload.step_ids) != current_ids:
+        raise HTTPException(status_code=400, detail="순서 목록이 현재 단계와 일치하지 않습니다.")
+    order_by_id = {sid: i for i, sid in enumerate(payload.step_ids, start=1)}
+    for s in task.steps:
+        s.order_index = order_by_id[s.id]
+    db.commit()
+    db.refresh(task)
+    return _task_out(task)
+
+
 @app.patch("/api/tasks/{task_id}/steps/{step_id}", response_model=StepOut)
 def update_step(task_id: str, step_id: str, payload: StepUpdate,
                 db: Session = Depends(get_db),
@@ -341,13 +481,65 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
     if payload.sentence is not None:
         step.sentence = payload.sentence
         step.tts_audio_url = synthesize_tts_url(payload.sentence)
+        # 저장된 symbol_query는 옛 문장에 묶여 있다. 비우면 후보 조회가 새 문장에서
+        # 검색어를 다시 뽑는다.
+        step.symbol_query = ""
     if payload.symbol_url is not None:
         step.symbol_url = payload.symbol_url
-        step.symbol_source = "fallback"
+        # 검토 화면에서 AAC 후보를 고른 경우 출처를 LOCAL_AAC로 남긴다.
+        # (예전에는 무조건 fallback으로 적어 어디서 온 그림인지 알 수 없었다.)
+        step.symbol_source = payload.symbol_source or "fallback"
         step.needs_fallback = False
     db.commit()
     db.refresh(step)
     return _step_to_out(step)
+
+
+@app.get("/api/tasks/{task_id}/steps/{step_id}/symbol-candidates",
+         response_model=StepSymbolCandidates)
+def step_symbol_candidates(task_id: str, step_id: str, db: Session = Depends(get_db),
+                           user: dict = Depends(require_employer)) -> StepSymbolCandidates:
+    """단계에 붙일 AAC 후보를 돌려준다(검토 화면의 후보 선택용).
+
+    후보를 컬럼에 저장하지 않고 그때그때 다시 검색한다 — 문장이 수정되면 후보도 따라
+    바뀌어야 하는데, 저장해 두면 어긋난 채 굳는다.
+
+    같은 조건으로 검색해야 생성 시 판정과 어긋나지 않는다:
+      - 업종 맥락: Task에 저장해 둔 business_type/work_environment
+      - 검색어: 생성 때 쓴 symbol_query (단계에 저장). 없으면 문장에서 뽑는다.
+
+    reason='accepted'는 '생성 땐 폴백이었는데 지금 다시 보니 쓸 만한 매칭이 있다'는
+    뜻이다(예: 임계값 재교정 후). 그 매칭도 후보로 돌려줘 사업주가 한 번에 적용하게 한다.
+    """
+    task = _owned_task(task_id, user["sub"], db)
+    step = db.get(Step, step_id)
+    if step is None or step.task_id != task_id:
+        raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
+
+    symbols = ai_client.map_symbols(
+        _step_search_terms(step),
+        context=_task_context(task, step.sentence, step.action_type),
+    ).get("symbols", [])
+    sym = symbols[0] if symbols else {}
+    reason = sym.get("reason", "no_candidate")
+
+    raw = list(sym.get("candidates", []))
+    if reason == "accepted" and sym.get("image_url") and not raw:
+        # 채택된 매칭은 candidates에 안 실려 온다. 단일 후보로 만들어 준다.
+        raw = [{
+            "asset_id": sym.get("external_id", ""),
+            "group_id": sym.get("external_id", ""),
+            "job": "", "asset_type": "action",
+            "label": sym.get("resolved_keyword", ""),
+            "image_url": sym.get("image_url"),
+            "score": sym.get("confidence", 0.0),
+        }]
+
+    candidates = [
+        AacMatch(**{**c, "image_url": public_aac_url(c.get("image_url"))})
+        for c in raw
+    ]
+    return StepSymbolCandidates(step_id=step.id, reason=reason, candidates=candidates)
 
 
 @app.delete("/api/tasks/{task_id}/steps/{step_id}", response_model=TaskOut)
@@ -388,14 +580,42 @@ def publish_task(task_id: str, db: Session = Depends(get_db),
     return _task_out(task)
 
 
-@app.post("/api/arasaac/search", response_model=ArasaacSearchResult)
-def search_arasaac(payload: ArasaacSearchRequest,
-                   user: dict = Depends(require_employer)) -> ArasaacSearchResult:
-    result = ai_client.search_arasaac(payload.term.strip(), langs=payload.langs or [],
-                                      limit=payload.limit)
-    return ArasaacSearchResult(
-        term=result.get("term", payload.term.strip()),
-        matches=[ArasaacMatch(**m) for m in result.get("matches", [])],
+@app.post("/api/aac/search", response_model=AacSearchResult)
+def search_aac(
+    payload: AacSearchRequest,
+    user: dict = Depends(require_employer),
+) -> AacSearchResult:
+
+    context = {
+        "job": payload.job or ""
+    }
+
+    result = ai_client.search_aac(
+        payload.query.strip(),
+        context=context,
+        limit=payload.limit,
+    )
+
+    matches = []
+
+    for item in result.get("matches", []):
+        row = dict(item)
+
+        row["image_url"] = (
+            public_aac_url(row.get("image_url"))
+            or ""
+        )
+
+        matches.append(
+            AacMatch(**row)
+        )
+
+    return AacSearchResult(
+        query=result.get(
+            "query",
+            payload.query.strip(),
+        ),
+        matches=matches,
     )
 
 
@@ -617,7 +837,7 @@ async def upload_step_photo(task_id: str, step_id: str,
                             file: UploadFile = File(...),
                             db: Session = Depends(get_db),
                             user: dict = Depends(require_employer)) -> StepOut:
-    """단계에 실제 현장 사진을 올려 ARASAAC 자동 상징을 대체한다(기능 5)."""
+    """단계에 실제 현장 사진을 올려 자체 AAC 자동 상징을 대체한다(기능 5)."""
     _owned_task(task_id, user["sub"], db)
     step = db.get(Step, step_id)
     if step is None or step.task_id != task_id:

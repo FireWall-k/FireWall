@@ -47,32 +47,44 @@ class MapSymbolsRequest(BaseModel):
     context: dict = {}
 
 
-class ArasaacSearchRequest(BaseModel):
-    term: str
-    langs: list[str] = []
-    limit: int = 1
+class AacSearchRequest(BaseModel):
+    query: str
+    context: dict = {}
+    limit: int = Field(default=5, ge=1, le=20)
 
 
-class ArasaacMatch(BaseModel):
-    language: str
-    term: str
-    pictogram_id: str
+class AacMatch(BaseModel):
+    asset_id: str
+    group_id: str
+    job: str
+    asset_type: str
+    label: str
     image_url: str
+    score: float
 
 
-class ArasaacSearchResult(BaseModel):
-    term: str
-    matches: list[ArasaacMatch]
+class AacSearchResult(BaseModel):
+    query: str
+    matches: list[AacMatch]
+
+
+# 자동 채택 판정 결과. low_margin은 '후보는 있는데 못 고름'이라 검토 화면에서
+# 후보를 보여주고 사람이 고르게 해야 한다. 나머지 거절 사유는 폴백/사진 유도.
+MatchReason = Literal["accepted", "no_candidate", "low_score", "low_margin"]
 
 
 class Symbol(BaseModel):
     keyword: str
     image_url: str | None = None
-    source: Literal["ARASAAC", "KAAC", "fallback"] = "fallback"
+    #source: Literal["ARASAAC", "KAAC", "fallback"] = "fallback"
+    source: Literal["LOCAL_AAC", "fallback"] = "fallback"
     confidence: float = 0.0
     needs_fallback: bool = False
     external_id: str | None = None
     resolved_keyword: str | None = None
+    reason: MatchReason = "no_candidate"
+    # 자동 채택하지 못했을 때 사람이 고를 후보. 채택했으면 비워 둔다.
+    candidates: list[AacMatch] = []
 
 
 class MapSymbolsResult(BaseModel):
