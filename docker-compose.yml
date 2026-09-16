@@ -7,11 +7,16 @@ services:
       dockerfile: Dockerfile
     container_name: jobcard-ai
     ports:
-      - "8001:8001"
+      # 호스트 IP를 127.0.0.1로 명시해 IPv6([::1]) 쪽에는 아예 리스너가 안 생기게 한다.
+      # 안 그러면 Windows+WSL2 Docker Desktop이 "localhost"의 IPv6 주소로 들어온 연결을
+      # 받았다가 리셋해버려서(브라우저는 ::1을 먼저 시도) "localhost"가 안 열린다.
+      # 127.0.0.1만 열어 두면 그 시도가 바로 거부되어 브라우저가 곧장 IPv4로 넘어간다.
+      - "127.0.0.1:8001:8001"
     environment:
       PYTHONUNBUFFERED: "1"
       AAC_DATA_DIR: "/app/aac"
-      AAC_MATCH_THRESHOLD: "0.28"
+      AAC_MATCH_THRESHOLD: "0.22"
+      AAC_MATCH_MIN_MARGIN: "0.02"
       # OpenAI(LLM) — 키가 있으면 맥락적응 분해 + AI 코칭이 켜지고, 없으면 규칙 기반 폴백.
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       OPENAI_MODEL: "${OPENAI_MODEL:-gpt-4o-mini}"
@@ -32,7 +37,7 @@ services:
       dockerfile: Dockerfile
     container_name: jobcard-api
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"  # 위 ai_service 주석 참고
     environment:
       PYTHONUNBUFFERED: "1"
       AI_BASE_URL: "http://ai_service:8001"
@@ -42,6 +47,7 @@ services:
       AI_TIMEOUT: "30"
       DATABASE_URL: "sqlite:////app/data/jobcard.db"
       CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173"
+      # ports를 127.0.0.1로 고정했으니(위 ai_service 주석) localhost가 정상 동작한다.
       PUBLIC_BACKEND_URL: "http://localhost:8000"
       # Google Cloud Text-to-Speech 기본 사용 설정
       GOOGLE_APPLICATION_CREDENTIALS: "/app/secrets/google-tts.json"
@@ -78,7 +84,7 @@ services:
         VITE_API_BASE: "http://localhost:8000"
     container_name: jobcard-web
     ports:
-      - "5173:80"
+      - "127.0.0.1:5173:80"  # 위 ai_service 주석 참고
     depends_on:
       backend:
         condition: service_healthy

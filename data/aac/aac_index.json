@@ -1,0 +1,10483 @@
+{
+ "version": 1,
+ "generated_at": "2026-09-10T17:37:10+00:00",
+ "model": "gpt-4o-mini",
+ "source_digest": "f55d118c75539c84",
+ "source_count": 401,
+ "entry_count": 401,
+ "note": "LLM이 생성한 파생 데이터입니다. 원본은 aac_assets.json이며 이 파일은 재생성 가능합니다. reviewed=false는 사람 검수 전이라는 뜻입니다.",
+ "entries": [
+  {
+   "id": "ASSEMBLY_AUX_001",
+   "label": "가방과 휴대전화",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "가방",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "소지품",
+    "가방류",
+    "휴대용",
+    "가방 종류"
+   ],
+   "keywords_en": [
+    "bag",
+    "mobile",
+    "phone"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_002",
+   "label": "관리자에게 작업 지시서를 받는다",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "받다",
+    "verb_class": "other",
+    "object": "작업 지시서",
+    "object_detail": null,
+    "instrument": null,
+    "location": "관리자",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "전달받다",
+    "요청하다",
+    "받아내다",
+    "지시서"
+   ],
+   "keywords_en": [
+    "receive",
+    "instruction",
+    "directive"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_003",
+   "label": "깨끗한 작업대를 확인하는 작업자",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "작업대",
+    "object_detail": "깨끗한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "점검하다",
+    "상태 확인",
+    "작업 환경",
+    "청결 확인"
+   ],
+   "keywords_en": [
+    "check",
+    "work table",
+    "clean"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_004",
+   "label": "높이 조절 의자",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "의자",
+    "object_detail": "높이 조절",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "사무용 의자",
+    "바퀴 의자",
+    "작업 의자",
+    "회전 의자"
+   ],
+   "keywords_en": [
+    "chair",
+    "height adjustable",
+    "office chair"
+   ],
+   "reviewed": true
+  },
+  {
+   "id": "ASSEMBLY_AUX_005",
+   "label": "명찰을 착용하는 모습",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "착용하다",
+    "verb_class": "wear",
+    "object": "명찰",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "이름표",
+    "직원증",
+    "신분증",
+    "명찰 착용"
+   ],
+   "keywords_en": [
+    "name tag",
+    "badge",
+    "ID card"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_006",
+   "label": "보안경을 착용하는 모습",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "착용하다",
+    "verb_class": "wear",
+    "object": "보안경",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "안전 안경",
+    "보호 안경",
+    "안전 장비",
+    "보안 장비"
+   ],
+   "keywords_en": [
+    "safety glasses",
+    "protective eyewear"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_007",
+   "label": "보호장갑을 착용하는 모습",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "착용하다",
+    "verb_class": "wear",
+    "object": "보호장갑",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "장갑",
+    "안전 장갑",
+    "보호 장비",
+    "작업 장갑"
+   ],
+   "keywords_en": [
+    "protective gloves",
+    "safety gloves"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_008",
+   "label": "부품 상자 위치가 표시된 작업대",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "작업대",
+    "object_detail": "부품 상자 위치가 표시된",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "부품 보관",
+    "작업 공간",
+    "자재 위치",
+    "선반 표시"
+   ],
+   "keywords_en": [
+    "work table",
+    "parts box",
+    "location marked"
+   ],
+   "reviewed": true
+  },
+  {
+   "id": "ASSEMBLY_AUX_009",
+   "label": "불량품 상자를 놓는 작업자",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "상자",
+    "object_detail": "불량품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "불량품 처리",
+    "상자 놓기",
+    "작업자 행동",
+    "상자 이동"
+   ],
+   "keywords_en": [
+    "box",
+    "defective",
+    "place"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_010",
+   "label": "사원증",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "사원증",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "직원증",
+    "신분증",
+    "명찰",
+    "사원 카드"
+   ],
+   "keywords_en": [
+    "employee ID",
+    "staff card"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_011",
+   "label": "안전화를 신는 전체 상황",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "신다",
+    "verb_class": "wear",
+    "object": "안전화",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "안전 신발",
+    "작업화",
+    "신발 착용",
+    "작업용 신발"
+   ],
+   "keywords_en": [
+    "safety shoes",
+    "work shoes"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_012",
+   "label": "완성품 상자를 놓는 작업자",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "상자",
+    "object_detail": "완성품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "완성품 처리",
+    "상자 놓기",
+    "작업자 행동",
+    "작업 완료"
+   ],
+   "keywords_en": [
+    "box",
+    "finished product",
+    "place"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_013",
+   "label": "작업대를 천으로 닦는 작업자",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "작업대",
+    "object_detail": null,
+    "instrument": "천",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "작업대 청소",
+    "작업 환경",
+    "위생 관리"
+   ],
+   "keywords_en": [
+    "wipe",
+    "work table",
+    "cleaning"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_014",
+   "label": "작업대에 트레이를 놓는 작업자",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "트레이",
+    "object_detail": null,
+    "instrument": null,
+    "location": "작업대",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "트레이 배치",
+    "작업대 위",
+    "작업자 행동",
+    "트레이 놓기"
+   ],
+   "keywords_en": [
+    "tray",
+    "place",
+    "work table"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_015",
+   "label": "작업대 위 작은 쓰레기",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "쓰레기",
+    "object_detail": "작은",
+    "instrument": null,
+    "location": "작업대 위",
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "먼지",
+    "부스러기",
+    "티끌",
+    "청소 대상"
+   ],
+   "keywords_en": [
+    "small trash",
+    "work table",
+    "waste"
+   ],
+   "reviewed": true
+  },
+  {
+   "id": "ASSEMBLY_AUX_016",
+   "label": "작업모",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "작업모",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "모자",
+    "작업용 모자",
+    "안전모",
+    "작업복"
+   ],
+   "keywords_en": [
+    "work cap",
+    "hat"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_017",
+   "label": "작업복을 입은 근로자",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "근로자",
+    "object_detail": "작업복을 입은",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "작업복",
+    "근로자 모습",
+    "작업자",
+    "작업 환경"
+   ],
+   "keywords_en": [
+    "worker",
+    "wearing work clothes"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_018",
+   "label": "작업복 재킷과 바지",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "작업복",
+    "object_detail": "재킷과 바지",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "유니폼",
+    "근무복",
+    "상하의 세트",
+    "작업 유니폼"
+   ],
+   "keywords_en": [
+    "work clothes",
+    "jacket",
+    "pants"
+   ],
+   "reviewed": true
+  },
+  {
+   "id": "ASSEMBLY_AUX_019",
+   "label": "조립 제품 사진",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "사진",
+    "object_detail": "조립 제품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "제품 사진",
+    "조립품",
+    "사진 자료",
+    "작업 참고"
+   ],
+   "keywords_en": [
+    "photo",
+    "assembled product"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_020",
+   "label": "켜진 작업등",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "작업등",
+    "object_detail": "켜진",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "조명",
+    "작업 조명",
+    "작업 환경",
+    "작업등 종류"
+   ],
+   "keywords_en": [
+    "work light",
+    "lit",
+    "lighting"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_021",
+   "label": "3단계 조립 순서표",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "조립 순서표",
+    "object_detail": "3단계",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "지침서",
+    "매뉴얼",
+    "단계별 안내",
+    "작업 지침"
+   ],
+   "keywords_en": [
+    "assembly order",
+    "instruction",
+    "guide"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_022",
+   "label": "명찰",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "명찰",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "이름표",
+    "직원증",
+    "신분증"
+   ],
+   "keywords_en": [
+    "name tag",
+    "badge",
+    "ID card"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_023",
+   "label": "발을 안전화에 넣는다",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "wear",
+    "object": "발",
+    "object_detail": null,
+    "instrument": "안전화",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "신다",
+    "착용하다",
+    "발을 넣다",
+    "신발"
+   ],
+   "keywords_en": [
+    "put on",
+    "wear",
+    "safety shoes"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_024",
+   "label": "보호장갑",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "보호장갑",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "장갑",
+    "안전장비",
+    "손 보호구"
+   ],
+   "keywords_en": [
+    "gloves",
+    "safety gear",
+    "hand protection"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_025",
+   "label": "부품 상자 위치를 가리키는 작업자",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "작업자",
+    "object_detail": "부품 상자 위치를 가리키는",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "지시자",
+    "안내자",
+    "위치 표시자"
+   ],
+   "keywords_en": [
+    "worker",
+    "pointer",
+    "location guide"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_026",
+   "label": "쓰레기통",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "쓰레기통",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "쓰레기통",
+    "쓰레기통",
+    "휴지통",
+    "폐기물통"
+   ],
+   "keywords_en": [
+    "trash can",
+    "garbage bin",
+    "waste container"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_027",
+   "label": "열린 사물함",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "사물함",
+    "object_detail": "열린",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "저장함",
+    "캐비닛",
+    "보관함"
+   ],
+   "keywords_en": [
+    "locker",
+    "cabinet",
+    "storage"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_028",
+   "label": "의자 높이를 조절하는 작업자",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "조절하다",
+    "verb_class": "other",
+    "object": "높이",
+    "object_detail": "의자",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "변경하다",
+    "조정하다",
+    "설정하다",
+    "수정하다"
+   ],
+   "keywords_en": [
+    "adjust",
+    "change",
+    "set"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_029",
+   "label": "작업등 스위치를 누르는 손",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "누르다",
+    "verb_class": "operate",
+    "object": "스위치",
+    "object_detail": "작업등",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "켜다",
+    "끄다",
+    "작동하다",
+    "조작하다"
+   ],
+   "keywords_en": [
+    "press",
+    "switch",
+    "operate"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_030",
+   "label": "작업모를 쓰는 모습",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "쓰다",
+    "verb_class": "wear",
+    "object": "모자",
+    "object_detail": "작업",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "착용하다",
+    "입다",
+    "쓰고 있다",
+    "모자 착용"
+   ],
+   "keywords_en": [
+    "wear",
+    "hat",
+    "cap"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_031",
+   "label": "작업복을 입는 모습",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "입다",
+    "verb_class": "wear",
+    "object": "복장",
+    "object_detail": "작업",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "착용하다",
+    "옷",
+    "의복",
+    "복장 착용"
+   ],
+   "keywords_en": [
+    "wear",
+    "clothes",
+    "uniform"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_032",
+   "label": "작업장 출입문",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "출입문",
+    "object_detail": "작업장",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "문",
+    "입구",
+    "출구",
+    "출입구"
+   ],
+   "keywords_en": [
+    "door",
+    "entrance",
+    "exit"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_033",
+   "label": "작업 순서를 가리키는 작업자",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "가리키다",
+    "verb_class": "other",
+    "object": "순서",
+    "object_detail": "작업",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "지시하다",
+    "안내하다",
+    "보여주다",
+    "설명하다"
+   ],
+   "keywords_en": [
+    "point",
+    "indicate",
+    "show"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_034",
+   "label": "작업 지시서",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "지시서",
+    "object_detail": "작업",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "지침서",
+    "매뉴얼",
+    "안내서",
+    "작업지침"
+   ],
+   "keywords_en": [
+    "instruction",
+    "manual",
+    "guideline"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_035",
+   "label": "제품 사진을 확인하는 작업자",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "사진",
+    "object_detail": "제품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "살펴보다",
+    "조회하다",
+    "점검하다"
+   ],
+   "keywords_en": [
+    "check",
+    "photo",
+    "review"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_036",
+   "label": "출퇴근 기록 단말기",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "단말기",
+    "object_detail": "출퇴근 기록",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "기록기",
+    "출퇴근기",
+    "출퇴근 장치",
+    "기록 장치"
+   ],
+   "keywords_en": [
+    "terminal",
+    "attendance device",
+    "recording device"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_037",
+   "label": "테두리가 있는 부품 트레이",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "트레이",
+    "object_detail": "테두리가 있는 부품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "부품함",
+    "보관함",
+    "수납 트레이",
+    "칸막이 상자"
+   ],
+   "keywords_en": [
+    "tray",
+    "part holder",
+    "component tray"
+   ],
+   "reviewed": true
+  },
+  {
+   "id": "ASSEMBLY_AUX_038",
+   "label": "투명 보안경",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "보안경",
+    "object_detail": "투명",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "안전경",
+    "보호안경",
+    "안경",
+    "안전 장비"
+   ],
+   "keywords_en": [
+    "safety glasses",
+    "protective eyewear",
+    "goggles"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_039",
+   "label": "명찰을 가슴에 고정한다",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "고정하다",
+    "verb_class": "wear",
+    "object": "명찰",
+    "object_detail": null,
+    "instrument": null,
+    "location": "가슴",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "부착하다",
+    "달다",
+    "붙이다",
+    "착용하다"
+   ],
+   "keywords_en": [
+    "attach",
+    "pin",
+    "fasten"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_040",
+   "label": "보안경을 눈에 맞춘다",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "맞추다",
+    "verb_class": "wear",
+    "object": "보안경",
+    "object_detail": null,
+    "instrument": null,
+    "location": "눈",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "조정하다",
+    "착용하다",
+    "착용 위치",
+    "눈에 맞다"
+   ],
+   "keywords_en": [
+    "adjust",
+    "fit",
+    "wear"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_041",
+   "label": "쓰레기를 치우는 작업자",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "치우다",
+    "verb_class": "clean",
+    "object": "작업자",
+    "object_detail": "쓰레기",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "청소하다",
+    "처리하다",
+    "제거하다"
+   ],
+   "keywords_en": [
+    "cleaner",
+    "worker",
+    "remover"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_042",
+   "label": "안전화 착용 완료",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "안전화",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "안전화",
+    "작업화",
+    "신발",
+    "보호구"
+   ],
+   "keywords_en": [
+    "safety shoes",
+    "work shoes",
+    "footwear"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_043",
+   "label": "작업등을 켜는 작업자",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "켜다",
+    "verb_class": "operate",
+    "object": "작업등",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "조명",
+    "전등",
+    "빛",
+    "조도"
+   ],
+   "keywords_en": [
+    "light",
+    "lamp",
+    "illumination"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_044",
+   "label": "작업 순서표의 1단계를 확인한다",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "단계",
+    "object_detail": "작업 순서표의 1",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "점검하다",
+    "살펴보다",
+    "확인하기"
+   ],
+   "keywords_en": [
+    "check",
+    "verify",
+    "inspect"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_045",
+   "label": "작업 지시서를 건네받는다",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "건네받다",
+    "verb_class": "other",
+    "object": "작업 지시서",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "전달받다",
+    "받다",
+    "수령하다",
+    "지시서"
+   ],
+   "keywords_en": [
+    "receive",
+    "instruction",
+    "directive"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_046",
+   "label": "장갑에 손을 넣는다",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "wear",
+    "object": "손",
+    "object_detail": "장갑에",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "착용하다",
+    "끼다",
+    "입다",
+    "장착하다"
+   ],
+   "keywords_en": [
+    "put on",
+    "wear",
+    "insert"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_047",
+   "label": "제품 사진을 자세히 본다",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "보다",
+    "verb_class": "observe",
+    "object": "사진",
+    "object_detail": "제품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "관찰하다",
+    "살펴보다",
+    "확인하다",
+    "검토하다"
+   ],
+   "keywords_en": [
+    "see",
+    "look at",
+    "examine"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_048",
+   "label": "트레이를 내려놓는 손동작",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": "내려놓다",
+    "verb_class": "move",
+    "object": "트레이",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "놓다",
+    "배치하다",
+    "설치하다",
+    "두다"
+   ],
+   "keywords_en": [
+    "put down",
+    "place",
+    "set down"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_049",
+   "label": "명찰 착용 완료",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "명찰",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "이름표",
+    "신분증",
+    "표식",
+    "표"
+   ],
+   "keywords_en": [
+    "name tag",
+    "badge",
+    "ID card"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_050",
+   "label": "보안경 착용 완료",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "보안경",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "안전안경",
+    "보호안경",
+    "안전장비",
+    "보호구"
+   ],
+   "keywords_en": [
+    "safety glasses",
+    "protective eyewear",
+    "goggles"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_051",
+   "label": "손에 든 제품 사진",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "사진",
+    "object_detail": "제품에 든 손",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "이미지",
+    "사진자료",
+    "촬영",
+    "비주얼"
+   ],
+   "keywords_en": [
+    "image",
+    "picture",
+    "visual"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_052",
+   "label": "양손 장갑 착용 완료",
+   "job": "assembly",
+   "asset_type": "support",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "장갑",
+    "object_detail": "양손",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "장비",
+    "보호구",
+    "안전장비",
+    "작업복"
+   ],
+   "keywords_en": [
+    "gloves",
+    "protective gear",
+    "safety equipment"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_AUX_053",
+   "label": "작업 순서표를 들고 확인한다",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "작업 순서표",
+    "object_detail": null,
+    "instrument": null,
+    "location": "들고",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "확인하다",
+    "점검하다",
+    "검사하다"
+   ],
+   "keywords_en": [
+    "check",
+    "verify",
+    "inspect"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "ASSEMBLY_AUX_054",
+   "label": "작업 지시서를 확인한다",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "작업 지시서",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "점검하다",
+    "검사하다",
+    "확인하다"
+   ],
+   "keywords_en": [
+    "check",
+    "verify",
+    "inspect"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "ASSEMBLY_023_01",
+   "label": "작업대를 향해 부품 상자를 나르는 작업자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "나르다",
+    "verb_class": "move",
+    "object": "부품 상자",
+    "object_detail": null,
+    "instrument": null,
+    "location": "작업대",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "운반하다",
+    "이동하다",
+    "옮기다",
+    "배달하다"
+   ],
+   "keywords_en": [
+    "carry",
+    "transport",
+    "deliver"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_023_02",
+   "label": "부품 상자를 운반하는 작업자와 작업대",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "운반하다",
+    "verb_class": "move",
+    "object": "부품 상자",
+    "object_detail": null,
+    "instrument": null,
+    "location": "작업대",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "나르다",
+    "이동하다",
+    "옮기다",
+    "배달하다"
+   ],
+   "keywords_en": [
+    "transport",
+    "carry",
+    "deliver"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_023_03",
+   "label": "작업대 위에 놓인 부품 상자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "부품 상자",
+    "object_detail": "작업대 위에",
+    "instrument": null,
+    "location": "작업대",
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "상자",
+    "부품",
+    "용기",
+    "저장함"
+   ],
+   "keywords_en": [
+    "box",
+    "component",
+    "container"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_023_04",
+   "label": "부품이 담긴 회색 상자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "상자",
+    "object_detail": "회색에 담긴 부품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "용기",
+    "포장",
+    "물품",
+    "부품"
+   ],
+   "keywords_en": [
+    "box",
+    "container",
+    "item"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_024_01",
+   "label": "카트를 밀어 부품 상자를 옮기는 작업자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "밀다",
+    "verb_class": "move",
+    "object": "카트",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "끌다",
+    "이동하다",
+    "운반하다",
+    "옮기다"
+   ],
+   "keywords_en": [
+    "push",
+    "move",
+    "transport"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_024_02",
+   "label": "부품 상자가 올라간 운반 카트",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "카트",
+    "object_detail": "부품 상자가 올라간",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "운반수단",
+    "차량",
+    "물품",
+    "장비"
+   ],
+   "keywords_en": [
+    "cart",
+    "vehicle",
+    "equipment"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_024_03",
+   "label": "카트 손잡이를 잡고 미는 동작",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "잡다",
+    "verb_class": "move",
+    "object": "손잡이",
+    "object_detail": "카트",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "밀다",
+    "끌다",
+    "이동하다",
+    "움직이다"
+   ],
+   "keywords_en": [
+    "hold",
+    "push",
+    "move"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_024_04",
+   "label": "작업대 옆에 도착한 카트와 부품 상자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "카트",
+    "object_detail": null,
+    "instrument": null,
+    "location": "작업대 옆",
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "부품 상자",
+    "물품",
+    "장비"
+   ],
+   "keywords_en": [
+    "cart",
+    "box",
+    "equipment"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_025_01",
+   "label": "상자의 부품 표시를 확인하는 작업자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "부품 표시",
+    "object_detail": null,
+    "instrument": null,
+    "location": "상자",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "점검하다",
+    "확인하기",
+    "확인작업"
+   ],
+   "keywords_en": [
+    "check",
+    "inspect",
+    "review"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_025_02",
+   "label": "부품 이름표가 붙는 부품 상자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "부품 상자",
+    "object_detail": "이름표가 붙는",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "상자",
+    "부품",
+    "용기",
+    "저장함"
+   ],
+   "keywords_en": [
+    "box",
+    "component",
+    "container"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_025_03",
+   "label": "확인할 표시가 있는 회색 부품 상자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "부품 상자",
+    "object_detail": "확인할 표시가 있는 회색",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "상자",
+    "부품",
+    "용기",
+    "저장함"
+   ],
+   "keywords_en": [
+    "box",
+    "component",
+    "container"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_026_01",
+   "label": "상자의 제품 번호를 확인하는 작업자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "제품 번호",
+    "object_detail": null,
+    "instrument": null,
+    "location": "상자",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "점검하다",
+    "확인하기",
+    "확인작업"
+   ],
+   "keywords_en": [
+    "check",
+    "inspect",
+    "review"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_026_02",
+   "label": "제품 번호 표시가 있는 부품 상자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "부품 상자",
+    "object_detail": "제품 번호 표시가 있는",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "상자",
+    "부품",
+    "용기",
+    "저장함"
+   ],
+   "keywords_en": [
+    "box",
+    "component",
+    "container"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_026_03",
+   "label": "제품 번호를 손가락으로 확인하는 동작",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "번호",
+    "object_detail": "제품",
+    "instrument": "손가락",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "확인하기",
+    "점검하다",
+    "살펴보다"
+   ],
+   "keywords_en": [
+    "check",
+    "verify",
+    "inspect"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_027_01",
+   "label": "작업 지시서와 상자의 부품 번호 비교",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "비교하다",
+    "verb_class": "observe",
+    "object": "부품",
+    "object_detail": "상자",
+    "instrument": "작업 지시서",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "대조하다",
+    "대비하다",
+    "검토하다"
+   ],
+   "keywords_en": [
+    "compare",
+    "contrast",
+    "review"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "ASSEMBLY_028_01",
+   "label": "잘못된 부품 상자를 발견한 작업자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "발견하다",
+    "verb_class": "observe",
+    "object": "상자",
+    "object_detail": "부품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "찾다",
+    "발견하기",
+    "인식하다"
+   ],
+   "keywords_en": [
+    "discover",
+    "find",
+    "identify"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_028_02",
+   "label": "상자 표시와 내용물이 다른 상태",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "상태",
+    "object_detail": "잘못된 부품 상자와 내용물이 다른",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "상자",
+    "부품",
+    "물품"
+   ],
+   "keywords_en": [
+    "state",
+    "condition",
+    "situation"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_028_03",
+   "label": "잘못된 부품을 가리키는 손동작",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "가리키다",
+    "verb_class": "other",
+    "object": "부품",
+    "object_detail": "잘못된",
+    "instrument": "손",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "지적하다",
+    "보여주다",
+    "알리다"
+   ],
+   "keywords_en": [
+    "point",
+    "indicate",
+    "show"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_028_04",
+   "label": "잘못된 부품 상자를 분리하는 모습",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "분리하다",
+    "verb_class": "move",
+    "object": "상자",
+    "object_detail": "부품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "떼어내다",
+    "구분하다",
+    "나누다"
+   ],
+   "keywords_en": [
+    "separate",
+    "detach",
+    "isolate"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_029_01",
+   "label": "잘못된 부품을 관리자에게 알리는 작업자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "알리다",
+    "verb_class": "other",
+    "object": "부품",
+    "object_detail": "잘못된",
+    "instrument": null,
+    "location": "관리자",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "보고하다",
+    "전달하다",
+    "알림"
+   ],
+   "keywords_en": [
+    "inform",
+    "report",
+    "notify"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_029_02",
+   "label": "잘못된 부품이 담긴 부품함",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "부품함",
+    "object_detail": "잘못된",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "상자",
+    "저장소",
+    "물품"
+   ],
+   "keywords_en": [
+    "container",
+    "box",
+    "storage"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_029_03",
+   "label": "잘못된 부품을 가리켜 보여주는 동작",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "보여주다",
+    "verb_class": "other",
+    "object": "부품",
+    "object_detail": "잘못된",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "지적하다",
+    "가리키다",
+    "알리다"
+   ],
+   "keywords_en": [
+    "show",
+    "indicate",
+    "point"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_029_04",
+   "label": "관리자가 보고를 확인한 상태",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "상태",
+    "object_detail": "보고한",
+    "instrument": null,
+    "location": "관리자",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "점검하다",
+    "확인하기"
+   ],
+   "keywords_en": [
+    "check",
+    "inspect",
+    "verify"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_030_01",
+   "label": "부품 상자를 작업대 위에 놓는 작업자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "상자",
+    "object_detail": "부품",
+    "instrument": null,
+    "location": "작업대",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "두다",
+    "배치하다",
+    "설치하다"
+   ],
+   "keywords_en": [
+    "place",
+    "set",
+    "position"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_030_02",
+   "label": "작업대에 올릴 회색 부품 상자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "부품 상자",
+    "object_detail": "회색",
+    "instrument": null,
+    "location": "작업대",
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "상자",
+    "부품",
+    "용기",
+    "저장함"
+   ],
+   "keywords_en": [
+    "box",
+    "component",
+    "container"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_030_03",
+   "label": "작업대 위에 부품 상자를 올린 상태",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "부품 상자",
+    "object_detail": "올린 상태",
+    "instrument": null,
+    "location": "작업대",
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "상자",
+    "부품",
+    "용기",
+    "저장함"
+   ],
+   "keywords_en": [
+    "box",
+    "component",
+    "container"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_031_01",
+   "label": "부품 상자를 여는 작업자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "열다",
+    "verb_class": "other",
+    "object": "상자",
+    "object_detail": "부품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "개봉하다",
+    "열기",
+    "오픈하다",
+    "작업자"
+   ],
+   "keywords_en": [
+    "open",
+    "box",
+    "worker"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_031_02",
+   "label": "열린 부품 상자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "상자",
+    "object_detail": "열린 부품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "열린상자",
+    "부품상자",
+    "상자",
+    "컨테이너"
+   ],
+   "keywords_en": [
+    "opened box",
+    "container",
+    "parts box"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_031_03",
+   "label": "상자 덮개를 위로 여는 손동작",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "열다",
+    "verb_class": "other",
+    "object": "덮개",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "손동작",
+    "열기",
+    "상자덮개",
+    "작업"
+   ],
+   "keywords_en": [
+    "hand action",
+    "open",
+    "lid",
+    "task"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "ASSEMBLY_031_04",
+   "label": "열린 상자 픽토그램",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "상자",
+    "object_detail": "열린",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "픽토그램",
+    "상자",
+    "부품",
+    "열림"
+   ],
+   "keywords_en": [
+    "pictogram",
+    "box",
+    "parts",
+    "opened"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_032_01",
+   "label": "부품 수량표를 확인하는 작업자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "수량표",
+    "object_detail": "부품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "작업자",
+    "부품수량",
+    "확인"
+   ],
+   "keywords_en": [
+    "check",
+    "quantity list",
+    "worker",
+    "verify"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_032_02",
+   "label": "부품 그림이 있는 수량표",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "표",
+    "object_detail": "수량",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "수량",
+    "리스트",
+    "도면"
+   ],
+   "keywords_en": [
+    "list",
+    "quantity",
+    "drawing"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_032_03",
+   "label": "수량표의 항목을 확인하는 손동작",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "항목",
+    "object_detail": "수량표의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "점검하다",
+    "확인하기",
+    "조사하다"
+   ],
+   "keywords_en": [
+    "check",
+    "verify",
+    "inspect"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_032_04",
+   "label": "부품 수량표 확인 픽토그램",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "픽토그램",
+    "object_detail": "부품 수량표 확인",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "아이콘",
+    "그래픽",
+    "표시",
+    "이미지"
+   ],
+   "keywords_en": [
+    "pictogram",
+    "icon",
+    "graphic"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_033_01",
+   "label": "개수를 셀 부품이 담긴 트레이",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "세다",
+    "verb_class": "observe",
+    "object": "부품",
+    "object_detail": "개수",
+    "instrument": "트레이",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세다",
+    "계산하다",
+    "측정하다",
+    "수량 확인"
+   ],
+   "keywords_en": [
+    "count",
+    "number",
+    "quantity"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "ASSEMBLY_033_02",
+   "label": "가지런히 놓인 부품을 세는 트레이",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "세다",
+    "verb_class": "observe",
+    "object": "부품",
+    "object_detail": "가지런히 놓인",
+    "instrument": "트레이",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "부품",
+    "트레이",
+    "개수"
+   ],
+   "keywords_en": [
+    "count",
+    "parts",
+    "tray",
+    "arranged"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_034_01",
+   "label": "부품이 부족한 작업 트레이",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "트레이",
+    "object_detail": "부품이 부족한 작업",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "작업대",
+    "작업 공간",
+    "부족한 부품",
+    "상태"
+   ],
+   "keywords_en": [
+    "tray",
+    "workspace",
+    "status"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_034_02",
+   "label": "비어 있는 부품 자리를 가리키는 동작",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "가리키다",
+    "verb_class": "other",
+    "object": "자리",
+    "object_detail": "비어 있는",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "손동작",
+    "부족",
+    "부품",
+    "가리키다"
+   ],
+   "keywords_en": [
+    "point",
+    "empty",
+    "parts",
+    "gesture"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_035_01",
+   "label": "부족한 부품을 관리자에게 보여주는 작업자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "보여주다",
+    "verb_class": "other",
+    "object": "부품",
+    "object_detail": "부족한",
+    "instrument": null,
+    "location": "관리자",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "알리다",
+    "보고하다",
+    "전달하다",
+    "통보하다"
+   ],
+   "keywords_en": [
+    "show",
+    "report",
+    "inform"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_035_02",
+   "label": "부족한 부품의 빈 자리를 가리키는 동작",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "가리키다",
+    "verb_class": "other",
+    "object": "자리",
+    "object_detail": "부족한 부품의 빈",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "지적하다",
+    "지시하다",
+    "표시하다",
+    "알리다"
+   ],
+   "keywords_en": [
+    "point",
+    "indicate",
+    "show"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_035_03",
+   "label": "관리자에게 부품 부족을 알리는 모습",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "알리다",
+    "verb_class": "other",
+    "object": "부품",
+    "object_detail": "부족한",
+    "instrument": null,
+    "location": "관리자",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "작업자",
+    "부족",
+    "부품",
+    "알리다"
+   ],
+   "keywords_en": [
+    "inform",
+    "parts",
+    "deficient",
+    "manager"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_036_01",
+   "label": "부품의 파손 여부를 확인하는 작업자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "부품",
+    "object_detail": "파손 여부",
+    "instrument": null,
+    "location": "작업자",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검사하다",
+    "점검하다",
+    "조사하다",
+    "확인하기"
+   ],
+   "keywords_en": [
+    "check",
+    "inspect",
+    "verify"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_036_02",
+   "label": "금이 가고 깨진 부품",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "부품",
+    "object_detail": "금이 가고 깨진",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "파손",
+    "불량",
+    "금",
+    "흠집",
+    "깨짐"
+   ],
+   "keywords_en": [
+    "damaged",
+    "parts",
+    "broken",
+    "cracked"
+   ],
+   "reviewed": true
+  },
+  {
+   "id": "ASSEMBLY_036_03",
+   "label": "파손된 부품 경고 픽토그램",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "픽토그램",
+    "object_detail": "파손된 부품 경고",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "경고",
+    "알림",
+    "신호",
+    "표시"
+   ],
+   "keywords_en": [
+    "warning",
+    "alert",
+    "signal"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_037_01",
+   "label": "파손된 부품을 불량품 통에 넣는 작업자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "부품",
+    "object_detail": "파손된",
+    "instrument": "불량품 통",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "투입하다",
+    "배치하다",
+    "담다",
+    "상자",
+    "물건"
+   ],
+   "keywords_en": [
+    "put",
+    "insert",
+    "place"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_037_02",
+   "label": "파손된 부품과 빨간 불량품 통",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "부품",
+    "object_detail": "파손된",
+    "instrument": "불량품 통",
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "고장난부품",
+    "불량품",
+    "부서진부품",
+    "상자",
+    "통"
+   ],
+   "keywords_en": [
+    "damaged part",
+    "defective item",
+    "broken part"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_037_03",
+   "label": "파손된 부품을 아래로 넣는 손동작",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "부품",
+    "object_detail": "파손된",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "투입하다",
+    "장착하다",
+    "배치하다",
+    "조립하다"
+   ],
+   "keywords_en": [
+    "insert",
+    "place",
+    "put"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_037_04",
+   "label": "파손된 부품을 불량품 통에 넣는 픽토그램",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "통",
+    "object_detail": "불량품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "상자",
+    "용기",
+    "컨테이너",
+    "저장소"
+   ],
+   "keywords_en": [
+    "bin",
+    "container",
+    "box"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_038_01",
+   "label": "정상 부품을 작업 트레이에 놓는 작업자",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "부품",
+    "object_detail": "정상",
+    "instrument": null,
+    "location": "작업 트레이",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "설치하다",
+    "두다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "place",
+    "set",
+    "put"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_038_02",
+   "label": "정상 부품만 담긴 파란 작업 트레이",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "트레이",
+    "object_detail": "파란 작업",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "작업판",
+    "접시",
+    "컨테이너",
+    "용기"
+   ],
+   "keywords_en": [
+    "tray",
+    "container",
+    "plate"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_038_03",
+   "label": "정상 부품을 트레이에 내려놓는 손동작",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "내려놓다",
+    "verb_class": "move",
+    "object": "부품",
+    "object_detail": "정상",
+    "instrument": null,
+    "location": "트레이",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "두다",
+    "놓다",
+    "배치하다",
+    "설치하다"
+   ],
+   "keywords_en": [
+    "set down",
+    "place",
+    "put"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "ASSEMBLY_038_04",
+   "label": "정상 부품을 작업 트레이에 넣는 픽토그램",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "부품",
+    "object_detail": "정상",
+    "instrument": null,
+    "location": "작업 트레이",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "투입하다",
+    "배치하다",
+    "장착하다",
+    "조립하다"
+   ],
+   "keywords_en": [
+    "insert",
+    "put",
+    "place"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_001",
+   "label": "도구 바닐라 시럽병",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "시럽병",
+    "object_detail": "바닐라",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "소스병",
+    "용기",
+    "조리도구",
+    "재료"
+   ],
+   "keywords_en": [
+    "syrup bottle",
+    "container",
+    "ingredient"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_002",
+   "label": "도구 카라멜 시럽병",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "시럽병",
+    "object_detail": "카라멜",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "소스병",
+    "용기",
+    "조리도구",
+    "재료"
+   ],
+   "keywords_en": [
+    "syrup bottle",
+    "container",
+    "ingredient"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_003",
+   "label": "도구 헤이즐넛 시럽병",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "시럽병",
+    "object_detail": "헤이즐넛",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "소스병",
+    "용기",
+    "조리도구",
+    "재료"
+   ],
+   "keywords_en": [
+    "syrup bottle",
+    "container",
+    "ingredient"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_004",
+   "label": "디저트봉투",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "봉투",
+    "object_detail": "디저트",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "포장지",
+    "용기",
+    "상자",
+    "저장소"
+   ],
+   "keywords_en": [
+    "bag",
+    "container",
+    "wrapper"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_005",
+   "label": "디저트상자",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "상자",
+    "object_detail": "디저트",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "포장지",
+    "용기",
+    "봉투",
+    "저장소"
+   ],
+   "keywords_en": [
+    "box",
+    "container",
+    "wrapper"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_006",
+   "label": "디저트집게",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "집게",
+    "object_detail": "디저트",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "도구",
+    "조리도구",
+    "집게",
+    "조리기구"
+   ],
+   "keywords_en": [
+    "tongs",
+    "tool",
+    "utensil"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_007",
+   "label": "머들러",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "머들러",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "혼합기",
+    "도구",
+    "조리도구",
+    "주방용품"
+   ],
+   "keywords_en": [
+    "muddler",
+    "tool",
+    "utensil"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_008",
+   "label": "빨대",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "빨대",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "음료용기",
+    "흡입기",
+    "주방용품",
+    "소모품"
+   ],
+   "keywords_en": [
+    "straw",
+    "utensil",
+    "consumable"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_009",
+   "label": "수세미",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "수세미",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "청소도구",
+    "세척기구",
+    "주방용품",
+    "소모품"
+   ],
+   "keywords_en": [
+    "sponge",
+    "cleaning tool",
+    "utensil"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_010",
+   "label": "시럽병",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "시럽병",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "소스병",
+    "용기",
+    "조리도구",
+    "재료"
+   ],
+   "keywords_en": [
+    "syrup bottle",
+    "container",
+    "ingredient"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_011",
+   "label": "식기건조대",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "건조대",
+    "object_detail": "식기",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "주방용품",
+    "건조기구",
+    "소모품",
+    "조리도구"
+   ],
+   "keywords_en": [
+    "drying rack",
+    "utensil",
+    "kitchen tool"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_012",
+   "label": "앞치마",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "앞치마",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "의류",
+    "조리복",
+    "주방용품",
+    "소모품"
+   ],
+   "keywords_en": [
+    "apron",
+    "clothing",
+    "kitchen tool"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_013",
+   "label": "얼음삽",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "삽",
+    "object_detail": "얼음",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "도구",
+    "조리도구",
+    "주방용품",
+    "소모품"
+   ],
+   "keywords_en": [
+    "scoop",
+    "tool",
+    "utensil"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_014",
+   "label": "얼음통",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "통",
+    "object_detail": "얼음",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "용기",
+    "저장소",
+    "주방용품",
+    "소모품"
+   ],
+   "keywords_en": [
+    "container",
+    "bin",
+    "utensil"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_015",
+   "label": "우유팩",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "우유팩",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "우유통",
+    "우유상자",
+    "우유용기",
+    "우유병"
+   ],
+   "keywords_en": [
+    "milk carton",
+    "milk pack"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_016",
+   "label": "원두통",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "원두통",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "커피통",
+    "커피용기",
+    "커피저장통"
+   ],
+   "keywords_en": [
+    "coffee container",
+    "coffee jar"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_017",
+   "label": "종이컵",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "종이컵",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "일회용컵",
+    "컵",
+    "음료컵"
+   ],
+   "keywords_en": [
+    "paper cup",
+    "disposable cup"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_018",
+   "label": "커피머신",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "커피머신",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "커피기계",
+    "커피제조기",
+    "커피메이커"
+   ],
+   "keywords_en": [
+    "coffee machine",
+    "coffee maker"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_019",
+   "label": "컵뚜껑",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "컵뚜껑",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "뚜껑",
+    "컵盖",
+    "일회용뚜껑"
+   ],
+   "keywords_en": [
+    "cup lid",
+    "lid"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_020",
+   "label": "투명컵",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "투명컵",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "투명용기",
+    "일회용투명컵"
+   ],
+   "keywords_en": [
+    "clear cup",
+    "transparent cup"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_021",
+   "label": "트레이",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "트레이",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "서빙트레이",
+    "음식트레이"
+   ],
+   "keywords_en": [
+    "tray",
+    "serving tray"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_022",
+   "label": "포터필터",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "포터필터",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "커피필터",
+    "필터"
+   ],
+   "keywords_en": [
+    "portafilter",
+    "coffee filter"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_TOOL_023",
+   "label": "행주",
+   "job": "cafe",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "행주",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "걸레",
+    "수건",
+    "청소용천"
+   ],
+   "keywords_en": [
+    "dishcloth",
+    "rag",
+    "cleaning cloth"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_001",
+   "label": "손을 씻는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "씻다",
+    "verb_class": "clean",
+    "object": "손",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세척하다",
+    "청소하다",
+    "손씻기"
+   ],
+   "keywords_en": [
+    "wash",
+    "clean hands"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_002",
+   "label": "앞치마를 착용한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "착용하다",
+    "verb_class": "wear",
+    "object": "앞치마",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "입다",
+    "착용하기"
+   ],
+   "keywords_en": [
+    "wear",
+    "apron"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_003",
+   "label": "작업모를 착용한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "착용하다",
+    "verb_class": "wear",
+    "object": "작업모",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "모자",
+    "작업용모자"
+   ],
+   "keywords_en": [
+    "wear",
+    "work cap"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_004",
+   "label": "작업대를 닦는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "작업대",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean surface"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_005",
+   "label": "깨끗한 컵을 준비한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "준비하다",
+    "verb_class": "other",
+    "object": "컵",
+    "object_detail": "깨끗한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "챙기다",
+    "꺼내다",
+    "마련하다"
+   ],
+   "keywords_en": [
+    "prepare",
+    "clean cup"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_006",
+   "label": "음료에 맞는 컵을 고른다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "고르다",
+    "verb_class": "sort",
+    "object": "컵",
+    "object_detail": "음료에 맞는",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "선택하다",
+    "맞는컵"
+   ],
+   "keywords_en": [
+    "choose",
+    "suitable cup"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_007",
+   "label": "원두를 준비한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "준비하다",
+    "verb_class": "other",
+    "object": "원두",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "챙기다",
+    "꺼내다",
+    "마련하다"
+   ],
+   "keywords_en": [
+    "prepare",
+    "coffee beans"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_008",
+   "label": "우유를 준비한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "준비하다",
+    "verb_class": "other",
+    "object": "우유",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "챙기다",
+    "꺼내다",
+    "마련하다"
+   ],
+   "keywords_en": [
+    "prepare",
+    "milk"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_009",
+   "label": "얼음을 컵에 담는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "담다",
+    "verb_class": "pack",
+    "object": "얼음",
+    "object_detail": null,
+    "instrument": "컵",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "넣다",
+    "컵에담다",
+    "얼음넣기"
+   ],
+   "keywords_en": [
+    "put",
+    "ice",
+    "in cup"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_010",
+   "label": "필요한 시럽을 준비한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "준비하다",
+    "verb_class": "other",
+    "object": "시럽",
+    "object_detail": "필요한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "챙기다",
+    "꺼내다",
+    "마련하다"
+   ],
+   "keywords_en": [
+    "prepare",
+    "syrup"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_011",
+   "label": "포터필터를 준비한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "준비하다",
+    "verb_class": "other",
+    "object": "포터필터",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "챙기다",
+    "꺼내다",
+    "마련하다"
+   ],
+   "keywords_en": [
+    "prepare",
+    "portafilter"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_012",
+   "label": "원두를 그라인더에 넣는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "원두",
+    "object_detail": null,
+    "instrument": "그라인더",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "투입하다",
+    "배치하다",
+    "장착하다"
+   ],
+   "keywords_en": [
+    "put",
+    "insert",
+    "load"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_013",
+   "label": "원두를 분쇄한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "분쇄하다",
+    "verb_class": "other",
+    "object": "원두",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "갈다",
+    "가루로 만들다",
+    "분쇄하기"
+   ],
+   "keywords_en": [
+    "grind",
+    "crush",
+    "milling"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_015",
+   "label": "포터필터의 원두를 고르게 한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "원두",
+    "object_detail": "포터필터의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "고르게 하다",
+    "평평하게 하다",
+    "정돈하다",
+    "균일하게 하다",
+    "고르기"
+   ],
+   "keywords_en": [
+    "level",
+    "smooth",
+    "even out"
+   ],
+   "reviewed": true
+  },
+  {
+   "id": "CAFE_016",
+   "label": "원두를 탬퍼로 누른다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "누르다",
+    "verb_class": "other",
+    "object": "원두",
+    "object_detail": "탬퍼로",
+    "instrument": "탬퍼",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "압축하다",
+    "단단히 하다",
+    "누르기"
+   ],
+   "keywords_en": [
+    "press",
+    "compress",
+    "compact"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_017",
+   "label": "포터필터 가장자리를 정리한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "clean",
+    "object": "가장자리",
+    "object_detail": "포터필터의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "치우다",
+    "정돈하다",
+    "정리정돈"
+   ],
+   "keywords_en": [
+    "organize",
+    "tidy",
+    "arrange"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_018",
+   "label": "포터필터를 커피머신에 끼운다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "끼우다",
+    "verb_class": "move",
+    "object": "포터필터",
+    "object_detail": null,
+    "instrument": "커피머신",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "장착하다",
+    "설치하다",
+    "부착하다"
+   ],
+   "keywords_en": [
+    "attach",
+    "insert",
+    "fit"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_019",
+   "label": "샷잔을 커피머신 아래에 놓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "샷잔",
+    "object_detail": null,
+    "instrument": null,
+    "location": "커피머신 아래",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "두다",
+    "배치하다",
+    "설치하다"
+   ],
+   "keywords_en": [
+    "place",
+    "set",
+    "position"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_020",
+   "label": "커피 추출 버튼을 누른다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "누르다",
+    "verb_class": "operate",
+    "object": "버튼",
+    "object_detail": "커피 추출",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "작동하다",
+    "조작하다",
+    "버튼을 누르다"
+   ],
+   "keywords_en": [
+    "press",
+    "activate",
+    "button"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_021",
+   "label": "에스프레소를 샷잔에 받는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "받다",
+    "verb_class": "move",
+    "object": "에스프레소",
+    "object_detail": null,
+    "instrument": null,
+    "location": "샷잔",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "수령하다",
+    "받아들이다",
+    "받아내다"
+   ],
+   "keywords_en": [
+    "receive",
+    "get",
+    "collect"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_023",
+   "label": "포터필터를 커피머신에서 뺀다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "빼다",
+    "verb_class": "move",
+    "object": "포터필터",
+    "object_detail": null,
+    "instrument": "커피머신",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "제거하다",
+    "분리하다",
+    "떼어내다"
+   ],
+   "keywords_en": [
+    "remove",
+    "detach",
+    "take out"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_024",
+   "label": "커피 찌꺼기를 넉박스에 버린다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "버리다",
+    "verb_class": "clean",
+    "object": "찌꺼기",
+    "object_detail": "커피",
+    "instrument": "넉박스",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "처리하다",
+    "제거하다",
+    "치우다",
+    "쓰레기",
+    "음식물"
+   ],
+   "keywords_en": [
+    "discard",
+    "throw away",
+    "waste"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_025",
+   "label": "포터필터를 씻는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "씻다",
+    "verb_class": "clean",
+    "object": "포터필터",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세척하다",
+    "청소하다",
+    "씻어내다"
+   ],
+   "keywords_en": [
+    "wash",
+    "clean",
+    "rinse"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_026",
+   "label": "얼음을 컵에 담는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "담다",
+    "verb_class": "pack",
+    "object": "얼음",
+    "object_detail": null,
+    "instrument": null,
+    "location": "컵",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "넣다",
+    "채우다",
+    "투입하다"
+   ],
+   "keywords_en": [
+    "put",
+    "fill",
+    "load"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_027",
+   "label": "찬물을 얼음컵에 붓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "붓다",
+    "verb_class": "move",
+    "object": "찬물",
+    "object_detail": null,
+    "instrument": null,
+    "location": "얼음컵",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "따르다",
+    "부어넣다",
+    "주입하다"
+   ],
+   "keywords_en": [
+    "pour",
+    "fill",
+    "add"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_028",
+   "label": "추출한 에스프레소를 컵에 붓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "붓다",
+    "verb_class": "move",
+    "object": "에스프레소",
+    "object_detail": "추출한",
+    "instrument": null,
+    "location": "컵",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "따르다",
+    "부어넣다",
+    "주입하다"
+   ],
+   "keywords_en": [
+    "pour",
+    "fill",
+    "add"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_029",
+   "label": "우유를 컵에 붓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "붓다",
+    "verb_class": "move",
+    "object": "우유",
+    "object_detail": null,
+    "instrument": null,
+    "location": "컵",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "따르다",
+    "부어넣다",
+    "주입하다"
+   ],
+   "keywords_en": [
+    "pour",
+    "fill",
+    "add"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_030",
+   "label": "시럽을 컵에 넣는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "시럽",
+    "object_detail": null,
+    "instrument": null,
+    "location": "컵",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "투입하다",
+    "첨가하다",
+    "혼합하다"
+   ],
+   "keywords_en": [
+    "add",
+    "put",
+    "mix"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_031",
+   "label": "음료를 저어 섞는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "섞다",
+    "verb_class": "other",
+    "object": "음료",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "혼합하다",
+    "섞다",
+    "섞어주다"
+   ],
+   "keywords_en": [
+    "stir",
+    "mix",
+    "blend"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CAFE_032",
+   "label": "음료 양을 확인한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "양",
+    "object_detail": "음료",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검사하다",
+    "점검하다",
+    "확인하기"
+   ],
+   "keywords_en": [
+    "check",
+    "verify",
+    "inspect"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_033",
+   "label": "컵에 뚜껑을 닫는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닫다",
+    "verb_class": "move",
+    "object": "뚜껑",
+    "object_detail": null,
+    "instrument": null,
+    "location": "컵",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "덮다",
+    "막다",
+    "닫아주다"
+   ],
+   "keywords_en": [
+    "close",
+    "cover",
+    "seal"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_034",
+   "label": "빨대를 준비한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "준비하다",
+    "verb_class": "other",
+    "object": "빨대",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "챙기다",
+    "꺼내놓다",
+    "마련하다",
+    "도구",
+    "소모품"
+   ],
+   "keywords_en": [
+    "prepare",
+    "straw",
+    "utensil"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_041",
+   "label": "완성된 음료를 트레이에 놓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "음료",
+    "object_detail": "완성된",
+    "instrument": "트레이",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "올리다",
+    "세팅하다",
+    "음료수",
+    "완료된"
+   ],
+   "keywords_en": [
+    "place",
+    "drink",
+    "tray"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_042",
+   "label": "주문표와 음료를 비교한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "비교하다",
+    "verb_class": "observe",
+    "object": "주문표",
+    "object_detail": null,
+    "instrument": "음료",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "대조하다",
+    "확인하다",
+    "검토하다",
+    "주문서",
+    "음료수"
+   ],
+   "keywords_en": [
+    "compare",
+    "order",
+    "beverage"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CAFE_043",
+   "label": "같은 주문의 음료를 함께 놓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "음료",
+    "object_detail": "같은 주문의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "세팅하다",
+    "정리하다",
+    "음료수",
+    "같은"
+   ],
+   "keywords_en": [
+    "place",
+    "drink",
+    "same order"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_044",
+   "label": "완성된 음료를 픽업대에 놓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "음료",
+    "object_detail": "완성된",
+    "instrument": "픽업대",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "올리다",
+    "세팅하다",
+    "음료수",
+    "완료된"
+   ],
+   "keywords_en": [
+    "place",
+    "drink",
+    "pickup area"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_045",
+   "label": "음료를 고객에게 건넨다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "건네다",
+    "verb_class": "move",
+    "object": "음료",
+    "object_detail": null,
+    "instrument": "고객",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "주다",
+    "전달하다",
+    "제공하다",
+    "음료수",
+    "손님"
+   ],
+   "keywords_en": [
+    "hand over",
+    "drink",
+    "customer"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_046",
+   "label": "컵을 보관대에 채운다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "채우다",
+    "verb_class": "pack",
+    "object": "컵",
+    "object_detail": null,
+    "instrument": "보관대",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "넣다",
+    "비치하다",
+    "용기",
+    "저장소"
+   ],
+   "keywords_en": [
+    "fill",
+    "cup",
+    "storage"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_047",
+   "label": "컵뚜껑을 채운다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "채우다",
+    "verb_class": "pack",
+    "object": "컵뚜껑",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "넣다",
+    "비치하다",
+    "뚜껑",
+    "용기"
+   ],
+   "keywords_en": [
+    "fill",
+    "cup lid",
+    "cover"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_048",
+   "label": "빨대를 채운다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "채우다",
+    "verb_class": "pack",
+    "object": "빨대",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "넣다",
+    "비치하다",
+    "소모품",
+    "도구"
+   ],
+   "keywords_en": [
+    "fill",
+    "straw",
+    "utensil"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_049",
+   "label": "냅킨을 채운다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "채우다",
+    "verb_class": "pack",
+    "object": "냅킨",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "넣다",
+    "비치하다",
+    "소모품",
+    "도구"
+   ],
+   "keywords_en": [
+    "fill",
+    "napkin",
+    "utensil"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_051",
+   "label": "얼음을 얼음통에 채운다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "채우다",
+    "verb_class": "pack",
+    "object": "얼음",
+    "object_detail": null,
+    "instrument": "얼음통",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "넣다",
+    "비치하다",
+    "차가운",
+    "음료"
+   ],
+   "keywords_en": [
+    "fill",
+    "ice",
+    "ice bin"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_052",
+   "label": "시럽병을 정해진 위치에 놓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "시럽병",
+    "object_detail": null,
+    "instrument": null,
+    "location": "정해진 위치",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "세팅하다",
+    "정리하다",
+    "소스",
+    "용기"
+   ],
+   "keywords_en": [
+    "place",
+    "syrup bottle",
+    "designated location"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_053",
+   "label": "디저트를 집게로 집는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "집다",
+    "verb_class": "move",
+    "object": "디저트",
+    "object_detail": null,
+    "instrument": "집게",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "잡다",
+    "들다",
+    "취급하다",
+    "간식",
+    "도구"
+   ],
+   "keywords_en": [
+    "pick",
+    "dessert",
+    "tongs"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_054",
+   "label": "디저트를 봉투에 넣는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "pack",
+    "object": "디저트",
+    "object_detail": null,
+    "instrument": "봉투",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "채우다",
+    "포장하다",
+    "간식",
+    "용기"
+   ],
+   "keywords_en": [
+    "put",
+    "dessert",
+    "bag"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_056",
+   "label": "디저트 상자를 닫는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닫다",
+    "verb_class": "other",
+    "object": "상자",
+    "object_detail": "디저트",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "덮다",
+    "밀폐하다",
+    "봉하다",
+    "포장하다",
+    "상자"
+   ],
+   "keywords_en": [
+    "close",
+    "seal",
+    "box"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_057",
+   "label": "포장된 디저트를 트레이에 놓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "디저트",
+    "object_detail": "포장된",
+    "instrument": "트레이",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "세팅하다",
+    "정리하다",
+    "간식",
+    "완료된"
+   ],
+   "keywords_en": [
+    "place",
+    "dessert",
+    "tray"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_058",
+   "label": "상품을 진열대에 놓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": null,
+    "instrument": "진열대",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "세팅하다",
+    "정리하다",
+    "물품",
+    "진열"
+   ],
+   "keywords_en": [
+    "place",
+    "product",
+    "display shelf"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_059",
+   "label": "같은 상품끼리 모아 놓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "모으다",
+    "verb_class": "sort",
+    "object": "상품",
+    "object_detail": "같은",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "분류하다",
+    "구분하다",
+    "물품",
+    "유사한"
+   ],
+   "keywords_en": [
+    "gather",
+    "product",
+    "same"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_060",
+   "label": "상품을 한 줄로 정리한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "상품",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "세팅하다",
+    "물품",
+    "정리"
+   ],
+   "keywords_en": [
+    "organize",
+    "product",
+    "arrange"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_061",
+   "label": "반납대의 트레이를 가져온다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "가져오다",
+    "verb_class": "move",
+    "object": "트레이",
+    "object_detail": "반납대의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "수거하다",
+    "가져가다",
+    "회수하다",
+    "물품",
+    "반납"
+   ],
+   "keywords_en": [
+    "bring",
+    "tray",
+    "return area"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_062",
+   "label": "사용한 컵을 모은다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "모으다",
+    "verb_class": "move",
+    "object": "컵",
+    "object_detail": "사용한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "수거하다",
+    "가져오다",
+    "모아놓다",
+    "컵들"
+   ],
+   "keywords_en": [
+    "collect",
+    "gather",
+    "cups"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_063",
+   "label": "접시와 컵을 나눈다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "나누다",
+    "verb_class": "sort",
+    "object": "접시",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "구분하다",
+    "분리하다",
+    "나눠놓다"
+   ],
+   "keywords_en": [
+    "divide",
+    "separate",
+    "plates"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_064",
+   "label": "남은 음료를 버린다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "버리다",
+    "verb_class": "clean",
+    "object": "음료",
+    "object_detail": "남은",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "처리하다",
+    "없애다",
+    "버려지다"
+   ],
+   "keywords_en": [
+    "discard",
+    "leftover",
+    "beverage"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_065",
+   "label": "남은 음식물을 음식물통에 버린다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "버리다",
+    "verb_class": "clean",
+    "object": "음식물",
+    "object_detail": "남은",
+    "instrument": null,
+    "location": "음식물통",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "처리하다",
+    "없애다",
+    "찌꺼기"
+   ],
+   "keywords_en": [
+    "discard",
+    "leftover",
+    "food waste"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_067",
+   "label": "컵에 물을 묻힌다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "묻히다",
+    "verb_class": "other",
+    "object": "물",
+    "object_detail": null,
+    "instrument": "컵",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "적시다",
+    "촉촉하게 하다"
+   ],
+   "keywords_en": [
+    "wet",
+    "moisten"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_068",
+   "label": "컵을 수세미로 닦는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "컵",
+    "object_detail": null,
+    "instrument": "수세미",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "sponge"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_069",
+   "label": "접시를 수세미로 닦는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "접시",
+    "object_detail": null,
+    "instrument": "수세미",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "plate"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_070",
+   "label": "식기의 거품을 물로 헹군다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "헹구다",
+    "verb_class": "clean",
+    "object": "거품",
+    "object_detail": null,
+    "instrument": null,
+    "location": "식기",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "씻다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "rinse",
+    "bubbles"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_071",
+   "label": "씻은 컵을 건조대에 놓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "컵",
+    "object_detail": "씻은",
+    "instrument": null,
+    "location": "건조대",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "두다"
+   ],
+   "keywords_en": [
+    "place",
+    "drying rack"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_072",
+   "label": "씻은 접시를 건조대에 놓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "접시",
+    "object_detail": "씻은",
+    "instrument": null,
+    "location": "건조대",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "두다"
+   ],
+   "keywords_en": [
+    "place",
+    "drying rack"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_073",
+   "label": "마른 컵을 정해진 곳에 놓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "컵",
+    "object_detail": "마른",
+    "instrument": null,
+    "location": "정해진 곳",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "두다"
+   ],
+   "keywords_en": [
+    "place",
+    "designated spot"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_075",
+   "label": "빈 컵을 테이블에서 치운다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "치우다",
+    "verb_class": "clean",
+    "object": "컵",
+    "object_detail": "빈",
+    "instrument": null,
+    "location": "테이블",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "수거하다"
+   ],
+   "keywords_en": [
+    "clear",
+    "table"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_076",
+   "label": "사용한 트레이를 치운다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "치우다",
+    "verb_class": "clean",
+    "object": "트레이",
+    "object_detail": "사용한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "수거하다"
+   ],
+   "keywords_en": [
+    "clear",
+    "tray"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_077",
+   "label": "테이블 위를 닦는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "테이블",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "table"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_078",
+   "label": "의자를 테이블에 맞춰 놓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "의자",
+    "object_detail": null,
+    "instrument": null,
+    "location": "테이블",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "place",
+    "chair"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_079",
+   "label": "바닥의 쓰레기를 줍는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "줍다",
+    "verb_class": "clean",
+    "object": "쓰레기",
+    "object_detail": "바닥의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "수거하다",
+    "주워서 처리하다"
+   ],
+   "keywords_en": [
+    "pick up",
+    "trash"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_080",
+   "label": "바닥을 빗자루로 쓸어낸다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "쓸다",
+    "verb_class": "clean",
+    "object": "바닥",
+    "object_detail": null,
+    "instrument": "빗자루",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "비질하다"
+   ],
+   "keywords_en": [
+    "sweep",
+    "floor"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_081",
+   "label": "바닥을 밀대로 닦는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "바닥",
+    "object_detail": null,
+    "instrument": "밀대",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "floor"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_082",
+   "label": "쓰레기통의 봉투를 빼낸다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "빼내다",
+    "verb_class": "move",
+    "object": "봉투",
+    "object_detail": "쓰레기통의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "제거하다",
+    "빼다"
+   ],
+   "keywords_en": [
+    "remove",
+    "bag"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_083",
+   "label": "새 쓰레기봉투를 끼운다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "끼우다",
+    "verb_class": "wear",
+    "object": "봉투",
+    "object_detail": "새",
+    "instrument": null,
+    "location": "쓰레기통",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "장착하다",
+    "넣다"
+   ],
+   "keywords_en": [
+    "insert",
+    "new bag"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_084",
+   "label": "쓰레기를 종류별로 분리한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "분리하다",
+    "verb_class": "sort",
+    "object": "쓰레기",
+    "object_detail": "종류별",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "구분하다",
+    "나누다",
+    "정리하다",
+    "쓰레기통"
+   ],
+   "keywords_en": [
+    "sort",
+    "trash",
+    "separate"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_085",
+   "label": "커피머신 주변을 닦는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "커피머신",
+    "object_detail": "주변",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다",
+    "깨끗이하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "coffee machine"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_086",
+   "label": "작업대의 물기를 닦는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "물기",
+    "object_detail": "작업대의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다",
+    "물기제거"
+   ],
+   "keywords_en": [
+    "wipe",
+    "moisture",
+    "work table"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_087",
+   "label": "사용한 도구를 정해진 위치에 놓는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "도구",
+    "object_detail": "사용한",
+    "instrument": null,
+    "location": "정해진 위치",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "두다",
+    "배치하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "place",
+    "tool",
+    "designated location"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_088",
+   "label": "남은 재료를 냉장고에 넣는다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "재료",
+    "object_detail": "남은",
+    "instrument": null,
+    "location": "냉장고",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "저장하다",
+    "보관하다",
+    "냉동하다"
+   ],
+   "keywords_en": [
+    "put",
+    "ingredients",
+    "refrigerator"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_089",
+   "label": "매장이 깨끗한지 확인한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "상태",
+    "object_detail": "매장의 깨끗한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "점검하다",
+    "검사하다",
+    "살펴보다"
+   ],
+   "keywords_en": [
+    "check",
+    "condition",
+    "cleanliness"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CAFE_090",
+   "label": "앞치마를 벗어 보관한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "보관하다",
+    "verb_class": "move",
+    "object": "앞치마",
+    "object_detail": "벗어",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "두다",
+    "저장하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "store",
+    "apron",
+    "put away"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_001",
+   "label": "대걸레",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "대걸레",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "청소도구",
+    "걸레",
+    "청소기구"
+   ],
+   "keywords_en": [
+    "mop",
+    "cleaning tool",
+    "cleaning equipment"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_002",
+   "label": "도구 건조기",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "건조기",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "기계",
+    "건조기구",
+    "세척기"
+   ],
+   "keywords_en": [
+    "dryer",
+    "tool dryer",
+    "equipment"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CLEANING_TOOL_003",
+   "label": "도구 건조대",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "건조대",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세탁기구",
+    "건조기구",
+    "세탁대"
+   ],
+   "keywords_en": [
+    "drying rack",
+    "tool rack",
+    "laundry"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CLEANING_TOOL_004",
+   "label": "도구 건조볼",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "건조볼",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세탁기구",
+    "건조기구",
+    "세탁볼"
+   ],
+   "keywords_en": [
+    "drying ball",
+    "tool",
+    "laundry"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CLEANING_TOOL_005",
+   "label": "도구 다리미판",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "다리미판",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세탁기구",
+    "다리미",
+    "다림질"
+   ],
+   "keywords_en": [
+    "ironing board",
+    "tool",
+    "laundry"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CLEANING_TOOL_006",
+   "label": "도구 다리미",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "다리미",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세탁기구",
+    "다림질기",
+    "다림질도구"
+   ],
+   "keywords_en": [
+    "iron",
+    "tool",
+    "laundry"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CLEANING_TOOL_007",
+   "label": "도구 빨래집게",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "빨래집게",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세탁기구",
+    "집게",
+    "세탁도구"
+   ],
+   "keywords_en": [
+    "clothes peg",
+    "tool",
+    "laundry"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CLEANING_TOOL_008",
+   "label": "도구 섬유유연제",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "섬유유연제",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세탁기구",
+    "세제",
+    "세탁도구"
+   ],
+   "keywords_en": [
+    "fabric softener",
+    "tool",
+    "laundry"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CLEANING_TOOL_009",
+   "label": "도구 세제스쿱",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "세제스쿱",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세탁기구",
+    "스쿱",
+    "세탁도구"
+   ],
+   "keywords_en": [
+    "detergent scoop",
+    "tool",
+    "laundry"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CLEANING_TOOL_010",
+   "label": "도구 세탁기",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "세탁기",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세탁기구",
+    "세탁도구",
+    "세탁기계"
+   ],
+   "keywords_en": [
+    "washing machine",
+    "tool",
+    "laundry"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CLEANING_TOOL_011",
+   "label": "도구 세탁망",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "세탁망",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세탁기구",
+    "망",
+    "세탁도구"
+   ],
+   "keywords_en": [
+    "laundry net",
+    "tool",
+    "laundry"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CLEANING_TOOL_012",
+   "label": "도구 세탁바구니",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "세탁바구니",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세탁기구",
+    "바구니",
+    "세탁도구"
+   ],
+   "keywords_en": [
+    "laundry basket",
+    "tool",
+    "laundry"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CLEANING_TOOL_013",
+   "label": "도구 세탁세제",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "세탁세제",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세탁기구",
+    "세제",
+    "세탁도구"
+   ],
+   "keywords_en": [
+    "laundry detergent",
+    "tool",
+    "laundry"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CLEANING_TOOL_014",
+   "label": "도구 세탁주머니",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "세탁주머니",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세탁가방",
+    "세탁용주머니",
+    "세탁물주머니"
+   ],
+   "keywords_en": [
+    "laundry bag",
+    "washing bag"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CLEANING_TOOL_015",
+   "label": "도구 얼룩난 천",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "천",
+    "object_detail": "얼룩난",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "더러운천",
+    "오염된천",
+    "얼룩천"
+   ],
+   "keywords_en": [
+    "stained cloth",
+    "dirty cloth"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_016",
+   "label": "도구 옷걸이",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "옷걸이",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "행거",
+    "옷걸이대"
+   ],
+   "keywords_en": [
+    "hanger",
+    "clothes hanger"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "CLEANING_TOOL_017",
+   "label": "도구 접은 세탁물",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "세탁물",
+    "object_detail": "접은",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "접힌세탁물",
+    "접은빨래"
+   ],
+   "keywords_en": [
+    "folded laundry",
+    "folded clothes"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_018",
+   "label": "밀대",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "밀대",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "청소밀대",
+    "청소도구"
+   ],
+   "keywords_en": [
+    "mop",
+    "cleaning mop"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_019",
+   "label": "변기솔",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "솔",
+    "object_detail": "변기",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "화장실솔",
+    "변기청소솔"
+   ],
+   "keywords_en": [
+    "toilet brush",
+    "bathroom brush"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_020",
+   "label": "분무기",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "분무기",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "스프레이",
+    "분사기"
+   ],
+   "keywords_en": [
+    "sprayer",
+    "spray bottle"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_021",
+   "label": "빗자루",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "빗자루",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "청소빗자루",
+    "청소도구"
+   ],
+   "keywords_en": [
+    "broom",
+    "cleaning broom"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_022",
+   "label": "빨래를 담는 유니폼 작업자",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "작업자",
+    "object_detail": "유니폼",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "청소작업자",
+    "유니폼입은작업자"
+   ],
+   "keywords_en": [
+    "uniform worker",
+    "cleaning worker"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_023",
+   "label": "세차용 수건",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "수건",
+    "object_detail": "세차용",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세차타올",
+    "세차수건"
+   ],
+   "keywords_en": [
+    "car wash towel",
+    "washing towel"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_024",
+   "label": "세차용 스펀지",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "스펀지",
+    "object_detail": "세차용",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세차스펀지",
+    "청소스펀지"
+   ],
+   "keywords_en": [
+    "car wash sponge",
+    "cleaning sponge"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_025",
+   "label": "세차용 양동이",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "양동이",
+    "object_detail": "세차용",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세차버킷",
+    "청소양동이"
+   ],
+   "keywords_en": [
+    "car wash bucket",
+    "cleaning bucket"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_026",
+   "label": "세차용 호스와 분사기",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "호스",
+    "object_detail": "세차용",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "세차호스",
+    "물호스"
+   ],
+   "keywords_en": [
+    "car wash hose",
+    "water hose"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_027",
+   "label": "스펀지",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "스펀지",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "청소스펀지",
+    "일반스펀지"
+   ],
+   "keywords_en": [
+    "sponge",
+    "cleaning sponge"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_028",
+   "label": "쓰레받기",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "쓰레받기",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "쓰레기받기",
+    "청소도구"
+   ],
+   "keywords_en": [
+    "dustpan",
+    "cleaning dustpan"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_029",
+   "label": "집게",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "집게",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "청소집게",
+    "집게도구"
+   ],
+   "keywords_en": [
+    "tongs",
+    "cleaning tongs"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_030",
+   "label": "청소용 수건",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "수건",
+    "object_detail": "청소용",
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "청소타올",
+    "청소수건"
+   ],
+   "keywords_en": [
+    "cleaning towel",
+    "cleaning cloth"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_TOOL_031",
+   "label": "화장지",
+   "job": "cleaning",
+   "asset_type": "tool",
+   "frame": {
+    "verb": null,
+    "verb_class": null,
+    "object": "화장지",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": true
+   },
+   "keywords_ko": [
+    "티슈",
+    "휴지"
+   ],
+   "keywords_en": [
+    "toilet paper",
+    "tissue"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_004",
+   "label": "청소할 구역을 확인한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "구역",
+    "object_detail": "청소할",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "점검하다",
+    "검사하다",
+    "확인하기"
+   ],
+   "keywords_en": [
+    "check",
+    "inspect"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_005",
+   "label": "미끄럼 주의 표지를 세운다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "세우다",
+    "verb_class": "other",
+    "object": "표지",
+    "object_detail": "미끄럼 주의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "설치하다",
+    "세우기",
+    "표지판"
+   ],
+   "keywords_en": [
+    "set up",
+    "place"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_006",
+   "label": "청소 카트를 가져온다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "가져오다",
+    "verb_class": "move",
+    "object": "카트",
+    "object_detail": "청소",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "챙기다",
+    "꺼내다",
+    "마련하다",
+    "운반하다"
+   ],
+   "keywords_en": [
+    "bring",
+    "fetch",
+    "carry"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_008",
+   "label": "새 쓰레기봉투를 끼운다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "끼우다",
+    "verb_class": "wear",
+    "object": "쓰레기봉투",
+    "object_detail": "새",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "장착하다",
+    "교체하다",
+    "설치하다"
+   ],
+   "keywords_en": [
+    "insert",
+    "fit",
+    "attach"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_009",
+   "label": "쓰레기를 종류별 통에 넣는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "쓰레기",
+    "object_detail": null,
+    "instrument": "통",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "배치하다",
+    "수납하다"
+   ],
+   "keywords_en": [
+    "put",
+    "place",
+    "store"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_010",
+   "label": "책상 위를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "책상",
+    "object_detail": "위",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "scrub"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_011",
+   "label": "문손잡이를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "문손잡이",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "scrub"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_012",
+   "label": "거울을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "거울",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "scrub"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_013",
+   "label": "세면대를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "세면대",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "scrub"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_014",
+   "label": "변기를 솔로 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "변기",
+    "object_detail": "솔로",
+    "instrument": "솔",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "scrub"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_015",
+   "label": "화장지를 채운다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "채우다",
+    "verb_class": "pack",
+    "object": "화장지",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "보충하다",
+    "제공하다",
+    "준비하다"
+   ],
+   "keywords_en": [
+    "fill",
+    "supply",
+    "provide"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_016",
+   "label": "바닥의 먼지를 쓸어 모은다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "쓸다",
+    "verb_class": "clean",
+    "object": "먼지",
+    "object_detail": null,
+    "instrument": null,
+    "location": "바닥",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "비질하다",
+    "청소하다",
+    "제거하다"
+   ],
+   "keywords_en": [
+    "sweep",
+    "dust",
+    "remove"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_018",
+   "label": "밀대로 바닥을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "바닥",
+    "object_detail": null,
+    "instrument": "밀대",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "scrub"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_019",
+   "label": "바닥의 물기를 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "물기",
+    "object_detail": null,
+    "instrument": null,
+    "location": "바닥",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "치우다",
+    "청소하다",
+    "말리다"
+   ],
+   "keywords_en": [
+    "remove",
+    "clean",
+    "dry"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_020",
+   "label": "바닥의 쓰레기를 집는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "집다",
+    "verb_class": "move",
+    "object": "쓰레기",
+    "object_detail": null,
+    "instrument": null,
+    "location": "바닥",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "줍다",
+    "수거하다",
+    "모으다"
+   ],
+   "keywords_en": [
+    "pick",
+    "collect",
+    "gather"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_021",
+   "label": "바닥의 쓰레기를 줍는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "줍다",
+    "verb_class": "move",
+    "object": "쓰레기",
+    "object_detail": null,
+    "instrument": null,
+    "location": "바닥",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "집다",
+    "수거하다",
+    "모으다"
+   ],
+   "keywords_en": [
+    "pick",
+    "collect",
+    "gather"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_022",
+   "label": "쓰레기를 봉투에 버린다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "버리다",
+    "verb_class": "pack",
+    "object": "쓰레기",
+    "object_detail": null,
+    "instrument": "봉투",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "처리하다",
+    "제거하다",
+    "놓다"
+   ],
+   "keywords_en": [
+    "throw",
+    "dispose",
+    "place"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_023",
+   "label": "낙엽을 한 곳에 모은다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "모으다",
+    "verb_class": "stack",
+    "object": "낙엽",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "수집하다",
+    "정리하다",
+    "집합하다"
+   ],
+   "keywords_en": [
+    "gather",
+    "collect",
+    "assemble"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_024",
+   "label": "모은 낙엽을 봉투에 담는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "담다",
+    "verb_class": "pack",
+    "object": "낙엽",
+    "object_detail": null,
+    "instrument": "봉투",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "포장하다",
+    "수납하다",
+    "넣다"
+   ],
+   "keywords_en": [
+    "pack",
+    "store",
+    "put"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_025",
+   "label": "야외 의자를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "의자",
+    "object_detail": "야외",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "scrub"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_026",
+   "label": "외부 쓰레기통의 봉투를 교체한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "교체하다",
+    "verb_class": "pack",
+    "object": "봉투",
+    "object_detail": "외부 쓰레기통의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "바꾸다",
+    "변경하다",
+    "교환하다"
+   ],
+   "keywords_en": [
+    "replace",
+    "change",
+    "swap"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_027",
+   "label": "세차 도구를 준비한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "준비하다",
+    "verb_class": "other",
+    "object": "도구",
+    "object_detail": "세차",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "챙기다",
+    "꺼내놓다",
+    "마련하다"
+   ],
+   "keywords_en": [
+    "prepare",
+    "gather",
+    "assemble"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_028",
+   "label": "차체에 물을 뿌린다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "뿌리다",
+    "verb_class": "other",
+    "object": "물",
+    "object_detail": null,
+    "instrument": null,
+    "location": "차체",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "흘리다",
+    "분사하다",
+    "물주기"
+   ],
+   "keywords_en": [
+    "spray",
+    "water",
+    "car body"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_029",
+   "label": "세정제를 스펀지에 묻힌다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "묻히다",
+    "verb_class": "other",
+    "object": "세정제",
+    "object_detail": null,
+    "instrument": "스펀지",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "적시다",
+    "스폰지에 바르다"
+   ],
+   "keywords_en": [
+    "apply",
+    "cleanser",
+    "sponge"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_030",
+   "label": "차체를 스펀지로 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "차체",
+    "object_detail": null,
+    "instrument": "스펀지",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "문지르다",
+    "청소하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "car body",
+    "sponge"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_031",
+   "label": "차체의 거품을 물로 씻는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "씻다",
+    "verb_class": "clean",
+    "object": "거품",
+    "object_detail": null,
+    "instrument": "물",
+    "location": "차체",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "헹구다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "rinse",
+    "foam",
+    "car body"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_032",
+   "label": "차체의 물기를 천으로 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "물기",
+    "object_detail": null,
+    "instrument": "천",
+    "location": "차체",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "말리다",
+    "청소하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "moisture",
+    "cloth"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_033",
+   "label": "차량 창문을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "창문",
+    "object_detail": null,
+    "instrument": null,
+    "location": "차량",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "유리"
+   ],
+   "keywords_en": [
+    "wipe",
+    "window",
+    "vehicle"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_034",
+   "label": "차량 내부의 쓰레기를 줍는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "줍다",
+    "verb_class": "other",
+    "object": "쓰레기",
+    "object_detail": null,
+    "instrument": null,
+    "location": "차량 내부",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "주워담다",
+    "청소하다"
+   ],
+   "keywords_en": [
+    "pick up",
+    "trash",
+    "interior"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_035",
+   "label": "차량 바닥 매트를 꺼낸다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "꺼내다",
+    "verb_class": "move",
+    "object": "매트",
+    "object_detail": "차량 바닥",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "빼내다",
+    "제거하다"
+   ],
+   "keywords_en": [
+    "take out",
+    "mat",
+    "floor"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_036",
+   "label": "차량 내부 바닥을 청소기로 청소한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "청소하다",
+    "verb_class": "clean",
+    "object": "바닥",
+    "object_detail": "차량 내부",
+    "instrument": "청소기",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소기 사용",
+    "바닥 청소"
+   ],
+   "keywords_en": [
+    "clean",
+    "floor",
+    "vacuum"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_037",
+   "label": "사용한 세탁물을 수거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "수거하다",
+    "verb_class": "other",
+    "object": "세탁물",
+    "object_detail": "사용한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "모으다",
+    "챙기다"
+   ],
+   "keywords_en": [
+    "collect",
+    "laundry",
+    "used"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_038",
+   "label": "세탁물을 카트에 싣는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "싣다",
+    "verb_class": "pack",
+    "object": "세탁물",
+    "object_detail": null,
+    "instrument": "카트",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "실어 나르다"
+   ],
+   "keywords_en": [
+    "load",
+    "laundry",
+    "cart"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_039",
+   "label": "수건과 옷을 나눈다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "나누다",
+    "verb_class": "sort",
+    "object": "수건",
+    "object_detail": "옷",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "구분하다",
+    "분리하다"
+   ],
+   "keywords_en": [
+    "separate",
+    "towel",
+    "clothes"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_041",
+   "label": "세탁물의 주머니를 확인한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "주머니",
+    "object_detail": "세탁물의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검사하다",
+    "점검하다"
+   ],
+   "keywords_en": [
+    "check",
+    "pocket",
+    "laundry"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_042",
+   "label": "오염이 심한 세탁물을 골라낸다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "골라내다",
+    "verb_class": "sort",
+    "object": "세탁물",
+    "object_detail": "오염이 심한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "선별하다",
+    "분류하다"
+   ],
+   "keywords_en": [
+    "select",
+    "laundry",
+    "contaminated"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_044",
+   "label": "세탁기 문을 닫는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닫다",
+    "verb_class": "other",
+    "object": "문",
+    "object_detail": "세탁기",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "잠그다",
+    "밀폐하다"
+   ],
+   "keywords_en": [
+    "close",
+    "door",
+    "washing machine"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_045",
+   "label": "세탁 시작 버튼을 누른다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "누르다",
+    "verb_class": "operate",
+    "object": "버튼",
+    "object_detail": "세탁 시작",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "작동시키다",
+    "시작하다"
+   ],
+   "keywords_en": [
+    "press",
+    "button",
+    "start"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_046",
+   "label": "젖은 세탁물을 건조기로 옮긴다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "옮기다",
+    "verb_class": "move",
+    "object": "세탁물",
+    "object_detail": "젖은",
+    "instrument": "건조기",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "이동하다",
+    "전달하다"
+   ],
+   "keywords_en": [
+    "move",
+    "laundry",
+    "wet"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_047",
+   "label": "마른 세탁물을 건조기에서 꺼낸다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "꺼내다",
+    "verb_class": "move",
+    "object": "세탁물",
+    "object_detail": "마른",
+    "instrument": "건조기",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "제거하다",
+    "빼내다"
+   ],
+   "keywords_en": [
+    "take out",
+    "laundry",
+    "dry"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_048",
+   "label": "수건을 반듯하게 접는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "접다",
+    "verb_class": "other",
+    "object": "수건",
+    "object_detail": "반듯하게",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "다듬다"
+   ],
+   "keywords_en": [
+    "fold",
+    "towel",
+    "neatly"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_049",
+   "label": "접은 세탁물을 비닐에 넣는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "pack",
+    "object": "세탁물",
+    "object_detail": "접은",
+    "instrument": "비닐",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "포장하다"
+   ],
+   "keywords_en": [
+    "put",
+    "laundry",
+    "bag"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "CLEANING_050",
+   "label": "포장된 세탁물을 지정 선반에 놓는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "세탁물",
+    "object_detail": "포장된",
+    "instrument": null,
+    "location": "선반",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "두다",
+    "설치하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "place",
+    "set",
+    "arrange"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_008",
+   "label": "포장할 제품을 가져온다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "가져오다",
+    "verb_class": "move",
+    "object": "제품",
+    "object_detail": "포장할",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "챙기다",
+    "꺼내다",
+    "준비하다",
+    "마련하다"
+   ],
+   "keywords_en": [
+    "bring",
+    "fetch",
+    "retrieve"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_009",
+   "label": "빈 포장 봉투를 준비한다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "준비하다",
+    "verb_class": "other",
+    "object": "봉투",
+    "object_detail": "빈 포장",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "챙기다",
+    "꺼내놓다",
+    "마련하다",
+    "비닐"
+   ],
+   "keywords_en": [
+    "prepare",
+    "bag",
+    "pouch"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_010",
+   "label": "빈 박스를 준비한다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "준비하다",
+    "verb_class": "other",
+    "object": "박스",
+    "object_detail": "빈",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "상자",
+    "포장재",
+    "컨테이너",
+    "용기"
+   ],
+   "keywords_en": [
+    "prepare",
+    "box",
+    "container"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_011_01",
+   "label": "포장용 테이프를 준비한다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "준비하다",
+    "verb_class": "other",
+    "object": "테이프",
+    "object_detail": "포장용",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "접착제",
+    "끈",
+    "고정재",
+    "끈끈이"
+   ],
+   "keywords_en": [
+    "prepare",
+    "tape",
+    "adhesive"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_011_02",
+   "label": "포장용 테이프를 준비한다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "준비하다",
+    "verb_class": "other",
+    "object": "테이프",
+    "object_detail": "포장용",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "접착제",
+    "끈",
+    "고정재",
+    "끈끈이"
+   ],
+   "keywords_en": [
+    "prepare",
+    "tape",
+    "adhesive"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_012",
+   "label": "포장 라벨을 준비한다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "준비하다",
+    "verb_class": "other",
+    "object": "라벨",
+    "object_detail": "포장",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "표시",
+    "스티커",
+    "태그",
+    "정보"
+   ],
+   "keywords_en": [
+    "prepare",
+    "label",
+    "tag"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_013",
+   "label": "같은 제품끼리 모은다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "모으다",
+    "verb_class": "stack",
+    "object": "제품",
+    "object_detail": "같은",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "집합하다",
+    "모아놓다",
+    "정리하다",
+    "분류하다"
+   ],
+   "keywords_en": [
+    "gather",
+    "collect",
+    "assemble"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_014",
+   "label": "다른 제품을 골라낸다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "골라내다",
+    "verb_class": "sort",
+    "object": "제품",
+    "object_detail": "다른",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "분리하다",
+    "선별하다",
+    "구분하다",
+    "나누다"
+   ],
+   "keywords_en": [
+    "select",
+    "sort",
+    "pick"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_015",
+   "label": "제품의 방향을 맞춘다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "맞추다",
+    "verb_class": "other",
+    "object": "방향",
+    "object_detail": "제품의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "조정하다",
+    "배치하다",
+    "설정하다",
+    "정렬하다"
+   ],
+   "keywords_en": [
+    "align",
+    "adjust",
+    "set"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_016",
+   "label": "제품을 한 줄로 놓는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "제품",
+    "object_detail": null,
+    "instrument": null,
+    "location": "한 줄",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "정렬하다",
+    "설치하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "place",
+    "arrange",
+    "line up"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_017",
+   "label": "필요한 수량만큼 제품을 센다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "세다",
+    "verb_class": "observe",
+    "object": "수량",
+    "object_detail": "필요한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "계산하다",
+    "세다",
+    "측정하다",
+    "확인하다"
+   ],
+   "keywords_en": [
+    "count",
+    "measure",
+    "calculate"
+   ],
+   "reviewed": "auto"
+  },
+  {
+   "id": "PACKAGING_018",
+   "label": "정해진 수량으로 나눈다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "나누다",
+    "verb_class": "sort",
+    "object": "수량",
+    "object_detail": "정해진",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "분배하다",
+    "구분하다",
+    "나누어주다",
+    "할당하다"
+   ],
+   "keywords_en": [
+    "divide",
+    "split",
+    "allocate"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_019",
+   "label": "한 제품에 필요한 구성품을 모은다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "모으다",
+    "verb_class": "stack",
+    "object": "구성품",
+    "object_detail": "필요한 한 제품에",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "집합하다",
+    "조합하다",
+    "모아놓다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "gather",
+    "assemble",
+    "collect"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_020",
+   "label": "제품 한 세트를 만든다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "만들다",
+    "verb_class": "other",
+    "object": "세트",
+    "object_detail": "제품 한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "조립하다",
+    "구성하다",
+    "형성하다",
+    "제작하다"
+   ],
+   "keywords_en": [
+    "make",
+    "create",
+    "assemble"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_021",
+   "label": "여러 제품용 세트를 준비한다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "준비하다",
+    "verb_class": "other",
+    "object": "세트",
+    "object_detail": "여러 제품용",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "챙기다",
+    "마련하다",
+    "구성하다",
+    "조합하다"
+   ],
+   "keywords_en": [
+    "prepare",
+    "set",
+    "assemble"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_022",
+   "label": "제품 표면을 확인한다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "표면",
+    "object_detail": "제품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검사하다",
+    "점검하다",
+    "조사하다",
+    "확인"
+   ],
+   "keywords_en": [
+    "check",
+    "inspect",
+    "verify"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_023",
+   "label": "깨진 제품을 확인한다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "제품",
+    "object_detail": "깨진",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검사하다",
+    "점검하다",
+    "조사하다",
+    "확인"
+   ],
+   "keywords_en": [
+    "check",
+    "inspect",
+    "verify"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_024",
+   "label": "더러운 제품을 확인한다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "제품",
+    "object_detail": "더러운",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검사하다",
+    "점검하다",
+    "조사하다",
+    "확인"
+   ],
+   "keywords_en": [
+    "check",
+    "inspect",
+    "verify"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_025",
+   "label": "찌그러진 제품을 확인한다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "제품",
+    "object_detail": "찌그러진",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검사하다",
+    "점검하다",
+    "조사하다",
+    "확인"
+   ],
+   "keywords_en": [
+    "check",
+    "inspect",
+    "verify"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_026",
+   "label": "불량 제품을 골라낸다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "골라내다",
+    "verb_class": "sort",
+    "object": "제품",
+    "object_detail": "불량",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "선별하다",
+    "구분하다",
+    "분리하다",
+    "불량품"
+   ],
+   "keywords_en": [
+    "select",
+    "filter",
+    "defective"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_027",
+   "label": "불량 제품을 불량품 상자에 넣는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "제품",
+    "object_detail": "불량",
+    "instrument": "상자",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "적재하다",
+    "포장하다"
+   ],
+   "keywords_en": [
+    "put",
+    "box",
+    "pack"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_028",
+   "label": "정상 제품을 포장 위치에 놓는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "제품",
+    "object_detail": "정상",
+    "instrument": null,
+    "location": "포장 위치",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "설치하다",
+    "두다"
+   ],
+   "keywords_en": [
+    "place",
+    "normal",
+    "packaging location"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_029",
+   "label": "포장 봉투를 펼친다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "펼치다",
+    "verb_class": "other",
+    "object": "봉투",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "펴다",
+    "열다"
+   ],
+   "keywords_en": [
+    "unfold",
+    "bag"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_030",
+   "label": "제품을 봉투 안에 넣는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "제품",
+    "object_detail": null,
+    "instrument": "봉투",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "포장하다"
+   ],
+   "keywords_en": [
+    "put",
+    "bag"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_031",
+   "label": "구성품을 봉투 안에 함께 넣는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "구성품",
+    "object_detail": null,
+    "instrument": "봉투",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "포장하다"
+   ],
+   "keywords_en": [
+    "put",
+    "components",
+    "bag"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_032",
+   "label": "봉투 안의 제품 수를 확인한다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "수",
+    "object_detail": "봉투 안의 제품",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세다",
+    "검사하다",
+    "점검하다"
+   ],
+   "keywords_en": [
+    "check",
+    "count",
+    "inside bag"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_033",
+   "label": "봉투 입구를 접는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "접다",
+    "verb_class": "other",
+    "object": "입구",
+    "object_detail": "봉투",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "접기",
+    "구부리다"
+   ],
+   "keywords_en": [
+    "fold",
+    "opening",
+    "bag"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_034",
+   "label": "봉투 입구를 밀봉한다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "밀봉하다",
+    "verb_class": "pack",
+    "object": "입구",
+    "object_detail": "봉투",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "봉하다",
+    "닫다"
+   ],
+   "keywords_en": [
+    "seal",
+    "bag",
+    "opening"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_035",
+   "label": "봉투에 라벨을 붙인다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "붙이다",
+    "verb_class": "other",
+    "object": "라벨",
+    "object_detail": null,
+    "instrument": null,
+    "location": "봉투",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "부착하다",
+    "표시하다"
+   ],
+   "keywords_en": [
+    "attach",
+    "label",
+    "bag"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_036",
+   "label": "소포장 제품을 완성품 상자에 넣는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "제품",
+    "object_detail": "소포장",
+    "instrument": "상자",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "적재하다"
+   ],
+   "keywords_en": [
+    "put",
+    "small package",
+    "box"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_037",
+   "label": "접힌 박스를 펼친다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "펼치다",
+    "verb_class": "other",
+    "object": "박스",
+    "object_detail": "접힌",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "펴다",
+    "열다"
+   ],
+   "keywords_en": [
+    "unfold",
+    "box"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_038",
+   "label": "박스 바닥 덮개를 접는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "접다",
+    "verb_class": "other",
+    "object": "덮개",
+    "object_detail": "박스 바닥",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "구부리다",
+    "접기"
+   ],
+   "keywords_en": [
+    "fold",
+    "bottom",
+    "box"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_039",
+   "label": "박스 바닥에 테이프를 붙인다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "붙이다",
+    "verb_class": "other",
+    "object": "테이프",
+    "object_detail": "박스 바닥",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "부착하다",
+    "접착하다"
+   ],
+   "keywords_en": [
+    "attach",
+    "tape",
+    "bottom",
+    "box"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_040",
+   "label": "붙인 테이프를 손으로 누른다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "누르다",
+    "verb_class": "operate",
+    "object": "테이프",
+    "object_detail": "붙인",
+    "instrument": "손",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "압착하다",
+    "고정하다"
+   ],
+   "keywords_en": [
+    "press",
+    "tape",
+    "hand"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_041",
+   "label": "박스 바닥에 완충재를 넣는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "완충재",
+    "object_detail": "박스 바닥",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "적재하다"
+   ],
+   "keywords_en": [
+    "put",
+    "padding",
+    "bottom",
+    "box"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_042",
+   "label": "제품을 박스 안에 넣는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "제품",
+    "object_detail": null,
+    "instrument": "박스",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "포장하다"
+   ],
+   "keywords_en": [
+    "put",
+    "box",
+    "pack"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_043",
+   "label": "제품을 박스 안에 나란히 놓는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "제품",
+    "object_detail": null,
+    "instrument": "박스",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "정렬하다"
+   ],
+   "keywords_en": [
+    "place",
+    "box",
+    "products"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_044",
+   "label": "정해진 수량만큼 제품을 담는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "담다",
+    "verb_class": "pack",
+    "object": "제품",
+    "object_detail": "정해진 수량만큼",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "포장하다",
+    "적재하다"
+   ],
+   "keywords_en": [
+    "pack",
+    "set quantity",
+    "products"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_045",
+   "label": "제품 사이에 칸막이를 넣는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "칸막이",
+    "object_detail": null,
+    "instrument": null,
+    "location": "제품 사이",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "설치하다"
+   ],
+   "keywords_en": [
+    "insert",
+    "divider",
+    "between products"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_046",
+   "label": "빈 공간에 완충재를 넣는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "완충재",
+    "object_detail": "빈 공간",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "채우다",
+    "보충하다",
+    "재료",
+    "공간",
+    "물품"
+   ],
+   "keywords_en": [
+    "insert",
+    "filler",
+    "packing material"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_047",
+   "label": "박스 덮개를 닫는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닫다",
+    "verb_class": "other",
+    "object": "덮개",
+    "object_detail": "박스",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "덮다",
+    "마감하다",
+    "봉하다"
+   ],
+   "keywords_en": [
+    "close",
+    "lid",
+    "cover"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_048",
+   "label": "박스 가운데에 테이프를 붙인다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "붙이다",
+    "verb_class": "other",
+    "object": "테이프",
+    "object_detail": "박스 가운데",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "부착하다",
+    "접착하다",
+    "고정하다"
+   ],
+   "keywords_en": [
+    "attach",
+    "tape",
+    "stick"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_049",
+   "label": "박스 윗면에 라벨을 붙인다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "붙이다",
+    "verb_class": "other",
+    "object": "라벨",
+    "object_detail": "박스 윗면",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "부착하다",
+    "표시하다",
+    "라벨링"
+   ],
+   "keywords_en": [
+    "attach",
+    "label",
+    "top"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "PACKAGING_050",
+   "label": "완성된 박스를 지정 위치에 놓는다",
+   "job": "packaging",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "박스",
+    "object_detail": "완성된",
+    "instrument": null,
+    "location": "지정 위치",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "두다",
+    "설치하다"
+   ],
+   "keywords_en": [
+    "place",
+    "box",
+    "designated location"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_017",
+   "label": "같은 상품끼리 모은다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "모으다",
+    "verb_class": "sort",
+    "object": "상품",
+    "object_detail": "같은",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "집합하다",
+    "정리하다",
+    "분류하다"
+   ],
+   "keywords_en": [
+    "gather",
+    "product",
+    "same"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_018",
+   "label": "상품을 종류별로 나눈다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "나누다",
+    "verb_class": "sort",
+    "object": "상품",
+    "object_detail": "종류별",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "분류하다",
+    "구분하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "divide",
+    "product",
+    "by type"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_019",
+   "label": "상온 냉장 냉동 상품을 구분한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "구분하다",
+    "verb_class": "sort",
+    "object": "상품",
+    "object_detail": "상온 냉장 냉동",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "분리하다",
+    "식별하다",
+    "구별하다"
+   ],
+   "keywords_en": [
+    "distinguish",
+    "product",
+    "ambient refrigerated frozen"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_020",
+   "label": "상품을 운반 카트에 싣는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "싣다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": null,
+    "instrument": "운반 카트",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "실다",
+    "담다",
+    "운반하다"
+   ],
+   "keywords_en": [
+    "load",
+    "product",
+    "cart"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_021",
+   "label": "무거운 상품을 카트 아래쪽에 놓는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": "무거운",
+    "instrument": null,
+    "location": "카트 아래쪽",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "두다",
+    "설치하다"
+   ],
+   "keywords_en": [
+    "place",
+    "heavy",
+    "cart bottom"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_022",
+   "label": "가벼운 상품을 카트 위쪽에 놓는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": "가벼운",
+    "instrument": null,
+    "location": "카트 위쪽",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "두다",
+    "설치하다"
+   ],
+   "keywords_en": [
+    "place",
+    "light",
+    "cart top"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_023",
+   "label": "카트를 천천히 밀어 이동한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "밀다",
+    "verb_class": "move",
+    "object": "카트",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "이동하다",
+    "끌다",
+    "운반하다"
+   ],
+   "keywords_en": [
+    "push",
+    "cart",
+    "move slowly"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_024",
+   "label": "상품을 해당 매장 구역으로 가져간다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "가져가다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": null,
+    "instrument": null,
+    "location": "해당 매장 구역",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "이동하다",
+    "운반하다",
+    "전달하다"
+   ],
+   "keywords_en": [
+    "take",
+    "product",
+    "store area"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_025",
+   "label": "진열할 선반의 위치를 찾는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "찾다",
+    "verb_class": "other",
+    "object": "위치",
+    "object_detail": "진열할 선반",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "발견하다",
+    "확인하다",
+    "조사하다"
+   ],
+   "keywords_en": [
+    "find",
+    "location",
+    "shelf"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_026",
+   "label": "카트를 통행에 방해되지 않게 세운다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "세우다",
+    "verb_class": "other",
+    "object": "카트",
+    "object_detail": null,
+    "instrument": null,
+    "location": "통행에 방해되지 않게",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "배치하다",
+    "설치하다"
+   ],
+   "keywords_en": [
+    "stand",
+    "cart",
+    "not obstruct"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_027",
+   "label": "진열대의 상품표시를 확인한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "상품표시",
+    "object_detail": "진열대의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "확인하다",
+    "점검하다"
+   ],
+   "keywords_en": [
+    "check",
+    "product label",
+    "display"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_028",
+   "label": "상품과 진열 위치가 맞는지 확인한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "상품",
+    "object_detail": null,
+    "instrument": null,
+    "location": "진열 위치",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "점검하다",
+    "확인하다"
+   ],
+   "keywords_en": [
+    "check",
+    "product",
+    "display location"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_029",
+   "label": "상품을 선반에 놓는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": null,
+    "instrument": null,
+    "location": "선반",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "두다",
+    "설치하다"
+   ],
+   "keywords_en": [
+    "place",
+    "product",
+    "shelf"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_030",
+   "label": "같은 상품끼리 모아 놓는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "모으다",
+    "verb_class": "sort",
+    "object": "상품",
+    "object_detail": "같은",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "집합하다",
+    "정리하다",
+    "분류하다"
+   ],
+   "keywords_en": [
+    "gather",
+    "product",
+    "same"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_031",
+   "label": "상품의 앞면을 앞으로 돌린다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "돌리다",
+    "verb_class": "other",
+    "object": "앞면",
+    "object_detail": "상품의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "회전하다",
+    "바꾸다",
+    "정렬하다"
+   ],
+   "keywords_en": [
+    "turn",
+    "front",
+    "product"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_032",
+   "label": "상품을 한 줄로 맞춘다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "맞추다",
+    "verb_class": "sort",
+    "object": "상품",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정렬하다",
+    "배치하다",
+    "세팅하다"
+   ],
+   "keywords_en": [
+    "align",
+    "arrange",
+    "set"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_033",
+   "label": "상품 사이의 간격을 맞춘다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "맞추다",
+    "verb_class": "sort",
+    "object": "간격",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "조정하다",
+    "간격 조절"
+   ],
+   "keywords_en": [
+    "adjust",
+    "spacing"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_034",
+   "label": "비어 있는 진열 공간을 채운다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "채우다",
+    "verb_class": "pack",
+    "object": "공간",
+    "object_detail": "비어 있는 진열",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "메우다",
+    "공간 확보"
+   ],
+   "keywords_en": [
+    "fill",
+    "space"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_035",
+   "label": "오래된 상품을 앞으로 옮긴다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "옮기다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": "오래된",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "이동하다",
+    "앞으로 가져가다"
+   ],
+   "keywords_en": [
+    "move",
+    "old product"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_036",
+   "label": "새 상품을 뒤쪽에 놓는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": "새",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "뒤쪽에 두다"
+   ],
+   "keywords_en": [
+    "place",
+    "new product"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_037",
+   "label": "상품이 선반 밖으로 나오지 않게 넣는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "안전하게 보관하다",
+    "선반에 넣다"
+   ],
+   "keywords_en": [
+    "put",
+    "shelf"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_038",
+   "label": "쓰러진 상품을 바로 세운다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "세우다",
+    "verb_class": "other",
+    "object": "상품",
+    "object_detail": "쓰러진",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "복구하다",
+    "바르게 하다"
+   ],
+   "keywords_en": [
+    "upright",
+    "fallen product"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_039",
+   "label": "잘못 놓인 상품을 진열대에서 꺼낸다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "꺼내다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": "잘못 놓인",
+    "instrument": null,
+    "location": "진열대",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "제거하다",
+    "잘못된 상품"
+   ],
+   "keywords_en": [
+    "take out",
+    "misplaced product"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_040",
+   "label": "잘못 놓인 상품을 올바른 위치에 놓는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": "잘못 놓인",
+    "instrument": null,
+    "location": "올바른 위치",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "재배치하다",
+    "올바른 장소에 두다"
+   ],
+   "keywords_en": [
+    "place",
+    "correct position"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_041",
+   "label": "상품의 유통기한을 확인한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "유통기한",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "유효기간"
+   ],
+   "keywords_en": [
+    "check",
+    "expiration date"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_042",
+   "label": "유통기한이 가까운 상품을 찾는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "찾다",
+    "verb_class": "observe",
+    "object": "상품",
+    "object_detail": "유통기한이 가까운",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검색하다",
+    "가까운 유통기한"
+   ],
+   "keywords_en": [
+    "find",
+    "near expiration"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_043",
+   "label": "유통기한이 지난 상품을 진열대에서 뺀다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "빼다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": "유통기한이 지난",
+    "instrument": null,
+    "location": "진열대",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "제거하다",
+    "유통기한 만료"
+   ],
+   "keywords_en": [
+    "remove",
+    "expired product"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_044",
+   "label": "포장이 찢어진 상품을 골라낸다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "골라내다",
+    "verb_class": "sort",
+    "object": "상품",
+    "object_detail": "포장이 찢어진",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "선별하다",
+    "손상된 상품"
+   ],
+   "keywords_en": [
+    "select",
+    "damaged product"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_045",
+   "label": "찌그러진 상품을 골라낸다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "골라내다",
+    "verb_class": "sort",
+    "object": "상품",
+    "object_detail": "찌그러진",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "선별하다",
+    "손상된 상품"
+   ],
+   "keywords_en": [
+    "select",
+    "dented product"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_046",
+   "label": "내용물이 새는 상품을 골라낸다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "골라내다",
+    "verb_class": "sort",
+    "object": "상품",
+    "object_detail": "내용물이 새는",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "선별하다",
+    "누수 상품"
+   ],
+   "keywords_en": [
+    "select",
+    "leaking product"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_047",
+   "label": "냉장 상품을 냉장 진열대에 놓는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": "냉장",
+    "instrument": null,
+    "location": "냉장 진열대",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "차가운 상품"
+   ],
+   "keywords_en": [
+    "place",
+    "refrigerated product"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_048",
+   "label": "냉동 상품을 냉동 진열대에 놓는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": "냉동",
+    "instrument": null,
+    "location": "냉동 진열대",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "얼린 상품"
+   ],
+   "keywords_en": [
+    "place",
+    "frozen product"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_049",
+   "label": "상품과 가격표를 비교한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "비교하다",
+    "verb_class": "observe",
+    "object": "상품",
+    "object_detail": null,
+    "instrument": "가격표",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "대조하다",
+    "가격 확인"
+   ],
+   "keywords_en": [
+    "compare",
+    "price"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_050",
+   "label": "가격표가 상품 아래에 있는지 확인한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "가격표",
+    "object_detail": null,
+    "instrument": null,
+    "location": "상품",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "가격 확인"
+   ],
+   "keywords_en": [
+    "check",
+    "price"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_051",
+   "label": "없는 가격표를 진열대에 꽂는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "꽂다",
+    "verb_class": "move",
+    "object": "가격표",
+    "object_detail": "없는",
+    "instrument": null,
+    "location": "진열대",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "설치하다",
+    "가격 표시"
+   ],
+   "keywords_en": [
+    "insert",
+    "missing price tag"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_052",
+   "label": "삐뚤어진 가격표를 바로 놓는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "가격표",
+    "object_detail": "삐뚤어진",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "배치하다",
+    "수정하다",
+    "정돈하다"
+   ],
+   "keywords_en": [
+    "place",
+    "set",
+    "arrange"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_053",
+   "label": "행사표지를 정해진 위치에 놓는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "행사표지",
+    "object_detail": null,
+    "instrument": null,
+    "location": "정해진 위치",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "정리하다",
+    "설치하다",
+    "정돈하다"
+   ],
+   "keywords_en": [
+    "place",
+    "set",
+    "arrange"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_054",
+   "label": "끝난 행사표지를 제거한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "other",
+    "object": "행사표지",
+    "object_detail": "끝난",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "없애다",
+    "치우다",
+    "버리다",
+    "제거하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "take away",
+    "discard"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_055",
+   "label": "고객에게 인사한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "인사하다",
+    "verb_class": "other",
+    "object": "고객",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "환영하다",
+    "맞이하다",
+    "대화하다",
+    "소통하다"
+   ],
+   "keywords_en": [
+    "greet",
+    "welcome",
+    "salute"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_056",
+   "label": "고객의 요청을 듣는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "듣다",
+    "verb_class": "other",
+    "object": "요청",
+    "object_detail": "고객의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청취하다",
+    "경청하다",
+    "응답하다",
+    "반응하다"
+   ],
+   "keywords_en": [
+    "listen",
+    "hear",
+    "respond"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_057",
+   "label": "고객이 찾는 상품을 확인한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "상품",
+    "object_detail": "고객이 찾는",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "조사하다",
+    "확인하다",
+    "점검하다"
+   ],
+   "keywords_en": [
+    "check",
+    "verify",
+    "confirm"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_058",
+   "label": "상품이 있는 방향을 안내한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "안내하다",
+    "verb_class": "other",
+    "object": "방향",
+    "object_detail": "상품이 있는",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "유도하다",
+    "가르치다",
+    "설명하다",
+    "알리다"
+   ],
+   "keywords_en": [
+    "guide",
+    "direct",
+    "lead"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_059",
+   "label": "고객에게 쇼핑바구니를 건넨다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "건네다",
+    "verb_class": "move",
+    "object": "쇼핑바구니",
+    "object_detail": null,
+    "instrument": null,
+    "location": "고객",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "주다",
+    "전달하다",
+    "제공하다",
+    "주다"
+   ],
+   "keywords_en": [
+    "hand",
+    "pass",
+    "give"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_060",
+   "label": "상품의 바코드를 스캐너에 찍는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "찍다",
+    "verb_class": "operate",
+    "object": "바코드",
+    "object_detail": null,
+    "instrument": "스캐너",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "스캔하다",
+    "읽다",
+    "확인하다",
+    "조작하다"
+   ],
+   "keywords_en": [
+    "scan",
+    "read",
+    "operate"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_061",
+   "label": "화면에 상품이 표시됐는지 확인한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "상품",
+    "object_detail": null,
+    "instrument": null,
+    "location": "화면",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "점검하다",
+    "확인하다",
+    "조사하다"
+   ],
+   "keywords_en": [
+    "check",
+    "verify",
+    "confirm"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_062",
+   "label": "결제 완료 표시를 확인한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "표시",
+    "object_detail": "결제 완료",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "점검하다",
+    "확인하다",
+    "조사하다"
+   ],
+   "keywords_en": [
+    "check",
+    "verify",
+    "confirm"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_063",
+   "label": "계산한 상품을 봉투에 넣는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "pack",
+    "object": "상품",
+    "object_detail": "계산한",
+    "instrument": "봉투",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "포장하다",
+    "담다",
+    "준비하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "put",
+    "pack",
+    "place"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_064",
+   "label": "영수증을 고객에게 건넨다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "건네다",
+    "verb_class": "move",
+    "object": "영수증",
+    "object_detail": null,
+    "instrument": null,
+    "location": "고객",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "주다",
+    "전달하다",
+    "제공하다",
+    "주다"
+   ],
+   "keywords_en": [
+    "hand",
+    "pass",
+    "give"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_065",
+   "label": "사용한 쇼핑바구니를 가져온다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "가져오다",
+    "verb_class": "move",
+    "object": "쇼핑바구니",
+    "object_detail": "사용한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "수거하다",
+    "모으다",
+    "정리하다",
+    "회수하다"
+   ],
+   "keywords_en": [
+    "bring",
+    "fetch",
+    "collect"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_066",
+   "label": "쇼핑바구니를 포개어 정리한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "stack",
+    "object": "쇼핑바구니",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "정리하다",
+    "배치하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "organize",
+    "arrange",
+    "sort"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_067",
+   "label": "사용한 쇼핑카트를 가져온다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "가져오다",
+    "verb_class": "move",
+    "object": "쇼핑카트",
+    "object_detail": "사용한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "수거하다",
+    "모으다",
+    "정리하다",
+    "회수하다"
+   ],
+   "keywords_en": [
+    "bring",
+    "fetch",
+    "collect"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_068",
+   "label": "쇼핑카트를 한 줄로 연결한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "연결하다",
+    "verb_class": "move",
+    "object": "쇼핑카트",
+    "object_detail": null,
+    "instrument": null,
+    "location": "한 줄",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "모으다",
+    "정리하다",
+    "정돈하다",
+    "배치하다"
+   ],
+   "keywords_en": [
+    "connect",
+    "link",
+    "join"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_069",
+   "label": "쇼핑카트를 보관 장소로 옮긴다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "옮기다",
+    "verb_class": "move",
+    "object": "쇼핑카트",
+    "object_detail": null,
+    "instrument": null,
+    "location": "보관 장소",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "이동하다",
+    "가져가다",
+    "전달하다",
+    "배치하다"
+   ],
+   "keywords_en": [
+    "move",
+    "transfer",
+    "relocate"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_070",
+   "label": "쇼핑카트의 손잡이를 닦는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "손잡이",
+    "object_detail": "쇼핑카트의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "정리하다",
+    "정돈하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "sanitize"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_071",
+   "label": "주문표를 확인한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "주문표",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "점검하다",
+    "확인하다",
+    "조사하다"
+   ],
+   "keywords_en": [
+    "check",
+    "verify",
+    "confirm"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_072",
+   "label": "주문표에서 상품을 하나 확인한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "상품",
+    "object_detail": null,
+    "instrument": "주문표",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "확인하기",
+    "조회하다",
+    "상품 확인"
+   ],
+   "keywords_en": [
+    "check",
+    "verify",
+    "item"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_073",
+   "label": "주문한 상품을 진열대에서 찾는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "찾다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": null,
+    "instrument": "주문한",
+    "location": "진열대",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "발견하다",
+    "검색하다",
+    "찾아내다"
+   ],
+   "keywords_en": [
+    "find",
+    "locate",
+    "search"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_074",
+   "label": "주문표와 상품이 같은지 확인한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "상품",
+    "object_detail": null,
+    "instrument": "주문표",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "대조하다",
+    "확인하기"
+   ],
+   "keywords_en": [
+    "check",
+    "verify",
+    "compare"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_075",
+   "label": "주문한 상품의 수량을 확인한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "수량",
+    "object_detail": null,
+    "instrument": "주문한 상품",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세다",
+    "계산하다",
+    "측정하다"
+   ],
+   "keywords_en": [
+    "check",
+    "count",
+    "quantity"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_076",
+   "label": "주문한 상품을 피킹 바구니에 담는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "담다",
+    "verb_class": "pack",
+    "object": "상품",
+    "object_detail": "주문한",
+    "instrument": "피킹 바구니",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "넣다",
+    "포장하다",
+    "수납하다"
+   ],
+   "keywords_en": [
+    "pack",
+    "put",
+    "place"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_077",
+   "label": "식품의 유통기한을 확인하고 담는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "유통기한",
+    "object_detail": null,
+    "instrument": "식품",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "확인하기",
+    "점검하다"
+   ],
+   "keywords_en": [
+    "check",
+    "expiration date",
+    "verify"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_078",
+   "label": "냉장 상품을 따로 담는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "담다",
+    "verb_class": "pack",
+    "object": "상품",
+    "object_detail": "냉장",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "넣다",
+    "포장하다",
+    "수납하다"
+   ],
+   "keywords_en": [
+    "pack",
+    "refrigerated",
+    "place"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_079",
+   "label": "냉동 상품을 따로 담는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "담다",
+    "verb_class": "pack",
+    "object": "상품",
+    "object_detail": "냉동",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "넣다",
+    "포장하다",
+    "수납하다"
+   ],
+   "keywords_en": [
+    "pack",
+    "frozen",
+    "place"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_080",
+   "label": "같은 주문의 상품을 함께 모은다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "모으다",
+    "verb_class": "other",
+    "object": "상품",
+    "object_detail": "같은 주문의",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "집합하다",
+    "모아두다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "gather",
+    "collect",
+    "assemble"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_081",
+   "label": "주문표의 상품을 모두 찾았는지 확인한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "상품",
+    "object_detail": "주문표의 모두",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "검토하다",
+    "확인하기",
+    "점검하다"
+   ],
+   "keywords_en": [
+    "check",
+    "verify",
+    "confirm"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_082",
+   "label": "없는 상품을 주문표에 표시한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "표시하다",
+    "verb_class": "other",
+    "object": "상품",
+    "object_detail": "없는",
+    "instrument": "주문표",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "기록하다",
+    "표기하다",
+    "알리다"
+   ],
+   "keywords_en": [
+    "mark",
+    "indicate",
+    "note"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_083",
+   "label": "피킹한 상품을 포장 장소로 옮긴다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "옮기다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": "피킹한",
+    "instrument": null,
+    "location": "포장 장소",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "이동하다",
+    "전달하다",
+    "가져가다"
+   ],
+   "keywords_en": [
+    "move",
+    "transfer",
+    "carry"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_084",
+   "label": "주문 상품을 배송 봉투에 넣는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "pack",
+    "object": "상품",
+    "object_detail": "주문",
+    "instrument": "배송 봉투",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "포장하다",
+    "수납하다",
+    "담다"
+   ],
+   "keywords_en": [
+    "put",
+    "pack",
+    "place"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_085",
+   "label": "큰 주문 상품을 배송 상자에 넣는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "pack",
+    "object": "상품",
+    "object_detail": "큰 주문",
+    "instrument": "배송 상자",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "포장하다",
+    "수납하다",
+    "담다"
+   ],
+   "keywords_en": [
+    "put",
+    "pack",
+    "place"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_086",
+   "label": "배송 봉투 또는 상자를 닫는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닫다",
+    "verb_class": "other",
+    "object": "봉투",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "밀봉하다",
+    "봉하다",
+    "포장하다",
+    "상자",
+    "물건"
+   ],
+   "keywords_en": [
+    "close",
+    "seal",
+    "bag"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_087",
+   "label": "주문 확인표를 배송 상품과 비교한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "비교하다",
+    "verb_class": "observe",
+    "object": "상품",
+    "object_detail": "배송",
+    "instrument": "주문 확인표",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "대조하다",
+    "확인하다",
+    "검토하다"
+   ],
+   "keywords_en": [
+    "compare",
+    "check",
+    "verify"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_088",
+   "label": "배송 상품에 주문 라벨을 붙인다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "붙이다",
+    "verb_class": "other",
+    "object": "라벨",
+    "object_detail": "주문",
+    "instrument": "배송 상품",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "부착하다",
+    "표시하다",
+    "기록하다"
+   ],
+   "keywords_en": [
+    "attach",
+    "stick",
+    "label"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_089",
+   "label": "같은 주문의 배송 상품을 함께 놓는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": "같은 주문의 배송",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "정리하다",
+    "모으다"
+   ],
+   "keywords_en": [
+    "place",
+    "arrange",
+    "set"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_090",
+   "label": "포장된 상품을 배송 카트에 싣는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "싣다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": "포장된",
+    "instrument": "배송 카트",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "실다",
+    "담다",
+    "적재하다"
+   ],
+   "keywords_en": [
+    "load",
+    "put",
+    "carry"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_091",
+   "label": "배송 카트를 이동한다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "이동하다",
+    "verb_class": "move",
+    "object": "카트",
+    "object_detail": "배송",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "옮기다",
+    "이동시키다",
+    "가다"
+   ],
+   "keywords_en": [
+    "move",
+    "transport",
+    "carry"
+   ],
+   "reviewed": "checked"
+  },
+  {
+   "id": "RETAIL_092",
+   "label": "배송 상품을 지정된 픽업 장소에 놓는다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": "배송",
+    "instrument": null,
+    "location": "픽업 장소",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배달",
+    "두다",
+    "위치시키다",
+    "설치하다",
+    "전달"
+   ],
+   "keywords_en": [
+    "place",
+    "delivery",
+    "pickup location"
+   ],
+   "reviewed": "checked"
+  }
+ ],
+ "review_pass": {
+  "date": "2026-09-11",
+  "method": "scripts/review_aac_index.py 자동 점검 401건 + 플래그된 29건 사람 확인",
+  "legend": {
+   "true": "사람 확인",
+   "auto": "규칙이 수정",
+   "checked": "자동 점검 통과, 사람 미확인",
+   "false": "미검토"
+  }
+ }
+}

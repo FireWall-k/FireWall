@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
-import { api, type Task, type Worker } from "../api";
+import { api, type AacMatch, type StepSymbolCandidates, type Task, type Worker } from "../api";
 import { ActionChip } from "../actions";
 
 const SAMPLE =
@@ -12,7 +12,7 @@ export default function ManagerPage() {
   const [workEnvironment, setWorkEnvironment] = useState("");
   const [workerNote, setWorkerNote] = useState("");
   const [task, setTask] = useState<Task | null>(null);
-  const [aacQuery, setAacQuery] = useState("상품을 선반에 놓는다");
+  const [aacQuery, setAacQuery] = useState("");
 
   const [aacResult, setAacResult] = useState<{
     query: string;
@@ -35,6 +35,9 @@ export default function ManagerPage() {
   const [selectedWorkerId, setSelectedWorkerId] = useState("");
   const [newWorkerName, setNewWorkerName] = useState("");
   const [newWorkerCode, setNewWorkerCode] = useState("");
+
+  // 그림을 자동으로 못 고른 단계의 후보 목록 (stepId -> 후보/사유)
+  const [stepCandidates, setStepCandidates] = useState<Record<string, StepSymbolCandidates>>({});
 
   // 단계 드래그 정렬 + 단계 직접 추가
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -69,6 +72,43 @@ export default function ManagerPage() {
     }
   }
 
+  // 그림이 안 붙은 단계의 후보를 가져온다. 서버가 자동 채택을 못 한 경우
+  // (후보 점수가 붙어 있어 고르지 못함) 사업주가 직접 고를 수 있게 한다.
+  useEffect(() => {
+    if (!task) return;
+    let cancelled = false;
+    const pending = task.steps.filter((s) => s.needs_fallback && !stepCandidates[s.id]);
+    if (pending.length === 0) return;
+
+    (async () => {
+      const fetched = await Promise.all(
+        pending.map((s) =>
+          api.stepSymbolCandidates(task.id, s.id).catch(
+            // 실패해도 빈 결과를 기록해 둔다. 기록하지 않으면 이 단계가 계속
+            // pending으로 남아 effect가 무한히 다시 조회한다.
+            (): StepSymbolCandidates => ({
+              step_id: s.id,
+              reason: "no_candidate",
+              candidates: [],
+            }),
+          ),
+        ),
+      );
+      if (cancelled) return;
+      setStepCandidates((prev) => {
+        const next = { ...prev };
+        fetched.forEach((c) => {
+          next[c.step_id] = c;
+        });
+        return next;
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [task, stepCandidates]);
+
   async function handleEditSentence(stepId: string, sentence: string) {
     if (!task) return;
     const updated = await api.updateStep(task.id, stepId, { sentence });
@@ -76,6 +116,26 @@ export default function ManagerPage() {
       ...task,
       steps: task.steps.map((s) => (s.id === stepId ? updated : s)),
     });
+    // 문장이 바뀌면 후보도 달라진다. 캐시를 버려 다시 받아오게 한다.
+    setStepCandidates((prev) => {
+      const next = { ...prev };
+      delete next[stepId];
+      return next;
+    });
+  }
+
+  async function handlePickCandidate(stepId: string, match: AacMatch) {
+    if (!task) return;
+    setError(null);
+    try {
+      const updated = await api.updateStep(task.id, stepId, {
+        symbol_url: match.image_url,
+        symbol_source: "LOCAL_AAC",
+      });
+      setTask({ ...task, steps: task.steps.map((s) => (s.id === stepId ? updated : s)) });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "그림 선택에 실패했습니다.");
+    }
   }
 
   async function handleUploadPhoto(stepId: string, file: File) {
@@ -415,8 +475,15 @@ export default function ManagerPage() {
                     <img src={s.symbol_url} alt={s.sentence}
                          className="h-16 w-16 rounded border border-slate-200 object-contain" />
                   ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded border border-dashed border-amber-400 bg-amber-50 text-center text-[10px] text-amber-700">
-                      사진 권장
+                    // 아래 후보 영역이 "그림 고르기"를 안내하는 동안에는 "사진 권장"을
+                    // 함께 띄우지 않는다(상충). 후보가 없을 때만 사진을 권한다.
+                    <div className={
+                      "flex h-16 w-16 items-center justify-center rounded border border-dashed text-center text-[10px] "
+                      + (stepCandidates[s.id]?.candidates.length
+                         ? "border-slate-300 bg-slate-50 text-slate-400"
+                         : "border-amber-400 bg-amber-50 text-amber-700")
+                    }>
+                      {stepCandidates[s.id]?.candidates.length ? "그림 선택" : "사진 권장"}
                     </div>
                   )}
                   <label className="cursor-pointer text-[11px] font-medium text-blue-700 hover:underline">
@@ -449,8 +516,73 @@ export default function ManagerPage() {
                   />
                   <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
                     <ActionChip action={s.action_type} className="text-[11px] !px-2 !py-0.5" />
-                    <span>상징: {s.symbol_source === "photo" ? "직접 등록한 사진" : s.symbol_source}</span>
+                    {/* 그림이 붙은 단계만 출처를 보여준다. 폴백 상태는 아래 후보 영역이
+                        이미 설명하므로 "상징: fallback"은 중복 노이즈였다. */}
+                    {s.symbol_url && (
+                      <span>
+                        그림: {s.symbol_source === "photo" ? "직접 올린 사진" : "그림 카드"}
+                      </span>
+                    )}
                   </div>
+
+                  {/* 자동으로 못 고른 단계 — 재조회 결과에 따라 다르게 안내한다.
+                      accepted : 쓸 만한 매칭을 찾음 → 한 번에 적용
+                      low_margin: 비슷한 게 여럿 → 사업주가 선택
+                      그 외    : 쓸 만한 그림 없음 → 현장 사진 권장 */}
+                  {s.needs_fallback && stepCandidates[s.id] && (() => {
+                    const sc = stepCandidates[s.id];
+                    if (sc.reason === "accepted" && sc.candidates.length === 1) {
+                      const c = sc.candidates[0];
+                      return (
+                        <div className="mt-2 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2">
+                          <img src={c.image_url} alt={c.label}
+                               className="h-14 w-14 shrink-0 rounded border border-slate-200 bg-white object-contain" />
+                          <div className="min-w-0 flex-1">
+                            <p className="break-keep text-[11px] font-medium text-emerald-800">
+                              찾은 그림: {c.label}
+                            </p>
+                            <button type="button" onClick={() => handlePickCandidate(s.id, c)}
+                                    className="mt-1 rounded bg-emerald-600 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-emerald-700">
+                              이 그림 적용
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+                    if (sc.candidates.length > 0) {
+                      // low_margin: 후보들이 다 그럴듯한데 순위만 못 매김
+                      // low_score : 딱 맞는 건 없지만 비슷한 걸 보여주고 판단을 맡김
+                      const tie = sc.reason === "low_margin";
+                      return (
+                        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2">
+                          <p className="text-[11px] font-medium text-amber-800">
+                            {tie
+                              ? "비슷한 그림이 여러 개예요. 맞는 것을 골라 주세요."
+                              : "딱 맞는 그림이 없어요. 아래에서 고르거나 현장 사진을 올리세요."}
+                          </p>
+                          <div className="mt-1.5 grid max-w-sm grid-cols-3 gap-2">
+                            {sc.candidates.map((c) => (
+                              <button key={c.asset_id} type="button"
+                                      onClick={() => handlePickCandidate(s.id, c)}
+                                      className="rounded border border-slate-200 bg-white p-1 hover:border-blue-400 hover:ring-2 hover:ring-blue-200"
+                                      title={`${c.label} 선택`}>
+                                <img src={c.image_url} alt={c.label}
+                                     className="aspect-square w-full rounded object-contain" />
+                                <span className="mt-0.5 block break-keep text-center text-[10px] leading-tight text-slate-600">
+                                  {c.label}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <p className="mt-2 text-[11px] text-amber-700">
+                        맞는 그림이 없어요. 실제 현장 사진을 올리면 가장 잘 전달됩니다.
+                      </p>
+                    );
+                  })()}
                 </div>
                 <button
                   onClick={() => handleDeleteStep(s.id)}

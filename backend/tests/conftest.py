@@ -30,19 +30,40 @@ def _fake_decompose(raw_input: str, context=None) -> dict:
         "task_title": "테스트 직무",
         "steps": [
             {"order": 1, "sentence": "상자를 옮기세요.", "action_type": "move",
+             "symbol_query": ["상자", "box"],
              "keywords": [{"term": "상자", "pos": "noun"}]},
             {"order": 2, "sentence": "수량을 확인하세요.", "action_type": "observe",
+             "symbol_query": ["수량", "quantity"],
              "keywords": [{"term": "수량", "pos": "noun"}]},
         ],
     }
 
 
 def _fake_map_symbols(keywords, context=None) -> dict:
+    # 실제 /ai/map-symbols와 같은 모양을 유지한다(reason/candidates 포함).
     return {"symbols": [
         {"keyword": k, "image_url": None, "source": "fallback",
-         "confidence": 0.0, "needs_fallback": True}
+         "confidence": 0.0, "needs_fallback": True,
+         "reason": "no_candidate", "candidates": []}
         for k in keywords
     ]}
+
+
+def fake_map_symbols_with_candidates(keywords, context=None) -> dict:
+    """후보 경합(low_margin) 상황을 흉내내는 목. 후보 선택 경로 테스트용."""
+    return {"symbols": [{
+        "keyword": keywords[0] if keywords else "",
+        "image_url": None, "source": "fallback", "confidence": 0.0,
+        "needs_fallback": True, "reason": "low_margin",
+        "candidates": [
+            {"asset_id": "CAFE_007", "group_id": "CAFE_007", "job": "cafe",
+             "asset_type": "action", "label": "원두를 준비한다",
+             "image_url": "/api/aac/images/cafe/CAFE_007.webp", "score": 0.171},
+            {"asset_id": "CAFE_013", "group_id": "CAFE_013", "job": "cafe",
+             "asset_type": "action", "label": "원두를 분쇄한다",
+             "image_url": "/api/aac/images/cafe/CAFE_013.webp", "score": 0.171},
+        ],
+    }]}
 
 
 @pytest.fixture(autouse=True)

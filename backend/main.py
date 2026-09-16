@@ -13,6 +13,7 @@
 """
 from __future__ import annotations
 
+import logging
 import os
 import re
 import uuid
@@ -34,7 +35,7 @@ from auth import (
     require_worker,
     verify_password,
 )
-from database import Base, engine, get_db
+from database import Base, apply_pending_columns, engine, get_db
 from models import Assignment, Employer, PerformanceLog, Step, Task, Worker
 from schemas import (
     AacMatch,
@@ -52,6 +53,7 @@ from schemas import (
     StepOut,
     StepReorder,
     StepStat,
+    StepSymbolCandidates,
     StepUpdate,
     TaskCreate,
     TaskOut,
@@ -66,9 +68,16 @@ from photos import MAX_PHOTO_BYTES, get_photo_dir, save_photo, sniff_image
 from tts import get_tts_cache_dir, synthesize_tts_url
 
 
+logger = logging.getLogger("jobcard.backend")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    # create_all은 기존 테이블에 컬럼을 추가하지 않는다. 모델에 새로 생긴 컬럼을 메운다.
+    added = apply_pending_columns()
+    if added:
+        logger.info("DB 컬럼 추가: %s", ", ".join(added))
     _ensure_seed()
     yield
 
@@ -267,6 +276,30 @@ def delete_worker(worker_id: str, db: Session = Depends(get_db),
     return {"ok": True}
 
 
+def _step_search_terms(step: "Step") -> list[str]:
+    """단계의 AAC 검색어. 저장된 symbol_query가 있으면 그걸 쓴다(생성 때와 같은 질의),
+    없으면 문장에서 뽑는다(사업주가 직접 추가했거나 문장을 수정한 경우)."""
+    stored = [t.strip() for t in (step.symbol_query or "").split(",") if t.strip()]
+    if stored:
+        return stored[:4]
+    terms = re.findall(r"[가-힣A-Za-z]+", step.sentence) or [step.sentence[:12]]
+    return terms[:4]
+
+
+def _task_context(task: Task, sentence: str, action_type: str) -> dict:
+    """AAC 검색용 맥락. 직무 생성 시와 같은 조건을 재현한다.
+
+    같은 문장이라도 업종 맥락이 있고 없고에 따라 순위와 채택 여부가 달라진다.
+    생성·후보조회·단계추가가 모두 이 함수를 거쳐야 결과가 어긋나지 않는다.
+    """
+    return {
+        "business_type": task.business_type or "",
+        "work_environment": task.work_environment or "",
+        "sentence": sentence,
+        "action_type": action_type,
+    }
+
+
 # --- 사업주: 직무 생성(AI 분해 트리거) ---
 def _pick_symbol(
     terms: list[str],
@@ -316,8 +349,11 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
     except Exception as e:  # noqa: BLE001 - AI 하네스 장애는 502로 명확히 전달
         raise HTTPException(status_code=502, detail=f"AI 분해 서비스 오류: {e}")
 
+    # 맥락을 저장해 둔다. 나중에 후보 재검색/단계 추가가 같은 조건으로 돌아야 한다.
     task = Task(employer_id=user["sub"], title=decomposed.get("task_title", "직무"),
-                raw_input=payload.raw_input, status="draft")
+                raw_input=payload.raw_input, status="draft",
+                business_type=context["business_type"],
+                work_environment=context["work_environment"])
     db.add(task)
     db.flush()
 
@@ -331,11 +367,16 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
             context={
                 **context,
                 "sentence": sentence,
+                # action_type이 있어야 AAC 검색이 도구/보조 카드보다 동작 카드를 선호한다.
+                # 빠뜨리면 "테이블을 닦으세요"에 행주 사진이 붙는다.
+                "action_type": step.get("action_type", "other"),
             },
         )
         db.add(Step(
             task_id=task.id, order_index=step["order"], sentence=sentence,
             action_type=step.get("action_type", "other"),
+            # 검토 화면 후보 조회가 같은 질의를 재현하도록 저장한다.
+            symbol_query=",".join(symbol_terms),
             symbol_url=sym.get("image_url"),
             symbol_source=sym.get("source", "fallback"),
             needs_fallback=sym.get("needs_fallback", True),
@@ -391,12 +432,14 @@ def add_step(task_id: str, payload: StepCreate, db: Session = Depends(get_db),
     """
     task = _owned_task(task_id, user["sub"], db)
     sentence = payload.sentence.strip()
+    action_type = payload.action_type or "other"
     terms = re.findall(r"[가-힣A-Za-z]+", sentence) or [sentence[:12]]
-    sym = _pick_symbol(terms)
+    # 직무 생성 때와 같은 맥락으로 검색해야 나중에 추가한 단계만 다른 그림이 붙지 않는다.
+    sym = _pick_symbol(terms, context=_task_context(task, sentence, action_type))
     next_order = max((s.order_index for s in task.steps), default=0) + 1
     db.add(Step(
         task_id=task.id, order_index=next_order, sentence=sentence,
-        action_type=payload.action_type or "other",
+        action_type=action_type,
         symbol_url=sym.get("image_url"),
         symbol_source=sym.get("source", "fallback"),
         needs_fallback=sym.get("needs_fallback", True),
@@ -438,13 +481,65 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
     if payload.sentence is not None:
         step.sentence = payload.sentence
         step.tts_audio_url = synthesize_tts_url(payload.sentence)
+        # 저장된 symbol_query는 옛 문장에 묶여 있다. 비우면 후보 조회가 새 문장에서
+        # 검색어를 다시 뽑는다.
+        step.symbol_query = ""
     if payload.symbol_url is not None:
         step.symbol_url = payload.symbol_url
-        step.symbol_source = "fallback"
+        # 검토 화면에서 AAC 후보를 고른 경우 출처를 LOCAL_AAC로 남긴다.
+        # (예전에는 무조건 fallback으로 적어 어디서 온 그림인지 알 수 없었다.)
+        step.symbol_source = payload.symbol_source or "fallback"
         step.needs_fallback = False
     db.commit()
     db.refresh(step)
     return _step_to_out(step)
+
+
+@app.get("/api/tasks/{task_id}/steps/{step_id}/symbol-candidates",
+         response_model=StepSymbolCandidates)
+def step_symbol_candidates(task_id: str, step_id: str, db: Session = Depends(get_db),
+                           user: dict = Depends(require_employer)) -> StepSymbolCandidates:
+    """단계에 붙일 AAC 후보를 돌려준다(검토 화면의 후보 선택용).
+
+    후보를 컬럼에 저장하지 않고 그때그때 다시 검색한다 — 문장이 수정되면 후보도 따라
+    바뀌어야 하는데, 저장해 두면 어긋난 채 굳는다.
+
+    같은 조건으로 검색해야 생성 시 판정과 어긋나지 않는다:
+      - 업종 맥락: Task에 저장해 둔 business_type/work_environment
+      - 검색어: 생성 때 쓴 symbol_query (단계에 저장). 없으면 문장에서 뽑는다.
+
+    reason='accepted'는 '생성 땐 폴백이었는데 지금 다시 보니 쓸 만한 매칭이 있다'는
+    뜻이다(예: 임계값 재교정 후). 그 매칭도 후보로 돌려줘 사업주가 한 번에 적용하게 한다.
+    """
+    task = _owned_task(task_id, user["sub"], db)
+    step = db.get(Step, step_id)
+    if step is None or step.task_id != task_id:
+        raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
+
+    symbols = ai_client.map_symbols(
+        _step_search_terms(step),
+        context=_task_context(task, step.sentence, step.action_type),
+    ).get("symbols", [])
+    sym = symbols[0] if symbols else {}
+    reason = sym.get("reason", "no_candidate")
+
+    raw = list(sym.get("candidates", []))
+    if reason == "accepted" and sym.get("image_url") and not raw:
+        # 채택된 매칭은 candidates에 안 실려 온다. 단일 후보로 만들어 준다.
+        raw = [{
+            "asset_id": sym.get("external_id", ""),
+            "group_id": sym.get("external_id", ""),
+            "job": "", "asset_type": "action",
+            "label": sym.get("resolved_keyword", ""),
+            "image_url": sym.get("image_url"),
+            "score": sym.get("confidence", 0.0),
+        }]
+
+    candidates = [
+        AacMatch(**{**c, "image_url": public_aac_url(c.get("image_url"))})
+        for c in raw
+    ]
+    return StepSymbolCandidates(step_id=step.id, reason=reason, candidates=candidates)
 
 
 @app.delete("/api/tasks/{task_id}/steps/{step_id}", response_model=TaskOut)
