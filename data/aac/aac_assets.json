@@ -5,9 +5,9 @@
     768,
     768
   ],
-  "asset_count": 401,
+  "asset_count": 538,
   "jobs": {
-    "ASSEMBLY": 106,
+    "ASSEMBLY": 243,
     "CAFE": 101,
     "CLEANING": 74,
     "PACKAGING": 44,
@@ -68,6 +68,7 @@
       "variant": null,
       "label": "깨끗한 작업대를 확인하는 작업자",
       "keywords": [
+        "작업대",
         "깨끗한",
         "작업대를",
         "확인하는",
@@ -77,11 +78,13 @@
         "확인"
       ],
       "aliases": [],
-      "search_text": "assembly 깨끗한 작업대를 확인하는 작업자 check 깨끗한 작업대를 확인하는 작업자 점검 검사 확인",
+      "search_text": "assembly 깨끗한 작업대를 확인하는 작업자 check 작업대 깨끗한 작업대를 확인하는 작업자 점검 검사 확인",
       "image": "assembly/ASSEMBLY_AUX_003.webp",
       "source_file": "01_#Uae68#Ub057#Ud55c_#Uc791#Uc5c5#Ub300#Ub97c_#Ud655#Uc778#Ud558#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "check",
-      "objects": []
+      "objects": [
+        "작업대"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_004",
@@ -92,16 +95,18 @@
       "label": "높이 조절 의자",
       "keywords": [
         "의자",
+        "작업 의자",
         "높이",
         "조절"
       ],
       "aliases": [],
-      "search_text": "assembly 높이 조절 의자 other 의자 높이 조절",
+      "search_text": "assembly 높이 조절 의자 other 의자 작업 의자 높이 조절",
       "image": "assembly/ASSEMBLY_AUX_004.webp",
       "source_file": "01_#Ub192#Uc774_#Uc870#Uc808_#Uc758#Uc790.png",
       "action": "other",
       "objects": [
-        "의자"
+        "의자",
+        "작업 의자"
       ]
     },
     {
@@ -112,16 +117,19 @@
       "variant": null,
       "label": "명찰을 착용하는 모습",
       "keywords": [
+        "명찰",
         "명찰을",
         "착용하는",
         "모습"
       ],
       "aliases": [],
-      "search_text": "assembly 명찰을 착용하는 모습 other 명찰을 착용하는 모습",
+      "search_text": "assembly 명찰을 착용하는 모습 other 명찰 명찰을 착용하는 모습",
       "image": "assembly/ASSEMBLY_AUX_005.webp",
       "source_file": "01_#Uba85#Ucc30#Uc744_#Ucc29#Uc6a9#Ud558#Ub294_#Ubaa8#Uc2b5.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "명찰"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_006",
@@ -131,16 +139,19 @@
       "variant": null,
       "label": "보안경을 착용하는 모습",
       "keywords": [
+        "보안경",
         "보안경을",
         "착용하는",
         "모습"
       ],
       "aliases": [],
-      "search_text": "assembly 보안경을 착용하는 모습 other 보안경을 착용하는 모습",
+      "search_text": "assembly 보안경을 착용하는 모습 other 보안경 보안경을 착용하는 모습",
       "image": "assembly/ASSEMBLY_AUX_006.webp",
       "source_file": "01_#Ubcf4#Uc548#Uacbd#Uc744_#Ucc29#Uc6a9#Ud558#Ub294_#Ubaa8#Uc2b5.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "보안경"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_007",
@@ -150,16 +161,19 @@
       "variant": null,
       "label": "보호장갑을 착용하는 모습",
       "keywords": [
+        "보호장갑",
         "보호장갑을",
         "착용하는",
         "모습"
       ],
       "aliases": [],
-      "search_text": "assembly 보호장갑을 착용하는 모습 other 보호장갑을 착용하는 모습",
+      "search_text": "assembly 보호장갑을 착용하는 모습 other 보호장갑 보호장갑을 착용하는 모습",
       "image": "assembly/ASSEMBLY_AUX_007.webp",
       "source_file": "01_#Ubcf4#Ud638#Uc7a5#Uac11#Uc744_#Ucc29#Uc6a9#Ud558#Ub294_#Ubaa8#Uc2b5.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "보호장갑"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_008",
@@ -169,20 +183,23 @@
       "variant": null,
       "label": "부품 상자 위치가 표시된 작업대",
       "keywords": [
+        "작업대",
         "박스",
         "부품",
         "상자",
         "위치가",
-        "표시된",
-        "작업대"
+        "표시된"
       ],
       "aliases": [],
-      "search_text": "assembly 부품 상자 위치가 표시된 작업대 other 박스 부품 상자 위치가 표시된 작업대",
+      "search_text": "assembly 부품 상자 위치가 표시된 작업대 other 작업대 박스 부품 상자 위치가 표시된",
       "image": "assembly/ASSEMBLY_AUX_008.webp",
       "source_file": "01_#Ubd80#Ud488_#Uc0c1#Uc790_#Uc704#Uce58#Uac00_#Ud45c#Uc2dc#Ub41c_#Uc791#Uc5c5#Ub300.png",
       "action": "other",
       "objects": [
-        "박스"
+        "작업대",
+        "박스",
+        "부품",
+        "상자"
       ]
     },
     {
@@ -194,18 +211,22 @@
       "label": "불량품 상자를 놓는 작업자",
       "keywords": [
         "불량품 상자",
+        "불량 제품",
+        "상자",
         "불량품",
         "상자를",
         "놓는",
         "작업자"
       ],
       "aliases": [],
-      "search_text": "assembly 불량품 상자를 놓는 작업자 other 불량품 상자 불량품 상자를 놓는 작업자",
+      "search_text": "assembly 불량품 상자를 놓는 작업자 other 불량품 상자 불량 제품 상자 불량품 상자를 놓는 작업자",
       "image": "assembly/ASSEMBLY_AUX_009.webp",
       "source_file": "01_#Ubd88#Ub7c9#Ud488_#Uc0c1#Uc790#Ub97c_#Ub193#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "other",
       "objects": [
-        "불량품 상자"
+        "불량품 상자",
+        "불량 제품",
+        "상자"
       ]
     },
     {
@@ -255,17 +276,20 @@
       "keywords": [
         "완성품 상자",
         "완성품",
+        "상자",
         "상자를",
         "놓는",
         "작업자"
       ],
       "aliases": [],
-      "search_text": "assembly 완성품 상자를 놓는 작업자 other 완성품 상자 완성품 상자를 놓는 작업자",
+      "search_text": "assembly 완성품 상자를 놓는 작업자 other 완성품 상자 완성품 상자 상자를 놓는 작업자",
       "image": "assembly/ASSEMBLY_AUX_012.webp",
       "source_file": "01_#Uc644#Uc131#Ud488_#Uc0c1#Uc790#Ub97c_#Ub193#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "other",
       "objects": [
-        "완성품 상자"
+        "완성품 상자",
+        "완성품",
+        "상자"
       ]
     },
     {
@@ -276,17 +300,20 @@
       "variant": null,
       "label": "작업대를 천으로 닦는 작업자",
       "keywords": [
+        "작업대",
         "작업대를",
         "천으로",
         "닦는",
         "작업자"
       ],
       "aliases": [],
-      "search_text": "assembly 작업대를 천으로 닦는 작업자 other 작업대를 천으로 닦는 작업자",
+      "search_text": "assembly 작업대를 천으로 닦는 작업자 other 작업대 작업대를 천으로 닦는 작업자",
       "image": "assembly/ASSEMBLY_AUX_013.webp",
       "source_file": "01_#Uc791#Uc5c5#Ub300#Ub97c_#Ucc9c#Uc73c#Ub85c_#Ub2e6#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "작업대"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_014",
@@ -296,17 +323,22 @@
       "variant": null,
       "label": "작업대에 트레이를 놓는 작업자",
       "keywords": [
+        "작업대",
+        "트레이",
         "작업대에",
         "트레이를",
         "놓는",
         "작업자"
       ],
       "aliases": [],
-      "search_text": "assembly 작업대에 트레이를 놓는 작업자 other 작업대에 트레이를 놓는 작업자",
+      "search_text": "assembly 작업대에 트레이를 놓는 작업자 other 작업대 트레이 작업대에 트레이를 놓는 작업자",
       "image": "assembly/ASSEMBLY_AUX_014.webp",
       "source_file": "01_#Uc791#Uc5c5#Ub300#Uc5d0_#Ud2b8#Ub808#Uc774#Ub97c_#Ub193#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "작업대",
+        "트레이"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_015",
@@ -326,7 +358,8 @@
       "source_file": "01_#Uc791#Uc5c5#Ub300_#Uc704_#Uc791#Uc740_#Uc4f0#Ub808#Uae30.png",
       "action": "other",
       "objects": [
-        "쓰레기"
+        "쓰레기",
+        "작업대"
       ]
     },
     {
@@ -344,7 +377,9 @@
       "image": "assembly/ASSEMBLY_AUX_016.webp",
       "source_file": "01_#Uc791#Uc5c5#Ubaa8.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "작업모"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_017",
@@ -404,7 +439,8 @@
       "source_file": "01_#Uc870#Ub9bd_#Uc81c#Ud488_#Uc0ac#Uc9c4.png",
       "action": "other",
       "objects": [
-        "상품"
+        "상품",
+        "제품"
       ]
     },
     {
@@ -415,15 +451,17 @@
       "variant": null,
       "label": "켜진 작업등",
       "keywords": [
-        "켜진",
-        "작업등"
+        "작업등",
+        "켜진"
       ],
       "aliases": [],
-      "search_text": "assembly 켜진 작업등 other 켜진 작업등",
+      "search_text": "assembly 켜진 작업등 other 작업등 켜진",
       "image": "assembly/ASSEMBLY_AUX_020.webp",
       "source_file": "01_#Ucf1c#Uc9c4_#Uc791#Uc5c5#Ub4f1.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "작업등"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_021",
@@ -459,7 +497,9 @@
       "image": "assembly/ASSEMBLY_AUX_022.webp",
       "source_file": "02_#Uba85#Ucc30.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "명찰"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_023",
@@ -501,7 +541,9 @@
       "image": "assembly/ASSEMBLY_AUX_024.webp",
       "source_file": "02_#Ubcf4#Ud638#Uc7a5#Uac11.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "보호장갑"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_025",
@@ -524,7 +566,9 @@
       "source_file": "02_#Ubd80#Ud488_#Uc0c1#Uc790_#Uc704#Uce58#Ub97c_#Uac00#Ub9ac#Ud0a4#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "other",
       "objects": [
-        "박스"
+        "박스",
+        "부품",
+        "상자"
       ]
     },
     {
@@ -535,15 +579,17 @@
       "variant": null,
       "label": "쓰레기통",
       "keywords": [
-        "쓰레기통"
+        "쓰레기통",
+        "쓰레기"
       ],
       "aliases": [],
-      "search_text": "assembly 쓰레기통 other",
+      "search_text": "assembly 쓰레기통 other 쓰레기",
       "image": "assembly/ASSEMBLY_AUX_026.webp",
       "source_file": "02_#Uc4f0#Ub808#Uae30#Ud1b5.png",
       "action": "other",
       "objects": [
-        "쓰레기통"
+        "쓰레기통",
+        "쓰레기"
       ]
     },
     {
@@ -573,17 +619,19 @@
       "label": "의자 높이를 조절하는 작업자",
       "keywords": [
         "의자",
+        "작업 의자",
         "높이를",
         "조절하는",
         "작업자"
       ],
       "aliases": [],
-      "search_text": "assembly 의자 높이를 조절하는 작업자 other 의자 높이를 조절하는 작업자",
+      "search_text": "assembly 의자 높이를 조절하는 작업자 other 의자 작업 의자 높이를 조절하는 작업자",
       "image": "assembly/ASSEMBLY_AUX_028.webp",
       "source_file": "02_#Uc758#Uc790_#Ub192#Uc774#Ub97c_#Uc870#Uc808#Ud558#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "other",
       "objects": [
-        "의자"
+        "의자",
+        "작업 의자"
       ]
     },
     {
@@ -594,16 +642,20 @@
       "variant": null,
       "label": "작업등 스위치를 누르는 손",
       "keywords": [
+        "손",
         "작업등",
         "스위치를",
         "누르는"
       ],
       "aliases": [],
-      "search_text": "assembly 작업등 스위치를 누르는 손 other 작업등 스위치를 누르는",
+      "search_text": "assembly 작업등 스위치를 누르는 손 other 손 작업등 스위치를 누르는",
       "image": "assembly/ASSEMBLY_AUX_029.webp",
       "source_file": "02_#Uc791#Uc5c5#Ub4f1_#Uc2a4#Uc704#Uce58#Ub97c_#Ub204#Ub974#Ub294_#Uc190.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "손",
+        "작업등"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_030",
@@ -613,16 +665,19 @@
       "variant": null,
       "label": "작업모를 쓰는 모습",
       "keywords": [
+        "작업모",
         "작업모를",
         "쓰는",
         "모습"
       ],
       "aliases": [],
-      "search_text": "assembly 작업모를 쓰는 모습 other 작업모를 쓰는 모습",
+      "search_text": "assembly 작업모를 쓰는 모습 other 작업모 작업모를 쓰는 모습",
       "image": "assembly/ASSEMBLY_AUX_030.webp",
       "source_file": "02_#Uc791#Uc5c5#Ubaa8#Ub97c_#Uc4f0#Ub294_#Ubaa8#Uc2b5.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "작업모"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_031",
@@ -669,17 +724,20 @@
       "variant": null,
       "label": "작업 순서를 가리키는 작업자",
       "keywords": [
+        "작업 순서",
         "작업",
         "순서를",
         "가리키는",
         "작업자"
       ],
       "aliases": [],
-      "search_text": "assembly 작업 순서를 가리키는 작업자 other 작업 순서를 가리키는 작업자",
+      "search_text": "assembly 작업 순서를 가리키는 작업자 other 작업 순서 작업 순서를 가리키는 작업자",
       "image": "assembly/ASSEMBLY_AUX_033.webp",
       "source_file": "02_#Uc791#Uc5c5_#Uc21c#Uc11c#Ub97c_#Uac00#Ub9ac#Ud0a4#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "작업 순서"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_034",
@@ -723,7 +781,8 @@
       "source_file": "02_#Uc81c#Ud488_#Uc0ac#Uc9c4#Uc744_#Ud655#Uc778#Ud558#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "check",
       "objects": [
-        "상품"
+        "상품",
+        "제품"
       ]
     },
     {
@@ -753,17 +812,20 @@
       "variant": null,
       "label": "테두리가 있는 부품 트레이",
       "keywords": [
-        "테두리가",
-        "있는",
+        "트레이",
         "부품",
-        "트레이"
+        "테두리가",
+        "있는"
       ],
       "aliases": [],
-      "search_text": "assembly 테두리가 있는 부품 트레이 other 테두리가 있는 부품 트레이",
+      "search_text": "assembly 테두리가 있는 부품 트레이 other 트레이 부품 테두리가 있는",
       "image": "assembly/ASSEMBLY_AUX_037.webp",
       "source_file": "02_#Ud14c#Ub450#Ub9ac#Uac00_#Uc788#Ub294_#Ubd80#Ud488_#Ud2b8#Ub808#Uc774.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "트레이",
+        "부품"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_038",
@@ -773,15 +835,17 @@
       "variant": null,
       "label": "투명 보안경",
       "keywords": [
-        "투명",
-        "보안경"
+        "보안경",
+        "투명"
       ],
       "aliases": [],
-      "search_text": "assembly 투명 보안경 other 투명 보안경",
+      "search_text": "assembly 투명 보안경 other 보안경 투명",
       "image": "assembly/ASSEMBLY_AUX_038.webp",
       "source_file": "02_#Ud22c#Uba85_#Ubcf4#Uc548#Uacbd.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "보안경"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_039",
@@ -881,16 +945,19 @@
       "variant": null,
       "label": "작업등을 켜는 작업자",
       "keywords": [
+        "작업등",
         "작업등을",
         "켜는",
         "작업자"
       ],
       "aliases": [],
-      "search_text": "assembly 작업등을 켜는 작업자 other 작업등을 켜는 작업자",
+      "search_text": "assembly 작업등을 켜는 작업자 other 작업등 작업등을 켜는 작업자",
       "image": "assembly/ASSEMBLY_AUX_043.webp",
       "source_file": "03_#Uc791#Uc5c5#Ub4f1#Uc744_#Ucf1c#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "작업등"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_044",
@@ -1006,16 +1073,21 @@
       "variant": null,
       "label": "트레이를 내려놓는 손동작",
       "keywords": [
+        "트레이",
+        "손",
         "트레이를",
         "내려놓는",
         "손동작"
       ],
       "aliases": [],
-      "search_text": "assembly 트레이를 내려놓는 손동작 other 트레이를 내려놓는 손동작",
+      "search_text": "assembly 트레이를 내려놓는 손동작 other 트레이 손 트레이를 내려놓는 손동작",
       "image": "assembly/ASSEMBLY_AUX_048.webp",
       "source_file": "03_#Ud2b8#Ub808#Uc774#Ub97c_#Ub0b4#Ub824#Ub193#Ub294_#Uc190#Ub3d9#Uc791.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "트레이",
+        "손"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_049",
@@ -1034,7 +1106,9 @@
       "image": "assembly/ASSEMBLY_AUX_049.webp",
       "source_file": "04_#Uba85#Ucc30_#Ucc29#Uc6a9_#Uc644#Ub8cc.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "명찰"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_050",
@@ -1053,7 +1127,9 @@
       "image": "assembly/ASSEMBLY_AUX_050.webp",
       "source_file": "04_#Ubcf4#Uc548#Uacbd_#Ucc29#Uc6a9_#Uc644#Ub8cc.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "보안경"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_051",
@@ -1066,16 +1142,19 @@
         "상품",
         "제품",
         "물건",
+        "손",
         "손에",
         "사진"
       ],
       "aliases": [],
-      "search_text": "assembly 손에 든 제품 사진 other 상품 제품 물건 손에 사진",
+      "search_text": "assembly 손에 든 제품 사진 other 상품 손 제품 물건 손에 사진",
       "image": "assembly/ASSEMBLY_AUX_051.webp",
       "source_file": "04_#Uc190#Uc5d0_#Ub4e0_#Uc81c#Ud488_#Uc0ac#Uc9c4.png",
       "action": "other",
       "objects": [
-        "상품"
+        "상품",
+        "손",
+        "제품"
       ]
     },
     {
@@ -1086,17 +1165,22 @@
       "variant": null,
       "label": "양손 장갑 착용 완료",
       "keywords": [
+        "손",
+        "보호장갑",
         "양손",
         "장갑",
         "착용",
         "완료"
       ],
       "aliases": [],
-      "search_text": "assembly 양손 장갑 착용 완료 other 양손 장갑 착용 완료",
+      "search_text": "assembly 양손 장갑 착용 완료 other 손 보호장갑 양손 장갑 착용 완료",
       "image": "assembly/ASSEMBLY_AUX_052.webp",
       "source_file": "04_#Uc591#Uc190_#Uc7a5#Uac11_#Ucc29#Uc6a9_#Uc644#Ub8cc.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "손",
+        "보호장갑"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_053",
@@ -10419,6 +10503,3859 @@
       "objects": [
         "픽업 장소",
         "상품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_039",
+      "group_id": "ASSEMBLY_039",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "큰 부품과 작은 부품을 나눈다",
+      "keywords": [
+        "작은 부품",
+        "큰 부품",
+        "부품과",
+        "작은",
+        "부품을",
+        "나눈다",
+        "분류",
+        "종류별 분류",
+        "나누기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 큰 부품과 작은 부품을 나눈다 sort 작은 부품 큰 부품 부품과 작은 부품을 나눈다 분류 종류별 분류 나누기",
+      "image": "assembly/ASSEMBLY_039.webp",
+      "source_file": "ASSEMBLY_039_큰_부품과_작은_부품을_나눈다.png",
+      "action": "sort",
+      "objects": [
+        "작은 부품",
+        "큰 부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_040",
+      "group_id": "ASSEMBLY_040",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "색상별로 부품을 나눈다",
+      "keywords": [
+        "부품",
+        "색상별로",
+        "부품을",
+        "나눈다",
+        "분류",
+        "종류별 분류",
+        "나누기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 색상별로 부품을 나눈다 sort 부품 색상별로 부품을 나눈다 분류 종류별 분류 나누기",
+      "image": "assembly/ASSEMBLY_040.webp",
+      "source_file": "ASSEMBLY_040_색상별로_부품을_나눈다.png",
+      "action": "sort",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_041",
+      "group_id": "ASSEMBLY_041",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "모양별로 부품을 나눈다",
+      "keywords": [
+        "부품",
+        "모양별로",
+        "부품을",
+        "나눈다",
+        "분류",
+        "종류별 분류",
+        "나누기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 모양별로 부품을 나눈다 sort 부품 모양별로 부품을 나눈다 분류 종류별 분류 나누기",
+      "image": "assembly/ASSEMBLY_041.webp",
+      "source_file": "ASSEMBLY_041_모양별로_부품을_나눈다.png",
+      "action": "sort",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_042",
+      "group_id": "ASSEMBLY_042",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "나사와 와셔를 분리한다",
+      "keywords": [
+        "나사",
+        "와셔",
+        "나사와",
+        "와셔를",
+        "분리한다",
+        "구분한다",
+        "구분하기",
+        "구분",
+        "분리하기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 나사와 와셔를 분리한다 separate 나사 와셔 나사와 와셔를 분리한다 구분한다 구분하기 구분 분리하기",
+      "image": "assembly/ASSEMBLY_042.webp",
+      "source_file": "ASSEMBLY_042_나사와_와셔를_분리한다.png",
+      "action": "separate",
+      "objects": [
+        "나사",
+        "와셔"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_043",
+      "group_id": "ASSEMBLY_043",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "왼쪽 부품과 오른쪽 부품을 구분한다",
+      "keywords": [
+        "오른쪽 부품",
+        "왼쪽 부품",
+        "왼쪽",
+        "부품과",
+        "오른쪽",
+        "부품을",
+        "구분한다",
+        "분류",
+        "나누기",
+        "구분하기",
+        "구분",
+        "분리한다",
+        "분리하기"
+      ],
+      "aliases": [
+        "왼쪽 부품과 오른쪽 부품을 분류한다"
+      ],
+      "search_text": "assembly 왼쪽 부품과 오른쪽 부품을 구분한다 separate 오른쪽 부품 왼쪽 부품 왼쪽 부품과 오른쪽 부품을 구분한다 분류 나누기 구분하기 구분 분리한다 분리하기 왼쪽 부품과 오른쪽 부품을 분류한다",
+      "image": "assembly/ASSEMBLY_043.webp",
+      "source_file": "ASSEMBLY_043_왼쪽_부품과_오른쪽_부품을_구분한다.png",
+      "action": "separate",
+      "objects": [
+        "오른쪽 부품",
+        "왼쪽 부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_044",
+      "group_id": "ASSEMBLY_044",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품의 앞면과 뒷면을 확인한다",
+      "keywords": [
+        "부품",
+        "앞면",
+        "뒷면",
+        "부품의",
+        "앞면과",
+        "뒷면을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "부품의 앞면과 뒷면을 점검한다"
+      ],
+      "search_text": "assembly 부품의 앞면과 뒷면을 확인한다 check 부품 앞면 뒷면 부품의 앞면과 뒷면을 확인한다 점검 검사 확인 부품의 앞면과 뒷면을 점검한다",
+      "image": "assembly/ASSEMBLY_044.webp",
+      "source_file": "ASSEMBLY_044_부품의_앞면과_뒷면을_확인한다.png",
+      "action": "check",
+      "objects": [
+        "부품",
+        "앞면",
+        "뒷면"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_045",
+      "group_id": "ASSEMBLY_045",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품의 위쪽 방향을 확인한다",
+      "keywords": [
+        "부품",
+        "방향",
+        "부품의",
+        "위쪽",
+        "방향을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "부품의 위쪽 방향을 점검한다"
+      ],
+      "search_text": "assembly 부품의 위쪽 방향을 확인한다 check 부품 방향 부품의 위쪽 방향을 확인한다 점검 검사 확인 부품의 위쪽 방향을 점검한다",
+      "image": "assembly/ASSEMBLY_045.webp",
+      "source_file": "ASSEMBLY_045_부품의_위쪽_방향을_확인한다.png",
+      "action": "check",
+      "objects": [
+        "부품",
+        "방향"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_046",
+      "group_id": "ASSEMBLY_046",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품을 작업 순서대로 배열한다",
+      "keywords": [
+        "작업 순서",
+        "부품",
+        "부품을",
+        "작업",
+        "순서대로",
+        "배열한다",
+        "정렬",
+        "맞추기",
+        "방향 맞추기"
+      ],
+      "aliases": [
+        "부품을 작업 순서대로 정렬한다"
+      ],
+      "search_text": "assembly 부품을 작업 순서대로 배열한다 align 작업 순서 부품 부품을 작업 순서대로 배열한다 정렬 맞추기 방향 맞추기 부품을 작업 순서대로 정렬한다",
+      "image": "assembly/ASSEMBLY_046.webp",
+      "source_file": "ASSEMBLY_046_부품을_작업_순서대로_배열한다.png",
+      "action": "align",
+      "objects": [
+        "작업 순서",
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_047",
+      "group_id": "ASSEMBLY_047",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "한 제품에 필요한 부품을 한 세트로 모은다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "부품",
+        "제품에",
+        "필요한",
+        "부품을",
+        "세트로",
+        "모은다",
+        "모으기",
+        "한곳에 모으기"
+      ],
+      "aliases": [
+        "한 제품에 필요한 부품을 한 세트로 한곳에 모은다"
+      ],
+      "search_text": "assembly 한 제품에 필요한 부품을 한 세트로 모은다 collect 상품 제품 부품 물건 제품에 필요한 부품을 세트로 모은다 모으기 한곳에 모으기 한 제품에 필요한 부품을 한 세트로 한곳에 모은다",
+      "image": "assembly/ASSEMBLY_047.webp",
+      "source_file": "ASSEMBLY_047_한_제품에_필요한_부품을_한_세트로_모은다.png",
+      "action": "collect",
+      "objects": [
+        "상품",
+        "제품",
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_048",
+      "group_id": "ASSEMBLY_048",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "여러 제품용 부품 세트를 준비한다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "부품",
+        "여러",
+        "제품용",
+        "세트를",
+        "준비한다",
+        "준비"
+      ],
+      "aliases": [],
+      "search_text": "assembly 여러 제품용 부품 세트를 준비한다 prepare 상품 제품 부품 물건 여러 제품용 세트를 준비한다 준비",
+      "image": "assembly/ASSEMBLY_048.webp",
+      "source_file": "ASSEMBLY_048_여러_제품용_부품_세트를_준비한다.png",
+      "action": "prepare",
+      "objects": [
+        "상품",
+        "제품",
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_049",
+      "group_id": "ASSEMBLY_049",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "필요한 도구 목록을 확인한다",
+      "keywords": [
+        "도구",
+        "도구 목록",
+        "필요한",
+        "목록을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "필요한 도구 목록을 점검한다"
+      ],
+      "search_text": "assembly 필요한 도구 목록을 확인한다 check 도구 도구 목록 필요한 목록을 확인한다 점검 검사 확인 필요한 도구 목록을 점검한다",
+      "image": "assembly/ASSEMBLY_049.webp",
+      "source_file": "ASSEMBLY_049_필요한_도구_목록을_확인한다.png",
+      "action": "check",
+      "objects": [
+        "도구",
+        "도구 목록"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_050",
+      "group_id": "ASSEMBLY_050",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "드라이버를 가져온다",
+      "keywords": [
+        "드라이버",
+        "드라이버를",
+        "가져온다",
+        "운반",
+        "가져가기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 드라이버를 가져온다 carry 드라이버 드라이버를 가져온다 운반 가져가기",
+      "image": "assembly/ASSEMBLY_050.webp",
+      "source_file": "ASSEMBLY_050_드라이버를_가져온다.png",
+      "action": "carry",
+      "objects": [
+        "드라이버"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_051",
+      "group_id": "ASSEMBLY_051",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "올바른 크기의 드라이버를 고른다",
+      "keywords": [
+        "드라이버",
+        "올바른",
+        "크기의",
+        "드라이버를",
+        "고른다",
+        "고르기",
+        "선별",
+        "골라내기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 올바른 크기의 드라이버를 고른다 select 드라이버 올바른 크기의 드라이버를 고른다 고르기 선별 골라내기",
+      "image": "assembly/ASSEMBLY_051.webp",
+      "source_file": "ASSEMBLY_051_올바른_크기의_드라이버를_고른다.png",
+      "action": "select",
+      "objects": [
+        "드라이버"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_052",
+      "group_id": "ASSEMBLY_052",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "육각렌치를 가져온다",
+      "keywords": [
+        "육각렌치",
+        "육각렌치를",
+        "가져온다",
+        "운반",
+        "가져가기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 육각렌치를 가져온다 carry 육각렌치 육각렌치를 가져온다 운반 가져가기",
+      "image": "assembly/ASSEMBLY_052.webp",
+      "source_file": "ASSEMBLY_052_육각렌치를_가져온다.png",
+      "action": "carry",
+      "objects": [
+        "육각렌치"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_053",
+      "group_id": "ASSEMBLY_053",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "집게를 가져온다",
+      "keywords": [
+        "집게",
+        "집게를",
+        "가져온다",
+        "운반",
+        "가져가기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 집게를 가져온다 carry 집게 집게를 가져온다 운반 가져가기",
+      "image": "assembly/ASSEMBLY_053.webp",
+      "source_file": "ASSEMBLY_053_집게를_가져온다.png",
+      "action": "carry",
+      "objects": [
+        "집게"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_054",
+      "group_id": "ASSEMBLY_054",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "고정 지그를 작업대에 놓는다",
+      "keywords": [
+        "작업대",
+        "고정 지그",
+        "고정",
+        "지그를",
+        "작업대에",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "고정 지그를 작업대에 올린다"
+      ],
+      "search_text": "assembly 고정 지그를 작업대에 놓는다 place 작업대 고정 지그 고정 지그를 작업대에 놓는다 놓기 올리기 진열 배치 고정 지그를 작업대에 올린다",
+      "image": "assembly/ASSEMBLY_054.webp",
+      "source_file": "ASSEMBLY_054_고정_지그를_작업대에_놓는다.png",
+      "action": "place",
+      "objects": [
+        "작업대",
+        "고정 지그"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_055",
+      "group_id": "ASSEMBLY_055",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "도구가 파손되지 않았는지 확인한다",
+      "keywords": [
+        "도구",
+        "손",
+        "도구가",
+        "파손되지",
+        "않았는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "도구가 파손되지 않았는지 점검한다"
+      ],
+      "search_text": "assembly 도구가 파손되지 않았는지 확인한다 check 도구 손 도구가 파손되지 않았는지 확인한다 점검 검사 확인 도구가 파손되지 않았는지 점검한다",
+      "image": "assembly/ASSEMBLY_055.webp",
+      "source_file": "ASSEMBLY_055_도구가_파손되지_않았는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "도구",
+        "손"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_056",
+      "group_id": "ASSEMBLY_056",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "파손된 도구를 사용하지 않는다",
+      "keywords": [
+        "도구",
+        "손",
+        "파손된",
+        "도구를",
+        "사용하지",
+        "않는다",
+        "사용 금지",
+        "금지",
+        "하지 않기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 파손된 도구를 사용하지 않는다 avoid 도구 손 파손된 도구를 사용하지 않는다 사용 금지 금지 하지 않기",
+      "image": "assembly/ASSEMBLY_056.webp",
+      "source_file": "ASSEMBLY_056_파손된_도구를_사용하지_않는다.png",
+      "action": "avoid",
+      "objects": [
+        "도구",
+        "손"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_057",
+      "group_id": "ASSEMBLY_057",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "파손된 도구를 관리자에게 전달한다",
+      "keywords": [
+        "도구",
+        "손",
+        "관리자",
+        "파손된",
+        "도구를",
+        "관리자에게",
+        "전달한다",
+        "건네기",
+        "전달"
+      ],
+      "aliases": [],
+      "search_text": "assembly 파손된 도구를 관리자에게 전달한다 handover 도구 손 관리자 파손된 도구를 관리자에게 전달한다 건네기 전달",
+      "image": "assembly/ASSEMBLY_057.webp",
+      "source_file": "ASSEMBLY_057_파손된_도구를_관리자에게_전달한다.png",
+      "action": "handover",
+      "objects": [
+        "도구",
+        "손",
+        "관리자"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_058",
+      "group_id": "ASSEMBLY_058",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "사용하지 않는 도구는 지정된 곳에 둔다",
+      "keywords": [
+        "도구",
+        "사용하지",
+        "않는",
+        "도구는",
+        "지정된",
+        "곳에",
+        "둔다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [],
+      "search_text": "assembly 사용하지 않는 도구는 지정된 곳에 둔다 place 도구 사용하지 않는 도구는 지정된 곳에 둔다 놓기 올리기 진열 배치",
+      "image": "assembly/ASSEMBLY_058.webp",
+      "source_file": "ASSEMBLY_058_사용하지_않는_도구는_지정된_곳에_둔다.png",
+      "action": "place",
+      "objects": [
+        "도구"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_059",
+      "group_id": "ASSEMBLY_059",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "첫 번째 부품을 집는다",
+      "keywords": [
+        "부품",
+        "번째",
+        "부품을",
+        "집는다",
+        "줍기",
+        "집기",
+        "수거"
+      ],
+      "aliases": [],
+      "search_text": "assembly 첫 번째 부품을 집는다 pick_up 부품 번째 부품을 집는다 줍기 집기 수거",
+      "image": "assembly/ASSEMBLY_059.webp",
+      "source_file": "ASSEMBLY_059_첫_번째_부품을_집는다.png",
+      "action": "pick_up",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_060",
+      "group_id": "ASSEMBLY_060",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "첫 번째 부품을 고정 틀에 놓는다",
+      "keywords": [
+        "고정 틀",
+        "부품",
+        "번째",
+        "부품을",
+        "고정",
+        "틀에",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "첫 번째 부품을 고정 틀에 올린다"
+      ],
+      "search_text": "assembly 첫 번째 부품을 고정 틀에 놓는다 place 고정 틀 부품 번째 부품을 고정 틀에 놓는다 놓기 올리기 진열 배치 첫 번째 부품을 고정 틀에 올린다",
+      "image": "assembly/ASSEMBLY_060.webp",
+      "source_file": "ASSEMBLY_060_첫_번째_부품을_고정_틀에_놓는다.png",
+      "action": "place",
+      "objects": [
+        "고정 틀",
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_061",
+      "group_id": "ASSEMBLY_061",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품이 틀에 정확히 들어갔는지 확인한다",
+      "keywords": [
+        "고정 틀",
+        "부품",
+        "부품이",
+        "틀에",
+        "정확히",
+        "들어갔는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "부품이 틀에 정확히 들어갔는지 점검한다"
+      ],
+      "search_text": "assembly 부품이 틀에 정확히 들어갔는지 확인한다 check 고정 틀 부품 부품이 틀에 정확히 들어갔는지 확인한다 점검 검사 확인 부품이 틀에 정확히 들어갔는지 점검한다",
+      "image": "assembly/ASSEMBLY_061.webp",
+      "source_file": "ASSEMBLY_061_부품이_틀에_정확히_들어갔는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "고정 틀",
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_062",
+      "group_id": "ASSEMBLY_062",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "두 번째 부품을 집는다",
+      "keywords": [
+        "부품",
+        "번째",
+        "부품을",
+        "집는다",
+        "줍기",
+        "집기",
+        "수거"
+      ],
+      "aliases": [],
+      "search_text": "assembly 두 번째 부품을 집는다 pick_up 부품 번째 부품을 집는다 줍기 집기 수거",
+      "image": "assembly/ASSEMBLY_062.webp",
+      "source_file": "ASSEMBLY_062_두_번째_부품을_집는다.png",
+      "action": "pick_up",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_063",
+      "group_id": "ASSEMBLY_063",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "두 부품의 연결 위치를 맞춘다",
+      "keywords": [
+        "연결 위치",
+        "부품",
+        "부품의",
+        "연결",
+        "위치를",
+        "맞춘다",
+        "정렬",
+        "맞추기",
+        "방향 맞추기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 두 부품의 연결 위치를 맞춘다 align 연결 위치 부품 부품의 연결 위치를 맞춘다 정렬 맞추기 방향 맞추기",
+      "image": "assembly/ASSEMBLY_063.webp",
+      "source_file": "ASSEMBLY_063_두_부품의_연결_위치를_맞춘다.png",
+      "action": "align",
+      "objects": [
+        "연결 위치",
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_064",
+      "group_id": "ASSEMBLY_064",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품의 방향을 맞춘다",
+      "keywords": [
+        "부품",
+        "방향",
+        "부품의",
+        "방향을",
+        "맞춘다",
+        "정렬",
+        "맞추기",
+        "방향 맞추기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 부품의 방향을 맞춘다 align 부품 방향 부품의 방향을 맞춘다 정렬 맞추기 방향 맞추기",
+      "image": "assembly/ASSEMBLY_064.webp",
+      "source_file": "ASSEMBLY_064_부품의_방향을_맞춘다.png",
+      "action": "align",
+      "objects": [
+        "부품",
+        "방향"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_065",
+      "group_id": "ASSEMBLY_065",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품을 천천히 끼운다",
+      "keywords": [
+        "부품",
+        "부품을",
+        "천천히",
+        "끼운다",
+        "끼우기",
+        "장착"
+      ],
+      "aliases": [],
+      "search_text": "assembly 부품을 천천히 끼운다 install 부품 부품을 천천히 끼운다 끼우기 장착",
+      "image": "assembly/ASSEMBLY_065.webp",
+      "source_file": "ASSEMBLY_065_부품을_천천히_끼운다.png",
+      "action": "install",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_066",
+      "group_id": "ASSEMBLY_066",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품을 끝까지 밀어 넣는다",
+      "keywords": [
+        "부품",
+        "부품을",
+        "끝까지",
+        "밀어",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 부품을 끝까지 밀어 넣는다 put_in 부품 부품을 끝까지 밀어 넣는다 넣기 담기 꽂기",
+      "image": "assembly/ASSEMBLY_066.webp",
+      "source_file": "ASSEMBLY_066_부품을_끝까지_밀어_넣는다.png",
+      "action": "put_in",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_067",
+      "group_id": "ASSEMBLY_067",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "딸깍 소리가 날 때까지 누른다",
+      "keywords": [
+        "딸깍 소리",
+        "딸깍",
+        "소리가",
+        "때까지",
+        "누른다",
+        "누르기",
+        "압착"
+      ],
+      "aliases": [],
+      "search_text": "assembly 딸깍 소리가 날 때까지 누른다 press 딸깍 소리 딸깍 소리가 때까지 누른다 누르기 압착",
+      "image": "assembly/ASSEMBLY_067.webp",
+      "source_file": "ASSEMBLY_067_딸깍_소리가_날_때까지_누른다.png",
+      "action": "press",
+      "objects": [
+        "딸깍 소리"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_068",
+      "group_id": "ASSEMBLY_068",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품 사이에 틈이 없는지 확인한다",
+      "keywords": [
+        "부품",
+        "사이에",
+        "틈이",
+        "없는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "부품 사이에 틈이 없는지 점검한다"
+      ],
+      "search_text": "assembly 부품 사이에 틈이 없는지 확인한다 check 부품 사이에 틈이 없는지 확인한다 점검 검사 확인 부품 사이에 틈이 없는지 점검한다",
+      "image": "assembly/ASSEMBLY_068.webp",
+      "source_file": "ASSEMBLY_068_부품_사이에_틈이_없는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_069",
+      "group_id": "ASSEMBLY_069",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품을 너무 세게 누르지 않는다",
+      "keywords": [
+        "부품",
+        "부품을",
+        "너무",
+        "세게",
+        "누르지",
+        "않는다",
+        "사용 금지",
+        "금지",
+        "하지 않기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 부품을 너무 세게 누르지 않는다 avoid 부품 부품을 너무 세게 누르지 않는다 사용 금지 금지 하지 않기",
+      "image": "assembly/ASSEMBLY_069.webp",
+      "source_file": "ASSEMBLY_069_부품을_너무_세게_누르지_않는다.png",
+      "action": "avoid",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_070",
+      "group_id": "ASSEMBLY_070",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "맞지 않는 부품을 억지로 끼우지 않는다",
+      "keywords": [
+        "부품",
+        "맞지",
+        "않는",
+        "부품을",
+        "억지로",
+        "끼우지",
+        "않는다",
+        "사용 금지",
+        "금지",
+        "하지 않기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 맞지 않는 부품을 억지로 끼우지 않는다 avoid 부품 맞지 않는 부품을 억지로 끼우지 않는다 사용 금지 금지 하지 않기",
+      "image": "assembly/ASSEMBLY_070.webp",
+      "source_file": "ASSEMBLY_070_맞지_않는_부품을_억지로_끼우지_않는다.png",
+      "action": "avoid",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_071",
+      "group_id": "ASSEMBLY_071",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "잘못 끼운 부품을 다시 분리한다",
+      "keywords": [
+        "부품",
+        "잘못",
+        "끼운",
+        "부품을",
+        "다시",
+        "분리한다",
+        "구분한다",
+        "구분하기",
+        "구분",
+        "분리하기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 잘못 끼운 부품을 다시 분리한다 separate 부품 잘못 끼운 부품을 다시 분리한다 구분한다 구분하기 구분 분리하기",
+      "image": "assembly/ASSEMBLY_071.webp",
+      "source_file": "ASSEMBLY_071_잘못_끼운_부품을_다시_분리한다.png",
+      "action": "separate",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_072",
+      "group_id": "ASSEMBLY_072",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "올바른 방향으로 다시 조립한다",
+      "keywords": [
+        "방향",
+        "올바른",
+        "방향으로",
+        "다시",
+        "조립한다",
+        "세트 만들기",
+        "구성",
+        "조립"
+      ],
+      "aliases": [],
+      "search_text": "assembly 올바른 방향으로 다시 조립한다 assemble 방향 올바른 방향으로 다시 조립한다 세트 만들기 구성 조립",
+      "image": "assembly/ASSEMBLY_072.webp",
+      "source_file": "ASSEMBLY_072_올바른_방향으로_다시_조립한다.png",
+      "action": "assemble",
+      "objects": [
+        "방향"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_073",
+      "group_id": "ASSEMBLY_073",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작은 부품을 집게로 집는다",
+      "keywords": [
+        "집게",
+        "작은 부품",
+        "작은",
+        "부품을",
+        "집게로",
+        "집는다",
+        "줍기",
+        "집기",
+        "수거"
+      ],
+      "aliases": [],
+      "search_text": "assembly 작은 부품을 집게로 집는다 pick_up 집게 작은 부품 작은 부품을 집게로 집는다 줍기 집기 수거",
+      "image": "assembly/ASSEMBLY_073.webp",
+      "source_file": "ASSEMBLY_073_작은_부품을_집게로_집는다.png",
+      "action": "pick_up",
+      "objects": [
+        "집게",
+        "작은 부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_074",
+      "group_id": "ASSEMBLY_074",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작은 부품을 홈에 넣는다",
+      "keywords": [
+        "작은 부품",
+        "홈",
+        "작은",
+        "부품을",
+        "홈에",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 작은 부품을 홈에 넣는다 put_in 작은 부품 홈 작은 부품을 홈에 넣는다 넣기 담기 꽂기",
+      "image": "assembly/ASSEMBLY_074.webp",
+      "source_file": "ASSEMBLY_074_작은_부품을_홈에_넣는다.png",
+      "action": "put_in",
+      "objects": [
+        "작은 부품",
+        "홈"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_075",
+      "group_id": "ASSEMBLY_075",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "고무 패킹을 홈에 끼운다",
+      "keywords": [
+        "고무 패킹",
+        "홈",
+        "고무",
+        "패킹을",
+        "홈에",
+        "끼운다",
+        "끼우기",
+        "장착"
+      ],
+      "aliases": [],
+      "search_text": "assembly 고무 패킹을 홈에 끼운다 install 고무 패킹 홈 고무 패킹을 홈에 끼운다 끼우기 장착",
+      "image": "assembly/ASSEMBLY_075.webp",
+      "source_file": "ASSEMBLY_075_고무_패킹을_홈에_끼운다.png",
+      "action": "install",
+      "objects": [
+        "고무 패킹",
+        "홈"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_076",
+      "group_id": "ASSEMBLY_076",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "덮개를 본체 위에 올린다",
+      "keywords": [
+        "덮개",
+        "본체",
+        "덮개를",
+        "위에",
+        "올린다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [],
+      "search_text": "assembly 덮개를 본체 위에 올린다 place 덮개 본체 덮개를 위에 올린다 놓기 올리기 진열 배치",
+      "image": "assembly/ASSEMBLY_076.webp",
+      "source_file": "ASSEMBLY_076_덮개를_본체_위에_올린다.png",
+      "action": "place",
+      "objects": [
+        "덮개",
+        "본체"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_077",
+      "group_id": "ASSEMBLY_077",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "덮개의 모서리를 맞춘다",
+      "keywords": [
+        "모서리",
+        "덮개",
+        "덮개의",
+        "모서리를",
+        "맞춘다",
+        "정렬",
+        "맞추기",
+        "방향 맞추기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 덮개의 모서리를 맞춘다 align 모서리 덮개 덮개의 모서리를 맞춘다 정렬 맞추기 방향 맞추기",
+      "image": "assembly/ASSEMBLY_077.webp",
+      "source_file": "ASSEMBLY_077_덮개의_모서리를_맞춘다.png",
+      "action": "align",
+      "objects": [
+        "모서리",
+        "덮개"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_078",
+      "group_id": "ASSEMBLY_078",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "덮개를 눌러 고정한다",
+      "keywords": [
+        "덮개",
+        "덮개를",
+        "눌러",
+        "고정한다",
+        "누르기",
+        "압착"
+      ],
+      "aliases": [],
+      "search_text": "assembly 덮개를 눌러 고정한다 press 덮개 덮개를 눌러 고정한다 누르기 압착",
+      "image": "assembly/ASSEMBLY_078.webp",
+      "source_file": "ASSEMBLY_078_덮개를_눌러_고정한다.png",
+      "action": "press",
+      "objects": [
+        "덮개"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_079",
+      "group_id": "ASSEMBLY_079",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "필요한 나사 개수를 확인한다",
+      "keywords": [
+        "나사",
+        "필요한",
+        "개수를",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "필요한 나사 개수를 점검한다"
+      ],
+      "search_text": "assembly 필요한 나사 개수를 확인한다 check 나사 필요한 개수를 확인한다 점검 검사 확인 필요한 나사 개수를 점검한다",
+      "image": "assembly/ASSEMBLY_079.webp",
+      "source_file": "ASSEMBLY_079_필요한_나사_개수를_확인한다.png",
+      "action": "check",
+      "objects": [
+        "나사"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_080",
+      "group_id": "ASSEMBLY_080",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "나사를 구멍 위에 올린다",
+      "keywords": [
+        "나사",
+        "나사를",
+        "구멍",
+        "위에",
+        "올린다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [],
+      "search_text": "assembly 나사를 구멍 위에 올린다 place 나사 나사를 구멍 위에 올린다 놓기 올리기 진열 배치",
+      "image": "assembly/ASSEMBLY_080.webp",
+      "source_file": "ASSEMBLY_080_나사를_구멍_위에_올린다.png",
+      "action": "place",
+      "objects": [
+        "나사"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_081",
+      "group_id": "ASSEMBLY_081",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "나사를 손으로 먼저 돌린다",
+      "keywords": [
+        "손",
+        "나사",
+        "나사를",
+        "손으로",
+        "먼저",
+        "돌린다",
+        "조이기",
+        "체결",
+        "나사 조이기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 나사를 손으로 먼저 돌린다 tighten 손 나사 나사를 손으로 먼저 돌린다 조이기 체결 나사 조이기",
+      "image": "assembly/ASSEMBLY_081.webp",
+      "source_file": "ASSEMBLY_081_나사를_손으로_먼저_돌린다.png",
+      "action": "tighten",
+      "objects": [
+        "손",
+        "나사"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_082",
+      "group_id": "ASSEMBLY_082",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "드라이버를 나사 홈에 맞춘다",
+      "keywords": [
+        "드라이버",
+        "나사",
+        "홈",
+        "드라이버를",
+        "홈에",
+        "맞춘다",
+        "정렬",
+        "맞추기",
+        "방향 맞추기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 드라이버를 나사 홈에 맞춘다 align 드라이버 나사 홈 드라이버를 홈에 맞춘다 정렬 맞추기 방향 맞추기",
+      "image": "assembly/ASSEMBLY_082.webp",
+      "source_file": "ASSEMBLY_082_드라이버를_나사_홈에_맞춘다.png",
+      "action": "align",
+      "objects": [
+        "드라이버",
+        "나사",
+        "홈"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_083",
+      "group_id": "ASSEMBLY_083",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "드라이버를 수직으로 세운다",
+      "keywords": [
+        "드라이버",
+        "드라이버를",
+        "수직으로",
+        "세운다",
+        "세우기",
+        "바로 세우기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 드라이버를 수직으로 세운다 stand 드라이버 드라이버를 수직으로 세운다 세우기 바로 세우기",
+      "image": "assembly/ASSEMBLY_083.webp",
+      "source_file": "ASSEMBLY_083_드라이버를_수직으로_세운다.png",
+      "action": "stand",
+      "objects": [
+        "드라이버"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_084",
+      "group_id": "ASSEMBLY_084",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "나사를 시계 방향으로 조인다",
+      "keywords": [
+        "나사",
+        "방향",
+        "나사를",
+        "시계",
+        "방향으로",
+        "조인다",
+        "조이기",
+        "체결",
+        "나사 조이기"
+      ],
+      "aliases": [
+        "나사를 시계 방향으로 체결한다"
+      ],
+      "search_text": "assembly 나사를 시계 방향으로 조인다 tighten 나사 방향 나사를 시계 방향으로 조인다 조이기 체결 나사 조이기 나사를 시계 방향으로 체결한다",
+      "image": "assembly/ASSEMBLY_084.webp",
+      "source_file": "ASSEMBLY_084_나사를_시계_방향으로_조인다.png",
+      "action": "tighten",
+      "objects": [
+        "나사",
+        "방향"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_085",
+      "group_id": "ASSEMBLY_085",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "첫 번째 나사를 조인다",
+      "keywords": [
+        "나사",
+        "번째",
+        "나사를",
+        "조인다",
+        "조이기",
+        "체결",
+        "나사 조이기"
+      ],
+      "aliases": [
+        "첫 번째 나사를 체결한다"
+      ],
+      "search_text": "assembly 첫 번째 나사를 조인다 tighten 나사 번째 나사를 조인다 조이기 체결 나사 조이기 첫 번째 나사를 체결한다",
+      "image": "assembly/ASSEMBLY_085.webp",
+      "source_file": "ASSEMBLY_085_첫_번째_나사를_조인다.png",
+      "action": "tighten",
+      "objects": [
+        "나사"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_086",
+      "group_id": "ASSEMBLY_086",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "대각선 위치의 나사를 조인다",
+      "keywords": [
+        "나사",
+        "전선",
+        "대각선",
+        "위치의",
+        "나사를",
+        "조인다",
+        "조이기",
+        "체결",
+        "나사 조이기"
+      ],
+      "aliases": [
+        "대각선 위치의 나사를 체결한다"
+      ],
+      "search_text": "assembly 대각선 위치의 나사를 조인다 tighten 나사 전선 대각선 위치의 나사를 조인다 조이기 체결 나사 조이기 대각선 위치의 나사를 체결한다",
+      "image": "assembly/ASSEMBLY_086.webp",
+      "source_file": "ASSEMBLY_086_대각선_위치의_나사를_조인다.png",
+      "action": "tighten",
+      "objects": [
+        "나사",
+        "전선"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_087",
+      "group_id": "ASSEMBLY_087",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "정해진 순서대로 나사를 조인다",
+      "keywords": [
+        "나사",
+        "정해진",
+        "순서대로",
+        "나사를",
+        "조인다",
+        "조이기",
+        "체결",
+        "나사 조이기"
+      ],
+      "aliases": [
+        "정해진 순서대로 나사를 체결한다"
+      ],
+      "search_text": "assembly 정해진 순서대로 나사를 조인다 tighten 나사 정해진 순서대로 나사를 조인다 조이기 체결 나사 조이기 정해진 순서대로 나사를 체결한다",
+      "image": "assembly/ASSEMBLY_087.webp",
+      "source_file": "ASSEMBLY_087_정해진_순서대로_나사를_조인다.png",
+      "action": "tighten",
+      "objects": [
+        "나사"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_088",
+      "group_id": "ASSEMBLY_088",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "나사를 너무 세게 조이지 않는다",
+      "keywords": [
+        "나사",
+        "나사를",
+        "너무",
+        "세게",
+        "조이지",
+        "않는다",
+        "사용 금지",
+        "금지",
+        "하지 않기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 나사를 너무 세게 조이지 않는다 avoid 나사 나사를 너무 세게 조이지 않는다 사용 금지 금지 하지 않기",
+      "image": "assembly/ASSEMBLY_088.webp",
+      "source_file": "ASSEMBLY_088_나사를_너무_세게_조이지_않는다.png",
+      "action": "avoid",
+      "objects": [
+        "나사"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_089",
+      "group_id": "ASSEMBLY_089",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "나사가 튀어나오지 않았는지 확인한다",
+      "keywords": [
+        "나사",
+        "나사가",
+        "튀어나오지",
+        "않았는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "나사가 튀어나오지 않았는지 점검한다"
+      ],
+      "search_text": "assembly 나사가 튀어나오지 않았는지 확인한다 check 나사 나사가 튀어나오지 않았는지 확인한다 점검 검사 확인 나사가 튀어나오지 않았는지 점검한다",
+      "image": "assembly/ASSEMBLY_089.webp",
+      "source_file": "ASSEMBLY_089_나사가_튀어나오지_않았는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "나사"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_090",
+      "group_id": "ASSEMBLY_090",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빠진 나사가 없는지 확인한다",
+      "keywords": [
+        "나사",
+        "빠진",
+        "나사가",
+        "없는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "빠진 나사가 없는지 점검한다"
+      ],
+      "search_text": "assembly 빠진 나사가 없는지 확인한다 check 나사 빠진 나사가 없는지 확인한다 점검 검사 확인 빠진 나사가 없는지 점검한다",
+      "image": "assembly/ASSEMBLY_090.webp",
+      "source_file": "ASSEMBLY_090_빠진_나사가_없는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "나사"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_091",
+      "group_id": "ASSEMBLY_091",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "잘못된 크기의 나사를 분리한다",
+      "keywords": [
+        "나사",
+        "잘못된",
+        "크기의",
+        "나사를",
+        "분리한다",
+        "구분한다",
+        "구분하기",
+        "구분",
+        "분리하기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 잘못된 크기의 나사를 분리한다 separate 나사 잘못된 크기의 나사를 분리한다 구분한다 구분하기 구분 분리하기",
+      "image": "assembly/ASSEMBLY_091.webp",
+      "source_file": "ASSEMBLY_091_잘못된_크기의_나사를_분리한다.png",
+      "action": "separate",
+      "objects": [
+        "나사"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_092",
+      "group_id": "ASSEMBLY_092",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "올바른 나사로 교체한다",
+      "keywords": [
+        "나사",
+        "올바른",
+        "나사로",
+        "교체한다",
+        "교체",
+        "바꾸기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 올바른 나사로 교체한다 replace 나사 올바른 나사로 교체한다 교체 바꾸기",
+      "image": "assembly/ASSEMBLY_092.webp",
+      "source_file": "ASSEMBLY_092_올바른_나사로_교체한다.png",
+      "action": "replace",
+      "objects": [
+        "나사"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_093",
+      "group_id": "ASSEMBLY_093",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "보호 필름을 벗긴다",
+      "keywords": [
+        "보호 필름",
+        "보호",
+        "필름을",
+        "벗긴다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [
+        "보호 필름을 제거한다"
+      ],
+      "search_text": "assembly 보호 필름을 벗긴다 remove 보호 필름 보호 필름을 벗긴다 꺼내기 빼기 제거 보호 필름을 제거한다",
+      "image": "assembly/ASSEMBLY_093.webp",
+      "source_file": "ASSEMBLY_093_보호_필름을_벗긴다.png",
+      "action": "remove",
+      "objects": [
+        "보호 필름"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_094",
+      "group_id": "ASSEMBLY_094",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "스티커 부착 위치를 확인한다",
+      "keywords": [
+        "라벨",
+        "스티커",
+        "부착",
+        "위치를",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "스티커 부착 위치를 점검한다"
+      ],
+      "search_text": "assembly 스티커 부착 위치를 확인한다 check 라벨 스티커 부착 위치를 확인한다 점검 검사 확인 스티커 부착 위치를 점검한다",
+      "image": "assembly/ASSEMBLY_094.webp",
+      "source_file": "ASSEMBLY_094_스티커_부착_위치를_확인한다.png",
+      "action": "check",
+      "objects": [
+        "라벨",
+        "스티커"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_095",
+      "group_id": "ASSEMBLY_095",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "스티커의 방향을 맞춘다",
+      "keywords": [
+        "라벨",
+        "스티커",
+        "방향",
+        "스티커의",
+        "방향을",
+        "맞춘다",
+        "정렬",
+        "맞추기",
+        "방향 맞추기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 스티커의 방향을 맞춘다 align 라벨 스티커 방향 스티커의 방향을 맞춘다 정렬 맞추기 방향 맞추기",
+      "image": "assembly/ASSEMBLY_095.webp",
+      "source_file": "ASSEMBLY_095_스티커의_방향을_맞춘다.png",
+      "action": "align",
+      "objects": [
+        "라벨",
+        "스티커",
+        "방향"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_096",
+      "group_id": "ASSEMBLY_096",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "스티커를 제품에 붙인다",
+      "keywords": [
+        "라벨",
+        "상품",
+        "제품",
+        "물건",
+        "스티커",
+        "스티커를",
+        "제품에",
+        "붙인다",
+        "붙이기",
+        "부착"
+      ],
+      "aliases": [],
+      "search_text": "assembly 스티커를 제품에 붙인다 attach 라벨 상품 스티커 제품 물건 스티커를 제품에 붙인다 붙이기 부착",
+      "image": "assembly/ASSEMBLY_096.webp",
+      "source_file": "ASSEMBLY_096_스티커를_제품에_붙인다.png",
+      "action": "attach",
+      "objects": [
+        "라벨",
+        "상품",
+        "스티커",
+        "제품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_097",
+      "group_id": "ASSEMBLY_097",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "스티커를 손가락으로 눌러 고정한다",
+      "keywords": [
+        "라벨",
+        "손",
+        "스티커",
+        "스티커를",
+        "손가락으로",
+        "눌러",
+        "고정한다",
+        "누르기",
+        "압착"
+      ],
+      "aliases": [],
+      "search_text": "assembly 스티커를 손가락으로 눌러 고정한다 press 라벨 손 스티커 스티커를 손가락으로 눌러 고정한다 누르기 압착",
+      "image": "assembly/ASSEMBLY_097.webp",
+      "source_file": "ASSEMBLY_097_스티커를_손가락으로_눌러_고정한다.png",
+      "action": "press",
+      "objects": [
+        "라벨",
+        "손",
+        "스티커"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_098",
+      "group_id": "ASSEMBLY_098",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "스티커가 비뚤어졌는지 확인한다",
+      "keywords": [
+        "라벨",
+        "스티커",
+        "스티커가",
+        "비뚤어졌는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "스티커가 비뚤어졌는지 점검한다"
+      ],
+      "search_text": "assembly 스티커가 비뚤어졌는지 확인한다 check 라벨 스티커 스티커가 비뚤어졌는지 확인한다 점검 검사 확인 스티커가 비뚤어졌는지 점검한다",
+      "image": "assembly/ASSEMBLY_098.webp",
+      "source_file": "ASSEMBLY_098_스티커가_비뚤어졌는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "라벨",
+        "스티커"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_099",
+      "group_id": "ASSEMBLY_099",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "완충 패드를 붙인다",
+      "keywords": [
+        "완충 패드",
+        "완충",
+        "패드를",
+        "붙인다",
+        "붙이기",
+        "부착"
+      ],
+      "aliases": [],
+      "search_text": "assembly 완충 패드를 붙인다 attach 완충 패드 완충 패드를 붙인다 붙이기 부착",
+      "image": "assembly/ASSEMBLY_099.webp",
+      "source_file": "ASSEMBLY_099_완충_패드를_붙인다.png",
+      "action": "attach",
+      "objects": [
+        "완충 패드"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_100",
+      "group_id": "ASSEMBLY_100",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "전선을 같은 색 단자에 연결한다",
+      "keywords": [
+        "전선",
+        "단자",
+        "전선을",
+        "같은",
+        "단자에",
+        "연결한다",
+        "연결",
+        "접속"
+      ],
+      "aliases": [
+        "전선을 동일한 색 단자에 연결한다",
+        "전선을 같은 색 단자에 접속한다",
+        "전선을 동일한 색 단자에 접속한다"
+      ],
+      "search_text": "assembly 전선을 같은 색 단자에 연결한다 connect 전선 단자 전선을 같은 단자에 연결한다 연결 접속 전선을 동일한 색 단자에 연결한다 전선을 같은 색 단자에 접속한다 전선을 동일한 색 단자에 접속한다",
+      "image": "assembly/ASSEMBLY_100.webp",
+      "source_file": "ASSEMBLY_100_전선을_같은_색_단자에_연결한다.png",
+      "action": "connect",
+      "objects": [
+        "전선",
+        "단자"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_101",
+      "group_id": "ASSEMBLY_101",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "전선을 작업대 위에 놓는다",
+      "keywords": [
+        "작업대",
+        "전선",
+        "전선을",
+        "위에",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "전선을 작업대 위에 올린다"
+      ],
+      "search_text": "assembly 전선을 작업대 위에 놓는다 place 작업대 전선 전선을 위에 놓는다 놓기 올리기 진열 배치 전선을 작업대 위에 올린다",
+      "image": "assembly/ASSEMBLY_101.webp",
+      "source_file": "ASSEMBLY_101_전선을_작업대_위에_놓는다.png",
+      "action": "place",
+      "objects": [
+        "작업대",
+        "전선"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_102",
+      "group_id": "ASSEMBLY_102",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "필요한 전선을 고른다",
+      "keywords": [
+        "전선",
+        "필요한",
+        "전선을",
+        "고른다",
+        "고르기",
+        "선별",
+        "골라내기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 필요한 전선을 고른다 select 전선 필요한 전선을 고른다 고르기 선별 골라내기",
+      "image": "assembly/ASSEMBLY_102.webp",
+      "source_file": "ASSEMBLY_102_필요한_전선을_고른다.png",
+      "action": "select",
+      "objects": [
+        "전선"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_103",
+      "group_id": "ASSEMBLY_103",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "전선 색깔을 확인한다",
+      "keywords": [
+        "전선",
+        "색깔을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "전선 색깔을 점검한다"
+      ],
+      "search_text": "assembly 전선 색깔을 확인한다 check 전선 색깔을 확인한다 점검 검사 확인 전선 색깔을 점검한다",
+      "image": "assembly/ASSEMBLY_103.webp",
+      "source_file": "ASSEMBLY_103_전선_색깔을_확인한다.png",
+      "action": "check",
+      "objects": [
+        "전선"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_104",
+      "group_id": "ASSEMBLY_104",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "전선 길이를 확인한다",
+      "keywords": [
+        "전선",
+        "길이를",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "전선 길이를 점검한다"
+      ],
+      "search_text": "assembly 전선 길이를 확인한다 check 전선 길이를 확인한다 점검 검사 확인 전선 길이를 점검한다",
+      "image": "assembly/ASSEMBLY_104.webp",
+      "source_file": "ASSEMBLY_104_전선_길이를_확인한다.png",
+      "action": "check",
+      "objects": [
+        "전선"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_105",
+      "group_id": "ASSEMBLY_105",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "전선을 정해진 위치에 맞춘다",
+      "keywords": [
+        "전선",
+        "전선을",
+        "정해진",
+        "위치에",
+        "맞춘다",
+        "정렬",
+        "맞추기",
+        "방향 맞추기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 전선을 정해진 위치에 맞춘다 align 전선 전선을 정해진 위치에 맞춘다 정렬 맞추기 방향 맞추기",
+      "image": "assembly/ASSEMBLY_105.webp",
+      "source_file": "ASSEMBLY_105_전선을_정해진_위치에_맞춘다.png",
+      "action": "align",
+      "objects": [
+        "전선"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_106",
+      "group_id": "ASSEMBLY_106",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "커넥터를 전선 끝에 끼운다",
+      "keywords": [
+        "커넥터",
+        "전선",
+        "커넥터를",
+        "끝에",
+        "끼운다",
+        "끼우기",
+        "장착"
+      ],
+      "aliases": [],
+      "search_text": "assembly 커넥터를 전선 끝에 끼운다 install 커넥터 전선 커넥터를 끝에 끼운다 끼우기 장착",
+      "image": "assembly/ASSEMBLY_106.webp",
+      "source_file": "ASSEMBLY_106_커넥터를_전선_끝에_끼운다.png",
+      "action": "install",
+      "objects": [
+        "커넥터",
+        "전선"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_107",
+      "group_id": "ASSEMBLY_107",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "커넥터를 끝까지 밀어 넣는다",
+      "keywords": [
+        "커넥터",
+        "커넥터를",
+        "끝까지",
+        "밀어",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 커넥터를 끝까지 밀어 넣는다 put_in 커넥터 커넥터를 끝까지 밀어 넣는다 넣기 담기 꽂기",
+      "image": "assembly/ASSEMBLY_107.webp",
+      "source_file": "ASSEMBLY_107_커넥터를_끝까지_밀어_넣는다.png",
+      "action": "put_in",
+      "objects": [
+        "커넥터"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_108",
+      "group_id": "ASSEMBLY_108",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "전선과 커넥터를 연결한다",
+      "keywords": [
+        "커넥터",
+        "전선",
+        "전선과",
+        "커넥터를",
+        "연결한다",
+        "연결",
+        "접속"
+      ],
+      "aliases": [
+        "전선과 커넥터를 접속한다"
+      ],
+      "search_text": "assembly 전선과 커넥터를 연결한다 connect 커넥터 전선 전선과 커넥터를 연결한다 연결 접속 전선과 커넥터를 접속한다",
+      "image": "assembly/ASSEMBLY_108.webp",
+      "source_file": "ASSEMBLY_108_전선과_커넥터를_연결한다.png",
+      "action": "connect",
+      "objects": [
+        "커넥터",
+        "전선"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_109",
+      "group_id": "ASSEMBLY_109",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "연결된 전선을 정리한다",
+      "keywords": [
+        "전선",
+        "연결된",
+        "전선을",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "assembly 연결된 전선을 정리한다 organize 전선 연결된 전선을 정리한다 정리 정돈",
+      "image": "assembly/ASSEMBLY_109.webp",
+      "source_file": "ASSEMBLY_109_연결된_전선을_정리한다.png",
+      "action": "organize",
+      "objects": [
+        "전선"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_110",
+      "group_id": "ASSEMBLY_110",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "전선을 정해진 홈에 넣는다",
+      "keywords": [
+        "전선",
+        "홈",
+        "전선을",
+        "정해진",
+        "홈에",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 전선을 정해진 홈에 넣는다 put_in 전선 홈 전선을 정해진 홈에 넣는다 넣기 담기 꽂기",
+      "image": "assembly/ASSEMBLY_110.webp",
+      "source_file": "ASSEMBLY_110_전선을_정해진_홈에_넣는다.png",
+      "action": "put_in",
+      "objects": [
+        "전선",
+        "홈"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_111",
+      "group_id": "ASSEMBLY_111",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "손상된 전선을 따로 놓는다",
+      "keywords": [
+        "손",
+        "전선",
+        "손상된",
+        "전선을",
+        "따로",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "손상된 전선을 따로 올린다"
+      ],
+      "search_text": "assembly 손상된 전선을 따로 놓는다 place 손 전선 손상된 전선을 따로 놓는다 놓기 올리기 진열 배치 손상된 전선을 따로 올린다",
+      "image": "assembly/ASSEMBLY_111.webp",
+      "source_file": "ASSEMBLY_111_손상된_전선을_따로_놓는다.png",
+      "action": "place",
+      "objects": [
+        "손",
+        "전선"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_112",
+      "group_id": "ASSEMBLY_112",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "연결된 부품을 작업대에 놓는다",
+      "keywords": [
+        "작업대",
+        "부품",
+        "연결된",
+        "부품을",
+        "작업대에",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "연결된 부품을 작업대에 올린다"
+      ],
+      "search_text": "assembly 연결된 부품을 작업대에 놓는다 place 작업대 부품 연결된 부품을 작업대에 놓는다 놓기 올리기 진열 배치 연결된 부품을 작업대에 올린다",
+      "image": "assembly/ASSEMBLY_112.webp",
+      "source_file": "ASSEMBLY_112_연결된_부품을_작업대에_놓는다.png",
+      "action": "place",
+      "objects": [
+        "작업대",
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_113",
+      "group_id": "ASSEMBLY_113",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "조립품의 모양을 기준 사진과 비교한다",
+      "keywords": [
+        "기준 사진",
+        "제품",
+        "상품",
+        "물건",
+        "조립품의",
+        "모양을",
+        "기준",
+        "사진과",
+        "비교한다",
+        "비교",
+        "대조"
+      ],
+      "aliases": [],
+      "search_text": "assembly 조립품의 모양을 기준 사진과 비교한다 compare 기준 사진 제품 상품 물건 조립품의 모양을 기준 사진과 비교한다 비교 대조",
+      "image": "assembly/ASSEMBLY_113.webp",
+      "source_file": "ASSEMBLY_113_조립품의_모양을_기준_사진과_비교한다.png",
+      "action": "compare",
+      "objects": [
+        "기준 사진",
+        "제품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_114",
+      "group_id": "ASSEMBLY_114",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빠진 부품이 없는지 확인한다",
+      "keywords": [
+        "부품",
+        "빠진",
+        "부품이",
+        "없는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "빠진 부품이 없는지 점검한다"
+      ],
+      "search_text": "assembly 빠진 부품이 없는지 확인한다 check 부품 빠진 부품이 없는지 확인한다 점검 검사 확인 빠진 부품이 없는지 점검한다",
+      "image": "assembly/ASSEMBLY_114.webp",
+      "source_file": "ASSEMBLY_114_빠진_부품이_없는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_115",
+      "group_id": "ASSEMBLY_115",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품의 앞뒤 방향을 확인한다",
+      "keywords": [
+        "부품",
+        "방향",
+        "부품의",
+        "앞뒤",
+        "방향을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "부품의 앞뒤 방향을 점검한다"
+      ],
+      "search_text": "assembly 부품의 앞뒤 방향을 확인한다 check 부품 방향 부품의 앞뒤 방향을 확인한다 점검 검사 확인 부품의 앞뒤 방향을 점검한다",
+      "image": "assembly/ASSEMBLY_115.webp",
+      "source_file": "ASSEMBLY_115_부품의_앞뒤_방향을_확인한다.png",
+      "action": "check",
+      "objects": [
+        "부품",
+        "방향"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_116",
+      "group_id": "ASSEMBLY_116",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품의 좌우 방향을 확인한다",
+      "keywords": [
+        "부품",
+        "방향",
+        "부품의",
+        "좌우",
+        "방향을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "부품의 좌우 방향을 점검한다"
+      ],
+      "search_text": "assembly 부품의 좌우 방향을 확인한다 check 부품 방향 부품의 좌우 방향을 확인한다 점검 검사 확인 부품의 좌우 방향을 점검한다",
+      "image": "assembly/ASSEMBLY_116.webp",
+      "source_file": "ASSEMBLY_116_부품의_좌우_방향을_확인한다.png",
+      "action": "check",
+      "objects": [
+        "부품",
+        "방향"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_117",
+      "group_id": "ASSEMBLY_117",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "나사가 모두 들어갔는지 확인한다",
+      "keywords": [
+        "나사",
+        "나사가",
+        "모두",
+        "들어갔는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "나사가 모두 들어갔는지 점검한다"
+      ],
+      "search_text": "assembly 나사가 모두 들어갔는지 확인한다 check 나사 나사가 모두 들어갔는지 확인한다 점검 검사 확인 나사가 모두 들어갔는지 점검한다",
+      "image": "assembly/ASSEMBLY_117.webp",
+      "source_file": "ASSEMBLY_117_나사가_모두_들어갔는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "나사"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_118",
+      "group_id": "ASSEMBLY_118",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "나사가 끝까지 조여졌는지 확인한다",
+      "keywords": [
+        "나사",
+        "나사가",
+        "끝까지",
+        "조여졌는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "나사가 끝까지 조여졌는지 점검한다"
+      ],
+      "search_text": "assembly 나사가 끝까지 조여졌는지 확인한다 check 나사 나사가 끝까지 조여졌는지 확인한다 점검 검사 확인 나사가 끝까지 조여졌는지 점검한다",
+      "image": "assembly/ASSEMBLY_118.webp",
+      "source_file": "ASSEMBLY_118_나사가_끝까지_조여졌는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "나사"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_119",
+      "group_id": "ASSEMBLY_119",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "제품을 가볍게 흔든다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "제품을",
+        "가볍게",
+        "흔든다",
+        "흔들기",
+        "흔들림 확인"
+      ],
+      "aliases": [],
+      "search_text": "assembly 제품을 가볍게 흔든다 shake 상품 제품 물건 제품을 가볍게 흔든다 흔들기 흔들림 확인",
+      "image": "assembly/ASSEMBLY_119.webp",
+      "source_file": "ASSEMBLY_119_제품을_가볍게_흔든다.png",
+      "action": "shake",
+      "objects": [
+        "상품",
+        "제품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_120",
+      "group_id": "ASSEMBLY_120",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품이 흔들리는지 확인한다",
+      "keywords": [
+        "부품",
+        "부품이",
+        "흔들리는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "부품이 흔들리는지 점검한다"
+      ],
+      "search_text": "assembly 부품이 흔들리는지 확인한다 check 부품 부품이 흔들리는지 확인한다 점검 검사 확인 부품이 흔들리는지 점검한다",
+      "image": "assembly/ASSEMBLY_120.webp",
+      "source_file": "ASSEMBLY_120_부품이_흔들리는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_121",
+      "group_id": "ASSEMBLY_121",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "조립된 선이 빠지지 않았는지 확인한다",
+      "keywords": [
+        "전선",
+        "조립된",
+        "선이",
+        "빠지지",
+        "않았는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "조립된 선이 빠지지 않았는지 점검한다"
+      ],
+      "search_text": "assembly 조립된 선이 빠지지 않았는지 확인한다 check 전선 조립된 선이 빠지지 않았는지 확인한다 점검 검사 확인 조립된 선이 빠지지 않았는지 점검한다",
+      "image": "assembly/ASSEMBLY_121.webp",
+      "source_file": "ASSEMBLY_121_조립된_선이_빠지지_않았는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "전선"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_122",
+      "group_id": "ASSEMBLY_122",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "커넥터가 바르게 연결됐는지 확인한다",
+      "keywords": [
+        "커넥터",
+        "커넥터가",
+        "바르게",
+        "연결됐는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "커넥터가 바르게 연결됐는지 점검한다"
+      ],
+      "search_text": "assembly 커넥터가 바르게 연결됐는지 확인한다 check 커넥터 커넥터가 바르게 연결됐는지 확인한다 점검 검사 확인 커넥터가 바르게 연결됐는지 점검한다",
+      "image": "assembly/ASSEMBLY_122.webp",
+      "source_file": "ASSEMBLY_122_커넥터가_바르게_연결됐는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "커넥터"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_123",
+      "group_id": "ASSEMBLY_123",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "제품 표면에 흠집이 없는지 확인한다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "표면에",
+        "흠집이",
+        "없는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "제품 표면에 흠집이 없는지 점검한다"
+      ],
+      "search_text": "assembly 제품 표면에 흠집이 없는지 확인한다 check 상품 제품 물건 표면에 흠집이 없는지 확인한다 점검 검사 확인 제품 표면에 흠집이 없는지 점검한다",
+      "image": "assembly/ASSEMBLY_123.webp",
+      "source_file": "ASSEMBLY_123_제품_표면에_흠집이_없는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "상품",
+        "제품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_124",
+      "group_id": "ASSEMBLY_124",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "깨진 부분이 없는지 확인한다",
+      "keywords": [
+        "깨진 부분",
+        "깨진",
+        "부분이",
+        "없는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "깨진 부분이 없는지 점검한다"
+      ],
+      "search_text": "assembly 깨진 부분이 없는지 확인한다 check 깨진 부분 깨진 부분이 없는지 확인한다 점검 검사 확인 깨진 부분이 없는지 점검한다",
+      "image": "assembly/ASSEMBLY_124.webp",
+      "source_file": "ASSEMBLY_124_깨진_부분이_없는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "깨진 부분"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_125",
+      "group_id": "ASSEMBLY_125",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "오염이 없는지 확인한다",
+      "keywords": [
+        "오염",
+        "오염이",
+        "없는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "오염이 없는지 점검한다"
+      ],
+      "search_text": "assembly 오염이 없는지 확인한다 check 오염 오염이 없는지 확인한다 점검 검사 확인 오염이 없는지 점검한다",
+      "image": "assembly/ASSEMBLY_125.webp",
+      "source_file": "ASSEMBLY_125_오염이_없는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "오염"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_126",
+      "group_id": "ASSEMBLY_126",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "정상 표시가 있는지 확인한다",
+      "keywords": [
+        "정상 표시",
+        "정상",
+        "표시가",
+        "있는지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "정상 표시가 있는지 점검한다"
+      ],
+      "search_text": "assembly 정상 표시가 있는지 확인한다 check 정상 표시 정상 표시가 있는지 확인한다 점검 검사 확인 정상 표시가 있는지 점검한다",
+      "image": "assembly/ASSEMBLY_126.webp",
+      "source_file": "ASSEMBLY_126_정상_표시가_있는지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "정상 표시"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_127",
+      "group_id": "ASSEMBLY_127",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "검사한 제품을 검사 완료 위치에 놓는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "검사한",
+        "제품을",
+        "검사",
+        "완료",
+        "위치에",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "검사한 제품을 검사 완료 위치에 올린다"
+      ],
+      "search_text": "assembly 검사한 제품을 검사 완료 위치에 놓는다 place 상품 제품 물건 검사한 제품을 검사 완료 위치에 놓는다 놓기 올리기 진열 배치 검사한 제품을 검사 완료 위치에 올린다",
+      "image": "assembly/ASSEMBLY_127.webp",
+      "source_file": "ASSEMBLY_127_검사한_제품을_검사_완료_위치에_놓는다.png",
+      "action": "place",
+      "objects": [
+        "상품",
+        "제품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_128",
+      "group_id": "ASSEMBLY_128",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "불량 제품을 찾는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "불량 제품",
+        "불량",
+        "제품을",
+        "찾는다",
+        "찾기",
+        "위치 확인"
+      ],
+      "aliases": [
+        "불량 제품을 확인한다"
+      ],
+      "search_text": "assembly 불량 제품을 찾는다 find 상품 불량 제품 제품 물건 불량 제품을 찾는다 찾기 위치 확인 불량 제품을 확인한다",
+      "image": "assembly/ASSEMBLY_128.webp",
+      "source_file": "ASSEMBLY_128_불량_제품을_찾는다.png",
+      "action": "find",
+      "objects": [
+        "상품",
+        "불량 제품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_129",
+      "group_id": "ASSEMBLY_129",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "조립이 덜 된 제품을 따로 놓는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "조립이",
+        "제품을",
+        "따로",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "조립이 덜 된 제품을 따로 올린다"
+      ],
+      "search_text": "assembly 조립이 덜 된 제품을 따로 놓는다 place 상품 제품 물건 조립이 제품을 따로 놓는다 놓기 올리기 진열 배치 조립이 덜 된 제품을 따로 올린다",
+      "image": "assembly/ASSEMBLY_129.webp",
+      "source_file": "ASSEMBLY_129_조립이_덜_된_제품을_따로_놓는다.png",
+      "action": "place",
+      "objects": [
+        "상품",
+        "제품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_130",
+      "group_id": "ASSEMBLY_130",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품이 빠진 제품을 따로 놓는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "부품",
+        "부품이",
+        "빠진",
+        "제품을",
+        "따로",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "부품이 빠진 제품을 따로 올린다"
+      ],
+      "search_text": "assembly 부품이 빠진 제품을 따로 놓는다 place 상품 제품 부품 물건 부품이 빠진 제품을 따로 놓는다 놓기 올리기 진열 배치 부품이 빠진 제품을 따로 올린다",
+      "image": "assembly/ASSEMBLY_130.webp",
+      "source_file": "ASSEMBLY_130_부품이_빠진_제품을_따로_놓는다.png",
+      "action": "place",
+      "objects": [
+        "상품",
+        "제품",
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_131",
+      "group_id": "ASSEMBLY_131",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "방향이 잘못된 제품을 따로 놓는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "방향",
+        "방향이",
+        "잘못된",
+        "제품을",
+        "따로",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "방향이 잘못된 제품을 따로 올린다"
+      ],
+      "search_text": "assembly 방향이 잘못된 제품을 따로 놓는다 place 상품 제품 방향 물건 방향이 잘못된 제품을 따로 놓는다 놓기 올리기 진열 배치 방향이 잘못된 제품을 따로 올린다",
+      "image": "assembly/ASSEMBLY_131.webp",
+      "source_file": "ASSEMBLY_131_방향이_잘못된_제품을_따로_놓는다.png",
+      "action": "place",
+      "objects": [
+        "상품",
+        "제품",
+        "방향"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_132",
+      "group_id": "ASSEMBLY_132",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "나사가 빠진 제품을 따로 놓는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "나사",
+        "나사가",
+        "빠진",
+        "제품을",
+        "따로",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "나사가 빠진 제품을 따로 올린다"
+      ],
+      "search_text": "assembly 나사가 빠진 제품을 따로 놓는다 place 상품 제품 나사 물건 나사가 빠진 제품을 따로 놓는다 놓기 올리기 진열 배치 나사가 빠진 제품을 따로 올린다",
+      "image": "assembly/ASSEMBLY_132.webp",
+      "source_file": "ASSEMBLY_132_나사가_빠진_제품을_따로_놓는다.png",
+      "action": "place",
+      "objects": [
+        "상품",
+        "제품",
+        "나사"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_133",
+      "group_id": "ASSEMBLY_133",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "흠집이 있는 제품을 따로 놓는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "흠집이",
+        "있는",
+        "제품을",
+        "따로",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "흠집이 있는 제품을 따로 올린다"
+      ],
+      "search_text": "assembly 흠집이 있는 제품을 따로 놓는다 place 상품 제품 물건 흠집이 있는 제품을 따로 놓는다 놓기 올리기 진열 배치 흠집이 있는 제품을 따로 올린다",
+      "image": "assembly/ASSEMBLY_133.webp",
+      "source_file": "ASSEMBLY_133_흠집이_있는_제품을_따로_놓는다.png",
+      "action": "place",
+      "objects": [
+        "상품",
+        "제품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_134",
+      "group_id": "ASSEMBLY_134",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "깨진 제품을 따로 놓는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "깨진",
+        "제품을",
+        "따로",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "깨진 제품을 따로 올린다"
+      ],
+      "search_text": "assembly 깨진 제품을 따로 놓는다 place 상품 제품 물건 깨진 제품을 따로 놓는다 놓기 올리기 진열 배치 깨진 제품을 따로 올린다",
+      "image": "assembly/ASSEMBLY_134.webp",
+      "source_file": "ASSEMBLY_134_깨진_제품을_따로_놓는다.png",
+      "action": "place",
+      "objects": [
+        "상품",
+        "제품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_135",
+      "group_id": "ASSEMBLY_135",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "불량 제품을 불량품 통에 넣는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "불량 제품",
+        "불량품 통",
+        "불량",
+        "제품을",
+        "불량품",
+        "통에",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 불량 제품을 불량품 통에 넣는다 put_in 상품 불량 제품 불량품 통 제품 물건 불량 제품을 불량품 통에 넣는다 넣기 담기 꽂기",
+      "image": "assembly/ASSEMBLY_135.webp",
+      "source_file": "ASSEMBLY_135_불량_제품을_불량품_통에_넣는다.png",
+      "action": "put_in",
+      "objects": [
+        "상품",
+        "불량 제품",
+        "불량품 통"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_136",
+      "group_id": "ASSEMBLY_136",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "불량 원인을 확인한다",
+      "keywords": [
+        "불량 원인",
+        "불량",
+        "원인을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "불량 원인을 점검한다"
+      ],
+      "search_text": "assembly 불량 원인을 확인한다 check 불량 원인 불량 원인을 확인한다 점검 검사 확인 불량 원인을 점검한다",
+      "image": "assembly/ASSEMBLY_136.webp",
+      "source_file": "ASSEMBLY_136_불량_원인을_확인한다.png",
+      "action": "check",
+      "objects": [
+        "불량 원인"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_137",
+      "group_id": "ASSEMBLY_137",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "다시 조립할 제품을 고른다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "다시",
+        "조립할",
+        "제품을",
+        "고른다",
+        "고르기",
+        "선별",
+        "골라내기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 다시 조립할 제품을 고른다 select 상품 제품 물건 다시 조립할 제품을 고른다 고르기 선별 골라내기",
+      "image": "assembly/ASSEMBLY_137.webp",
+      "source_file": "ASSEMBLY_137_다시_조립할_제품을_고른다.png",
+      "action": "select",
+      "objects": [
+        "상품",
+        "제품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_138",
+      "group_id": "ASSEMBLY_138",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "잘못 연결된 부품을 뺀다",
+      "keywords": [
+        "부품",
+        "잘못",
+        "연결된",
+        "부품을",
+        "뺀다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "assembly 잘못 연결된 부품을 뺀다 remove 부품 잘못 연결된 부품을 뺀다 꺼내기 빼기 제거",
+      "image": "assembly/ASSEMBLY_138.webp",
+      "source_file": "ASSEMBLY_138_잘못_연결된_부품을_뺀다.png",
+      "action": "remove",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_139",
+      "group_id": "ASSEMBLY_139",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "불량 제품을 관리자에게 전달한다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "불량 제품",
+        "관리자",
+        "불량",
+        "제품을",
+        "관리자에게",
+        "전달한다",
+        "건네기",
+        "전달"
+      ],
+      "aliases": [],
+      "search_text": "assembly 불량 제품을 관리자에게 전달한다 handover 상품 불량 제품 관리자 제품 물건 불량 제품을 관리자에게 전달한다 건네기 전달",
+      "image": "assembly/ASSEMBLY_139.webp",
+      "source_file": "ASSEMBLY_139_불량_제품을_관리자에게_전달한다.png",
+      "action": "handover",
+      "objects": [
+        "상품",
+        "불량 제품",
+        "관리자"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_140",
+      "group_id": "ASSEMBLY_140",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "새 부품으로 다시 조립한다",
+      "keywords": [
+        "부품",
+        "부품으로",
+        "다시",
+        "조립한다",
+        "세트 만들기",
+        "구성",
+        "조립"
+      ],
+      "aliases": [],
+      "search_text": "assembly 새 부품으로 다시 조립한다 assemble 부품 부품으로 다시 조립한다 세트 만들기 구성 조립",
+      "image": "assembly/ASSEMBLY_140.webp",
+      "source_file": "ASSEMBLY_140_새_부품으로_다시_조립한다.png",
+      "action": "assemble",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_141",
+      "group_id": "ASSEMBLY_141",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "방향을 바로 맞춘다",
+      "keywords": [
+        "방향",
+        "방향을",
+        "바로",
+        "맞춘다",
+        "정렬",
+        "맞추기",
+        "방향 맞추기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 방향을 바로 맞춘다 align 방향 방향을 바로 맞춘다 정렬 맞추기 방향 맞추기",
+      "image": "assembly/ASSEMBLY_141.webp",
+      "source_file": "ASSEMBLY_141_방향을_바로_맞춘다.png",
+      "action": "align",
+      "objects": [
+        "방향"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_142",
+      "group_id": "ASSEMBLY_142",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빠진 나사를 다시 넣는다",
+      "keywords": [
+        "나사",
+        "빠진",
+        "나사를",
+        "다시",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 빠진 나사를 다시 넣는다 put_in 나사 빠진 나사를 다시 넣는다 넣기 담기 꽂기",
+      "image": "assembly/ASSEMBLY_142.webp",
+      "source_file": "ASSEMBLY_142_빠진_나사를_다시_넣는다.png",
+      "action": "put_in",
+      "objects": [
+        "나사"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_143",
+      "group_id": "ASSEMBLY_143",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "재조립한 제품의 결합 상태를 확인한다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "재조립한",
+        "제품의",
+        "결합",
+        "상태를",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "재조립한 제품의 결합 상태를 점검한다"
+      ],
+      "search_text": "assembly 재조립한 제품의 결합 상태를 확인한다 check 상품 제품 물건 재조립한 제품의 결합 상태를 확인한다 점검 검사 확인 재조립한 제품의 결합 상태를 점검한다",
+      "image": "assembly/ASSEMBLY_143.webp",
+      "source_file": "ASSEMBLY_143_재조립한_제품의_결합_상태를_확인한다.png",
+      "action": "check",
+      "objects": [
+        "상품",
+        "제품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_144",
+      "group_id": "ASSEMBLY_144",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "완성된 제품을 한곳에 모은다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "완성품",
+        "완성된",
+        "제품을",
+        "한곳에",
+        "모은다",
+        "모으기",
+        "한곳에 모으기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 완성된 제품을 한곳에 모은다 collect 상품 완성품 제품 물건 완성된 제품을 한곳에 모은다 모으기 한곳에 모으기",
+      "image": "assembly/ASSEMBLY_144.webp",
+      "source_file": "ASSEMBLY_144_완성된_제품을_한곳에_모은다.png",
+      "action": "collect",
+      "objects": [
+        "상품",
+        "완성품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_145",
+      "group_id": "ASSEMBLY_145",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "완성된 제품의 방향을 맞춘다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "완성품",
+        "방향",
+        "완성된",
+        "제품의",
+        "방향을",
+        "맞춘다",
+        "정렬",
+        "맞추기",
+        "방향 맞추기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 완성된 제품의 방향을 맞춘다 align 상품 완성품 방향 제품 물건 완성된 제품의 방향을 맞춘다 정렬 맞추기 방향 맞추기",
+      "image": "assembly/ASSEMBLY_145.webp",
+      "source_file": "ASSEMBLY_145_완성된_제품의_방향을_맞춘다.png",
+      "action": "align",
+      "objects": [
+        "상품",
+        "완성품",
+        "방향"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_146",
+      "group_id": "ASSEMBLY_146",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "완성된 제품을 한 줄로 놓는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "완성품",
+        "완성된",
+        "제품을",
+        "줄로",
+        "놓는다",
+        "정렬",
+        "맞추기",
+        "방향 맞추기"
+      ],
+      "aliases": [
+        "완성된 제품을 한 줄로 올린다"
+      ],
+      "search_text": "assembly 완성된 제품을 한 줄로 놓는다 align 상품 완성품 제품 물건 완성된 제품을 줄로 놓는다 정렬 맞추기 방향 맞추기 완성된 제품을 한 줄로 올린다",
+      "image": "assembly/ASSEMBLY_146.webp",
+      "source_file": "ASSEMBLY_146_완성된_제품을_한_줄로_놓는다.png",
+      "action": "align",
+      "objects": [
+        "상품",
+        "완성품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_147",
+      "group_id": "ASSEMBLY_147",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "제품 사이 간격을 맞춘다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "사이",
+        "간격을",
+        "맞춘다",
+        "정렬",
+        "맞추기",
+        "방향 맞추기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 제품 사이 간격을 맞춘다 align 상품 제품 물건 사이 간격을 맞춘다 정렬 맞추기 방향 맞추기",
+      "image": "assembly/ASSEMBLY_147.webp",
+      "source_file": "ASSEMBLY_147_제품_사이_간격을_맞춘다.png",
+      "action": "align",
+      "objects": [
+        "상품",
+        "제품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_148",
+      "group_id": "ASSEMBLY_148",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "한 칸에 제품 하나씩 놓는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "칸에",
+        "하나씩",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "한 칸에 제품 하나씩 올린다"
+      ],
+      "search_text": "assembly 한 칸에 제품 하나씩 놓는다 place 상품 제품 물건 칸에 하나씩 놓는다 놓기 올리기 진열 배치 한 칸에 제품 하나씩 올린다",
+      "image": "assembly/ASSEMBLY_148.webp",
+      "source_file": "ASSEMBLY_148_한_칸에_제품_하나씩_놓는다.png",
+      "action": "place",
+      "objects": [
+        "상품",
+        "제품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_149",
+      "group_id": "ASSEMBLY_149",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "완성된 제품 개수를 센다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "완성품",
+        "완성된",
+        "개수를",
+        "센다",
+        "수량 확인",
+        "개수 세기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 완성된 제품 개수를 센다 count 상품 완성품 제품 물건 완성된 개수를 센다 수량 확인 개수 세기",
+      "image": "assembly/ASSEMBLY_149.webp",
+      "source_file": "ASSEMBLY_149_완성된_제품_개수를_센다.png",
+      "action": "count",
+      "objects": [
+        "상품",
+        "완성품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_150",
+      "group_id": "ASSEMBLY_150",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "정해진 수량만큼 모은다",
+      "keywords": [
+        "수량",
+        "정해진",
+        "수량만큼",
+        "모은다",
+        "모으기",
+        "한곳에 모으기"
+      ],
+      "aliases": [
+        "정해진 수량만큼 한곳에 모은다"
+      ],
+      "search_text": "assembly 정해진 수량만큼 모은다 collect 수량 정해진 수량만큼 모은다 모으기 한곳에 모으기 정해진 수량만큼 한곳에 모은다",
+      "image": "assembly/ASSEMBLY_150.webp",
+      "source_file": "ASSEMBLY_150_정해진_수량만큼_모은다.png",
+      "action": "collect",
+      "objects": [
+        "수량"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_151",
+      "group_id": "ASSEMBLY_151",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "완성된 제품을 상자에 넣는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "박스",
+        "완성품",
+        "상자",
+        "완성된",
+        "제품을",
+        "상자에",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 완성된 제품을 상자에 넣는다 put_in 상품 박스 완성품 상자 제품 물건 완성된 제품을 상자에 넣는다 넣기 담기 꽂기",
+      "image": "assembly/ASSEMBLY_151.webp",
+      "source_file": "ASSEMBLY_151_완성된_제품을_상자에_넣는다.png",
+      "action": "put_in",
+      "objects": [
+        "상품",
+        "박스",
+        "완성품",
+        "상자"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_152",
+      "group_id": "ASSEMBLY_152",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자 안에 제품을 가지런히 놓는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "박스",
+        "상자",
+        "안에",
+        "제품을",
+        "가지런히",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "상자 안에 제품을 가지런히 올린다"
+      ],
+      "search_text": "assembly 상자 안에 제품을 가지런히 놓는다 place 상품 박스 제품 상자 물건 안에 제품을 가지런히 놓는다 놓기 올리기 진열 배치 상자 안에 제품을 가지런히 올린다",
+      "image": "assembly/ASSEMBLY_152.webp",
+      "source_file": "ASSEMBLY_152_상자_안에_제품을_가지런히_놓는다.png",
+      "action": "place",
+      "objects": [
+        "상품",
+        "박스",
+        "제품",
+        "상자"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_153",
+      "group_id": "ASSEMBLY_153",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자 수량을 확인한다",
+      "keywords": [
+        "박스",
+        "상자",
+        "수량",
+        "수량을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "상자 수량을 점검한다"
+      ],
+      "search_text": "assembly 상자 수량을 확인한다 check 박스 상자 수량 수량을 확인한다 점검 검사 확인 상자 수량을 점검한다",
+      "image": "assembly/ASSEMBLY_153.webp",
+      "source_file": "ASSEMBLY_153_상자_수량을_확인한다.png",
+      "action": "check",
+      "objects": [
+        "박스",
+        "상자",
+        "수량"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_154",
+      "group_id": "ASSEMBLY_154",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자를 닫는다",
+      "keywords": [
+        "박스",
+        "상자",
+        "상자를",
+        "닫는다",
+        "닫기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 상자를 닫는다 close 박스 상자 상자를 닫는다 닫기",
+      "image": "assembly/ASSEMBLY_154.webp",
+      "source_file": "ASSEMBLY_154_상자를_닫는다.png",
+      "action": "close",
+      "objects": [
+        "박스",
+        "상자"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_155",
+      "group_id": "ASSEMBLY_155",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자에 라벨을 붙인다",
+      "keywords": [
+        "라벨",
+        "박스",
+        "상자",
+        "상자에",
+        "라벨을",
+        "붙인다",
+        "붙이기",
+        "부착"
+      ],
+      "aliases": [],
+      "search_text": "assembly 상자에 라벨을 붙인다 attach 라벨 박스 상자 상자에 라벨을 붙인다 붙이기 부착",
+      "image": "assembly/ASSEMBLY_155.webp",
+      "source_file": "ASSEMBLY_155_상자에_라벨을_붙인다.png",
+      "action": "attach",
+      "objects": [
+        "라벨",
+        "박스",
+        "상자"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_156",
+      "group_id": "ASSEMBLY_156",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "수량표를 담당자에게 보여준다",
+      "keywords": [
+        "담당자",
+        "수량표",
+        "수량",
+        "수량표를",
+        "담당자에게",
+        "보여준다",
+        "보여주기",
+        "제시"
+      ],
+      "aliases": [],
+      "search_text": "assembly 수량표를 담당자에게 보여준다 show 담당자 수량표 수량 수량표를 담당자에게 보여준다 보여주기 제시",
+      "image": "assembly/ASSEMBLY_156.webp",
+      "source_file": "ASSEMBLY_156_수량표를_담당자에게_보여준다.png",
+      "action": "show",
+      "objects": [
+        "담당자",
+        "수량표",
+        "수량"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_157",
+      "group_id": "ASSEMBLY_157",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "전달 확인서를 담당자에게 건넨다",
+      "keywords": [
+        "전달 확인서",
+        "담당자",
+        "전달",
+        "확인서를",
+        "담당자에게",
+        "건넨다",
+        "점검",
+        "검사",
+        "건네기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 전달 확인서를 담당자에게 건넨다 handover 전달 확인서 담당자 전달 확인서를 담당자에게 건넨다 점검 검사 건네기",
+      "image": "assembly/ASSEMBLY_157.webp",
+      "source_file": "ASSEMBLY_157_전달_확인서를_담당자에게_건넨다.png",
+      "action": "handover",
+      "objects": [
+        "전달 확인서",
+        "담당자"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_158",
+      "group_id": "ASSEMBLY_158",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "남은 부품을 모은다",
+      "keywords": [
+        "부품",
+        "남은",
+        "부품을",
+        "모은다",
+        "모으기",
+        "한곳에 모으기"
+      ],
+      "aliases": [
+        "남은 부품을 한곳에 모은다"
+      ],
+      "search_text": "assembly 남은 부품을 모은다 collect 부품 남은 부품을 모은다 모으기 한곳에 모으기 남은 부품을 한곳에 모은다",
+      "image": "assembly/ASSEMBLY_158.webp",
+      "source_file": "ASSEMBLY_158_남은_부품을_모은다.png",
+      "action": "collect",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_159",
+      "group_id": "ASSEMBLY_159",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "남은 부품 개수를 확인한다",
+      "keywords": [
+        "부품",
+        "남은",
+        "개수를",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "남은 부품 개수를 점검한다"
+      ],
+      "search_text": "assembly 남은 부품 개수를 확인한다 check 부품 남은 개수를 확인한다 점검 검사 확인 남은 부품 개수를 점검한다",
+      "image": "assembly/ASSEMBLY_159.webp",
+      "source_file": "ASSEMBLY_159_남은_부품_개수를_확인한다.png",
+      "action": "check",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_160",
+      "group_id": "ASSEMBLY_160",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품을 종류별 상자에 나누어 넣는다",
+      "keywords": [
+        "박스",
+        "부품",
+        "상자",
+        "부품을",
+        "종류별",
+        "상자에",
+        "나누어",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 부품을 종류별 상자에 나누어 넣는다 put_in 박스 부품 상자 부품을 종류별 상자에 나누어 넣는다 넣기 담기 꽂기",
+      "image": "assembly/ASSEMBLY_160.webp",
+      "source_file": "ASSEMBLY_160_부품을_종류별_상자에_나누어_넣는다.png",
+      "action": "put_in",
+      "objects": [
+        "박스",
+        "부품",
+        "상자"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_161",
+      "group_id": "ASSEMBLY_161",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "사용한 공구를 정해진 자리에 놓는다",
+      "keywords": [
+        "도구",
+        "사용한",
+        "공구를",
+        "정해진",
+        "자리에",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "사용한 공구를 정해진 자리에 올린다"
+      ],
+      "search_text": "assembly 사용한 공구를 정해진 자리에 놓는다 place 도구 사용한 공구를 정해진 자리에 놓는다 놓기 올리기 진열 배치 사용한 공구를 정해진 자리에 올린다",
+      "image": "assembly/ASSEMBLY_161.webp",
+      "source_file": "ASSEMBLY_161_사용한_공구를_정해진_자리에_놓는다.png",
+      "action": "place",
+      "objects": [
+        "도구"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_162",
+      "group_id": "ASSEMBLY_162",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작업대 위 부품을 정리한다",
+      "keywords": [
+        "작업대",
+        "부품",
+        "부품을",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "assembly 작업대 위 부품을 정리한다 organize 작업대 부품 부품을 정리한다 정리 정돈",
+      "image": "assembly/ASSEMBLY_162.webp",
+      "source_file": "ASSEMBLY_162_작업대_위_부품을_정리한다.png",
+      "action": "organize",
+      "objects": [
+        "작업대",
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_163",
+      "group_id": "ASSEMBLY_163",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작업대 위 쓰레기를 버린다",
+      "keywords": [
+        "쓰레기",
+        "작업대",
+        "쓰레기를",
+        "버린다",
+        "버리기",
+        "폐기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 작업대 위 쓰레기를 버린다 discard 쓰레기 작업대 쓰레기를 버린다 버리기 폐기",
+      "image": "assembly/ASSEMBLY_163.webp",
+      "source_file": "ASSEMBLY_163_작업대_위_쓰레기를_버린다.png",
+      "action": "discard",
+      "objects": [
+        "쓰레기",
+        "작업대"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_164",
+      "group_id": "ASSEMBLY_164",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "불량품 통을 정리한다",
+      "keywords": [
+        "불량 제품",
+        "불량품 통",
+        "불량품",
+        "통을",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "assembly 불량품 통을 정리한다 organize 불량 제품 불량품 통 불량품 통을 정리한다 정리 정돈",
+      "image": "assembly/ASSEMBLY_164.webp",
+      "source_file": "ASSEMBLY_164_불량품_통을_정리한다.png",
+      "action": "organize",
+      "objects": [
+        "불량 제품",
+        "불량품 통"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_165",
+      "group_id": "ASSEMBLY_165",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "완성품 보관 위치를 확인한다",
+      "keywords": [
+        "완성품",
+        "보관",
+        "위치를",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "완성품 보관 위치를 점검한다"
+      ],
+      "search_text": "assembly 완성품 보관 위치를 확인한다 check 완성품 보관 위치를 확인한다 점검 검사 확인 완성품 보관 위치를 점검한다",
+      "image": "assembly/ASSEMBLY_165.webp",
+      "source_file": "ASSEMBLY_165_완성품_보관_위치를_확인한다.png",
+      "action": "check",
+      "objects": [
+        "완성품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_166",
+      "group_id": "ASSEMBLY_166",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작업대를 천으로 닦는다",
+      "keywords": [
+        "작업대",
+        "작업대를",
+        "천으로",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 작업대를 천으로 닦는다 clean 작업대 작업대를 천으로 닦는다 청소 닦기",
+      "image": "assembly/ASSEMBLY_166.webp",
+      "source_file": "ASSEMBLY_166_작업대를_천으로_닦는다.png",
+      "action": "clean",
+      "objects": [
+        "작업대"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_167",
+      "group_id": "ASSEMBLY_167",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작업대가 깨끗한지 확인한다",
+      "keywords": [
+        "작업대",
+        "작업대가",
+        "깨끗한지",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "작업대가 깨끗한지 점검한다"
+      ],
+      "search_text": "assembly 작업대가 깨끗한지 확인한다 check 작업대 작업대가 깨끗한지 확인한다 점검 검사 확인 작업대가 깨끗한지 점검한다",
+      "image": "assembly/ASSEMBLY_167.webp",
+      "source_file": "ASSEMBLY_167_작업대가_깨끗한지_확인한다.png",
+      "action": "check",
+      "objects": [
+        "작업대"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_168",
+      "group_id": "ASSEMBLY_168",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작업 의자를 정리한다",
+      "keywords": [
+        "의자",
+        "작업 의자",
+        "작업",
+        "의자를",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "assembly 작업 의자를 정리한다 organize 의자 작업 의자 작업 의자를 정리한다 정리 정돈",
+      "image": "assembly/ASSEMBLY_168.webp",
+      "source_file": "ASSEMBLY_168_작업_의자를_정리한다.png",
+      "action": "organize",
+      "objects": [
+        "의자",
+        "작업 의자"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_169",
+      "group_id": "ASSEMBLY_169",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작업등을 끈다",
+      "keywords": [
+        "작업등",
+        "작업등을",
+        "끈다",
+        "끄기",
+        "전원 끄기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 작업등을 끈다 turn_off 작업등 작업등을 끈다 끄기 전원 끄기",
+      "image": "assembly/ASSEMBLY_169.webp",
+      "source_file": "ASSEMBLY_169_작업등을_끈다.png",
+      "action": "turn_off",
+      "objects": [
+        "작업등"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_170",
+      "group_id": "ASSEMBLY_170",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작업 종료를 확인한다",
+      "keywords": [
+        "작업 종료",
+        "작업",
+        "종료를",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "작업 종료를 점검한다"
+      ],
+      "search_text": "assembly 작업 종료를 확인한다 check 작업 종료 작업 종료를 확인한다 점검 검사 확인 작업 종료를 점검한다",
+      "image": "assembly/ASSEMBLY_170.webp",
+      "source_file": "ASSEMBLY_170_작업_종료를_확인한다.png",
+      "action": "check",
+      "objects": [
+        "작업 종료"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_171",
+      "group_id": "ASSEMBLY_171",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "명찰을 벗는다",
+      "keywords": [
+        "명찰",
+        "명찰을",
+        "벗는다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [
+        "명찰을 제거한다"
+      ],
+      "search_text": "assembly 명찰을 벗는다 remove 명찰 명찰을 벗는다 꺼내기 빼기 제거 명찰을 제거한다",
+      "image": "assembly/ASSEMBLY_171.webp",
+      "source_file": "ASSEMBLY_171_명찰을_벗는다.png",
+      "action": "remove",
+      "objects": [
+        "명찰"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_172",
+      "group_id": "ASSEMBLY_172",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "보호장갑을 벗는다",
+      "keywords": [
+        "보호장갑",
+        "보호장갑을",
+        "벗는다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [
+        "보호장갑을 제거한다"
+      ],
+      "search_text": "assembly 보호장갑을 벗는다 remove 보호장갑 보호장갑을 벗는다 꺼내기 빼기 제거 보호장갑을 제거한다",
+      "image": "assembly/ASSEMBLY_172.webp",
+      "source_file": "ASSEMBLY_172_보호장갑을_벗는다.png",
+      "action": "remove",
+      "objects": [
+        "보호장갑"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_173",
+      "group_id": "ASSEMBLY_173",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "보안경을 벗는다",
+      "keywords": [
+        "보안경",
+        "보안경을",
+        "벗는다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [
+        "보안경을 제거한다"
+      ],
+      "search_text": "assembly 보안경을 벗는다 remove 보안경 보안경을 벗는다 꺼내기 빼기 제거 보안경을 제거한다",
+      "image": "assembly/ASSEMBLY_173.webp",
+      "source_file": "ASSEMBLY_173_보안경을_벗는다.png",
+      "action": "remove",
+      "objects": [
+        "보안경"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_174",
+      "group_id": "ASSEMBLY_174",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작업모를 벗는다",
+      "keywords": [
+        "작업모",
+        "작업모를",
+        "벗는다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [
+        "작업모를 제거한다"
+      ],
+      "search_text": "assembly 작업모를 벗는다 remove 작업모 작업모를 벗는다 꺼내기 빼기 제거 작업모를 제거한다",
+      "image": "assembly/ASSEMBLY_174.webp",
+      "source_file": "ASSEMBLY_174_작업모를_벗는다.png",
+      "action": "remove",
+      "objects": [
+        "작업모"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_175",
+      "group_id": "ASSEMBLY_175",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "손을 깨끗하게 씻는다",
+      "keywords": [
+        "손",
+        "손을",
+        "깨끗하게",
+        "씻는다",
+        "씻기",
+        "헹구기",
+        "세척"
+      ],
+      "aliases": [],
+      "search_text": "assembly 손을 깨끗하게 씻는다 wash 손 손을 깨끗하게 씻는다 씻기 헹구기 세척",
+      "image": "assembly/ASSEMBLY_175.webp",
+      "source_file": "ASSEMBLY_175_손을_깨끗하게_씻는다.png",
+      "action": "wash",
+      "objects": [
+        "손"
       ]
     }
   ]
