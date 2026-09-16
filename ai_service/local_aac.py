@@ -144,8 +144,11 @@ def _verb_stem_map() -> tuple[tuple[str, str], ...]:
             if surface != stem and lemma in _RIEUL_DROP_EXCLUDE_LEMMAS:
                 continue  # ㄹ탈락형만 제외 — 기본 어간(예: '갈')은 그대로 둔다.
             pairs.add((surface, lemma))
-    # 긴 어간 우선 — '준비하'가 '준'보다 먼저 걸려야 한다.
-    return tuple(sorted(pairs, key=lambda p: -len(p[0])))
+    # 긴 어간 우선 — '준비하'가 '준'보다 먼저 걸려야 한다. 길이가 같으면(예: 표면형
+    # '쓰'가 '쓰다'·'쓸다' 둘 다에서 나옴) 원형 문자열로 2차 정렬해 결과가 매 실행마다
+    # 바뀌지 않게 한다 — set 순서(해시 시드)에 맡기면 서버를 재시작할 때마다 어느
+    # 원형이 이기는지 달라질 수 있다.
+    return tuple(sorted(pairs, key=lambda p: (-len(p[0]), p[1])))
 
 
 def _verb_lemmas(text: str) -> set[str]:
@@ -153,9 +156,17 @@ def _verb_lemmas(text: str) -> set[str]:
 
     "원두를 갈아주세요" → {'갈다'}. 자산 쪽 검색어는 원형('갈다')이라 이 변환이 없으면
     질의 토큰('갈아주')과 영영 만나지 못한다 — 인덱스를 만들어도 아무 효과가 없다.
+
+    한 표면형이 서로 다른 원형에 동시에 걸리는 경우가 있다("쓰"는 '쓰다'(사용/착용)
+    와 '쓸다'(쓸기) 둘 다에서 나온다 — "쓰세요"는 한국어 자체가 중의적이다). 예전엔
+    가장 긴 어간을 찾으면 그중 하나만(먼저 만난 것) 채택했는데, 어느 쪽이 이기는지가
+    내부 정렬 순서에 좌우돼 한쪽을 고치면 다른 쪽이 깨졌다. 대신 같은 길이로 묶인
+    원형을 전부 후보로 남긴다 — 최종 판단(직무·명사 겹침)은 이미 `_score_asset`이
+    한다: 문맥과 맞는 자산만 가산점의 이득을 본다.
     """
     found: set[str] = set()
     for word in _TOKEN_RE.findall(text):
+        best_len: int | None = None
         for surface, lemma in _verb_stem_map():
             # 어간만 덜렁 있는 게 아니라 뒤에 어미가 붙어 있어야 동사로 본다.
             if len(word) <= len(surface) or not word.startswith(surface):
@@ -164,8 +175,10 @@ def _verb_lemmas(text: str) -> set[str]:
             # 붙어 있을 때만 인정한다('갈아주세요'는 통과, '갈색'은 탈락).
             if len(surface) == 1 and len(word) < 3:
                 continue
+            if best_len is not None and len(surface) < best_len:
+                break  # 더 짧은 어간은(정렬상 이제부터 전부) 무시 — 가장 긴 것만 본다.
+            best_len = len(surface)
             found.add(lemma)
-            break  # 가장 긴 어간 하나만
     return found
 
 
