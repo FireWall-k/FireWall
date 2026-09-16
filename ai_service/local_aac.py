@@ -70,15 +70,42 @@ def _jaccard(a: set[str], b: set[str]) -> float:
 # 어간 끝 모음이 어미와 만나 줄어드는 형태. '세우-'+'어' → '세워', '하-'+'여' → '해'.
 _STEM_CONTRACTIONS = {"우": "워", "오": "와", "이": "여", "하": "해", "리": "려", "기": "겨"}
 
+_HANGUL_BASE = 0xAC00
+_HANGUL_LAST = 0xD7A3
+_RIEUL_FINAL_INDEX = 8  # 종성 28개 중 ㄹ의 순번(없음=0, ㄱ=1, ... ㄹ=8)
+
+
+def _drop_rieul_final(char: str) -> str | None:
+    """받침 ㄹ을 뗀 글자를 돌려준다. ㄹ받침이 아니면 None.
+
+    ㄹ받침 어간(열다/만들다/쓸다/갈다 등)은 '-세요/-ㅂ니다/-는' 앞에서 받침이
+    탈락한다: 열다→여세요, 만들다→만드세요, 쓸다→쓰세요, 갈다→가세요.
+    이 규칙이 없으면 "창문을 여세요"에서 '열다'를 못 알아낸다 — 인덱스에 실제로
+    있는 동사(열다·쓸다·만들다·갈다·밀다·들다 등 10여 개)가 전부 활용형 인식에서
+    빠져 있었다.
+    """
+    if len(char) != 1:
+        return None
+    code = ord(char)
+    if not (_HANGUL_BASE <= code <= _HANGUL_LAST):
+        return None
+    if (code - _HANGUL_BASE) % 28 != _RIEUL_FINAL_INDEX:
+        return None
+    return chr(code - _RIEUL_FINAL_INDEX)
+
 
 def _stem_variants(stem: str) -> tuple[str, ...]:
     """어간의 표면형 후보. 활용형에서 어간을 찾아내기 위한 것이다."""
     if not stem:
         return ()
+    variants = [stem]
     contracted = _STEM_CONTRACTIONS.get(stem[-1])
     if contracted:
-        return (stem, stem[:-1] + contracted)
-    return (stem,)
+        variants.append(stem[:-1] + contracted)
+    dropped = _drop_rieul_final(stem[-1])
+    if dropped:
+        variants.append(stem[:-1] + dropped)
+    return tuple(variants)
 
 
 @lru_cache(maxsize=1)
