@@ -297,6 +297,11 @@ def _task_context(task: Task, sentence: str, action_type: str) -> dict:
         "work_environment": task.work_environment or "",
         "sentence": sentence,
         "action_type": action_type,
+        # 업종을 안 넣은 직무는 단계 문장 하나만으로 직무를 못 알아낼 때가 많다
+        # ("큰 나사를 나누세요"만 봐서는 조립인지 알 수 없다). 원문 전체에는 대개
+        # 직무를 알려주는 단어가 하나쯤 있다("부품 상자에서 나사를...") — AAC 검색의
+        # infer_job()이 이걸 보조 신호로 쓴다.
+        "raw_input": task.raw_input or "",
     }
 
 
@@ -343,6 +348,8 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
         "business_type": payload.business_type or "",
         "work_environment": payload.work_environment or "",
         "worker_note": payload.worker_note or "",
+        # _task_context()와 같은 이유로 넣는다 — 업종 미입력 시 직무 추론의 보조 신호.
+        "raw_input": payload.raw_input,
     }
     try:
         decomposed = ai_client.decompose(payload.raw_input, context)

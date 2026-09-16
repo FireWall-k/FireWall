@@ -158,6 +158,12 @@ def infer_job(context: dict | None = None, query: str = "") -> str | None:
     haystack = " ".join(
         str(ctx.get(key, "")) for key in ("business_type", "work_environment", "job")
     ) + " " + query
+    # 업종을 안 넣으면 단계 문장 하나로는 직무를 못 알아낼 때가 많다("큰 나사를
+    # 나누세요"만 봐서는 조립인지 알 수 없다). 원문 전체("부품 상자에서 나사를...")에는
+    # 대개 직무를 알려주는 단어가 있으므로 보조 신호로 함께 본다. 업종이 이미 있으면
+    # 그쪽이 개수를 더 많이 쌓아 여전히 우선하므로, 있어도 해가 되지 않는다.
+    if ctx.get("raw_input"):
+        haystack += " " + str(ctx["raw_input"])
     norm = _normalize(haystack)
     scores: list[tuple[int, str]] = []
     for job, aliases in _JOB_ALIASES.items():

@@ -268,6 +268,30 @@ def test_retail_barcode_matches_after_merged_keywords():
     assert results[0]["asset_id"] == "RETAIL_060"
 
 
+def test_raw_input_infers_job_when_business_type_is_blank():
+    """업종/작업환경을 안 넣으면 단계 문장 하나로는 직무를 못 알아낼 때가 많다.
+
+    실사용 버그: "큰 나사를 나누세요"만으로는 조립인지 알 수 없어 카페(컵/접시)·
+    청소(수건/옷) 자산이 1순위로 올라왔다. raw_input 전체("부품 상자에서 나사를...")를
+    보조 신호로 주면 조립으로 추론돼 엉뚱한 직무가 밀려나야 한다.
+    """
+    from local_aac import infer_job, search_assets
+
+    raw_input = (
+        "부품 상자에서 나사를 꺼내서 종류별로 나눠 담아주세요. "
+        "큰 나사는 파란 통, 작은 나사는 빨간 통에 넣습니다."
+    )
+    sentence = "큰 나사를 나누세요."
+    ctx = {"sentence": sentence, "action_type": "sort", "raw_input": raw_input}
+
+    assert infer_job(ctx, sentence) == "assembly"
+
+    # "나사" 자산 자체가 없어(알려진 커버리지 갭) 완벽한 정답은 못 낸다. 이 테스트가
+    # 잡는 것은 그것과 별개인 버그다 — 1순위가 카페/청소로 새지 않고 조립이어야 한다.
+    results = search_assets(sentence, ctx, limit=5)
+    assert results[0]["job"] == "assembly"
+
+
 def test_fallback_when_no_relevant_match(monkeypatch):
     monkeypatch.setenv("AAC_MATCH_THRESHOLD", "0.95")
 
