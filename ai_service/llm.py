@@ -64,6 +64,11 @@ _DECOMPOSE_SYSTEM = (
     "'가져오다/준비하다' 같은 준비 동작을 임의로 추가하지 않습니다. 지시문에 적힌 "
     "동작만 단계로 만듭니다(예: '테이블을 닦고'는 '테이블을 닦으세요' 한 단계이며, "
     "'테이블을 보세요'·'걸레를 가져오세요'를 덧붙이지 않습니다).\n"
+    "1-2) 여러 동작이 대상을 하나만 공유하는 경우('카트를 정리하고 배치하세요'처럼 "
+    "두 번째 동작 앞에 새 목적어가 없는 경우), 나눈 각 단계 모두 그 대상을 그대로 "
+    "씁니다. 두 번째 동작에 원문에 없는 다른 대상을 새로 지어내지 않습니다"
+    "(맞음: '카트를 정리하세요.' + '카트를 배치하세요.' / 틀림: 두 번째 단계에 "
+    "원문에 없던 '상품' 같은 대상을 넣는 것).\n"
     "2) 문장은 짧고 명확한 한국어 명령형('~하세요/~주세요')으로 씁니다. "
     "**20자 이내**를 지킵니다(길면 더 쪼갭니다).\n"
     "3) 추상 표현 대신 눈에 보이는 대상을 가리킵니다.\n"
@@ -90,6 +95,13 @@ _DECOMPOSE_SYSTEM = (
     '{"sentence": "서류를 복사기에 넣으세요.", "symbol_query": ["서류","document"], "action_type": "move", "safety_flags": []}, '
     '{"sentence": "10장씩 복사하세요.", "symbol_query": ["복사","copy"], "action_type": "observe", "safety_flags": []}, '
     '{"sentence": "클립으로 묶으세요.", "symbol_query": ["클립","clip"], "action_type": "pack", "safety_flags": []}, '
+    '{"sentence": "책상에 정리하세요.", "symbol_query": ["책상","desk"], "action_type": "sort", "safety_flags": []}]}\n'
+    "\n예시3 — 입력: '카트 정리하고 배치하세요.' (대상 하나를 두 동작이 공유)\n"
+    '출력: {"task_title": "카트 정리", "steps": ['
+    '{"sentence": "카트를 정리하세요.", "symbol_query": ["카트","cart"], "action_type": "sort", "safety_flags": []}, '
+    '{"sentence": "카트를 배치하세요.", "symbol_query": ["카트","cart"], "action_type": "stack", "safety_flags": []}]}\n'
+    "(두 번째 단계도 '카트'를 그대로 씁니다 — 원문에 없는 '상품' 등 다른 대상으로 "
+    "바꾸지 않습니다.)"
     '{"sentence": "책상에 정리하세요.", "symbol_query": ["책상","desk"], "action_type": "sort", "safety_flags": []}]}'
 )
 
