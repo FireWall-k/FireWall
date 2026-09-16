@@ -43,7 +43,14 @@ def _stem_token(token: str) -> str:
             value = value[: -len(p)]
             break
     # Common polite/statement endings from task sentences.
-    for ending in ("하세요", "해주세요", "합니다", "하십시오", "한다", "해요", "세요", "니다", "다"):
+    #
+    # '하다' 원형을 반드시 '한다'보다 먼저 검사한다. 순서가 바뀌면 "정리하다"(원형)는
+    # '다'만 떨어져 '정리하'가 남고 "정리한다"(활용형)는 '한다'가 떨어져 '정리'가 남아,
+    # 같은 뜻인데 토큰이 달라져 자산 검색어(원형이 많다)와 질의(활용형이 많다)가 서로
+    # 못 만난다. 실사용 중 발견 — "의자들을 정리하세요"가 라벨에 '정리'가 그대로 박힌
+    # 무관한 자산(상품 정리)에 밀렸다. CAFE_078의 검색어 '정리하다'가 '정리하'로만
+    # 남아 질의의 '정리'와 안 만난 게 원인이었다.
+    for ending in ("하세요", "해주세요", "합니다", "하십시오", "하다", "한다", "해요", "세요", "니다", "다"):
         if len(value) > len(ending) + 1 and value.endswith(ending):
             value = value[: -len(ending)]
             break
