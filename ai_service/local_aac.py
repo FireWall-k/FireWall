@@ -108,6 +108,16 @@ def _stem_variants(stem: str) -> tuple[str, ...]:
     return tuple(variants)
 
 
+# ㄹ탈락으로 만든 표면형이 한 글자가 되면서, 훨씬 흔한 다른 동사의 원형과 우연히
+# 같은 글자가 되는 경우가 있다. '갈다'(갈아주세요로 이미 원래 어간 '갈'이 잡힌다)의
+# 탈락형 '가'가 대표적 — 이동을 뜻하는 '가다'의 원형과 같은 글자라, "고객님 댁에
+# 가세요"·"창고에 가세요" 같은 문장에서 커피 원두를 "간다"는 엉뚱한 동사로 잡혔다
+# (실사용 중 블라인드 테스트 2026-09-16에서 발견). '갈다'의 실제 존댓말 요청형은
+# 거의 항상 모음축약형 '갈아(주세요)'라 기본 어간 '갈'만으로 충분히 잡힌다 —
+# 탈락형 '가'는 실익 없이 충돌만 만들어 제외한다.
+_RIEUL_DROP_EXCLUDE_LEMMAS = frozenset({"갈다"})
+
+
 @lru_cache(maxsize=1)
 def _verb_stem_map() -> tuple[tuple[str, str], ...]:
     """(어간 표면형, 원형) 목록. 긴 어간이 먼저 오도록 정렬한다.
@@ -131,6 +141,8 @@ def _verb_stem_map() -> tuple[tuple[str, str], ...]:
         if len(stem) < 1:
             continue
         for surface in _stem_variants(stem):
+            if surface != stem and lemma in _RIEUL_DROP_EXCLUDE_LEMMAS:
+                continue  # ㄹ탈락형만 제외 — 기본 어간(예: '갈')은 그대로 둔다.
             pairs.add((surface, lemma))
     # 긴 어간 우선 — '준비하'가 '준'보다 먼저 걸려야 한다.
     return tuple(sorted(pairs, key=lambda p: -len(p[0])))
