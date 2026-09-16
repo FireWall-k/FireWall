@@ -292,6 +292,31 @@ def test_raw_input_infers_job_when_business_type_is_blank():
     assert results[0]["job"] == "assembly"
 
 
+def test_opposite_verb_does_not_win_by_shared_noun():
+    """실사용 버그: "남은 재료를 꺼내세요"(냉장고에서 빼기)가 "남은 재료를 냉장고에
+    넣는다"(CAFE_088, 정반대 동작)로 자신 있게 붙었다.
+
+    verb_class는 방향을 구분 못 한다 — '넣다'/'꺼내다' 둘 다 move라 기존
+    _verb_class_penalty가 안 걸렸다. '꺼내다 냉장고' 자산 자체가 없는 갭이라
+    완벽한 정답은 못 내지만, 최소한 정반대 동작을 자신 있게 채택하면 안 된다.
+    """
+    query = "남은 재료를 꺼내세요."
+    ctx = {"business_type": "카페", "work_environment": "바",
+           "sentence": query, "action_type": "move"}
+    results = search_assets(query, ctx, 3)
+    assert results[0]["asset_id"] != "CAFE_088"
+
+
+def test_verb_antonym_penalty_only_fires_on_true_opposites():
+    from local_aac import _verb_antonym_penalty, load_assets
+
+    by = {a["id"]: a for a in load_assets()}
+    # CAFE_088 verb='넣다' — '꺼내다'(반대말)는 깎이고, '보관하다'(동의어)는 안 깎인다.
+    assert _verb_antonym_penalty(by["CAFE_088"], {"꺼내다"}) < 1.0
+    assert _verb_antonym_penalty(by["CAFE_088"], {"보관하다"}) == 1.0
+    assert _verb_antonym_penalty(by["CAFE_088"], set()) == 1.0
+
+
 def test_fallback_when_no_relevant_match(monkeypatch):
     monkeypatch.setenv("AAC_MATCH_THRESHOLD", "0.95")
 

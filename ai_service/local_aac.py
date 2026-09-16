@@ -425,6 +425,49 @@ def _verb_class_penalty(asset: dict, action_type: str | None) -> float:
     return _VERB_CLASS_PENALTY
 
 
+# 실사용 중 발견: "남은 재료를 꺼내세요"(냉장고에서 빼기)가 "남은 재료를 냉장고에
+# 넣는다"(CAFE_088)로 붙었다. 원인은 verb_class가 방향을 구분 못 하는 것 —
+# '넣다'/'꺼내다'는 둘 다 verb_class="move"라 _verb_class_penalty가 안 걸린다.
+# 동사 원형 매칭(_verb_lemmas)도 일치할 때만 가산할 뿐 불일치를 벌점 주지 않으므로,
+# "꺼내다 냉장고" 같은 자산이 아예 없는 도메인에서는 유일한 후보(CAFE_088)가 방향이
+# 반대인데도 자신 있게 채택된다(골든셋의 gap_fridge_out과 같은 결함).
+#
+# object_detail/specificity 감점(cd3972e, 이 파일 아래)처럼 '흔한 신호의 부재'로
+# 깎으면 회귀한다는 걸 이미 세 번 확인했다. 그래서 여기서는 넓게 깎지 않고, 명확히
+# 반대말인 동사 쌍만 좁게 골라 벌점을 준다 — _TOOL_SYNONYMS와 같은 폐쇄형 목록 패턴.
+_VERB_ANTONYMS: tuple[frozenset[str], ...] = (
+    frozenset({"넣다", "꺼내다"}),
+    frozenset({"열다", "닫다"}),
+    frozenset({"붙이다", "떼다"}),
+    frozenset({"켜다", "끄다"}),
+    frozenset({"올리다", "내리다"}),
+    frozenset({"채우다", "비우다"}),
+)
+
+# 실측: 0.4 미만은 정답 쌍 중 진짜 반의어가 아닌데 우연히 걸린 경우까지 과하게
+# 깎아 top1을 깎아 먹었다. 0.4~0.6 구간에서 골든셋 회귀 없이 gap_fridge_out이
+# 정상 거절로 바뀌어 0.4로 잡았다(도구 게이트 0.55보다 약간 세게 — 방향이 아예
+# 반대인 건 도구/사물 혼동보다 더 확실히 틀렸다고 보기 때문).
+_VERB_ANTONYM_PENALTY = 0.4
+
+
+def _verb_antonym_penalty(asset: dict, query_lemmas: set[str]) -> float:
+    """질의 동사가 자산 동사의 명확한 반대말이면 깎는다(곱한다).
+
+    동의어(_TOOL_SYNONYMS)와 정반대 성격이라 별도 목록으로 둔다 — 겹치는 단어가
+    아니라 반대 방향의 동작이라는 게 확실할 때만 걸리는 좁은 목록이다.
+    """
+    asset_lemmas = asset.get("_lemmas", set())
+    if not query_lemmas or not asset_lemmas:
+        return 1.0
+    for group in _VERB_ANTONYMS:
+        q_hit = query_lemmas & group
+        a_hit = asset_lemmas & group
+        if q_hit and a_hit and q_hit != a_hit:
+            return _VERB_ANTONYM_PENALTY
+    return 1.0
+
+
 def _is_instruction(text: str) -> bool:
     """질의가 '무엇을 하라'는 문장인가, 아니면 물건 이름인가.
 
@@ -482,6 +525,10 @@ def _score_asset(asset: dict, qf: _QueryFeatures, preferred_job: str | None,
     # 동사 호환성 — 명사만 겹치면 동작이 달라도 올라오던 것을 누른다.
     # "넘어진 상품을 세워주세요"에 "냉동 상품을 냉동 진열대에 놓는다"가 붙던 문제.
     relevance *= _verb_class_penalty(asset, action_type)
+
+    # 반대 동사 — verb_class는 방향을 구분 못 해서("넣다"/"꺼내다" 둘 다 move) 위
+    # 게이트를 통과한다. "남은 재료를 꺼내세요"에 "냉장고에 넣는다"가 붙던 문제.
+    relevance *= _verb_antonym_penalty(asset, qf.lemmas)
 
     return max(0.0, min(relevance + _tiebreak(asset, preferred_job, action_type), 1.0))
 
