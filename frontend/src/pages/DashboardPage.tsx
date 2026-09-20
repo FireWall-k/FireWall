@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Bar,
   BarChart,
@@ -8,8 +8,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertCircle, BarChart3, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, RotateCcw, Sparkles, Trash2 } from "lucide-react";
+import { AlertCircle, BarChart3, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, RefreshCw, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { api, AuthError, type Coaching, type Dashboard, type TaskSummary, type Worker } from "../api";
+
+const DASHBOARD_POLL_MS = 10_000;
+
+const formatClock = (d: Date) =>
+  d.toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
 const StatCard = ({
   icon,
@@ -208,27 +213,85 @@ function DashboardPage() {
     return () => { alive = false; };
   }, [workerId, selectedDate]);
 
-  // 선택된 (근로자, 직무)의 수행 데이터와 코칭을 불러온다.
+  // 근로자가 수행하는 동안 화면이 따라오도록 주기적으로 다시 불러온다(실시간 푸시가 아니라 폴링).
+  // 코칭은 LLM 호출이라 폴링에 넣지 않는다 — 첫 로드와 수동 새로고침 때만 갱신한다.
+  const viewKey = useRef("");
+  const inFlightKey = useRef("");
+  // 근로자·직무를 바꾸면 이전 화면의 갱신 상태가 남지 않도록 화면 키(viewKeyNow)로 태깅해 둔다.
+  const viewKeyNow = taskId && workerId ? `${taskId}|${workerId}` : "";
+  const [sync, setSync] = useState<{ key: string; at: Date | null; failed: boolean; busy: boolean }>(
+    { key: "", at: null, failed: false, busy: false }
+  );
+  const current = sync.key === viewKeyNow;
+  const lastUpdated = current ? sync.at : null;
+  const pollFailed = current && sync.failed;
+  const refreshing = current && sync.busy;
+
+  const loadDashboard = useCallback(
+    (opts: { coaching: boolean; initial: boolean }) => {
+      if (!taskId || !workerId) return;
+      const key = `${taskId}|${workerId}`;
+      if (inFlightKey.current === key) return; // 같은 화면의 요청이 이미 진행 중이면 겹치지 않는다.
+      inFlightKey.current = key;
+      Promise.all([
+        api.dashboard(taskId, workerId),
+        opts.coaching ? api.coaching(taskId, workerId).catch(() => null) : Promise.resolve(undefined),
+      ])
+        .then(([d, c]) => {
+          if (viewKey.current !== key) return; // 그 사이 근로자·직무를 바꿨다면 늦게 온 응답은 버린다.
+          setDashboard(d);
+          if (c !== undefined) setCoaching(c);
+          setSync({ key, at: new Date(), failed: false, busy: false });
+        })
+        .catch((e) => {
+          if (viewKey.current !== key) return;
+          if (e instanceof AuthError) {
+            setError("다시 로그인해 주세요.");
+          } else if (opts.initial) {
+            setDashboard(null);
+            setCoaching(null);
+            setError(e instanceof Error ? e.message : "대시보드를 불러오지 못했습니다.");
+          } else {
+            setSync((p) => ({ ...p, key, failed: true })); // 백그라운드 갱신 실패는 기존 화면을 지우지 않고 표시만 한다.
+          }
+        })
+        .finally(() => {
+          if (inFlightKey.current === key) inFlightKey.current = "";
+          if (viewKey.current === key) setSync((p) => (p.key === key ? { ...p, busy: false } : p));
+        });
+    },
+    [taskId, workerId]
+  );
+
+  // 스피너는 사용자가 누른 새로고침에만 보여 준다(자동 갱신이 깜빡이지 않게).
+  function manualRefresh() {
+    if (!viewKeyNow) return;
+    setSync((p) => ({ key: viewKeyNow, at: p.key === viewKeyNow ? p.at : null, failed: p.key === viewKeyNow && p.failed, busy: true }));
+    loadDashboard({ coaching: true, initial: false });
+  }
+
+  // 선택된 (근로자, 직무)의 수행 데이터와 코칭을 처음 불러온다.
+  useEffect(() => {
+    viewKey.current = taskId && workerId ? `${taskId}|${workerId}` : "";
+    if (!taskId || !workerId) return;
+    loadDashboard({ coaching: true, initial: true });
+  }, [taskId, workerId, loadDashboard]);
+
+  // 10초마다, 그리고 탭으로 돌아왔을 때 다시 불러온다. 숨겨진 탭에서는 요청하지 않는다.
   useEffect(() => {
     if (!taskId || !workerId) return;
-    let alive = true;
-    Promise.all([
-      api.dashboard(taskId, workerId),
-      api.coaching(taskId, workerId).catch(() => null),
-    ])
-      .then(([d, c]) => {
-        if (!alive) return;
-        setDashboard(d);
-        setCoaching(c);
-      })
-      .catch((e) => {
-        if (!alive) return;
-        setDashboard(null);
-        setCoaching(null);
-        setError(e instanceof AuthError ? "다시 로그인해 주세요." : e instanceof Error ? e.message : "대시보드를 불러오지 못했습니다.");
-      });
-    return () => { alive = false; };
-  }, [taskId, workerId]);
+    const tick = () => {
+      if (!document.hidden) loadDashboard({ coaching: false, initial: false });
+    };
+    const timer = window.setInterval(tick, DASHBOARD_POLL_MS);
+    document.addEventListener("visibilitychange", tick);
+    window.addEventListener("focus", tick);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+      window.removeEventListener("focus", tick);
+    };
+  }, [taskId, workerId, loadDashboard]);
 
   const chartData = useMemo(
     () => dashboard?.steps.map((s) => ({
@@ -341,6 +404,31 @@ function DashboardPage() {
                 </option>
               ))}
             </select>
+          )}
+          {taskId && (
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-xs ${pollFailed ? "text-signal-red" : "text-ink-500"}`}
+                role="status"
+                aria-live="polite"
+              >
+                {pollFailed
+                  ? "갱신 실패 — 다시 시도 중"
+                  : lastUpdated
+                    ? `마지막 갱신 ${formatClock(lastUpdated)}`
+                    : "불러오는 중…"}
+              </span>
+              <button
+                type="button"
+                onClick={manualRefresh}
+                disabled={refreshing}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm font-medium text-ink-700 hover:bg-paper-100 disabled:opacity-60"
+                aria-label="대시보드 새로고침"
+              >
+                <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
+                새로고침
+              </button>
+            </div>
           )}
           {taskId && (
             <button
