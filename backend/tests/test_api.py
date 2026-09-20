@@ -483,3 +483,53 @@ def test_add_and_reorder_require_ownership(client, employer_token, worker_token)
     assert client.patch(f"/api/tasks/{task['id']}/steps/reorder",
                         json={"step_ids": [task["steps"][0]["id"]]},
                         headers=auth(worker_token)).status_code == 403
+
+
+# ---------- 날짜 기준(현지 시간) ----------
+def test_local_day_start_follows_local_midnight():
+    """"오늘" 경계는 UTC 0시가 아니라 현지 0시다(한국이면 UTC 15시)."""
+    from datetime import datetime, timezone
+
+    import main
+
+    just_after_midnight_kst = datetime(2026, 9, 20, 15, 33, tzinfo=timezone.utc)  # KST 9/21 00:33
+    assert main.local_day_start_utc(just_after_midnight_kst) == datetime(
+        2026, 9, 20, 15, 0, tzinfo=timezone.utc)
+
+    just_before_midnight_kst = datetime(2026, 9, 20, 14, 59, tzinfo=timezone.utc)  # KST 9/20 23:59
+    assert main.local_day_start_utc(just_before_midnight_kst) == datetime(
+        2026, 9, 19, 15, 0, tzinfo=timezone.utc)
+
+
+def test_worker_tasks_and_active_dates_use_local_date(client, employer_token):
+    """한국 시간 0~9시에 배정한 직무가 UTC 날짜가 아니라 한국 날짜로 조회돼야 한다.
+
+    UTC 1/10 15:32는 한국 시간 1/11 00:32다. 예전에는 1/10으로 저장·필터돼서
+    브라우저의 "오늘"에 안 보였다. DB를 다른 테스트와 공유하므로 내 직무만 검사하고,
+    다른 테스트의 배정(오늘 날짜)과 겹치지 않게 과거 날짜를 쓴다.
+    """
+    from datetime import datetime
+
+    from database import SessionLocal
+    from models import Assignment
+
+    task, assignment = _make_published_task(client, employer_token)
+    with SessionLocal() as db:
+        a = db.get(Assignment, assignment["id"])
+        a.assigned_date = datetime(2026, 1, 10, 15, 32)  # naive = UTC 저장 형식
+        worker_id = a.worker_id
+        db.commit()
+
+    def task_ids_on(day: str) -> list[str]:
+        r = client.get(f"/api/workers/{worker_id}/tasks?date={day}",
+                       headers=auth(employer_token))
+        assert r.status_code == 200, r.text
+        return [t["id"] for t in r.json()]
+
+    assert task["id"] in task_ids_on("2026-01-11")       # 한국 날짜
+    assert task["id"] not in task_ids_on("2026-01-10")   # UTC 날짜로는 안 잡힌다
+
+    dates = client.get(f"/api/workers/{worker_id}/active-dates",
+                       headers=auth(employer_token)).json()
+    assert "2026-01-11" in dates
+    assert "2026-01-10" not in dates

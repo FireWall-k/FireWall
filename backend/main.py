@@ -18,7 +18,7 @@ import os
 import re
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -99,6 +99,21 @@ app.mount(
     ),
     name="aac-images",
 )
+
+# 날짜 경계의 기준 시간대. 배정 시각은 UTC로 저장하지만 "오늘"은 사용자가 사는 곳의 날짜여야 한다.
+# 서버(UTC)와 브라우저(KST)가 서로 다른 날짜를 오늘이라 부르면, 한국 시간 0~9시에 배정한
+# 직무가 대시보드의 "오늘"에 안 보였다. 한국은 서머타임이 없어 고정 오프셋으로 충분하다.
+APP_UTC_OFFSET_HOURS = int(os.getenv("APP_UTC_OFFSET_HOURS", "9"))
+_SQL_LOCAL_DATE_MODIFIER = f"{APP_UTC_OFFSET_HOURS:+d} hours"
+
+
+def local_day_start_utc(now: datetime | None = None) -> datetime:
+    """현지 기준 오늘 0시를 UTC 시각으로 돌려준다(저장된 UTC 시각과 바로 비교할 수 있다)."""
+    now = now or datetime.now(timezone.utc)
+    offset = timedelta(hours=APP_UTC_OFFSET_HOURS)
+    local_midnight = (now + offset).replace(hour=0, minute=0, second=0, microsecond=0)
+    return local_midnight - offset
+
 
 def _cors_origins() -> list[str]:
     raw = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
@@ -223,14 +238,16 @@ def worker_tasks(worker_id: str, date: str | None = None,
     """특정 근로자에게 배정된 직무 목록(중복 제거, 최신순).
 
     date(YYYY-MM-DD)를 주면 그 날짜에 배정된 직무만 반환한다(달력 보기용).
-    날짜 비교는 저장 기준인 UTC 일자로 한다(worker_today와 동일 기준).
+    날짜는 현지(APP_UTC_OFFSET_HOURS) 기준이다 — 브라우저의 "오늘"·worker_today와 같은 기준.
     """
     worker = db.get(Worker, worker_id)
     if worker is None or worker.employer_id != user["sub"]:
         raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
     assignment_query = select(Assignment).where(Assignment.worker_id == worker_id)
     if date:
-        assignment_query = assignment_query.where(func.date(Assignment.assigned_date) == date)
+        assignment_query = assignment_query.where(
+            func.date(Assignment.assigned_date, _SQL_LOCAL_DATE_MODIFIER) == date
+        )
     task_ids = list({a.task_id for a in db.scalars(assignment_query).all()})
     if not task_ids:
         return []
@@ -251,7 +268,7 @@ def worker_active_dates(worker_id: str, db: Session = Depends(get_db),
     if worker is None or worker.employer_id != user["sub"]:
         raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
     rows = db.scalars(
-        select(func.date(Assignment.assigned_date))
+        select(func.date(Assignment.assigned_date, _SQL_LOCAL_DATE_MODIFIER))
         .where(Assignment.worker_id == worker_id)
         .distinct()
     ).all()
@@ -668,7 +685,7 @@ def assign_task(task_id: str, payload: AssignRequest = AssignRequest(),
 @app.get("/api/worker/me/today", response_model=list[TodayCardOut])
 def worker_today(db: Session = Depends(get_db),
                  user: dict = Depends(require_worker)) -> list[TodayCardOut]:
-    start_of_day = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    start_of_day = local_day_start_utc()
     assignments = db.scalars(
         select(Assignment).where(
             Assignment.worker_id == user["sub"],
