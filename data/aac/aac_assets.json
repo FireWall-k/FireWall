@@ -5,13 +5,17 @@
     768,
     768
   ],
-  "asset_count": 401,
+  "asset_count": 661,
   "jobs": {
     "ASSEMBLY": 106,
     "CAFE": 101,
     "CLEANING": 74,
     "PACKAGING": 44,
-    "RETAIL": 76
+    "RETAIL": 76,
+    "DELIVERY": 55,
+    "DISPLAY": 74,
+    "GAS": 45,
+    "SERVING": 86
   },
   "assets": [
     {
@@ -10420,6 +10424,6403 @@
         "픽업 장소",
         "상품"
       ]
+    },
+    {
+      "id": "DELIVERY_001",
+      "group_id": "DELIVERY_001",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "바닥에 쌓인 상자를 두 손으로 든다",
+      "keywords": [
+        "박스",
+        "바닥",
+        "손",
+        "바닥에",
+        "쌓인",
+        "상자를",
+        "손으로",
+        "든다"
+      ],
+      "aliases": [],
+      "search_text": "delivery 바닥에 쌓인 상자를 두 손으로 든다 other 박스 바닥 손 바닥에 쌓인 상자를 손으로 든다",
+      "image": "delivery/DELIVERY_001.webp",
+      "source_file": "DELIVERY_001_바닥에 쌓인 상자를 두 손으로 든다.png",
+      "action": "other",
+      "objects": [
+        "박스",
+        "바닥",
+        "손"
+      ]
+    },
+    {
+      "id": "DELIVERY_002",
+      "group_id": "DELIVERY_002",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자를 카트에 차곡차곡 쌓는다",
+      "keywords": [
+        "카트",
+        "박스",
+        "상자를",
+        "카트에",
+        "차곡차곡",
+        "쌓는다",
+        "쌓기",
+        "적재"
+      ],
+      "aliases": [
+        "상자를 운반 카트에 차곡차곡 쌓는다"
+      ],
+      "search_text": "delivery 상자를 카트에 차곡차곡 쌓는다 stack 카트 박스 상자를 카트에 차곡차곡 쌓는다 쌓기 적재 상자를 운반 카트에 차곡차곡 쌓는다",
+      "image": "delivery/DELIVERY_002.webp",
+      "source_file": "DELIVERY_002_상자를 카트에 차곡차곡 쌓는다.png",
+      "action": "stack",
+      "objects": [
+        "카트",
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_003",
+      "group_id": "DELIVERY_003",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "쌓인 상자 개수를 손가락으로 하나씩 가리키며 센다",
+      "keywords": [
+        "박스",
+        "손",
+        "쌓인",
+        "상자",
+        "개수를",
+        "손가락으로",
+        "하나씩",
+        "가리키며",
+        "센다",
+        "수량 확인",
+        "개수 세기"
+      ],
+      "aliases": [],
+      "search_text": "delivery 쌓인 상자 개수를 손가락으로 하나씩 가리키며 센다 count 박스 손 쌓인 상자 개수를 손가락으로 하나씩 가리키며 센다 수량 확인 개수 세기",
+      "image": "delivery/DELIVERY_003.webp",
+      "source_file": "DELIVERY_003_쌓인 상자 개수를 손가락으로 하나씩 가리키며 센다.png",
+      "action": "count",
+      "objects": [
+        "박스",
+        "손"
+      ]
+    },
+    {
+      "id": "DELIVERY_004",
+      "group_id": "DELIVERY_004",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자를 실은 카트를 밀어 이동한다",
+      "keywords": [
+        "카트",
+        "박스",
+        "상자를",
+        "실은",
+        "카트를",
+        "밀어",
+        "이동한다",
+        "이동",
+        "옮기기"
+      ],
+      "aliases": [
+        "상자를 실은 운반 카트를 밀어 이동한다"
+      ],
+      "search_text": "delivery 상자를 실은 카트를 밀어 이동한다 move 카트 박스 상자를 실은 카트를 밀어 이동한다 이동 옮기기 상자를 실은 운반 카트를 밀어 이동한다",
+      "image": "delivery/DELIVERY_004.webp",
+      "source_file": "DELIVERY_004_상자를 실은 카트를 밀어 이동한다.png",
+      "action": "move",
+      "objects": [
+        "카트",
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_005",
+      "group_id": "DELIVERY_005",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "트럭 뒤쪽 적재함 문을 두 손으로 연다",
+      "keywords": [
+        "손",
+        "트럭",
+        "뒤쪽",
+        "적재함",
+        "문을",
+        "손으로",
+        "연다",
+        "뒤",
+        "뒤편",
+        "열기"
+      ],
+      "aliases": [],
+      "search_text": "delivery 트럭 뒤쪽 적재함 문을 두 손으로 연다 open 손 트럭 뒤쪽 적재함 문을 손으로 연다 뒤 뒤편 열기",
+      "image": "delivery/DELIVERY_005.webp",
+      "source_file": "DELIVERY_005_트럭 뒤쪽 적재함 문을 두 손으로 연다.png",
+      "action": "open",
+      "objects": [
+        "손"
+      ]
+    },
+    {
+      "id": "DELIVERY_006",
+      "group_id": "DELIVERY_006",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자를 트럭 적재함 안으로 밀어 넣는다",
+      "keywords": [
+        "박스",
+        "상자를",
+        "트럭",
+        "적재함",
+        "안으로",
+        "밀어",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "delivery 상자를 트럭 적재함 안으로 밀어 넣는다 put_in 박스 상자를 트럭 적재함 안으로 밀어 넣는다 넣기 담기 꽂기",
+      "image": "delivery/DELIVERY_006.webp",
+      "source_file": "DELIVERY_006_상자를 트럭 적재함 안으로 밀어 넣는다.png",
+      "action": "put_in",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_007",
+      "group_id": "DELIVERY_007",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "적재함 안에 실린 상자들을 가지런히 정리한다",
+      "keywords": [
+        "박스",
+        "적재함",
+        "안에",
+        "실린",
+        "상자들을",
+        "가지런히",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "delivery 적재함 안에 실린 상자들을 가지런히 정리한다 organize 박스 적재함 안에 실린 상자들을 가지런히 정리한다 정리 정돈",
+      "image": "delivery/DELIVERY_007.webp",
+      "source_file": "DELIVERY_007_적재함 안에 실린 상자들을 가지런히 정리한다.png",
+      "action": "organize",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_008",
+      "group_id": "DELIVERY_008",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "적재함 문을 닫는다",
+      "keywords": [
+        "적재함",
+        "문을",
+        "닫는다",
+        "닫기"
+      ],
+      "aliases": [],
+      "search_text": "delivery 적재함 문을 닫는다 close 적재함 문을 닫는다 닫기",
+      "image": "delivery/DELIVERY_008.webp",
+      "source_file": "DELIVERY_008_적재함 문을 닫는다.png",
+      "action": "close",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_009",
+      "group_id": "DELIVERY_009",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자에 붙은 사각형 라벨을 확인한다",
+      "keywords": [
+        "라벨",
+        "박스",
+        "상자에",
+        "붙은",
+        "사각형",
+        "라벨을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "상자에 붙은 사각형 라벨을 점검한다"
+      ],
+      "search_text": "delivery 상자에 붙은 사각형 라벨을 확인한다 check 라벨 박스 상자에 붙은 사각형 라벨을 확인한다 점검 검사 확인 상자에 붙은 사각형 라벨을 점검한다",
+      "image": "delivery/DELIVERY_009.webp",
+      "source_file": "DELIVERY_009_상자에 붙은 사각형 라벨을 확인한다.png",
+      "action": "check",
+      "objects": [
+        "라벨",
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_010",
+      "group_id": "DELIVERY_010",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "휴대용 바코드 스캐너를 라벨에 대고 스캔한다",
+      "keywords": [
+        "스캐너",
+        "라벨",
+        "바코드",
+        "휴대용",
+        "스캐너를",
+        "라벨에",
+        "대고",
+        "스캔한다",
+        "스캔"
+      ],
+      "aliases": [],
+      "search_text": "delivery 휴대용 바코드 스캐너를 라벨에 대고 스캔한다 scan 스캐너 라벨 바코드 휴대용 스캐너를 라벨에 대고 스캔한다 스캔",
+      "image": "delivery/DELIVERY_010.webp",
+      "source_file": "DELIVERY_010_휴대용 바코드 스캐너를 라벨에 대고 스캔한다.png",
+      "action": "scan",
+      "objects": [
+        "스캐너",
+        "라벨",
+        "바코드"
+      ]
+    },
+    {
+      "id": "DELIVERY_011",
+      "group_id": "DELIVERY_011",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "스캔 결과가 뜬 태블릿 화면을 들여다본다",
+      "keywords": [
+        "화면",
+        "스캔",
+        "결과가",
+        "태블릿",
+        "화면을",
+        "들여다본다"
+      ],
+      "aliases": [],
+      "search_text": "delivery 스캔 결과가 뜬 태블릿 화면을 들여다본다 other 화면 스캔 결과가 태블릿 화면을 들여다본다",
+      "image": "delivery/DELIVERY_011.webp",
+      "source_file": "DELIVERY_011_스캔 결과가 뜬 태블릿 화면을 들여다본다.png",
+      "action": "other",
+      "objects": [
+        "화면"
+      ]
+    },
+    {
+      "id": "DELIVERY_012",
+      "group_id": "DELIVERY_012",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "마커펜으로 라벨에 확인 체크 표시를 그린다",
+      "keywords": [
+        "라벨",
+        "마커펜으로",
+        "라벨에",
+        "확인",
+        "체크",
+        "표시를",
+        "그린다",
+        "점검",
+        "검사"
+      ],
+      "aliases": [],
+      "search_text": "delivery 마커펜으로 라벨에 확인 체크 표시를 그린다 check 라벨 마커펜으로 라벨에 확인 체크 표시를 그린다 점검 검사",
+      "image": "delivery/DELIVERY_012.webp",
+      "source_file": "DELIVERY_012_마커펜으로 라벨에 확인 체크 표시를 그린다.png",
+      "action": "check",
+      "objects": [
+        "라벨"
+      ]
+    },
+    {
+      "id": "DELIVERY_013",
+      "group_id": "DELIVERY_013",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자를 하나씩 꺼내 바닥에 내려놓는다",
+      "keywords": [
+        "박스",
+        "바닥",
+        "상자를",
+        "하나씩",
+        "꺼내",
+        "바닥에",
+        "내려놓는다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [
+        "상자를 하나씩 꺼내 바닥에 내려올린다"
+      ],
+      "search_text": "delivery 상자를 하나씩 꺼내 바닥에 내려놓는다 remove 박스 바닥 상자를 하나씩 꺼내 바닥에 내려놓는다 꺼내기 빼기 제거 상자를 하나씩 꺼내 바닥에 내려올린다",
+      "image": "delivery/DELIVERY_013.webp",
+      "source_file": "DELIVERY_013_상자를 하나씩 꺼내 바닥에 내려놓는다.png",
+      "action": "remove",
+      "objects": [
+        "박스",
+        "바닥"
+      ]
+    },
+    {
+      "id": "DELIVERY_014",
+      "group_id": "DELIVERY_014",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자 겉면이 찢어지거나 눌리지 않았는지 살펴본다",
+      "keywords": [
+        "박스",
+        "상자",
+        "겉면이",
+        "찢어지거나",
+        "눌리지",
+        "않았는지",
+        "살펴본다"
+      ],
+      "aliases": [],
+      "search_text": "delivery 상자 겉면이 찢어지거나 눌리지 않았는지 살펴본다 other 박스 상자 겉면이 찢어지거나 눌리지 않았는지 살펴본다",
+      "image": "delivery/DELIVERY_014.webp",
+      "source_file": "DELIVERY_014_상자 겉면이 찢어지거나 눌리지 않았는지 살펴본다.png",
+      "action": "other",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_015",
+      "group_id": "DELIVERY_015",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "확인이 끝난 상자를 손수레에 옮겨 싣는다",
+      "keywords": [
+        "박스",
+        "손",
+        "확인이",
+        "끝난",
+        "상자를",
+        "손수레에",
+        "옮겨",
+        "싣는다",
+        "점검",
+        "검사",
+        "싣기",
+        "적재"
+      ],
+      "aliases": [],
+      "search_text": "delivery 확인이 끝난 상자를 손수레에 옮겨 싣는다 load 박스 손 확인이 끝난 상자를 손수레에 옮겨 싣는다 점검 검사 싣기 적재",
+      "image": "delivery/DELIVERY_015.webp",
+      "source_file": "DELIVERY_015_확인이 끝난 상자를 손수레에 옮겨 싣는다.png",
+      "action": "load",
+      "objects": [
+        "박스",
+        "손"
+      ]
+    },
+    {
+      "id": "DELIVERY_016",
+      "group_id": "DELIVERY_016",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자를 문 앞에 선 손님에게 건넨다",
+      "keywords": [
+        "박스",
+        "고객",
+        "손",
+        "상자를",
+        "앞에",
+        "손님에게",
+        "건넨다",
+        "건네기",
+        "전달"
+      ],
+      "aliases": [],
+      "search_text": "delivery 상자를 문 앞에 선 손님에게 건넨다 handover 박스 고객 손 상자를 앞에 손님에게 건넨다 건네기 전달",
+      "image": "delivery/DELIVERY_016.webp",
+      "source_file": "DELIVERY_016_상자를 문 앞에 선 손님에게 건넨다.png",
+      "action": "handover",
+      "objects": [
+        "박스",
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "DELIVERY_017",
+      "group_id": "DELIVERY_017",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "태블릿 화면을 손님 쪽으로 돌려 내민다",
+      "keywords": [
+        "화면",
+        "고객",
+        "손",
+        "태블릿",
+        "화면을",
+        "손님",
+        "쪽으로",
+        "돌려",
+        "내민다",
+        "이동",
+        "옮기기"
+      ],
+      "aliases": [],
+      "search_text": "delivery 태블릿 화면을 손님 쪽으로 돌려 내민다 move 화면 고객 손 태블릿 화면을 손님 쪽으로 돌려 내민다 이동 옮기기",
+      "image": "delivery/DELIVERY_017.webp",
+      "source_file": "DELIVERY_017_태블릿 화면을 손님 쪽으로 돌려 내민다.png",
+      "action": "move",
+      "objects": [
+        "화면",
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "DELIVERY_018",
+      "group_id": "DELIVERY_018",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "손님이 화면에 서명하는 동안 옆에서 기다린다",
+      "keywords": [
+        "화면",
+        "고객",
+        "손",
+        "손님이",
+        "화면에",
+        "서명하는",
+        "동안",
+        "옆에서",
+        "기다린다"
+      ],
+      "aliases": [],
+      "search_text": "delivery 손님이 화면에 서명하는 동안 옆에서 기다린다 other 화면 고객 손 손님이 화면에 서명하는 동안 옆에서 기다린다",
+      "image": "delivery/DELIVERY_018.webp",
+      "source_file": "DELIVERY_018_손님이 화면에 서명하는 동안 옆에서 기다린다.png",
+      "action": "other",
+      "objects": [
+        "화면",
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "DELIVERY_019",
+      "group_id": "DELIVERY_019",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "서명이 끝난 태블릿을 다시 받아 든다",
+      "keywords": [
+        "서명이",
+        "끝난",
+        "태블릿을",
+        "다시",
+        "받아",
+        "든다"
+      ],
+      "aliases": [],
+      "search_text": "delivery 서명이 끝난 태블릿을 다시 받아 든다 other 서명이 끝난 태블릿을 다시 받아 든다",
+      "image": "delivery/DELIVERY_019.webp",
+      "source_file": "DELIVERY_019_서명이 끝난 태블릿을 다시 받아 든다.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_020",
+      "group_id": "DELIVERY_020",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자를 가지고 배송지에 간다",
+      "keywords": [
+        "배송 상자",
+        "상자를",
+        "가지고",
+        "배송지에",
+        "간다",
+        "분쇄",
+        "갈기"
+      ],
+      "aliases": [],
+      "search_text": "delivery 상자를 가지고 배송지에 간다 grind 배송 상자 상자를 가지고 배송지에 간다 분쇄 갈기",
+      "image": "delivery/DELIVERY_020.webp",
+      "source_file": "DELIVERY_020_상자를 가지고 배송지에 간다.png",
+      "action": "grind",
+      "objects": [
+        "배송 상자"
+      ]
+    },
+    {
+      "id": "DELIVERY_021",
+      "group_id": "DELIVERY_021",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자에 적힌 주소와 현재 위치를 비교한다",
+      "keywords": [
+        "박스",
+        "상자에",
+        "적힌",
+        "주소와",
+        "현재",
+        "위치를",
+        "비교한다",
+        "비교",
+        "대조"
+      ],
+      "aliases": [],
+      "search_text": "delivery 상자에 적힌 주소와 현재 위치를 비교한다 compare 박스 상자에 적힌 주소와 현재 위치를 비교한다 비교 대조",
+      "image": "delivery/DELIVERY_021.webp",
+      "source_file": "DELIVERY_021_상자에 적힌 주소와 현재 위치를 비교한다.png",
+      "action": "compare",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_022",
+      "group_id": "DELIVERY_022",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "초인종을 누른다",
+      "keywords": [
+        "초인종을",
+        "누른다",
+        "누르기",
+        "압착"
+      ],
+      "aliases": [],
+      "search_text": "delivery 초인종을 누른다 press 초인종을 누른다 누르기 압착",
+      "image": "delivery/DELIVERY_022.webp",
+      "source_file": "DELIVERY_022_초인종을 누른다.png",
+      "action": "press",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_023",
+      "group_id": "DELIVERY_023",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "문 앞에 택배를 내려놓는다",
+      "keywords": [
+        "앞에",
+        "택배를",
+        "내려놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "문 앞에 택배를 내려올린다"
+      ],
+      "search_text": "delivery 문 앞에 택배를 내려놓는다 place 앞에 택배를 내려놓는다 놓기 올리기 진열 배치 문 앞에 택배를 내려올린다",
+      "image": "delivery/DELIVERY_023.webp",
+      "source_file": "DELIVERY_023_문 앞에 택배를 내려놓는다.png",
+      "action": "place",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_024",
+      "group_id": "DELIVERY_024",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자와 함께 있는 거래명세서를 손에 든다",
+      "keywords": [
+        "박스",
+        "손",
+        "상자와",
+        "함께",
+        "있는",
+        "거래명세서를",
+        "손에",
+        "든다"
+      ],
+      "aliases": [],
+      "search_text": "delivery 상자와 함께 있는 거래명세서를 손에 든다 other 박스 손 상자와 함께 있는 거래명세서를 손에 든다",
+      "image": "delivery/DELIVERY_024.webp",
+      "source_file": "DELIVERY_024_상자와 함께 있는 거래명세서를 손에 든다.png",
+      "action": "other",
+      "objects": [
+        "박스",
+        "손"
+      ]
+    },
+    {
+      "id": "DELIVERY_025",
+      "group_id": "DELIVERY_025",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "명세서와 상자에 붙은 라벨을 번갈아 보며 비교한다",
+      "keywords": [
+        "라벨",
+        "박스",
+        "명세서와",
+        "상자에",
+        "붙은",
+        "라벨을",
+        "번갈아",
+        "보며",
+        "비교한다",
+        "비교",
+        "대조"
+      ],
+      "aliases": [],
+      "search_text": "delivery 명세서와 상자에 붙은 라벨을 번갈아 보며 비교한다 compare 라벨 박스 명세서와 상자에 붙은 라벨을 번갈아 보며 비교한다 비교 대조",
+      "image": "delivery/DELIVERY_025.webp",
+      "source_file": "DELIVERY_025_명세서와 상자에 붙은 라벨을 번갈아 보며 비교한다.png",
+      "action": "compare",
+      "objects": [
+        "라벨",
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_026",
+      "group_id": "DELIVERY_026",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "명세서 내용을 손가락으로 짚으며 확인한다",
+      "keywords": [
+        "손",
+        "명세서",
+        "내용을",
+        "손가락으로",
+        "짚으며",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "명세서 내용을 손가락으로 짚으며 점검한다"
+      ],
+      "search_text": "delivery 명세서 내용을 손가락으로 짚으며 확인한다 check 손 명세서 내용을 손가락으로 짚으며 확인한다 점검 검사 확인 명세서 내용을 손가락으로 짚으며 점검한다",
+      "image": "delivery/DELIVERY_026.webp",
+      "source_file": "DELIVERY_026_명세서 내용을 손가락으로 짚으며 확인한다.png",
+      "action": "check",
+      "objects": [
+        "손"
+      ]
+    },
+    {
+      "id": "DELIVERY_027",
+      "group_id": "DELIVERY_027",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "확인이 끝난 명세서를 상자 위에 다시 올려놓는다",
+      "keywords": [
+        "박스",
+        "확인이",
+        "끝난",
+        "명세서를",
+        "상자",
+        "위에",
+        "다시",
+        "올려놓는다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "확인이 끝난 명세서를 상자 위에 다시 올려올린다"
+      ],
+      "search_text": "delivery 확인이 끝난 명세서를 상자 위에 다시 올려놓는다 check 박스 확인이 끝난 명세서를 상자 위에 다시 올려놓는다 점검 검사 확인 확인이 끝난 명세서를 상자 위에 다시 올려올린다",
+      "image": "delivery/DELIVERY_027.webp",
+      "source_file": "DELIVERY_027_확인이 끝난 명세서를 상자 위에 다시 올려놓는다.png",
+      "action": "check",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_028",
+      "group_id": "DELIVERY_028",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "응답이 없는 문 앞에서 잠시 기다린다",
+      "keywords": [
+        "응답이",
+        "없는",
+        "앞에서",
+        "잠시",
+        "기다린다"
+      ],
+      "aliases": [],
+      "search_text": "delivery 응답이 없는 문 앞에서 잠시 기다린다 other 응답이 없는 앞에서 잠시 기다린다",
+      "image": "delivery/DELIVERY_028.webp",
+      "source_file": "DELIVERY_028_응답이 없는 문 앞에서 잠시 기다린다.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_029",
+      "group_id": "DELIVERY_029",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "들고 있던 상자를 다시 카트에 올려놓는다",
+      "keywords": [
+        "카트",
+        "박스",
+        "들고",
+        "있던",
+        "상자를",
+        "다시",
+        "카트에",
+        "올려놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "들고 있던 상자를 다시 운반 카트에 올려놓는다",
+        "들고 있던 상자를 다시 카트에 올려올린다",
+        "들고 있던 상자를 다시 운반 카트에 올려올린다"
+      ],
+      "search_text": "delivery 들고 있던 상자를 다시 카트에 올려놓는다 place 카트 박스 들고 있던 상자를 다시 카트에 올려놓는다 놓기 올리기 진열 배치 들고 있던 상자를 다시 운반 카트에 올려놓는다 들고 있던 상자를 다시 카트에 올려올린다 들고 있던 상자를 다시 운반 카트에 올려올린다",
+      "image": "delivery/DELIVERY_029.webp",
+      "source_file": "DELIVERY_029_들고 있던 상자를 다시 카트에 올려놓는다.png",
+      "action": "place",
+      "objects": [
+        "카트",
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_030",
+      "group_id": "DELIVERY_030",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "태블릿 화면을 손가락으로 눌러 반품 항목을 선택한다",
+      "keywords": [
+        "화면",
+        "손",
+        "태블릿",
+        "화면을",
+        "손가락으로",
+        "눌러",
+        "반품",
+        "항목을",
+        "선택한다",
+        "누르기",
+        "압착"
+      ],
+      "aliases": [],
+      "search_text": "delivery 태블릿 화면을 손가락으로 눌러 반품 항목을 선택한다 press 화면 손 태블릿 화면을 손가락으로 눌러 반품 항목을 선택한다 누르기 압착",
+      "image": "delivery/DELIVERY_030.webp",
+      "source_file": "DELIVERY_030_태블릿 화면을 손가락으로 눌러 반품 항목을 선택한다.png",
+      "action": "press",
+      "objects": [
+        "화면",
+        "손"
+      ]
+    },
+    {
+      "id": "DELIVERY_031",
+      "group_id": "DELIVERY_031",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "반품 처리된 상자를 별도의 칸에 따로 놓는다",
+      "keywords": [
+        "박스",
+        "반품",
+        "처리된",
+        "상자를",
+        "별도의",
+        "칸에",
+        "따로",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "반품 처리된 상자를 별도의 칸에 따로 올린다"
+      ],
+      "search_text": "delivery 반품 처리된 상자를 별도의 칸에 따로 놓는다 place 박스 반품 처리된 상자를 별도의 칸에 따로 놓는다 놓기 올리기 진열 배치 반품 처리된 상자를 별도의 칸에 따로 올린다",
+      "image": "delivery/DELIVERY_031.webp",
+      "source_file": "DELIVERY_031_반품 처리된 상자를 별도의 칸에 따로 놓는다.png",
+      "action": "place",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_032",
+      "group_id": "DELIVERY_032",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "문 앞에 놓인 상자 옆에 선다",
+      "keywords": [
+        "박스",
+        "앞에",
+        "놓인",
+        "상자",
+        "옆에",
+        "선다"
+      ],
+      "aliases": [],
+      "search_text": "delivery 문 앞에 놓인 상자 옆에 선다 other 박스 앞에 놓인 상자 옆에 선다",
+      "image": "delivery/DELIVERY_032.webp",
+      "source_file": "DELIVERY_032_문 앞에 놓인 상자 옆에 선다.png",
+      "action": "other",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_033",
+      "group_id": "DELIVERY_033",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "휴대전화를 양손으로 들어 상자를 향해 겨눈다",
+      "keywords": [
+        "박스",
+        "손",
+        "휴대전화를",
+        "양손으로",
+        "들어",
+        "상자를",
+        "향해",
+        "겨눈다"
+      ],
+      "aliases": [],
+      "search_text": "delivery 휴대전화를 양손으로 들어 상자를 향해 겨눈다 other 박스 손 휴대전화를 양손으로 들어 상자를 향해 겨눈다",
+      "image": "delivery/DELIVERY_033.webp",
+      "source_file": "DELIVERY_033_휴대전화를 양손으로 들어 상자를 향해 겨눈다.png",
+      "action": "other",
+      "objects": [
+        "박스",
+        "손"
+      ]
+    },
+    {
+      "id": "DELIVERY_034",
+      "group_id": "DELIVERY_034",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "화면을 보며 사진을 찍는 자세를 취한다",
+      "keywords": [
+        "화면",
+        "화면을",
+        "보며",
+        "사진을",
+        "찍는",
+        "자세를",
+        "취한다"
+      ],
+      "aliases": [],
+      "search_text": "delivery 화면을 보며 사진을 찍는 자세를 취한다 other 화면 화면을 보며 사진을 찍는 자세를 취한다",
+      "image": "delivery/DELIVERY_034.webp",
+      "source_file": "DELIVERY_034_화면을 보며 사진을 찍는 자세를 취한다.png",
+      "action": "other",
+      "objects": [
+        "화면"
+      ]
+    },
+    {
+      "id": "DELIVERY_035",
+      "group_id": "DELIVERY_035",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "조끼 착용",
+      "keywords": [
+        "조끼",
+        "착용"
+      ],
+      "aliases": [],
+      "search_text": "delivery 조끼 착용 other 조끼 착용",
+      "image": "delivery/DELIVERY_035.webp",
+      "source_file": "DELIVERY_035_조끼 착용.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_047",
+      "group_id": "DELIVERY_047",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "촬영한 사진을 화면으로 확인한다",
+      "keywords": [
+        "화면",
+        "촬영한",
+        "사진을",
+        "화면으로",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "촬영한 사진을 화면으로 점검한다"
+      ],
+      "search_text": "delivery 촬영한 사진을 화면으로 확인한다 check 화면 촬영한 사진을 화면으로 확인한다 점검 검사 확인 촬영한 사진을 화면으로 점검한다",
+      "image": "delivery/DELIVERY_047.webp",
+      "source_file": "DELIVERY_035_촬영한 사진을 화면으로 확인한다.png",
+      "action": "check",
+      "objects": [
+        "화면"
+      ]
+    },
+    {
+      "id": "DELIVERY_036",
+      "group_id": "DELIVERY_036",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "조끼 착용 완료",
+      "keywords": [
+        "조끼",
+        "착용",
+        "완료"
+      ],
+      "aliases": [],
+      "search_text": "delivery 조끼 착용 완료 other 조끼 착용 완료",
+      "image": "delivery/DELIVERY_036.webp",
+      "source_file": "DELIVERY_036_조끼 착용 완료.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_037",
+      "group_id": "DELIVERY_037",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "안전화 착용",
+      "keywords": [
+        "안전화",
+        "착용"
+      ],
+      "aliases": [],
+      "search_text": "delivery 안전화 착용 other 안전화 착용",
+      "image": "delivery/DELIVERY_037.webp",
+      "source_file": "DELIVERY_037_안전화 착용.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_038",
+      "group_id": "DELIVERY_038",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "안전화 착용 완료",
+      "keywords": [
+        "안전화",
+        "착용",
+        "완료"
+      ],
+      "aliases": [],
+      "search_text": "delivery 안전화 착용 완료 other 안전화 착용 완료",
+      "image": "delivery/DELIVERY_038.webp",
+      "source_file": "DELIVERY_038_안전화 착용 완료.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_039",
+      "group_id": "DELIVERY_039",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "서명 전 태블릿",
+      "keywords": [
+        "서명",
+        "태블릿"
+      ],
+      "aliases": [],
+      "search_text": "delivery 서명 전 태블릿 other 서명 태블릿",
+      "image": "delivery/DELIVERY_039.webp",
+      "source_file": "DELIVERY_039_서명 전 태블릿.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_040",
+      "group_id": "DELIVERY_040",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "서명 후 태블릿",
+      "keywords": [
+        "서명",
+        "태블릿"
+      ],
+      "aliases": [],
+      "search_text": "delivery 서명 후 태블릿 other 서명 태블릿",
+      "image": "delivery/DELIVERY_040.webp",
+      "source_file": "DELIVERY_040_서명 후 태블릿.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_041",
+      "group_id": "DELIVERY_041",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "초인종 누르기",
+      "keywords": [
+        "초인종",
+        "누르기",
+        "압착"
+      ],
+      "aliases": [],
+      "search_text": "delivery 초인종 누르기 press 초인종 누르기 압착",
+      "image": "delivery/DELIVERY_041.webp",
+      "source_file": "DELIVERY_041_초인종 누르기.png",
+      "action": "press",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_042",
+      "group_id": "DELIVERY_042",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자 가지고 노크",
+      "keywords": [
+        "박스",
+        "상자",
+        "가지고",
+        "노크"
+      ],
+      "aliases": [],
+      "search_text": "delivery 상자 가지고 노크 other 박스 상자 가지고 노크",
+      "image": "delivery/DELIVERY_042.webp",
+      "source_file": "DELIVERY_042_상자 가지고 노크.png",
+      "action": "other",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_043",
+      "group_id": "DELIVERY_043",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "안전모 착용",
+      "keywords": [
+        "안전모",
+        "착용"
+      ],
+      "aliases": [],
+      "search_text": "delivery 안전모 착용 other 안전모 착용",
+      "image": "delivery/DELIVERY_043.webp",
+      "source_file": "DELIVERY_043_안전모 착용.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_044",
+      "group_id": "DELIVERY_044",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "안전모 착용 완료",
+      "keywords": [
+        "안전모",
+        "착용",
+        "완료"
+      ],
+      "aliases": [],
+      "search_text": "delivery 안전모 착용 완료 other 안전모 착용 완료",
+      "image": "delivery/DELIVERY_044.webp",
+      "source_file": "DELIVERY_044_안전모 착용 완료.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_045",
+      "group_id": "DELIVERY_045",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "목장갑 착용",
+      "keywords": [
+        "목장갑",
+        "착용"
+      ],
+      "aliases": [],
+      "search_text": "delivery 목장갑 착용 other 목장갑 착용",
+      "image": "delivery/DELIVERY_045.webp",
+      "source_file": "DELIVERY_045_목장갑 착용.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_046",
+      "group_id": "DELIVERY_046",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "목장갑 착용 완료",
+      "keywords": [
+        "목장갑",
+        "착용",
+        "완료"
+      ],
+      "aliases": [],
+      "search_text": "delivery 목장갑 착용 완료 other 목장갑 착용 완료",
+      "image": "delivery/DELIVERY_046.webp",
+      "source_file": "DELIVERY_046_목장갑 착용 완료.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_ASSET_001",
+      "group_id": "DELIVERY_ASSET_001",
+      "job": "delivery",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "카트",
+      "keywords": [
+        "카트"
+      ],
+      "aliases": [
+        "운반 카트"
+      ],
+      "search_text": "delivery 카트 other 운반 카트",
+      "image": "delivery/DELIVERY_ASSET_001.webp",
+      "source_file": "DELIVERY_ASSET_001_카트.png",
+      "action": "other",
+      "objects": [
+        "카트"
+      ]
+    },
+    {
+      "id": "DELIVERY_ASSET_002",
+      "group_id": "DELIVERY_ASSET_002",
+      "job": "delivery",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "훼손된 상자",
+      "keywords": [
+        "박스",
+        "손",
+        "훼손된",
+        "상자"
+      ],
+      "aliases": [],
+      "search_text": "delivery 훼손된 상자 other 박스 손 훼손된 상자",
+      "image": "delivery/DELIVERY_ASSET_002.webp",
+      "source_file": "DELIVERY_ASSET_002_훼손된 상자.png",
+      "action": "other",
+      "objects": [
+        "박스",
+        "손"
+      ]
+    },
+    {
+      "id": "DELIVERY_ASSET_003",
+      "group_id": "DELIVERY_ASSET_003",
+      "job": "delivery",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "바코드 스캐너",
+      "keywords": [
+        "스캐너",
+        "바코드"
+      ],
+      "aliases": [],
+      "search_text": "delivery 바코드 스캐너 other 스캐너 바코드",
+      "image": "delivery/DELIVERY_ASSET_003.webp",
+      "source_file": "DELIVERY_ASSET_003_바코드 스캐너.png",
+      "action": "other",
+      "objects": [
+        "스캐너",
+        "바코드"
+      ]
+    },
+    {
+      "id": "DELIVERY_ASSET_004",
+      "group_id": "DELIVERY_ASSET_004",
+      "job": "delivery",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "상자",
+      "keywords": [
+        "박스",
+        "상자"
+      ],
+      "aliases": [],
+      "search_text": "delivery 상자 other 박스",
+      "image": "delivery/DELIVERY_ASSET_004.webp",
+      "source_file": "DELIVERY_ASSET_004_상자.png",
+      "action": "other",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_ASSET_005",
+      "group_id": "DELIVERY_ASSET_005",
+      "job": "delivery",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "라벨",
+      "keywords": [
+        "라벨"
+      ],
+      "aliases": [],
+      "search_text": "delivery 라벨 other",
+      "image": "delivery/DELIVERY_ASSET_005.webp",
+      "source_file": "DELIVERY_ASSET_005_라벨.png",
+      "action": "other",
+      "objects": [
+        "라벨"
+      ]
+    },
+    {
+      "id": "DELIVERY_ASSET_006",
+      "group_id": "DELIVERY_ASSET_006",
+      "job": "delivery",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "트럭 적재함",
+      "keywords": [
+        "트럭",
+        "적재함"
+      ],
+      "aliases": [],
+      "search_text": "delivery 트럭 적재함 other 트럭 적재함",
+      "image": "delivery/DELIVERY_ASSET_006.webp",
+      "source_file": "DELIVERY_ASSET_006_트럭 적재함.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_ASSET_007",
+      "group_id": "DELIVERY_ASSET_007",
+      "job": "delivery",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "배송 트럭",
+      "keywords": [
+        "배송",
+        "트럭"
+      ],
+      "aliases": [],
+      "search_text": "delivery 배송 트럭 other 배송 트럭",
+      "image": "delivery/DELIVERY_ASSET_007.webp",
+      "source_file": "DELIVERY_ASSET_007_배송 트럭.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_ASSET_008",
+      "group_id": "DELIVERY_ASSET_008",
+      "job": "delivery",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "카트 보관소",
+      "keywords": [
+        "카트",
+        "보관소"
+      ],
+      "aliases": [
+        "운반 카트 보관소"
+      ],
+      "search_text": "delivery 카트 보관소 other 카트 보관소 운반 카트 보관소",
+      "image": "delivery/DELIVERY_ASSET_008.webp",
+      "source_file": "DELIVERY_ASSET_008_카트 보관소.png",
+      "action": "other",
+      "objects": [
+        "카트"
+      ]
+    },
+    {
+      "id": "DISPLAY_TOOL_018",
+      "group_id": "DISPLAY_TOOL_018",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "창고 출입구",
+      "keywords": [
+        "창고",
+        "출입구"
+      ],
+      "aliases": [],
+      "search_text": "display 창고 출입구 other 창고 출입구",
+      "image": "display/DISPLAY_TOOL_018.webp",
+      "source_file": "DISPALY_TOOL_018_창고 출입구.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_001",
+      "group_id": "DISPLAY_001",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "큰 박스 안에서 상품 하나를 꺼낸다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "박스",
+        "안에서",
+        "하나를",
+        "꺼낸다",
+        "신상품",
+        "새 제품",
+        "기존 상품",
+        "먼저 들어온 상품",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [
+        "큰 박스 안에서 제품 하나를 꺼낸다",
+        "큰 박스 안에서 상품 하나를 빼낸다",
+        "큰 박스 안에서 제품 하나를 빼낸다"
+      ],
+      "search_text": "display 큰 박스 안에서 상품 하나를 꺼낸다 remove 상품 박스 제품 물건 안에서 하나를 꺼낸다 신상품 새 제품 기존 상품 먼저 들어온 상품 꺼내기 빼기 제거 큰 박스 안에서 제품 하나를 꺼낸다 큰 박스 안에서 상품 하나를 빼낸다 큰 박스 안에서 제품 하나를 빼낸다",
+      "image": "display/DISPLAY_001.webp",
+      "source_file": "DISPLAY_001_큰 박스 안에서 상품 하나를 꺼낸다.png",
+      "action": "remove",
+      "objects": [
+        "상품",
+        "박스"
+      ]
+    },
+    {
+      "id": "DISPLAY_002",
+      "group_id": "DISPLAY_002",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상품을 매장 선반 위에 올려놓는다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "상품",
+        "제품",
+        "물건",
+        "매장",
+        "상품을",
+        "위에",
+        "올려놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "제품을 매장 선반 위에 올려놓는다",
+        "상품을 매장 진열대 위에 올려놓는다",
+        "상품을 매장 선반 위에 올려올린다"
+      ],
+      "search_text": "display 상품을 매장 선반 위에 올려놓는다 place 선반 상품 매장 진열대 매대 제품 물건 상품을 위에 올려놓는다 놓기 올리기 진열 배치 제품을 매장 선반 위에 올려놓는다 상품을 매장 진열대 위에 올려놓는다 상품을 매장 선반 위에 올려올린다",
+      "image": "display/DISPLAY_002.webp",
+      "source_file": "DISPLAY_002_상품을 매장 선반 위에 올려놓는다.png",
+      "action": "place",
+      "objects": [
+        "선반",
+        "상품",
+        "매장"
+      ]
+    },
+    {
+      "id": "DISPLAY_003",
+      "group_id": "DISPLAY_003",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "선반 위 여러 상품의 방향을 가지런히 정렬한다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "상품",
+        "제품",
+        "물건",
+        "여러",
+        "상품의",
+        "방향을",
+        "가지런히",
+        "정렬한다",
+        "정렬",
+        "맞추기",
+        "방향 맞추기"
+      ],
+      "aliases": [
+        "선반 위 여러 제품의 방향을 가지런히 정렬한다",
+        "진열대 위 여러 상품의 방향을 가지런히 정렬한다",
+        "진열대 위 여러 제품의 방향을 가지런히 정렬한다"
+      ],
+      "search_text": "display 선반 위 여러 상품의 방향을 가지런히 정렬한다 align 선반 상품 진열대 매대 제품 물건 여러 상품의 방향을 가지런히 정렬한다 정렬 맞추기 방향 맞추기 선반 위 여러 제품의 방향을 가지런히 정렬한다 진열대 위 여러 상품의 방향을 가지런히 정렬한다 진열대 위 여러 제품의 방향을 가지런히 정렬한다",
+      "image": "display/DISPLAY_003.webp",
+      "source_file": "DISPLAY_003_선반 위 여러 상품의 방향을 가지런히 정렬한다.png",
+      "action": "align",
+      "objects": [
+        "선반",
+        "상품"
+      ]
+    },
+    {
+      "id": "DISPLAY_004",
+      "group_id": "DISPLAY_004",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "한 걸음 물러서서 진열된 선반을 확인한다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "걸음",
+        "물러서서",
+        "진열된",
+        "선반을",
+        "확인한다",
+        "배치",
+        "놓기",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "한 걸음 물러서서 진열된 진열대을 확인한다",
+        "한 걸음 물러서서 진열된 선반을 점검한다",
+        "한 걸음 물러서서 진열된 진열대을 점검한다"
+      ],
+      "search_text": "display 한 걸음 물러서서 진열된 선반을 확인한다 check 선반 진열대 매대 걸음 물러서서 진열된 선반을 확인한다 배치 놓기 점검 검사 확인 한 걸음 물러서서 진열된 진열대을 확인한다 한 걸음 물러서서 진열된 선반을 점검한다 한 걸음 물러서서 진열된 진열대을 점검한다",
+      "image": "display/DISPLAY_004.webp",
+      "source_file": "DISPLAY_004_한 걸음 물러서서 진열된 선반을 확인한다.png",
+      "action": "check",
+      "objects": [
+        "선반"
+      ]
+    },
+    {
+      "id": "DISPLAY_005",
+      "group_id": "DISPLAY_005",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작은 빈 가격표 라벨을 집어 든다",
+      "keywords": [
+        "가격표",
+        "라벨",
+        "작은",
+        "라벨을",
+        "집어",
+        "든다"
+      ],
+      "aliases": [],
+      "search_text": "display 작은 빈 가격표 라벨을 집어 든다 other 가격표 라벨 작은 라벨을 집어 든다",
+      "image": "display/DISPLAY_005.webp",
+      "source_file": "DISPLAY_005_작은 빈 가격표 라벨을 집어 든다.png",
+      "action": "other",
+      "objects": [
+        "가격표",
+        "라벨"
+      ]
+    },
+    {
+      "id": "DISPLAY_006",
+      "group_id": "DISPLAY_006",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "선반에 가격표 라벨을 붙인다",
+      "keywords": [
+        "가격표",
+        "선반",
+        "진열대",
+        "매대",
+        "라벨",
+        "선반에",
+        "라벨을",
+        "붙인다",
+        "붙이기",
+        "부착"
+      ],
+      "aliases": [
+        "진열대에 가격표 라벨을 붙인다"
+      ],
+      "search_text": "display 선반에 가격표 라벨을 붙인다 attach 가격표 선반 라벨 진열대 매대 선반에 라벨을 붙인다 붙이기 부착 진열대에 가격표 라벨을 붙인다",
+      "image": "display/DISPLAY_006.webp",
+      "source_file": "DISPLAY_006_선반에 가격표 라벨을 붙인다.png",
+      "action": "attach",
+      "objects": [
+        "가격표",
+        "선반",
+        "라벨"
+      ]
+    },
+    {
+      "id": "DISPLAY_007",
+      "group_id": "DISPLAY_007",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "가격표 라벨과 선반 위 상품을 번갈아 확인",
+      "keywords": [
+        "가격표",
+        "선반",
+        "진열대",
+        "매대",
+        "라벨",
+        "상품",
+        "제품",
+        "물건",
+        "라벨과",
+        "상품을",
+        "번갈아",
+        "확인",
+        "점검",
+        "검사"
+      ],
+      "aliases": [
+        "가격표 라벨과 선반 위 제품을 번갈아 확인",
+        "가격표 라벨과 진열대 위 상품을 번갈아 확인",
+        "가격표 라벨과 진열대 위 제품을 번갈아 확인"
+      ],
+      "search_text": "display 가격표 라벨과 선반 위 상품을 번갈아 확인 check 가격표 선반 라벨 상품 진열대 매대 제품 물건 라벨과 상품을 번갈아 확인 점검 검사 가격표 라벨과 선반 위 제품을 번갈아 확인 가격표 라벨과 진열대 위 상품을 번갈아 확인 가격표 라벨과 진열대 위 제품을 번갈아 확인",
+      "image": "display/DISPLAY_007.webp",
+      "source_file": "DISPLAY_007_가격표 라벨과 선반 위 상품을 번갈아 확인.png",
+      "action": "check",
+      "objects": [
+        "가격표",
+        "선반",
+        "라벨",
+        "상품"
+      ]
+    },
+    {
+      "id": "DISPLAY_008",
+      "group_id": "DISPLAY_008",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "삐뚤어진 라벨을 손으로 바르게 다시 붙인다",
+      "keywords": [
+        "라벨",
+        "손",
+        "삐뚤어진",
+        "라벨을",
+        "손으로",
+        "바르게",
+        "다시",
+        "붙인다",
+        "붙이기",
+        "부착"
+      ],
+      "aliases": [],
+      "search_text": "display 삐뚤어진 라벨을 손으로 바르게 다시 붙인다 attach 라벨 손 삐뚤어진 라벨을 손으로 바르게 다시 붙인다 붙이기 부착",
+      "image": "display/DISPLAY_008.webp",
+      "source_file": "DISPLAY_008_삐뚤어진 라벨을 손으로 바르게 다시 붙인다.png",
+      "action": "attach",
+      "objects": [
+        "라벨",
+        "손"
+      ]
+    },
+    {
+      "id": "DISPLAY_009",
+      "group_id": "DISPLAY_009",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "선반 위 상품들의 개수를 센다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "상품",
+        "제품",
+        "물건",
+        "상품들의",
+        "개수를",
+        "센다",
+        "수량 확인",
+        "개수 세기"
+      ],
+      "aliases": [
+        "선반 위 제품들의 개수를 센다",
+        "진열대 위 상품들의 개수를 센다",
+        "진열대 위 제품들의 개수를 센다"
+      ],
+      "search_text": "display 선반 위 상품들의 개수를 센다 count 선반 상품 진열대 매대 제품 물건 상품들의 개수를 센다 수량 확인 개수 세기 선반 위 제품들의 개수를 센다 진열대 위 상품들의 개수를 센다 진열대 위 제품들의 개수를 센다",
+      "image": "display/DISPLAY_009.webp",
+      "source_file": "DISPLAY_009_선반 위 상품들의 개수를 센다.png",
+      "action": "count",
+      "objects": [
+        "선반",
+        "상품"
+      ]
+    },
+    {
+      "id": "DISPLAY_010",
+      "group_id": "DISPLAY_010",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "스캐너로 선반의 태그를 스캔한다",
+      "keywords": [
+        "스캐너",
+        "선반",
+        "진열대",
+        "매대",
+        "스캐너로",
+        "선반의",
+        "태그를",
+        "스캔한다",
+        "바코드",
+        "스캔"
+      ],
+      "aliases": [
+        "스캐너로 진열대의 태그를 스캔한다"
+      ],
+      "search_text": "display 스캐너로 선반의 태그를 스캔한다 scan 스캐너 선반 진열대 매대 스캐너로 선반의 태그를 스캔한다 바코드 스캔 스캐너로 진열대의 태그를 스캔한다",
+      "image": "display/DISPLAY_010.webp",
+      "source_file": "DISPLAY_010_스캐너로 선반의 태그를 스캔한다.png",
+      "action": "scan",
+      "objects": [
+        "스캐너",
+        "선반"
+      ]
+    },
+    {
+      "id": "DISPLAY_011",
+      "group_id": "DISPLAY_011",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "태블릿에 수량을 입력한다",
+      "keywords": [
+        "태블릿에",
+        "수량을",
+        "입력한다"
+      ],
+      "aliases": [],
+      "search_text": "display 태블릿에 수량을 입력한다 other 태블릿에 수량을 입력한다",
+      "image": "display/DISPLAY_011.webp",
+      "source_file": "DISPLAY_011_태블릿에 수량을 입력한다.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_012",
+      "group_id": "DISPLAY_012",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "삼품이 부족한 빈 자리를 확인한다",
+      "keywords": [
+        "삼품이",
+        "부족한",
+        "자리를",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "삼품이 부족한 빈 자리를 점검한다"
+      ],
+      "search_text": "display 삼품이 부족한 빈 자리를 확인한다 check 삼품이 부족한 자리를 확인한다 점검 검사 확인 삼품이 부족한 빈 자리를 점검한다",
+      "image": "display/DISPLAY_012.webp",
+      "source_file": "DISPLAY_012_삼품이 부족한 빈 자리를 확인한다.png",
+      "action": "check",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_013",
+      "group_id": "DISPLAY_013",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "태블릿 수량입력 UI a",
+      "keywords": [
+        "태블릿",
+        "수량입력",
+        "UI"
+      ],
+      "aliases": [],
+      "search_text": "display 태블릿 수량입력 UI a other 태블릿 수량입력 UI",
+      "image": "display/DISPLAY_013.webp",
+      "source_file": "DISPLAY_013_태블릿 수량입력 UI a.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_014",
+      "group_id": "DISPLAY_014",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "태블릿 수량입력 UI b",
+      "keywords": [
+        "태블릿",
+        "수량입력",
+        "UI"
+      ],
+      "aliases": [],
+      "search_text": "display 태블릿 수량입력 UI b other 태블릿 수량입력 UI",
+      "image": "display/DISPLAY_014.webp",
+      "source_file": "DISPLAY_014_태블릿 수량입력 UI b.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_015",
+      "group_id": "DISPLAY_015",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "태블릿 수량입력 UI c",
+      "keywords": [
+        "태블릿",
+        "수량입력",
+        "UI"
+      ],
+      "aliases": [],
+      "search_text": "display 태블릿 수량입력 UI c other 태블릿 수량입력 UI",
+      "image": "display/DISPLAY_015.webp",
+      "source_file": "DISPLAY_015_태블릿 수량입력 UI c.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_016",
+      "group_id": "DISPLAY_016",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "태블릿 수량입력 UI d",
+      "keywords": [
+        "태블릿",
+        "수량입력",
+        "UI"
+      ],
+      "aliases": [],
+      "search_text": "display 태블릿 수량입력 UI d other 태블릿 수량입력 UI",
+      "image": "display/DISPLAY_016.webp",
+      "source_file": "DISPLAY_016_태블릿 수량입력 UI d.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_017",
+      "group_id": "DISPLAY_017",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "바닥에 떨어진 상품 박스를 집는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "박스",
+        "바닥",
+        "바닥에",
+        "떨어진",
+        "박스를",
+        "집는다",
+        "신상품",
+        "새 제품",
+        "기존 상품",
+        "먼저 들어온 상품",
+        "줍기",
+        "집기",
+        "수거"
+      ],
+      "aliases": [
+        "바닥에 떨어진 제품 박스를 집는다"
+      ],
+      "search_text": "display 바닥에 떨어진 상품 박스를 집는다 pick_up 상품 박스 바닥 제품 물건 바닥에 떨어진 박스를 집는다 신상품 새 제품 기존 상품 먼저 들어온 상품 줍기 집기 수거 바닥에 떨어진 제품 박스를 집는다",
+      "image": "display/DISPLAY_017.webp",
+      "source_file": "DISPLAY_017_바닥에 떨어진 상품 박스를 집는다.png",
+      "action": "pick_up",
+      "objects": [
+        "상품",
+        "박스",
+        "바닥"
+      ]
+    },
+    {
+      "id": "DISPLAY_018",
+      "group_id": "DISPLAY_018",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "청소용 걸레로 매장 선반을 닦는다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "매장",
+        "청소용",
+        "걸레로",
+        "선반을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [
+        "청소용 걸레로 매장 진열대을 닦는다"
+      ],
+      "search_text": "display 청소용 걸레로 매장 선반을 닦는다 clean 선반 매장 진열대 매대 청소용 걸레로 선반을 닦는다 청소 닦기 청소용 걸레로 매장 진열대을 닦는다",
+      "image": "display/DISPLAY_018.webp",
+      "source_file": "DISPLAY_018_청소용 걸레로 매장 선반을 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "선반",
+        "매장"
+      ]
+    },
+    {
+      "id": "DISPLAY_019",
+      "group_id": "DISPLAY_019",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "먼지털이로 선반의 먼지를 턴다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "먼지",
+        "먼지털이로",
+        "선반의",
+        "먼지를",
+        "턴다"
+      ],
+      "aliases": [
+        "먼지털이로 진열대의 먼지를 턴다"
+      ],
+      "search_text": "display 먼지털이로 선반의 먼지를 턴다 other 선반 먼지 진열대 매대 먼지털이로 선반의 먼지를 턴다 먼지털이로 진열대의 먼지를 턴다",
+      "image": "display/DISPLAY_019.webp",
+      "source_file": "DISPLAY_019_먼지털이로 선반의 먼지를 턴다.png",
+      "action": "other",
+      "objects": [
+        "선반",
+        "먼지"
+      ]
+    },
+    {
+      "id": "DISPLAY_020",
+      "group_id": "DISPLAY_020",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빈 상자를 확인한다",
+      "keywords": [
+        "박스",
+        "상자를",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "빈 상자를 점검한다"
+      ],
+      "search_text": "display 빈 상자를 확인한다 check 박스 상자를 확인한다 점검 검사 확인 빈 상자를 점검한다",
+      "image": "display/DISPLAY_020.webp",
+      "source_file": "DISPLAY_020_빈 상자를 확인한다.png",
+      "action": "check",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DISPLAY_021",
+      "group_id": "DISPLAY_021",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빈 상자는 분리수거한다",
+      "keywords": [
+        "박스",
+        "상자는",
+        "분리수거한다",
+        "모으기",
+        "한곳에 모으기"
+      ],
+      "aliases": [],
+      "search_text": "display 빈 상자는 분리수거한다 collect 박스 상자는 분리수거한다 모으기 한곳에 모으기",
+      "image": "display/DISPLAY_021.webp",
+      "source_file": "DISPLAY_021_빈 상자는 분리수거한다.png",
+      "action": "collect",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DISPLAY_022",
+      "group_id": "DISPLAY_022",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "정리된 통로",
+      "keywords": [
+        "정리된",
+        "통로"
+      ],
+      "aliases": [],
+      "search_text": "display 정리된 통로 other 정리된 통로",
+      "image": "display/DISPLAY_022.webp",
+      "source_file": "DISPLAY_022_정리된 통로.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_023",
+      "group_id": "DISPLAY_023",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "박스를 열어 안의 상품 상태를 살펴본다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "박스",
+        "박스를",
+        "열어",
+        "안의",
+        "상태를",
+        "살펴본다",
+        "신상품",
+        "새 제품",
+        "기존 상품",
+        "먼저 들어온 상품",
+        "열기"
+      ],
+      "aliases": [
+        "박스를 열어 안의 제품 상태를 살펴본다"
+      ],
+      "search_text": "display 박스를 열어 안의 상품 상태를 살펴본다 open 상품 박스 제품 물건 박스를 열어 안의 상태를 살펴본다 신상품 새 제품 기존 상품 먼저 들어온 상품 열기 박스를 열어 안의 제품 상태를 살펴본다",
+      "image": "display/DISPLAY_023.webp",
+      "source_file": "DISPLAY_023_박스를 열어 안의 상품 상태를 살펴본다.png",
+      "action": "open",
+      "objects": [
+        "상품",
+        "박스"
+      ]
+    },
+    {
+      "id": "DISPLAY_024",
+      "group_id": "DISPLAY_024",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상품 개수를 확인한다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "개수를",
+        "확인한다",
+        "신상품",
+        "새 제품",
+        "기존 상품",
+        "먼저 들어온 상품",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "제품 개수를 확인한다",
+        "상품 개수를 점검한다",
+        "제품 개수를 점검한다"
+      ],
+      "search_text": "display 상품 개수를 확인한다 check 상품 제품 물건 개수를 확인한다 신상품 새 제품 기존 상품 먼저 들어온 상품 점검 검사 확인 제품 개수를 확인한다 상품 개수를 점검한다 제품 개수를 점검한다",
+      "image": "display/DISPLAY_024.webp",
+      "source_file": "DISPLAY_024_상품 개수를 확인한다.png",
+      "action": "check",
+      "objects": [
+        "상품"
+      ]
+    },
+    {
+      "id": "DISPLAY_025",
+      "group_id": "DISPLAY_025",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "파손된 상품을 따로 빼놓는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "손",
+        "파손된",
+        "상품을",
+        "따로",
+        "빼놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "파손된 제품을 따로 빼놓는다",
+        "파손된 상품을 따로 빼올린다",
+        "파손된 제품을 따로 빼올린다"
+      ],
+      "search_text": "display 파손된 상품을 따로 빼놓는다 place 상품 손 제품 물건 파손된 상품을 따로 빼놓는다 놓기 올리기 진열 배치 파손된 제품을 따로 빼놓는다 파손된 상품을 따로 빼올린다 파손된 제품을 따로 빼올린다",
+      "image": "display/DISPLAY_025.webp",
+      "source_file": "DISPLAY_025_파손된 상품을 따로 빼놓는다.png",
+      "action": "place",
+      "objects": [
+        "상품",
+        "손"
+      ]
+    },
+    {
+      "id": "DISPLAY_026",
+      "group_id": "DISPLAY_026",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "이상 없는 상품을 대차에 옮겨 담는다",
+      "keywords": [
+        "카트",
+        "상품",
+        "제품",
+        "물건",
+        "이상",
+        "없는",
+        "상품을",
+        "대차에",
+        "옮겨",
+        "담는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [
+        "이상 없는 제품을 대차에 옮겨 담는다"
+      ],
+      "search_text": "display 이상 없는 상품을 대차에 옮겨 담는다 put_in 카트 상품 제품 물건 이상 없는 상품을 대차에 옮겨 담는다 넣기 담기 꽂기 이상 없는 제품을 대차에 옮겨 담는다",
+      "image": "display/DISPLAY_026.webp",
+      "source_file": "DISPLAY_026_이상 없는 상품을 대차에 옮겨 담는다.png",
+      "action": "put_in",
+      "objects": [
+        "카트",
+        "상품"
+      ]
+    },
+    {
+      "id": "DISPLAY_027",
+      "group_id": "DISPLAY_027",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "선반 위 상품을 하나씩 집어 든다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "상품",
+        "제품",
+        "물건",
+        "상품을",
+        "하나씩",
+        "집어",
+        "든다"
+      ],
+      "aliases": [
+        "선반 위 제품을 하나씩 집어 든다",
+        "진열대 위 상품을 하나씩 집어 든다",
+        "진열대 위 제품을 하나씩 집어 든다"
+      ],
+      "search_text": "display 선반 위 상품을 하나씩 집어 든다 other 선반 상품 진열대 매대 제품 물건 상품을 하나씩 집어 든다 선반 위 제품을 하나씩 집어 든다 진열대 위 상품을 하나씩 집어 든다 진열대 위 제품을 하나씩 집어 든다",
+      "image": "display/DISPLAY_027.webp",
+      "source_file": "DISPLAY_027_선반 위 상품을 하나씩 집어 든다.png",
+      "action": "other",
+      "objects": [
+        "선반",
+        "상품"
+      ]
+    },
+    {
+      "id": "DISPLAY_028",
+      "group_id": "DISPLAY_028",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "유통기한 라벨 확인",
+      "keywords": [
+        "라벨",
+        "유통기한",
+        "확인",
+        "점검",
+        "검사"
+      ],
+      "aliases": [],
+      "search_text": "display 유통기한 라벨 확인 check 라벨 유통기한 확인 점검 검사",
+      "image": "display/DISPLAY_028.webp",
+      "source_file": "DISPLAY_028_유통기한 라벨 확인.png",
+      "action": "check",
+      "objects": [
+        "라벨"
+      ]
+    },
+    {
+      "id": "DISPLAY_029",
+      "group_id": "DISPLAY_029",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "유통기한 날짜 비교",
+      "keywords": [
+        "유통기한",
+        "날짜",
+        "비교"
+      ],
+      "aliases": [],
+      "search_text": "display 유통기한 날짜 비교 other 유통기한 날짜 비교",
+      "image": "display/DISPLAY_029.webp",
+      "source_file": "DISPLAY_029_유통기한 날짜 비교.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_030",
+      "group_id": "DISPLAY_030",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "기한이 지난 상품을 별도 상자에 담는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "박스",
+        "기한이",
+        "지난",
+        "상품을",
+        "별도",
+        "상자에",
+        "담는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [
+        "기한이 지난 제품을 별도 상자에 담는다"
+      ],
+      "search_text": "display 기한이 지난 상품을 별도 상자에 담는다 put_in 상품 박스 제품 물건 기한이 지난 상품을 별도 상자에 담는다 넣기 담기 꽂기 기한이 지난 제품을 별도 상자에 담는다",
+      "image": "display/DISPLAY_030.webp",
+      "source_file": "DISPLAY_030_기한이 지난 상품을 별도 상자에 담는다.png",
+      "action": "put_in",
+      "objects": [
+        "상품",
+        "박스"
+      ]
+    },
+    {
+      "id": "DISPLAY_031",
+      "group_id": "DISPLAY_031",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "새 상품을 채워 넣는다",
+      "keywords": [
+        "새 상품",
+        "신상품",
+        "새 제품",
+        "상품을",
+        "채워",
+        "넣는다",
+        "제품",
+        "물건",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [
+        "신상품을 채워 넣는다",
+        "새 제품을 채워 넣는다",
+        "신제품을 채워 넣는다"
+      ],
+      "search_text": "display 새 상품을 채워 넣는다 put_in 새 상품 신상품 새 제품 상품을 채워 넣는다 제품 물건 넣기 담기 꽂기 신상품을 채워 넣는다 새 제품을 채워 넣는다 신제품을 채워 넣는다",
+      "image": "display/DISPLAY_031.webp",
+      "source_file": "DISPLAY_031 새 상품을 채워 넣는다.png",
+      "action": "put_in",
+      "objects": [
+        "새 상품"
+      ]
+    },
+    {
+      "id": "DISPLAY_032",
+      "group_id": "DISPLAY_032",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "두리번거리는 손님을 발견한다",
+      "keywords": [
+        "고객",
+        "손",
+        "두리번거리는",
+        "손님을",
+        "발견한다"
+      ],
+      "aliases": [],
+      "search_text": "display 두리번거리는 손님을 발견한다 other 고객 손 두리번거리는 손님을 발견한다",
+      "image": "display/DISPLAY_032.webp",
+      "source_file": "DISPLAY_032_두리번거리는 손님을 발견한다.png",
+      "action": "other",
+      "objects": [
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "DISPLAY_033",
+      "group_id": "DISPLAY_033",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "손님에게 다가가 원하는 방향을 안내한다",
+      "keywords": [
+        "고객",
+        "손",
+        "손님에게",
+        "다가가",
+        "원하는",
+        "방향을",
+        "안내한다",
+        "안내",
+        "방향 안내",
+        "위치 안내"
+      ],
+      "aliases": [],
+      "search_text": "display 손님에게 다가가 원하는 방향을 안내한다 guide 고객 손 손님에게 다가가 원하는 방향을 안내한다 안내 방향 안내 위치 안내",
+      "image": "display/DISPLAY_033.webp",
+      "source_file": "DISPLAY_033_손님에게 다가가 원하는 방향을 안내한다.png",
+      "action": "guide",
+      "objects": [
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "DISPLAY_034",
+      "group_id": "DISPLAY_034",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "손님과 함께 해당 선반까지 걸어간다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "고객",
+        "손",
+        "손님과",
+        "함께",
+        "해당",
+        "선반까지",
+        "걸어간다",
+        "분쇄",
+        "갈기"
+      ],
+      "aliases": [
+        "손님과 함께 해당 진열대까지 걸어간다"
+      ],
+      "search_text": "display 손님과 함께 해당 선반까지 걸어간다 grind 선반 고객 손 진열대 매대 손님과 함께 해당 선반까지 걸어간다 분쇄 갈기 손님과 함께 해당 진열대까지 걸어간다",
+      "image": "display/DISPLAY_034.webp",
+      "source_file": "DISPLAY_034_손님과 함께 해당 선반까지 걸어간다.png",
+      "action": "grind",
+      "objects": [
+        "선반",
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "DISPLAY_035",
+      "group_id": "DISPLAY_035",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상품 위치를 가리켜 알려준다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "위치를",
+        "가리켜",
+        "알려준다",
+        "신상품",
+        "새 제품",
+        "기존 상품",
+        "먼저 들어온 상품",
+        "안내",
+        "방향 안내",
+        "위치 안내"
+      ],
+      "aliases": [
+        "제품 위치를 가리켜 알려준다"
+      ],
+      "search_text": "display 상품 위치를 가리켜 알려준다 guide 상품 제품 물건 위치를 가리켜 알려준다 신상품 새 제품 기존 상품 먼저 들어온 상품 안내 방향 안내 위치 안내 제품 위치를 가리켜 알려준다",
+      "image": "display/DISPLAY_035.webp",
+      "source_file": "DISPLAY_035_상품 위치를 가리켜 알려준다.png",
+      "action": "guide",
+      "objects": [
+        "상품"
+      ]
+    },
+    {
+      "id": "DISPLAY_036",
+      "group_id": "DISPLAY_036",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "파손되거나 찌그러진 상품을 선반에서 찾아낸다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "상품",
+        "제품",
+        "물건",
+        "손",
+        "파손되거나",
+        "찌그러진",
+        "상품을",
+        "선반에서",
+        "찾아낸다",
+        "찾기",
+        "위치 확인"
+      ],
+      "aliases": [
+        "파손되거나 찌그러진 제품을 선반에서 찾아낸다",
+        "파손되거나 찌그러진 상품을 진열대에서 찾아낸다",
+        "파손되거나 찌그러진 제품을 진열대에서 찾아낸다"
+      ],
+      "search_text": "display 파손되거나 찌그러진 상품을 선반에서 찾아낸다 find 선반 상품 손 진열대 매대 제품 물건 파손되거나 찌그러진 상품을 선반에서 찾아낸다 찾기 위치 확인 파손되거나 찌그러진 제품을 선반에서 찾아낸다 파손되거나 찌그러진 상품을 진열대에서 찾아낸다 파손되거나 찌그러진 제품을 진열대에서 찾아낸다",
+      "image": "display/DISPLAY_036.webp",
+      "source_file": "DISPLAY_036_파손되거나 찌그러진 상품을 선반에서 찾아낸다.png",
+      "action": "find",
+      "objects": [
+        "선반",
+        "상품",
+        "손"
+      ]
+    },
+    {
+      "id": "DISPLAY_037",
+      "group_id": "DISPLAY_037",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "파손된 상품을 조심스럽게 집어 든다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "손",
+        "파손된",
+        "상품을",
+        "조심스럽게",
+        "집어",
+        "든다"
+      ],
+      "aliases": [
+        "파손된 제품을 조심스럽게 집어 든다"
+      ],
+      "search_text": "display 파손된 상품을 조심스럽게 집어 든다 other 상품 손 제품 물건 파손된 상품을 조심스럽게 집어 든다 파손된 제품을 조심스럽게 집어 든다",
+      "image": "display/DISPLAY_037.webp",
+      "source_file": "DISPLAY_037_파손된 상품을 조심스럽게 집어 든다.png",
+      "action": "other",
+      "objects": [
+        "상품",
+        "손"
+      ]
+    },
+    {
+      "id": "DISPLAY_038",
+      "group_id": "DISPLAY_038",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "폐기용 상자에 상품을 담는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "박스",
+        "폐기용",
+        "상자에",
+        "상품을",
+        "담는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [
+        "폐기용 상자에 제품을 담는다"
+      ],
+      "search_text": "display 폐기용 상자에 상품을 담는다 put_in 상품 박스 제품 물건 폐기용 상자에 상품을 담는다 넣기 담기 꽂기 폐기용 상자에 제품을 담는다",
+      "image": "display/DISPLAY_038.webp",
+      "source_file": "DISPLAY_038_폐기용 상자에 상품을 담는다.png",
+      "action": "put_in",
+      "objects": [
+        "상품",
+        "박스"
+      ]
+    },
+    {
+      "id": "DISPLAY_039",
+      "group_id": "DISPLAY_039",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "폐기 상자를 정해진 장소로 옮긴다",
+      "keywords": [
+        "박스",
+        "폐기",
+        "상자를",
+        "정해진",
+        "장소로",
+        "옮긴다",
+        "이동",
+        "옮기기"
+      ],
+      "aliases": [],
+      "search_text": "display 폐기 상자를 정해진 장소로 옮긴다 move 박스 폐기 상자를 정해진 장소로 옮긴다 이동 옮기기",
+      "image": "display/DISPLAY_039.webp",
+      "source_file": "DISPLAY_039_폐기 상자를 정해진 장소로 옮긴다.png",
+      "action": "move",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DISPLAY_040",
+      "group_id": "DISPLAY_040",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "선반에 상품이 빈 곳을 확인한다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "상품",
+        "제품",
+        "물건",
+        "선반에",
+        "상품이",
+        "곳을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "선반에 제품이 빈 곳을 확인한다",
+        "진열대에 상품이 빈 곳을 확인한다",
+        "선반에 상품이 빈 곳을 점검한다"
+      ],
+      "search_text": "display 선반에 상품이 빈 곳을 확인한다 check 선반 상품 진열대 매대 제품 물건 선반에 상품이 곳을 확인한다 점검 검사 확인 선반에 제품이 빈 곳을 확인한다 진열대에 상품이 빈 곳을 확인한다 선반에 상품이 빈 곳을 점검한다",
+      "image": "display/DISPLAY_040.webp",
+      "source_file": "DISPLAY_040_선반에 상품이 빈 곳을 확인한다.png",
+      "action": "check",
+      "objects": [
+        "선반",
+        "상품"
+      ]
+    },
+    {
+      "id": "DISPLAY_041",
+      "group_id": "DISPLAY_041",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "태블릿 화면을 들고 발주 항목을 찾는다",
+      "keywords": [
+        "화면",
+        "태블릿",
+        "화면을",
+        "들고",
+        "발주",
+        "항목을",
+        "찾는다",
+        "찾기",
+        "위치 확인"
+      ],
+      "aliases": [
+        "태블릿 화면을 들고 발주 항목을 확인한다"
+      ],
+      "search_text": "display 태블릿 화면을 들고 발주 항목을 찾는다 find 화면 태블릿 화면을 들고 발주 항목을 찾는다 찾기 위치 확인 태블릿 화면을 들고 발주 항목을 확인한다",
+      "image": "display/DISPLAY_041.webp",
+      "source_file": "DISPLAY_041_태블릿 화면을 들고 발주 항목을 찾는다.png",
+      "action": "find",
+      "objects": [
+        "화면"
+      ]
+    },
+    {
+      "id": "DISPLAY_042",
+      "group_id": "DISPLAY_042",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "화면을 손가락으로 눌러 발주를 요청한다",
+      "keywords": [
+        "화면",
+        "손",
+        "화면을",
+        "손가락으로",
+        "눌러",
+        "발주를",
+        "요청한다",
+        "누르기",
+        "압착"
+      ],
+      "aliases": [],
+      "search_text": "display 화면을 손가락으로 눌러 발주를 요청한다 press 화면 손 화면을 손가락으로 눌러 발주를 요청한다 누르기 압착",
+      "image": "display/DISPLAY_042.webp",
+      "source_file": "DISPLAY_042_화면을 손가락으로 눌러 발주를 요청한다.png",
+      "action": "press",
+      "objects": [
+        "화면",
+        "손"
+      ]
+    },
+    {
+      "id": "DISPLAY_043",
+      "group_id": "DISPLAY_043",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "버튼을 눌러 발주를 요청한다",
+      "keywords": [
+        "버튼",
+        "버튼을",
+        "눌러",
+        "발주를",
+        "요청한다",
+        "누르기",
+        "압착"
+      ],
+      "aliases": [],
+      "search_text": "display 버튼을 눌러 발주를 요청한다 press 버튼 버튼을 눌러 발주를 요청한다 누르기 압착",
+      "image": "display/DISPLAY_043.webp",
+      "source_file": "DISPLAY_043_버튼을 눌러 발주를 요청한다.png",
+      "action": "press",
+      "objects": [
+        "버튼"
+      ]
+    },
+    {
+      "id": "DISPLAY_044",
+      "group_id": "DISPLAY_044",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "매장 곳곳에 흩어진 쇼핑카트를 발견한다",
+      "keywords": [
+        "쇼핑카트",
+        "매장",
+        "곳곳에",
+        "흩어진",
+        "쇼핑카트를",
+        "발견한다"
+      ],
+      "aliases": [
+        "매장 곳곳에 흩어진 쇼핑운반 카트를 발견한다"
+      ],
+      "search_text": "display 매장 곳곳에 흩어진 쇼핑카트를 발견한다 other 쇼핑카트 매장 곳곳에 흩어진 쇼핑카트를 발견한다 매장 곳곳에 흩어진 쇼핑운반 카트를 발견한다",
+      "image": "display/DISPLAY_044.webp",
+      "source_file": "DISPLAY_044_매장 곳곳에 흩어진 쇼핑카트를 발견한다.png",
+      "action": "other",
+      "objects": [
+        "쇼핑카트",
+        "매장"
+      ]
+    },
+    {
+      "id": "DISPLAY_045",
+      "group_id": "DISPLAY_045",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "카트를 밀어 한곳으로 모은다",
+      "keywords": [
+        "카트",
+        "카트를",
+        "밀어",
+        "한곳으로",
+        "모은다",
+        "모으기",
+        "한곳에 모으기"
+      ],
+      "aliases": [
+        "운반 카트를 밀어 한곳으로 모은다",
+        "카트를 밀어 한곳으로 한곳에 모은다",
+        "운반 카트를 밀어 한곳으로 한곳에 모은다"
+      ],
+      "search_text": "display 카트를 밀어 한곳으로 모은다 collect 카트 카트를 밀어 한곳으로 모은다 모으기 한곳에 모으기 운반 카트를 밀어 한곳으로 모은다 카트를 밀어 한곳으로 한곳에 모은다 운반 카트를 밀어 한곳으로 한곳에 모은다",
+      "image": "display/DISPLAY_045.webp",
+      "source_file": "DISPLAY_045_카트를 밀어 한곳으로 모은다.png",
+      "action": "collect",
+      "objects": [
+        "카트"
+      ]
+    },
+    {
+      "id": "DISPLAY_046",
+      "group_id": "DISPLAY_046",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "카트들을 순서대로 겹쳐 정렬한다",
+      "keywords": [
+        "카트",
+        "카트들을",
+        "순서대로",
+        "겹쳐",
+        "정렬한다",
+        "정렬",
+        "맞추기",
+        "방향 맞추기"
+      ],
+      "aliases": [
+        "운반 카트들을 순서대로 겹쳐 정렬한다"
+      ],
+      "search_text": "display 카트들을 순서대로 겹쳐 정렬한다 align 카트 카트들을 순서대로 겹쳐 정렬한다 정렬 맞추기 방향 맞추기 운반 카트들을 순서대로 겹쳐 정렬한다",
+      "image": "display/DISPLAY_046.webp",
+      "source_file": "DISPLAY_046_카트들을 순서대로 겹쳐 정렬한다.png",
+      "action": "align",
+      "objects": [
+        "카트"
+      ]
+    },
+    {
+      "id": "DISPLAY_047",
+      "group_id": "DISPLAY_047",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "정렬된 카트 줄을 제자리에 놓는다",
+      "keywords": [
+        "카트",
+        "정렬된",
+        "줄을",
+        "제자리에",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "정렬된 운반 카트 줄을 제자리에 놓는다",
+        "정렬된 카트 줄을 제자리에 올린다",
+        "정렬된 운반 카트 줄을 제자리에 올린다"
+      ],
+      "search_text": "display 정렬된 카트 줄을 제자리에 놓는다 place 카트 정렬된 줄을 제자리에 놓는다 놓기 올리기 진열 배치 정렬된 운반 카트 줄을 제자리에 놓는다 정렬된 카트 줄을 제자리에 올린다 정렬된 운반 카트 줄을 제자리에 올린다",
+      "image": "display/DISPLAY_047.webp",
+      "source_file": "DISPLAY_047_정렬된 카트 줄을 제자리에 놓는다.png",
+      "action": "place",
+      "objects": [
+        "카트"
+      ]
+    },
+    {
+      "id": "DISPLAY_048",
+      "group_id": "DISPLAY_048",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "매대 위 먼지를 마른 걸레로 닦는다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "먼지",
+        "먼지를",
+        "마른",
+        "걸레로",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "display 매대 위 먼지를 마른 걸레로 닦는다 clean 선반 먼지 진열대 매대 먼지를 마른 걸레로 닦는다 청소 닦기",
+      "image": "display/DISPLAY_048.webp",
+      "source_file": "DISPLAY_048_매대 위 먼지를 마른 걸레로 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "선반",
+        "먼지"
+      ]
+    },
+    {
+      "id": "DISPLAY_049",
+      "group_id": "DISPLAY_049",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "바닥에 떨어진 쓰레기를 줍는다",
+      "keywords": [
+        "쓰레기",
+        "바닥",
+        "바닥에",
+        "떨어진",
+        "쓰레기를",
+        "줍는다",
+        "줍기",
+        "집기",
+        "수거"
+      ],
+      "aliases": [],
+      "search_text": "display 바닥에 떨어진 쓰레기를 줍는다 pick_up 쓰레기 바닥 바닥에 떨어진 쓰레기를 줍는다 줍기 집기 수거",
+      "image": "display/DISPLAY_049.webp",
+      "source_file": "DISPLAY_049_바닥에 떨어진 쓰레기를 줍는다.png",
+      "action": "pick_up",
+      "objects": [
+        "쓰레기",
+        "바닥"
+      ]
+    },
+    {
+      "id": "DISPLAY_050",
+      "group_id": "DISPLAY_050",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "청소용 스프레이를 매대 표면에 뿌린다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "청소용",
+        "스프레이를",
+        "표면에",
+        "뿌린다",
+        "뿌리기",
+        "분사"
+      ],
+      "aliases": [],
+      "search_text": "display 청소용 스프레이를 매대 표면에 뿌린다 spray 선반 진열대 매대 청소용 스프레이를 표면에 뿌린다 뿌리기 분사",
+      "image": "display/DISPLAY_050.webp",
+      "source_file": "DISPLAY_050_청소용 스프레이를 매대 표면에 뿌린다.png",
+      "action": "spray",
+      "objects": [
+        "선반"
+      ]
+    },
+    {
+      "id": "DISPLAY_051",
+      "group_id": "DISPLAY_051",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "젖은 걸레로 매대 표면을 닦아낸다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "젖은",
+        "걸레로",
+        "표면을",
+        "닦아낸다"
+      ],
+      "aliases": [],
+      "search_text": "display 젖은 걸레로 매대 표면을 닦아낸다 other 선반 진열대 매대 젖은 걸레로 표면을 닦아낸다",
+      "image": "display/DISPLAY_051.webp",
+      "source_file": "DISPLAY_051_젖은 걸레로 매대 표면을 닦아낸다.png",
+      "action": "other",
+      "objects": [
+        "선반"
+      ]
+    },
+    {
+      "id": "DISPLAY_052",
+      "group_id": "DISPLAY_052",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "앞치마 착용",
+      "keywords": [
+        "앞치마",
+        "착용"
+      ],
+      "aliases": [],
+      "search_text": "display 앞치마 착용 other 앞치마 착용",
+      "image": "display/DISPLAY_052.webp",
+      "source_file": "DISPLAY_052_앞치마 착용.png",
+      "action": "other",
+      "objects": [
+        "앞치마"
+      ]
+    },
+    {
+      "id": "DISPLAY_053",
+      "group_id": "DISPLAY_053",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "앞치마 착용 완료",
+      "keywords": [
+        "앞치마",
+        "착용",
+        "완료"
+      ],
+      "aliases": [],
+      "search_text": "display 앞치마 착용 완료 other 앞치마 착용 완료",
+      "image": "display/DISPLAY_053.webp",
+      "source_file": "DISPLAY_053_앞치마 착용 완료.png",
+      "action": "other",
+      "objects": [
+        "앞치마"
+      ]
+    },
+    {
+      "id": "DISPLAY_054",
+      "group_id": "DISPLAY_054",
+      "job": "display",
+      "asset_type": "action",
+      "variant": null,
+      "label": "명찰 착용",
+      "keywords": [
+        "명찰",
+        "착용"
+      ],
+      "aliases": [],
+      "search_text": "display 명찰 착용 other 명찰 착용",
+      "image": "display/DISPLAY_054.webp",
+      "source_file": "DISPLAY_054_명찰 착용.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_TOOL_001",
+      "group_id": "DISPLAY_TOOL_001",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "가격표 라벨건",
+      "keywords": [
+        "가격표",
+        "라벨",
+        "라벨건"
+      ],
+      "aliases": [],
+      "search_text": "display 가격표 라벨건 other 가격표 라벨 라벨건",
+      "image": "display/DISPLAY_TOOL_001.webp",
+      "source_file": "DISPLAY_TOOL_001_가격표 라벨건.png",
+      "action": "other",
+      "objects": [
+        "가격표",
+        "라벨"
+      ]
+    },
+    {
+      "id": "DISPLAY_TOOL_002",
+      "group_id": "DISPLAY_TOOL_002",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "휴대용 바코드 스캐너",
+      "keywords": [
+        "스캐너",
+        "바코드",
+        "휴대용"
+      ],
+      "aliases": [],
+      "search_text": "display 휴대용 바코드 스캐너 other 스캐너 바코드 휴대용",
+      "image": "display/DISPLAY_TOOL_002.webp",
+      "source_file": "DISPLAY_TOOL_002_휴대용 바코드 스캐너.png",
+      "action": "other",
+      "objects": [
+        "스캐너",
+        "바코드"
+      ]
+    },
+    {
+      "id": "DISPLAY_TOOL_003",
+      "group_id": "DISPLAY_TOOL_003",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "대차",
+      "keywords": [
+        "카트",
+        "대차"
+      ],
+      "aliases": [],
+      "search_text": "display 대차 other 카트",
+      "image": "display/DISPLAY_TOOL_003.webp",
+      "source_file": "DISPLAY_TOOL_003_대차.png",
+      "action": "other",
+      "objects": [
+        "카트"
+      ]
+    },
+    {
+      "id": "DISPLAY_TOOL_004",
+      "group_id": "DISPLAY_TOOL_004",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "걸레",
+      "keywords": [
+        "걸레"
+      ],
+      "aliases": [],
+      "search_text": "display 걸레 other",
+      "image": "display/DISPLAY_TOOL_004.webp",
+      "source_file": "DISPLAY_TOOL_004_걸레.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_TOOL_005",
+      "group_id": "DISPLAY_TOOL_005",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "앞치마",
+      "keywords": [
+        "앞치마"
+      ],
+      "aliases": [],
+      "search_text": "display 앞치마 other",
+      "image": "display/DISPLAY_TOOL_005.webp",
+      "source_file": "DISPLAY_TOOL_005_앞치마.png",
+      "action": "other",
+      "objects": [
+        "앞치마"
+      ]
+    },
+    {
+      "id": "DISPLAY_TOOL_006",
+      "group_id": "DISPLAY_TOOL_006",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "명찰",
+      "keywords": [
+        "명찰"
+      ],
+      "aliases": [],
+      "search_text": "display 명찰 other",
+      "image": "display/DISPLAY_TOOL_006.webp",
+      "source_file": "DISPLAY_TOOL_006_명찰.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_TOOL_007",
+      "group_id": "DISPLAY_TOOL_007",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "진열용 바구니",
+      "keywords": [
+        "진열용",
+        "바구니",
+        "배치",
+        "놓기"
+      ],
+      "aliases": [],
+      "search_text": "display 진열용 바구니 other 진열용 바구니 배치 놓기",
+      "image": "display/DISPLAY_TOOL_007.webp",
+      "source_file": "DISPLAY_TOOL_007_진열용 바구니.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_TOOL_008",
+      "group_id": "DISPLAY_TOOL_008",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "태블릿",
+      "keywords": [
+        "태블릿"
+      ],
+      "aliases": [],
+      "search_text": "display 태블릿 other",
+      "image": "display/DISPLAY_TOOL_008.webp",
+      "source_file": "DISPLAY_TOOL_008_태블릿.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_TOOL_009",
+      "group_id": "DISPLAY_TOOL_009",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "커터칼",
+      "keywords": [
+        "커터칼"
+      ],
+      "aliases": [],
+      "search_text": "display 커터칼 other",
+      "image": "display/DISPLAY_TOOL_009.webp",
+      "source_file": "DISPLAY_TOOL_009_커터칼.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_TOOL_010",
+      "group_id": "DISPLAY_TOOL_010",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "펼처진 종이상자",
+      "keywords": [
+        "박스",
+        "펼처진",
+        "종이상자"
+      ],
+      "aliases": [],
+      "search_text": "display 펼처진 종이상자 other 박스 펼처진 종이상자",
+      "image": "display/DISPLAY_TOOL_010.webp",
+      "source_file": "DISPLAY_TOOL_010_펼처진 종이상자.png",
+      "action": "other",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DISPLAY_TOOL_011",
+      "group_id": "DISPLAY_TOOL_011",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "가격표 스티커",
+      "keywords": [
+        "가격표",
+        "라벨",
+        "스티커"
+      ],
+      "aliases": [],
+      "search_text": "display 가격표 스티커 other 가격표 라벨 스티커",
+      "image": "display/DISPLAY_TOOL_011.webp",
+      "source_file": "DISPLAY_TOOL_011_가격표 스티커.png",
+      "action": "other",
+      "objects": [
+        "가격표",
+        "라벨"
+      ]
+    },
+    {
+      "id": "DISPLAY_TOOL_012",
+      "group_id": "DISPLAY_TOOL_012",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "유통기한 스티커",
+      "keywords": [
+        "라벨",
+        "유통기한",
+        "스티커"
+      ],
+      "aliases": [],
+      "search_text": "display 유통기한 스티커 other 라벨 유통기한 스티커",
+      "image": "display/DISPLAY_TOOL_012.webp",
+      "source_file": "DISPLAY_TOOL_012_유통기한 스티커.png",
+      "action": "other",
+      "objects": [
+        "라벨"
+      ]
+    },
+    {
+      "id": "DISPLAY_TOOL_013",
+      "group_id": "DISPLAY_TOOL_013",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "매대와 표지판",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "매대와",
+        "표지판"
+      ],
+      "aliases": [],
+      "search_text": "display 매대와 표지판 other 선반 진열대 매대 매대와 표지판",
+      "image": "display/DISPLAY_TOOL_013.webp",
+      "source_file": "DISPLAY_TOOL_013_매대와 표지판.png",
+      "action": "other",
+      "objects": [
+        "선반"
+      ]
+    },
+    {
+      "id": "DISPLAY_TOOL_014",
+      "group_id": "DISPLAY_TOOL_014",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "쇼핑 카트",
+      "keywords": [
+        "카트",
+        "쇼핑"
+      ],
+      "aliases": [
+        "쇼핑 운반 카트"
+      ],
+      "search_text": "display 쇼핑 카트 other 카트 쇼핑 쇼핑 운반 카트",
+      "image": "display/DISPLAY_TOOL_014.webp",
+      "source_file": "DISPLAY_TOOL_014_쇼핑 카트.png",
+      "action": "other",
+      "objects": [
+        "카트"
+      ]
+    },
+    {
+      "id": "DISPLAY_TOOL_015",
+      "group_id": "DISPLAY_TOOL_015",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "쇼핑 바구니",
+      "keywords": [
+        "쇼핑",
+        "바구니"
+      ],
+      "aliases": [],
+      "search_text": "display 쇼핑 바구니 other 쇼핑 바구니",
+      "image": "display/DISPLAY_TOOL_015.webp",
+      "source_file": "DISPLAY_TOOL_015_쇼핑 바구니.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_TOOL_016",
+      "group_id": "DISPLAY_TOOL_016",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "스프레이",
+      "keywords": [
+        "스프레이"
+      ],
+      "aliases": [],
+      "search_text": "display 스프레이 other",
+      "image": "display/DISPLAY_TOOL_016.webp",
+      "source_file": "DISPLAY_TOOL_016_스프레이.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_TOOL_017",
+      "group_id": "DISPLAY_TOOL_017",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "상품이 진열된 선반",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "상품",
+        "제품",
+        "물건",
+        "상품이",
+        "진열된",
+        "배치",
+        "놓기"
+      ],
+      "aliases": [
+        "제품이 진열된 선반",
+        "상품이 진열된 진열대",
+        "제품이 진열된 진열대"
+      ],
+      "search_text": "display 상품이 진열된 선반 other 선반 상품 진열대 매대 제품 물건 상품이 진열된 배치 놓기 제품이 진열된 선반 상품이 진열된 진열대 제품이 진열된 진열대",
+      "image": "display/DISPLAY_TOOL_017.webp",
+      "source_file": "DISPLAY_TOOL_017_상품이 진열된 선반.png",
+      "action": "other",
+      "objects": [
+        "선반",
+        "상품"
+      ]
+    },
+    {
+      "id": "DISPLAY_TOOL_019",
+      "group_id": "DISPLAY_TOOL_019",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "계산대",
+      "keywords": [
+        "계산대"
+      ],
+      "aliases": [],
+      "search_text": "display 계산대 other",
+      "image": "display/DISPLAY_TOOL_019.webp",
+      "source_file": "DISPLAY_TOOL_019_계산대.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DISPLAY_TOOL_020",
+      "group_id": "DISPLAY_TOOL_020",
+      "job": "display",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "통로",
+      "keywords": [
+        "통로"
+      ],
+      "aliases": [],
+      "search_text": "display 통로 other",
+      "image": "display/DISPLAY_TOOL_020.webp",
+      "source_file": "DISPLAY_TOOL_020_통로.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "GAS_001",
+      "group_id": "GAS_001",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "차를 멈춰 세운다",
+      "keywords": [
+        "차를",
+        "멈춰",
+        "세운다",
+        "세우기",
+        "바로 세우기"
+      ],
+      "aliases": [],
+      "search_text": "gas 차를 멈춰 세운다 stand 차를 멈춰 세운다 세우기 바로 세우기",
+      "image": "gas/GAS_001.webp",
+      "source_file": "GAS_001_차를 멈춰 세운다.png",
+      "action": "stand",
+      "objects": []
+    },
+    {
+      "id": "GAS_002",
+      "group_id": "GAS_002",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "자동차를 안내한다",
+      "keywords": [
+        "자동차를",
+        "안내한다",
+        "안내",
+        "방향 안내",
+        "위치 안내"
+      ],
+      "aliases": [],
+      "search_text": "gas 자동차를 안내한다 guide 자동차를 안내한다 안내 방향 안내 위치 안내",
+      "image": "gas/GAS_002.webp",
+      "source_file": "GAS_002_자동차를 안내한다.png",
+      "action": "guide",
+      "objects": []
+    },
+    {
+      "id": "GAS_003",
+      "group_id": "GAS_003",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "자동차의 주유구 뚜껑을 연다",
+      "keywords": [
+        "자동차의",
+        "주유구",
+        "뚜껑을",
+        "연다",
+        "열기"
+      ],
+      "aliases": [],
+      "search_text": "gas 자동차의 주유구 뚜껑을 연다 open 자동차의 주유구 뚜껑을 연다 열기",
+      "image": "gas/GAS_003.webp",
+      "source_file": "GAS_003_자동차의 주유구 뚜껑을 연다.png",
+      "action": "open",
+      "objects": []
+    },
+    {
+      "id": "GAS_004",
+      "group_id": "GAS_004",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "주유건을 자동차 주유구에 꽂는다",
+      "keywords": [
+        "주유건을",
+        "자동차",
+        "주유구에",
+        "꽂는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "gas 주유건을 자동차 주유구에 꽂는다 put_in 주유건을 자동차 주유구에 꽂는다 넣기 담기 꽂기",
+      "image": "gas/GAS_004.webp",
+      "source_file": "GAS_004_주유건을 자동차 주유구에 꽂는다.png",
+      "action": "put_in",
+      "objects": []
+    },
+    {
+      "id": "GAS_005",
+      "group_id": "GAS_005",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "주유건을 주유기 거치대에 건다",
+      "keywords": [
+        "주유건을",
+        "주유기",
+        "거치대에",
+        "건다"
+      ],
+      "aliases": [],
+      "search_text": "gas 주유건을 주유기 거치대에 건다 other 주유건을 주유기 거치대에 건다",
+      "image": "gas/GAS_005.webp",
+      "source_file": "GAS_005_주유건을 주유기 거치대에 건다.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "GAS_006",
+      "group_id": "GAS_006",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "분무기로 자동차에 세정액을 뿌린다",
+      "keywords": [
+        "분무기로",
+        "자동차에",
+        "세정액을",
+        "뿌린다",
+        "뿌리기",
+        "분사"
+      ],
+      "aliases": [],
+      "search_text": "gas 분무기로 자동차에 세정액을 뿌린다 spray 분무기로 자동차에 세정액을 뿌린다 뿌리기 분사",
+      "image": "gas/GAS_006.webp",
+      "source_file": "GAS_006_분무기로 자동차에 세정액을 뿌린다.png",
+      "action": "spray",
+      "objects": []
+    },
+    {
+      "id": "GAS_007",
+      "group_id": "GAS_007",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "스퀴지로 유리를 닦는다",
+      "keywords": [
+        "스퀴지로",
+        "유리를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "gas 스퀴지로 유리를 닦는다 clean 스퀴지로 유리를 닦는다 청소 닦기",
+      "image": "gas/GAS_007.webp",
+      "source_file": "GAS_007_스퀴지로 유리를 닦는다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "GAS_008",
+      "group_id": "GAS_008",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "마른 천으로 유리에 남은 물기를 닦는다",
+      "keywords": [
+        "물기",
+        "마른",
+        "천으로",
+        "유리에",
+        "남은",
+        "물기를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "gas 마른 천으로 유리에 남은 물기를 닦는다 clean 물기 마른 천으로 유리에 남은 물기를 닦는다 청소 닦기",
+      "image": "gas/GAS_008.webp",
+      "source_file": "GAS_008_마른 천으로 유리에 남은 물기를 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "물기"
+      ]
+    },
+    {
+      "id": "GAS_009",
+      "group_id": "GAS_009",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "유리가 깨끗해진 것을 확인한다",
+      "keywords": [
+        "유리가",
+        "깨끗해진",
+        "것을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "유리가 깨끗해진 것을 점검한다"
+      ],
+      "search_text": "gas 유리가 깨끗해진 것을 확인한다 check 유리가 깨끗해진 것을 확인한다 점검 검사 확인 유리가 깨끗해진 것을 점검한다",
+      "image": "gas/GAS_009.webp",
+      "source_file": "GAS_009_유리가 깨끗해진 것을 확인한다.png",
+      "action": "check",
+      "objects": []
+    },
+    {
+      "id": "GAS_010",
+      "group_id": "GAS_010",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "근처의 쓰레기를 줍는다",
+      "keywords": [
+        "쓰레기",
+        "근처의",
+        "쓰레기를",
+        "줍는다",
+        "줍기",
+        "집기",
+        "수거"
+      ],
+      "aliases": [],
+      "search_text": "gas 근처의 쓰레기를 줍는다 pick_up 쓰레기 근처의 쓰레기를 줍는다 줍기 집기 수거",
+      "image": "gas/GAS_010.webp",
+      "source_file": "GAS_010_근처의 쓰레기를 줍는다.png",
+      "action": "pick_up",
+      "objects": [
+        "쓰레기"
+      ]
+    },
+    {
+      "id": "GAS_011",
+      "group_id": "GAS_011",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "쓰레기통에 쓰레기를 넣는다",
+      "keywords": [
+        "쓰레기통",
+        "쓰레기",
+        "쓰레기통에",
+        "쓰레기를",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "gas 쓰레기통에 쓰레기를 넣는다 put_in 쓰레기통 쓰레기 쓰레기통에 쓰레기를 넣는다 넣기 담기 꽂기",
+      "image": "gas/GAS_011.webp",
+      "source_file": "GAS_011_쓰레기통에 쓰레기를 넣는다.png",
+      "action": "put_in",
+      "objects": [
+        "쓰레기통",
+        "쓰레기"
+      ]
+    },
+    {
+      "id": "GAS_012",
+      "group_id": "GAS_012",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "쓰레기통을 들고 이동한다",
+      "keywords": [
+        "쓰레기통",
+        "쓰레기통을",
+        "들고",
+        "이동한다",
+        "이동",
+        "옮기기"
+      ],
+      "aliases": [],
+      "search_text": "gas 쓰레기통을 들고 이동한다 move 쓰레기통 쓰레기통을 들고 이동한다 이동 옮기기",
+      "image": "gas/GAS_012.webp",
+      "source_file": "GAS_012_쓰레기통을 들고 이동한다.png",
+      "action": "move",
+      "objects": [
+        "쓰레기통"
+      ]
+    },
+    {
+      "id": "GAS_013",
+      "group_id": "GAS_013",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "쓰레기통을 정해진 자리에 가져다 놓는다",
+      "keywords": [
+        "쓰레기통",
+        "쓰레기통을",
+        "정해진",
+        "자리에",
+        "가져다",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "쓰레기통을 정해진 자리에 가져다 올린다"
+      ],
+      "search_text": "gas 쓰레기통을 정해진 자리에 가져다 놓는다 place 쓰레기통 쓰레기통을 정해진 자리에 가져다 놓는다 놓기 올리기 진열 배치 쓰레기통을 정해진 자리에 가져다 올린다",
+      "image": "gas/GAS_013.webp",
+      "source_file": "GAS_013_쓰레기통을 정해진 자리에 가져다 놓는다.png",
+      "action": "place",
+      "objects": [
+        "쓰레기통"
+      ]
+    },
+    {
+      "id": "GAS_014",
+      "group_id": "GAS_014",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "휴대용 결제 단말기를 손님에게 건넨다",
+      "keywords": [
+        "고객",
+        "손",
+        "휴대용",
+        "결제",
+        "단말기를",
+        "손님에게",
+        "건넨다",
+        "건네기",
+        "전달"
+      ],
+      "aliases": [],
+      "search_text": "gas 휴대용 결제 단말기를 손님에게 건넨다 handover 고객 손 휴대용 결제 단말기를 손님에게 건넨다 건네기 전달",
+      "image": "gas/GAS_014.webp",
+      "source_file": "GAS_014_휴대용 결제 단말기를 손님에게 건넨다.png",
+      "action": "handover",
+      "objects": [
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "GAS_015",
+      "group_id": "GAS_015",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "손님이 결제하는 동안 옆에서 기다린다",
+      "keywords": [
+        "고객",
+        "손",
+        "손님이",
+        "결제하는",
+        "동안",
+        "옆에서",
+        "기다린다"
+      ],
+      "aliases": [],
+      "search_text": "gas 손님이 결제하는 동안 옆에서 기다린다 other 고객 손 손님이 결제하는 동안 옆에서 기다린다",
+      "image": "gas/GAS_015.webp",
+      "source_file": "GAS_015_손님이 결제하는 동안 옆에서 기다린다.png",
+      "action": "other",
+      "objects": [
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "GAS_016",
+      "group_id": "GAS_016",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "결제 단말기에서 영수증이 출력된다",
+      "keywords": [
+        "영수증",
+        "결제",
+        "단말기에서",
+        "영수증이",
+        "출력된다"
+      ],
+      "aliases": [],
+      "search_text": "gas 결제 단말기에서 영수증이 출력된다 other 영수증 결제 단말기에서 영수증이 출력된다",
+      "image": "gas/GAS_016.webp",
+      "source_file": "GAS_016_결제 단말기에서 영수증이 출력된다.png",
+      "action": "other",
+      "objects": [
+        "영수증"
+      ]
+    },
+    {
+      "id": "GAS_017",
+      "group_id": "GAS_017",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "출력된 영수증을 자동차 창문 너머로 손님에게 건넨다",
+      "keywords": [
+        "영수증",
+        "고객",
+        "손",
+        "출력된",
+        "영수증을",
+        "자동차",
+        "창문",
+        "너머로",
+        "손님에게",
+        "건넨다",
+        "건네기",
+        "전달"
+      ],
+      "aliases": [],
+      "search_text": "gas 출력된 영수증을 자동차 창문 너머로 손님에게 건넨다 handover 영수증 고객 손 출력된 영수증을 자동차 창문 너머로 손님에게 건넨다 건네기 전달",
+      "image": "gas/GAS_017.webp",
+      "source_file": "GAS_017_출력된 영수증을 자동차 창문 너머로 손님에게 건넨다.png",
+      "action": "handover",
+      "objects": [
+        "영수증",
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "GAS_019",
+      "group_id": "GAS_019",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "타이어 옆면의 밸브를 확인한다",
+      "keywords": [
+        "타이어",
+        "옆면의",
+        "밸브를",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "타이어 옆면의 밸브를 점검한다"
+      ],
+      "search_text": "gas 타이어 옆면의 밸브를 확인한다 check 타이어 옆면의 밸브를 확인한다 점검 검사 확인 타이어 옆면의 밸브를 점검한다",
+      "image": "gas/GAS_019.webp",
+      "source_file": "GAS_019_타이어 옆면의 밸브를 확인한다.png",
+      "action": "check",
+      "objects": []
+    },
+    {
+      "id": "GAS_020",
+      "group_id": "GAS_020",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "타이어 밸브 캡을 연다",
+      "keywords": [
+        "타이어",
+        "밸브",
+        "캡을",
+        "연다",
+        "열기"
+      ],
+      "aliases": [],
+      "search_text": "gas 타이어 밸브 캡을 연다 open 타이어 밸브 캡을 연다 열기",
+      "image": "gas/GAS_020.webp",
+      "source_file": "GAS_020_타이어 밸브 캡을 연다.png",
+      "action": "open",
+      "objects": []
+    },
+    {
+      "id": "GAS_021",
+      "group_id": "GAS_021",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "측정기로 압력을 확인한다",
+      "keywords": [
+        "측정기로",
+        "압력을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "측정기로 압력을 점검한다"
+      ],
+      "search_text": "gas 측정기로 압력을 확인한다 check 측정기로 압력을 확인한다 점검 검사 확인 측정기로 압력을 점검한다",
+      "image": "gas/GAS_021.webp",
+      "source_file": "GAS_021_측정기로 압력을 확인한다.png",
+      "action": "check",
+      "objects": []
+    },
+    {
+      "id": "GAS_022",
+      "group_id": "GAS_022",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "타이어 밸브 캡을 돌려서 연다",
+      "keywords": [
+        "타이어",
+        "밸브",
+        "캡을",
+        "돌려서",
+        "연다",
+        "열기"
+      ],
+      "aliases": [],
+      "search_text": "gas 타이어 밸브 캡을 돌려서 연다 open 타이어 밸브 캡을 돌려서 연다 열기",
+      "image": "gas/GAS_022.webp",
+      "source_file": "GAS_022_타이어 밸브 캡을 돌려서 연다.png",
+      "action": "open",
+      "objects": []
+    },
+    {
+      "id": "GAS_023",
+      "group_id": "GAS_023",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "타이어 밸브 캡을 배낸다",
+      "keywords": [
+        "타이어",
+        "밸브",
+        "캡을",
+        "배낸다"
+      ],
+      "aliases": [],
+      "search_text": "gas 타이어 밸브 캡을 배낸다 other 타이어 밸브 캡을 배낸다",
+      "image": "gas/GAS_023.webp",
+      "source_file": "GAS_023_타이어 밸브 캡을 배낸다.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "GAS_024",
+      "group_id": "GAS_024",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "측정기로 압력을 확인한다",
+      "keywords": [
+        "측정기로",
+        "압력을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "측정기로 압력을 점검한다"
+      ],
+      "search_text": "gas 측정기로 압력을 확인한다 check 측정기로 압력을 확인한다 점검 검사 확인 측정기로 압력을 점검한다",
+      "image": "gas/GAS_024.webp",
+      "source_file": "GAS_024_측정기로 압력을 확인한다.png",
+      "action": "check",
+      "objects": []
+    },
+    {
+      "id": "GAS_025",
+      "group_id": "GAS_025",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "차량의 창문에 스프레이를 뿌린다",
+      "keywords": [
+        "차량",
+        "차량의",
+        "창문에",
+        "스프레이를",
+        "뿌린다",
+        "뿌리기",
+        "분사"
+      ],
+      "aliases": [],
+      "search_text": "gas 차량의 창문에 스프레이를 뿌린다 spray 차량 차량의 창문에 스프레이를 뿌린다 뿌리기 분사",
+      "image": "gas/GAS_025.webp",
+      "source_file": "GAS_025_차량의 창문에 스프레이를 뿌린다.png",
+      "action": "spray",
+      "objects": [
+        "차량"
+      ]
+    },
+    {
+      "id": "GAS_026",
+      "group_id": "GAS_026",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "스퀴지로 차량의 창문을 닦는다",
+      "keywords": [
+        "차량",
+        "스퀴지로",
+        "차량의",
+        "창문을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "gas 스퀴지로 차량의 창문을 닦는다 clean 차량 스퀴지로 차량의 창문을 닦는다 청소 닦기",
+      "image": "gas/GAS_026.webp",
+      "source_file": "GAS_026_스퀴지로 차량의 창문을 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "차량"
+      ]
+    },
+    {
+      "id": "GAS_027",
+      "group_id": "GAS_027",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "천으로 차량의 프론트글라스를 닦는다",
+      "keywords": [
+        "차량",
+        "천으로",
+        "차량의",
+        "프론트글라스를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "gas 천으로 차량의 프론트글라스를 닦는다 clean 차량 천으로 차량의 프론트글라스를 닦는다 청소 닦기",
+      "image": "gas/GAS_027.webp",
+      "source_file": "GAS_027_천으로 차량의 프론트글라스를 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "차량"
+      ]
+    },
+    {
+      "id": "GAS_028",
+      "group_id": "GAS_028",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "천으로 차량의 옆창문을 닦는다",
+      "keywords": [
+        "차량",
+        "천으로",
+        "차량의",
+        "옆창문을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "gas 천으로 차량의 옆창문을 닦는다 clean 차량 천으로 차량의 옆창문을 닦는다 청소 닦기",
+      "image": "gas/GAS_028.webp",
+      "source_file": "GAS_028_천으로 차량의 옆창문을 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "차량"
+      ]
+    },
+    {
+      "id": "GAS_029",
+      "group_id": "GAS_029",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "창문을 내린 상태에서 창문의 단면을 천으로 닦는다",
+      "keywords": [
+        "창문을",
+        "내린",
+        "상태에서",
+        "창문의",
+        "단면을",
+        "천으로",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "gas 창문을 내린 상태에서 창문의 단면을 천으로 닦는다 clean 창문을 내린 상태에서 창문의 단면을 천으로 닦는다 청소 닦기",
+      "image": "gas/GAS_029.webp",
+      "source_file": "GAS_029_창문을 내린 상태에서 창문의 단면을 천으로 닦는다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "GAS_030",
+      "group_id": "GAS_030",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "천으로 창문을 문질러서 닦는다",
+      "keywords": [
+        "천으로",
+        "창문을",
+        "문질러서",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "gas 천으로 창문을 문질러서 닦는다 clean 천으로 창문을 문질러서 닦는다 청소 닦기",
+      "image": "gas/GAS_030.webp",
+      "source_file": "GAS_030_천으로 창문을 문질러서 닦는다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "GAS_031",
+      "group_id": "GAS_031",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "깨끗해진 창문을 확인한다",
+      "keywords": [
+        "깨끗해진",
+        "창문을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "깨끗해진 창문을 점검한다"
+      ],
+      "search_text": "gas 깨끗해진 창문을 확인한다 check 깨끗해진 창문을 확인한다 점검 검사 확인 깨끗해진 창문을 점검한다",
+      "image": "gas/GAS_031.webp",
+      "source_file": "GAS_031_깨끗해진 창문을 확인한다.png",
+      "action": "check",
+      "objects": []
+    },
+    {
+      "id": "GAS_032",
+      "group_id": "GAS_032",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "차량에게 후진 신호를 보낸다",
+      "keywords": [
+        "차량",
+        "차량에게",
+        "후진",
+        "신호를",
+        "보낸다"
+      ],
+      "aliases": [],
+      "search_text": "gas 차량에게 후진 신호를 보낸다 other 차량 차량에게 후진 신호를 보낸다",
+      "image": "gas/GAS_032.webp",
+      "source_file": "GAS_032_차량에게 후진 신호를 보낸다.png",
+      "action": "other",
+      "objects": [
+        "차량"
+      ]
+    },
+    {
+      "id": "GAS_033",
+      "group_id": "GAS_033",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "차량에게 정지 신호를 보낸다",
+      "keywords": [
+        "차량",
+        "차량에게",
+        "정지",
+        "신호를",
+        "보낸다"
+      ],
+      "aliases": [],
+      "search_text": "gas 차량에게 정지 신호를 보낸다 other 차량 차량에게 정지 신호를 보낸다",
+      "image": "gas/GAS_033.webp",
+      "source_file": "GAS_033_차량에게 정지 신호를 보낸다.png",
+      "action": "other",
+      "objects": [
+        "차량"
+      ]
+    },
+    {
+      "id": "GAS_034",
+      "group_id": "GAS_034",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "바닥에 흐른 기름을 흡착포로 닥는다",
+      "keywords": [
+        "바닥",
+        "바닥에",
+        "흐른",
+        "기름을",
+        "흡착포로",
+        "닥는다"
+      ],
+      "aliases": [],
+      "search_text": "gas 바닥에 흐른 기름을 흡착포로 닥는다 other 바닥 바닥에 흐른 기름을 흡착포로 닥는다",
+      "image": "gas/GAS_034.webp",
+      "source_file": "GAS_034_바닥에 흐른 기름을 흡착포로 닥는다.png",
+      "action": "other",
+      "objects": [
+        "바닥"
+      ]
+    },
+    {
+      "id": "GAS_035",
+      "group_id": "GAS_035",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "자동차의 주유 뚜껑을 연다",
+      "keywords": [
+        "자동차의",
+        "주유",
+        "뚜껑을",
+        "연다",
+        "열기"
+      ],
+      "aliases": [],
+      "search_text": "gas 자동차의 주유 뚜껑을 연다 open 자동차의 주유 뚜껑을 연다 열기",
+      "image": "gas/GAS_035.webp",
+      "source_file": "GAS_035_자동차의 주유 뚜껑을 연다.png",
+      "action": "open",
+      "objects": []
+    },
+    {
+      "id": "GAS_036",
+      "group_id": "GAS_036",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "주유건을 거치대에서 꺼낸다",
+      "keywords": [
+        "주유건을",
+        "거치대에서",
+        "꺼낸다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [
+        "주유건을 거치대에서 빼낸다"
+      ],
+      "search_text": "gas 주유건을 거치대에서 꺼낸다 remove 주유건을 거치대에서 꺼낸다 꺼내기 빼기 제거 주유건을 거치대에서 빼낸다",
+      "image": "gas/GAS_036.webp",
+      "source_file": "GAS_036_주유건을 거치대에서 꺼낸다.png",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "GAS_037",
+      "group_id": "GAS_037",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "주유건을 자동차 주유구에 꽂는다",
+      "keywords": [
+        "주유건을",
+        "자동차",
+        "주유구에",
+        "꽂는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "gas 주유건을 자동차 주유구에 꽂는다 put_in 주유건을 자동차 주유구에 꽂는다 넣기 담기 꽂기",
+      "image": "gas/GAS_037.webp",
+      "source_file": "GAS_037_주유건을 자동차 주유구에 꽂는다.png",
+      "action": "put_in",
+      "objects": []
+    },
+    {
+      "id": "GAS_038",
+      "group_id": "GAS_038",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "주유건을 자동차 주유구에 꽂고 기다린다",
+      "keywords": [
+        "주유건을",
+        "자동차",
+        "주유구에",
+        "꽂고",
+        "기다린다"
+      ],
+      "aliases": [],
+      "search_text": "gas 주유건을 자동차 주유구에 꽂고 기다린다 other 주유건을 자동차 주유구에 꽂고 기다린다",
+      "image": "gas/GAS_038.webp",
+      "source_file": "GAS_038_주유건을 자동차 주유구에 꽂고 기다린다.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "GAS_039",
+      "group_id": "GAS_039",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "주유가 끝나면 주유건을 주유구에서 빼낸다",
+      "keywords": [
+        "주유가",
+        "끝나면",
+        "주유건을",
+        "주유구에서",
+        "빼낸다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "gas 주유가 끝나면 주유건을 주유구에서 빼낸다 remove 주유가 끝나면 주유건을 주유구에서 빼낸다 꺼내기 빼기 제거",
+      "image": "gas/GAS_039.webp",
+      "source_file": "GAS_039_주유가 끝나면 주유건을 주유구에서 빼낸다.png",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "GAS_040",
+      "group_id": "GAS_040",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "주유건을 주유기 거치대에 다시 꽂는다",
+      "keywords": [
+        "주유건을",
+        "주유기",
+        "거치대에",
+        "다시",
+        "꽂는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "gas 주유건을 주유기 거치대에 다시 꽂는다 put_in 주유건을 주유기 거치대에 다시 꽂는다 넣기 담기 꽂기",
+      "image": "gas/GAS_040.webp",
+      "source_file": "GAS_040_주유건을 주유기 거치대에 다시 꽂는다.png",
+      "action": "put_in",
+      "objects": []
+    },
+    {
+      "id": "GAS_041",
+      "group_id": "GAS_041",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "주유건",
+      "keywords": [
+        "주유건"
+      ],
+      "aliases": [],
+      "search_text": "gas 주유건 other",
+      "image": "gas/GAS_041.webp",
+      "source_file": "GAS_041_주유건.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "GAS_042",
+      "group_id": "GAS_042",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "스퀴지",
+      "keywords": [
+        "스퀴지"
+      ],
+      "aliases": [],
+      "search_text": "gas 스퀴지 other",
+      "image": "gas/GAS_042.webp",
+      "source_file": "GAS_042_스퀴지.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "GAS_043",
+      "group_id": "GAS_043",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "세정액 스프레이",
+      "keywords": [
+        "세정액",
+        "스프레이"
+      ],
+      "aliases": [],
+      "search_text": "gas 세정액 스프레이 other 세정액 스프레이",
+      "image": "gas/GAS_043.webp",
+      "source_file": "GAS_043_세정액 스프레이.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "GAS_044",
+      "group_id": "GAS_044",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "공기압 측정기",
+      "keywords": [
+        "공기압",
+        "측정기"
+      ],
+      "aliases": [],
+      "search_text": "gas 공기압 측정기 other 공기압 측정기",
+      "image": "gas/GAS_044.webp",
+      "source_file": "GAS_044_공기압 측정기.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "GAS_045",
+      "group_id": "GAS_045",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "휴대용 결제 단말기",
+      "keywords": [
+        "휴대용",
+        "결제",
+        "단말기"
+      ],
+      "aliases": [],
+      "search_text": "gas 휴대용 결제 단말기 other 휴대용 결제 단말기",
+      "image": "gas/GAS_045.webp",
+      "source_file": "GAS_045_휴대용 결제 단말기.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "GAS_046",
+      "group_id": "GAS_046",
+      "job": "gas",
+      "asset_type": "action",
+      "variant": null,
+      "label": "마른 천",
+      "keywords": [
+        "마른"
+      ],
+      "aliases": [],
+      "search_text": "gas 마른 천 other 마른",
+      "image": "gas/GAS_046.webp",
+      "source_file": "GAS_046_마른 천.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "SERVING_001",
+      "group_id": "SERVING_001",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "접시를 쟁반에 올린다",
+      "keywords": [
+        "접시",
+        "접시를",
+        "쟁반에",
+        "올린다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [],
+      "search_text": "serving 접시를 쟁반에 올린다 place 접시 접시를 쟁반에 올린다 놓기 올리기 진열 배치",
+      "image": "serving/SERVING_001.webp",
+      "source_file": "SERVING_001_접시를 쟁반에 올린다.png",
+      "action": "place",
+      "objects": [
+        "접시"
+      ]
+    },
+    {
+      "id": "SERVING_002",
+      "group_id": "SERVING_002",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "쟁반을 들고 테이블로 이동한다",
+      "keywords": [
+        "테이블",
+        "쟁반을",
+        "들고",
+        "테이블로",
+        "이동한다",
+        "이동",
+        "옮기기"
+      ],
+      "aliases": [],
+      "search_text": "serving 쟁반을 들고 테이블로 이동한다 move 테이블 쟁반을 들고 테이블로 이동한다 이동 옮기기",
+      "image": "serving/SERVING_002.webp",
+      "source_file": "SERVING_002_쟁반을 들고 테이블로 이동한다.png",
+      "action": "move",
+      "objects": [
+        "테이블"
+      ]
+    },
+    {
+      "id": "SERVING_003",
+      "group_id": "SERVING_003",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "쟁반에서 접시를 들어 테이블 위로 옮긴다",
+      "keywords": [
+        "테이블",
+        "접시",
+        "쟁반에서",
+        "접시를",
+        "들어",
+        "위로",
+        "옮긴다",
+        "이동",
+        "옮기기"
+      ],
+      "aliases": [],
+      "search_text": "serving 쟁반에서 접시를 들어 테이블 위로 옮긴다 move 테이블 접시 쟁반에서 접시를 들어 위로 옮긴다 이동 옮기기",
+      "image": "serving/SERVING_003.webp",
+      "source_file": "SERVING_003_쟁반에서 접시를 들어 테이블 위로 옮긴다.png",
+      "action": "move",
+      "objects": [
+        "테이블",
+        "접시"
+      ]
+    },
+    {
+      "id": "SERVING_004",
+      "group_id": "SERVING_004",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "물병을 꺼낸다",
+      "keywords": [
+        "물병을",
+        "꺼낸다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [
+        "물병을 빼낸다"
+      ],
+      "search_text": "serving 물병을 꺼낸다 remove 물병을 꺼낸다 꺼내기 빼기 제거 물병을 빼낸다",
+      "image": "serving/SERVING_004.webp",
+      "source_file": "SERVING_004_물병을 꺼낸다.png",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "SERVING_005",
+      "group_id": "SERVING_005",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "물병을 들고 테이블로 이동한다",
+      "keywords": [
+        "테이블",
+        "물병을",
+        "들고",
+        "테이블로",
+        "이동한다",
+        "이동",
+        "옮기기"
+      ],
+      "aliases": [],
+      "search_text": "serving 물병을 들고 테이블로 이동한다 move 테이블 물병을 들고 테이블로 이동한다 이동 옮기기",
+      "image": "serving/SERVING_005.webp",
+      "source_file": "SERVING_005_물병을 들고 테이블로 이동한다.png",
+      "action": "move",
+      "objects": [
+        "테이블"
+      ]
+    },
+    {
+      "id": "SERVING_006",
+      "group_id": "SERVING_006",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "물병을 테이블에 올려둔다",
+      "keywords": [
+        "테이블",
+        "물병을",
+        "테이블에",
+        "올려둔다"
+      ],
+      "aliases": [],
+      "search_text": "serving 물병을 테이블에 올려둔다 other 테이블 물병을 테이블에 올려둔다",
+      "image": "serving/SERVING_006.webp",
+      "source_file": "SERVING_006_물병을 테이블에 올려둔다.png",
+      "action": "other",
+      "objects": [
+        "테이블"
+      ]
+    },
+    {
+      "id": "SERVING_007",
+      "group_id": "SERVING_007",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "물잔에 물을 따른다",
+      "keywords": [
+        "물",
+        "물잔에",
+        "물을",
+        "따른다",
+        "붓기",
+        "따르기"
+      ],
+      "aliases": [],
+      "search_text": "serving 물잔에 물을 따른다 pour 물 물잔에 물을 따른다 붓기 따르기",
+      "image": "serving/SERVING_007.webp",
+      "source_file": "SERVING_007_물잔에 물을 따른다.png",
+      "action": "pour",
+      "objects": [
+        "물"
+      ]
+    },
+    {
+      "id": "SERVING_008",
+      "group_id": "SERVING_008",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "식사가 완료된 접시를 쟁반에 담는다",
+      "keywords": [
+        "접시",
+        "식사가",
+        "완료된",
+        "접시를",
+        "쟁반에",
+        "담는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "serving 식사가 완료된 접시를 쟁반에 담는다 put_in 접시 식사가 완료된 접시를 쟁반에 담는다 넣기 담기 꽂기",
+      "image": "serving/SERVING_008.webp",
+      "source_file": "SERVING_008_식사가 완료된 접시를 쟁반에 담는다.png",
+      "action": "put_in",
+      "objects": [
+        "접시"
+      ]
+    },
+    {
+      "id": "SERVING_009",
+      "group_id": "SERVING_009",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "사용된 식기가 담긴 쟁반을 들고 이동한다",
+      "keywords": [
+        "사용된",
+        "식기가",
+        "담긴",
+        "쟁반을",
+        "들고",
+        "이동한다",
+        "이동",
+        "옮기기"
+      ],
+      "aliases": [],
+      "search_text": "serving 사용된 식기가 담긴 쟁반을 들고 이동한다 move 사용된 식기가 담긴 쟁반을 들고 이동한다 이동 옮기기",
+      "image": "serving/SERVING_009.webp",
+      "source_file": "SERVING_009_사용된 식기가 담긴 쟁반을 들고 이동한다.png",
+      "action": "move",
+      "objects": []
+    },
+    {
+      "id": "SERVING_010",
+      "group_id": "SERVING_010",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "테이블을 행주로 닦는다",
+      "keywords": [
+        "테이블",
+        "테이블을",
+        "행주로",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "serving 테이블을 행주로 닦는다 clean 테이블 테이블을 행주로 닦는다 청소 닦기",
+      "image": "serving/SERVING_010.webp",
+      "source_file": "SERVING_010_테이블을 행주로 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "테이블"
+      ]
+    },
+    {
+      "id": "SERVING_011",
+      "group_id": "SERVING_011",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "의자를 정리한다",
+      "keywords": [
+        "의자",
+        "의자를",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "serving 의자를 정리한다 organize 의자 의자를 정리한다 정리 정돈",
+      "image": "serving/SERVING_011.webp",
+      "source_file": "SERVING_011_의자를 정리한다.png",
+      "action": "organize",
+      "objects": [
+        "의자"
+      ]
+    },
+    {
+      "id": "SERVING_012",
+      "group_id": "SERVING_012",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "정돈되지 않은 의자와 테이블",
+      "keywords": [
+        "테이블",
+        "의자",
+        "정돈되지",
+        "않은",
+        "의자와"
+      ],
+      "aliases": [],
+      "search_text": "serving 정돈되지 않은 의자와 테이블 other 테이블 의자 정돈되지 않은 의자와",
+      "image": "serving/SERVING_012.webp",
+      "source_file": "SERVING_012_정돈되지 않은 의자와 테이블.png",
+      "action": "other",
+      "objects": [
+        "테이블",
+        "의자"
+      ]
+    },
+    {
+      "id": "SERVING_013",
+      "group_id": "SERVING_013",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "정돈된 의자와 테이블",
+      "keywords": [
+        "테이블",
+        "의자",
+        "정돈된",
+        "의자와"
+      ],
+      "aliases": [],
+      "search_text": "serving 정돈된 의자와 테이블 other 테이블 의자 정돈된 의자와",
+      "image": "serving/SERVING_013.webp",
+      "source_file": "SERVING_013_정돈된 의자와 테이블.png",
+      "action": "other",
+      "objects": [
+        "테이블",
+        "의자"
+      ]
+    },
+    {
+      "id": "SERVING_014",
+      "group_id": "SERVING_014",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "닦이지 않은 테이블",
+      "keywords": [
+        "테이블",
+        "닦이지",
+        "않은"
+      ],
+      "aliases": [],
+      "search_text": "serving 닦이지 않은 테이블 other 테이블 닦이지 않은",
+      "image": "serving/SERVING_014.webp",
+      "source_file": "SERVING_014_닦이지 않은 테이블.png",
+      "action": "other",
+      "objects": [
+        "테이블"
+      ]
+    },
+    {
+      "id": "SERVING_015",
+      "group_id": "SERVING_015",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "닦인 테이블",
+      "keywords": [
+        "테이블",
+        "닦인"
+      ],
+      "aliases": [],
+      "search_text": "serving 닦인 테이블 other 테이블 닦인",
+      "image": "serving/SERVING_015.webp",
+      "source_file": "SERVING_015_닦인 테이블.png",
+      "action": "other",
+      "objects": [
+        "테이블"
+      ]
+    },
+    {
+      "id": "SERVING_016",
+      "group_id": "SERVING_016",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "테이블에 수저를 놓는다",
+      "keywords": [
+        "테이블",
+        "테이블에",
+        "수저를",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "테이블에 수저를 올린다"
+      ],
+      "search_text": "serving 테이블에 수저를 놓는다 place 테이블 테이블에 수저를 놓는다 놓기 올리기 진열 배치 테이블에 수저를 올린다",
+      "image": "serving/SERVING_016.webp",
+      "source_file": "SERVING_016_테이블에 수저를 놓는다.png",
+      "action": "place",
+      "objects": [
+        "테이블"
+      ]
+    },
+    {
+      "id": "SERVING_017",
+      "group_id": "SERVING_017",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "테이블에 티슈를 놓는다",
+      "keywords": [
+        "테이블",
+        "테이블에",
+        "티슈를",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "테이블에 티슈를 올린다"
+      ],
+      "search_text": "serving 테이블에 티슈를 놓는다 place 테이블 테이블에 티슈를 놓는다 놓기 올리기 진열 배치 테이블에 티슈를 올린다",
+      "image": "serving/SERVING_017.webp",
+      "source_file": "SERVING_017_테이블에 티슈를 놓는다.png",
+      "action": "place",
+      "objects": [
+        "테이블"
+      ]
+    },
+    {
+      "id": "SERVING_018",
+      "group_id": "SERVING_018",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "테이블에 메뉴판을 놓는다",
+      "keywords": [
+        "테이블",
+        "테이블에",
+        "메뉴판을",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "테이블에 메뉴판을 올린다"
+      ],
+      "search_text": "serving 테이블에 메뉴판을 놓는다 place 테이블 테이블에 메뉴판을 놓는다 놓기 올리기 진열 배치 테이블에 메뉴판을 올린다",
+      "image": "serving/SERVING_018.webp",
+      "source_file": "SERVING_018_테이블에 메뉴판을 놓는다.png",
+      "action": "place",
+      "objects": [
+        "테이블"
+      ]
+    },
+    {
+      "id": "SERVING_019",
+      "group_id": "SERVING_019",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빈 자리로 손님을 안내한다",
+      "keywords": [
+        "고객",
+        "손",
+        "자리로",
+        "손님을",
+        "안내한다",
+        "안내",
+        "방향 안내",
+        "위치 안내"
+      ],
+      "aliases": [],
+      "search_text": "serving 빈 자리로 손님을 안내한다 guide 고객 손 자리로 손님을 안내한다 안내 방향 안내 위치 안내",
+      "image": "serving/SERVING_019.webp",
+      "source_file": "SERVING_019_빈 자리로 손님을 안내한다.png",
+      "action": "guide",
+      "objects": [
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "SERVING_020",
+      "group_id": "SERVING_020",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빈 접시를 쟁반에 담는다",
+      "keywords": [
+        "접시",
+        "접시를",
+        "쟁반에",
+        "담는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "serving 빈 접시를 쟁반에 담는다 put_in 접시 접시를 쟁반에 담는다 넣기 담기 꽂기",
+      "image": "serving/SERVING_020.webp",
+      "source_file": "SERVING_020_빈 접시를 쟁반에 담는다.png",
+      "action": "put_in",
+      "objects": [
+        "접시"
+      ]
+    },
+    {
+      "id": "SERVING_021",
+      "group_id": "SERVING_021",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빈 접시들을 쟁반에 담는다",
+      "keywords": [
+        "접시",
+        "접시들을",
+        "쟁반에",
+        "담는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "serving 빈 접시들을 쟁반에 담는다 put_in 접시 접시들을 쟁반에 담는다 넣기 담기 꽂기",
+      "image": "serving/SERVING_021.webp",
+      "source_file": "SERVING_021_빈 접시들을 쟁반에 담는다.png",
+      "action": "put_in",
+      "objects": [
+        "접시"
+      ]
+    },
+    {
+      "id": "SERVING_022",
+      "group_id": "SERVING_022",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빈 접시가 담긴 쟁반을 든다",
+      "keywords": [
+        "접시",
+        "접시가",
+        "담긴",
+        "쟁반을",
+        "든다"
+      ],
+      "aliases": [],
+      "search_text": "serving 빈 접시가 담긴 쟁반을 든다 other 접시 접시가 담긴 쟁반을 든다",
+      "image": "serving/SERVING_022.webp",
+      "source_file": "SERVING_022_빈 접시가 담긴 쟁반을 든다.png",
+      "action": "other",
+      "objects": [
+        "접시"
+      ]
+    },
+    {
+      "id": "SERVING_023",
+      "group_id": "SERVING_023",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빈 접시가 든 쟁반을 퇴식대로 가지고 간다",
+      "keywords": [
+        "접시",
+        "접시가",
+        "쟁반을",
+        "퇴식대로",
+        "가지고",
+        "간다",
+        "분쇄",
+        "갈기"
+      ],
+      "aliases": [],
+      "search_text": "serving 빈 접시가 든 쟁반을 퇴식대로 가지고 간다 grind 접시 접시가 쟁반을 퇴식대로 가지고 간다 분쇄 갈기",
+      "image": "serving/SERVING_023.webp",
+      "source_file": "SERVING_023_빈 접시가 든 쟁반을 퇴식대로 가지고 간다.png",
+      "action": "grind",
+      "objects": [
+        "접시"
+      ]
+    },
+    {
+      "id": "SERVING_024",
+      "group_id": "SERVING_024",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빈 접시가 담긴 쟁반을 퇴식대에 놓는다",
+      "keywords": [
+        "접시",
+        "접시가",
+        "담긴",
+        "쟁반을",
+        "퇴식대에",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "빈 접시가 담긴 쟁반을 퇴식대에 올린다"
+      ],
+      "search_text": "serving 빈 접시가 담긴 쟁반을 퇴식대에 놓는다 place 접시 접시가 담긴 쟁반을 퇴식대에 놓는다 놓기 올리기 진열 배치 빈 접시가 담긴 쟁반을 퇴식대에 올린다",
+      "image": "serving/SERVING_024.webp",
+      "source_file": "SERVING_024_빈 접시가 담긴 쟁반을 퇴식대에 놓는다.png",
+      "action": "place",
+      "objects": [
+        "접시"
+      ]
+    },
+    {
+      "id": "SERVING_025",
+      "group_id": "SERVING_025",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "음료 주문을 확인한다",
+      "keywords": [
+        "음료",
+        "주문을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "음료 주문을 점검한다"
+      ],
+      "search_text": "serving 음료 주문을 확인한다 check 음료 주문을 확인한다 점검 검사 확인 음료 주문을 점검한다",
+      "image": "serving/SERVING_025.webp",
+      "source_file": "SERVING_025_음료 주문을 확인한다.png",
+      "action": "check",
+      "objects": [
+        "음료"
+      ]
+    },
+    {
+      "id": "SERVING_026",
+      "group_id": "SERVING_026",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "냉장고에서 캔음료를 꺼내온다",
+      "keywords": [
+        "냉장고",
+        "음료",
+        "냉장고에서",
+        "캔음료를",
+        "꺼내온다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "serving 냉장고에서 캔음료를 꺼내온다 remove 냉장고 음료 냉장고에서 캔음료를 꺼내온다 꺼내기 빼기 제거",
+      "image": "serving/SERVING_026.webp",
+      "source_file": "SERVING_026_냉장고에서 캔음료를 꺼내온다.png",
+      "action": "remove",
+      "objects": [
+        "냉장고",
+        "음료"
+      ]
+    },
+    {
+      "id": "SERVING_027",
+      "group_id": "SERVING_027",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "잔에 얼음을 담는다",
+      "keywords": [
+        "얼음",
+        "잔에",
+        "얼음을",
+        "담는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "serving 잔에 얼음을 담는다 put_in 얼음 잔에 얼음을 담는다 넣기 담기 꽂기",
+      "image": "serving/SERVING_027.webp",
+      "source_file": "SERVING_027_잔에 얼음을 담는다.png",
+      "action": "put_in",
+      "objects": [
+        "얼음"
+      ]
+    },
+    {
+      "id": "SERVING_028",
+      "group_id": "SERVING_028",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "얼음이 담긴 잔에 음료를 붓는다",
+      "keywords": [
+        "얼음",
+        "음료",
+        "얼음이",
+        "담긴",
+        "잔에",
+        "음료를",
+        "붓는다",
+        "붓기",
+        "따르기"
+      ],
+      "aliases": [],
+      "search_text": "serving 얼음이 담긴 잔에 음료를 붓는다 pour 얼음 음료 얼음이 담긴 잔에 음료를 붓는다 붓기 따르기",
+      "image": "serving/SERVING_028.webp",
+      "source_file": "SERVING_028_얼음이 담긴 잔에 음료를 붓는다.png",
+      "action": "pour",
+      "objects": [
+        "얼음",
+        "음료"
+      ]
+    },
+    {
+      "id": "SERVING_029",
+      "group_id": "SERVING_029",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "음료를 테이블로 서빙한다",
+      "keywords": [
+        "테이블",
+        "음료",
+        "음료를",
+        "테이블로",
+        "서빙한다"
+      ],
+      "aliases": [],
+      "search_text": "serving 음료를 테이블로 서빙한다 other 테이블 음료 음료를 테이블로 서빙한다",
+      "image": "serving/SERVING_029.webp",
+      "source_file": "SERVING_029_음료를 테이블로 서빙한다.png",
+      "action": "other",
+      "objects": [
+        "테이블",
+        "음료"
+      ]
+    },
+    {
+      "id": "SERVING_030",
+      "group_id": "SERVING_030",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "캔음료를 테이블로 서빙한다",
+      "keywords": [
+        "테이블",
+        "음료",
+        "캔음료를",
+        "테이블로",
+        "서빙한다"
+      ],
+      "aliases": [],
+      "search_text": "serving 캔음료를 테이블로 서빙한다 other 테이블 음료 캔음료를 테이블로 서빙한다",
+      "image": "serving/SERVING_030.webp",
+      "source_file": "SERVING_030_캔음료를 테이블로 서빙한다.png",
+      "action": "other",
+      "objects": [
+        "테이블",
+        "음료"
+      ]
+    },
+    {
+      "id": "SERVING_031",
+      "group_id": "SERVING_031",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "큰 쓰레기를 줍는다",
+      "keywords": [
+        "쓰레기",
+        "쓰레기를",
+        "줍는다",
+        "줍기",
+        "집기",
+        "수거"
+      ],
+      "aliases": [],
+      "search_text": "serving 큰 쓰레기를 줍는다 pick_up 쓰레기 쓰레기를 줍는다 줍기 집기 수거",
+      "image": "serving/SERVING_031.webp",
+      "source_file": "SERVING_031_큰 쓰레기를 줍는다.png",
+      "action": "pick_up",
+      "objects": [
+        "쓰레기"
+      ]
+    },
+    {
+      "id": "SERVING_032",
+      "group_id": "SERVING_032",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "쓰레기를 쓰레기통에 버린다",
+      "keywords": [
+        "쓰레기통",
+        "쓰레기",
+        "쓰레기를",
+        "쓰레기통에",
+        "버린다",
+        "버리기",
+        "폐기"
+      ],
+      "aliases": [],
+      "search_text": "serving 쓰레기를 쓰레기통에 버린다 discard 쓰레기통 쓰레기 쓰레기를 쓰레기통에 버린다 버리기 폐기",
+      "image": "serving/SERVING_032.webp",
+      "source_file": "SERVING_032_쓰레기를 쓰레기통에 버린다.png",
+      "action": "discard",
+      "objects": [
+        "쓰레기통",
+        "쓰레기"
+      ]
+    },
+    {
+      "id": "SERVING_033",
+      "group_id": "SERVING_033",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "물걸레로 바닥을 닦는다",
+      "keywords": [
+        "바닥",
+        "물걸레로",
+        "바닥을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "serving 물걸레로 바닥을 닦는다 clean 바닥 물걸레로 바닥을 닦는다 청소 닦기",
+      "image": "serving/SERVING_033.webp",
+      "source_file": "SERVING_033_물걸레로 바닥을 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "바닥"
+      ]
+    },
+    {
+      "id": "SERVING_034",
+      "group_id": "SERVING_034",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "청결해진 바닥을 확인한다",
+      "keywords": [
+        "바닥",
+        "청결해진",
+        "바닥을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "청결해진 바닥을 점검한다"
+      ],
+      "search_text": "serving 청결해진 바닥을 확인한다 check 바닥 청결해진 바닥을 확인한다 점검 검사 확인 청결해진 바닥을 점검한다",
+      "image": "serving/SERVING_034.webp",
+      "source_file": "SERVING_034_청결해진 바닥을 확인한다.png",
+      "action": "check",
+      "objects": [
+        "바닥"
+      ]
+    },
+    {
+      "id": "SERVING_035",
+      "group_id": "SERVING_035",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빗자루로 쓰레기를 쓸어 쓰레받기에 담는다",
+      "keywords": [
+        "쓰레기",
+        "빗자루로",
+        "쓰레기를",
+        "쓸어",
+        "쓰레받기에",
+        "담는다",
+        "쓸기",
+        "빗자루",
+        "먼지 모으기"
+      ],
+      "aliases": [],
+      "search_text": "serving 빗자루로 쓰레기를 쓸어 쓰레받기에 담는다 sweep 쓰레기 빗자루로 쓰레기를 쓸어 쓰레받기에 담는다 쓸기 빗자루 먼지 모으기",
+      "image": "serving/SERVING_035.webp",
+      "source_file": "SERVING_035_빗자루로 쓰레기를 쓸어 쓰레받기에 담는다.png",
+      "action": "sweep",
+      "objects": [
+        "쓰레기"
+      ]
+    },
+    {
+      "id": "SERVING_036",
+      "group_id": "SERVING_036",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "쓰레받기에 든 쓰레기를 쓰레기통에 붓는다",
+      "keywords": [
+        "쓰레기통",
+        "쓰레기",
+        "쓰레받기에",
+        "쓰레기를",
+        "쓰레기통에",
+        "붓는다",
+        "받기",
+        "건네받기",
+        "수령"
+      ],
+      "aliases": [],
+      "search_text": "serving 쓰레받기에 든 쓰레기를 쓰레기통에 붓는다 receive 쓰레기통 쓰레기 쓰레받기에 쓰레기를 쓰레기통에 붓는다 받기 건네받기 수령",
+      "image": "serving/SERVING_036.webp",
+      "source_file": "SERVING_036_쓰레받기에 든 쓰레기를 쓰레기통에 붓는다.png",
+      "action": "receive",
+      "objects": [
+        "쓰레기통",
+        "쓰레기"
+      ]
+    },
+    {
+      "id": "SERVING_037",
+      "group_id": "SERVING_037",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "유리잔이 깨진 것을 확인한다",
+      "keywords": [
+        "유리잔이",
+        "깨진",
+        "것을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "유리잔이 깨진 것을 점검한다"
+      ],
+      "search_text": "serving 유리잔이 깨진 것을 확인한다 check 유리잔이 깨진 것을 확인한다 점검 검사 확인 유리잔이 깨진 것을 점검한다",
+      "image": "serving/SERVING_037.webp",
+      "source_file": "SERVING_037_유리잔이 깨진 것을 확인한다.png",
+      "action": "check",
+      "objects": []
+    },
+    {
+      "id": "SERVING_038",
+      "group_id": "SERVING_038",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "유리 파편을 피해 손님들을 다른 자리로 안내한다",
+      "keywords": [
+        "고객",
+        "손",
+        "유리",
+        "파편을",
+        "피해",
+        "손님들을",
+        "다른",
+        "자리로",
+        "안내한다",
+        "안내",
+        "방향 안내",
+        "위치 안내"
+      ],
+      "aliases": [],
+      "search_text": "serving 유리 파편을 피해 손님들을 다른 자리로 안내한다 guide 고객 손 유리 파편을 피해 손님들을 다른 자리로 안내한다 안내 방향 안내 위치 안내",
+      "image": "serving/SERVING_038.webp",
+      "source_file": "SERVING_038_유리 파편을 피해 손님들을 다른 자리로 안내한다.png",
+      "action": "guide",
+      "objects": [
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "SERVING_039",
+      "group_id": "SERVING_039",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "유리조각을 쓸어담는다",
+      "keywords": [
+        "유리조각을",
+        "쓸어담는다",
+        "쓸기",
+        "빗자루",
+        "먼지 모으기"
+      ],
+      "aliases": [],
+      "search_text": "serving 유리조각을 쓸어담는다 sweep 유리조각을 쓸어담는다 쓸기 빗자루 먼지 모으기",
+      "image": "serving/SERVING_039.webp",
+      "source_file": "SERVING_039_유리조각을 쓸어담는다.png",
+      "action": "sweep",
+      "objects": []
+    },
+    {
+      "id": "SERVING_040",
+      "group_id": "SERVING_040",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "유리조각을 종이로 감싼다",
+      "keywords": [
+        "유리조각을",
+        "종이로",
+        "감싼다",
+        "포장한다",
+        "포장하기",
+        "감싸기"
+      ],
+      "aliases": [],
+      "search_text": "serving 유리조각을 종이로 감싼다 pack 유리조각을 종이로 감싼다 포장한다 포장하기 감싸기",
+      "image": "serving/SERVING_040.webp",
+      "source_file": "SERVING_040_유리조각을 종이로 감싼다.png",
+      "action": "pack",
+      "objects": []
+    },
+    {
+      "id": "SERVING_041",
+      "group_id": "SERVING_041",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "종이에 싸인 유리조각을 쓰레기통에 버린다",
+      "keywords": [
+        "쓰레기통",
+        "종이에",
+        "싸인",
+        "유리조각을",
+        "쓰레기통에",
+        "버린다",
+        "버리기",
+        "폐기"
+      ],
+      "aliases": [],
+      "search_text": "serving 종이에 싸인 유리조각을 쓰레기통에 버린다 discard 쓰레기통 종이에 싸인 유리조각을 쓰레기통에 버린다 버리기 폐기",
+      "image": "serving/SERVING_041.webp",
+      "source_file": "SERVING_041_종이에 싸인 유리조각을 쓰레기통에 버린다.png",
+      "action": "discard",
+      "objects": [
+        "쓰레기통"
+      ]
+    },
+    {
+      "id": "SERVING_042",
+      "group_id": "SERVING_042",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "비품 카트를 가지고 홀로 이동한다",
+      "keywords": [
+        "카트",
+        "비품",
+        "카트를",
+        "가지고",
+        "홀로",
+        "이동한다",
+        "이동",
+        "옮기기"
+      ],
+      "aliases": [
+        "비품 운반 카트를 가지고 홀로 이동한다"
+      ],
+      "search_text": "serving 비품 카트를 가지고 홀로 이동한다 move 카트 비품 카트를 가지고 홀로 이동한다 이동 옮기기 비품 운반 카트를 가지고 홀로 이동한다",
+      "image": "serving/SERVING_042.webp",
+      "source_file": "SERVING_042_비품 카트를 가지고 홀로 이동한다.png",
+      "action": "move",
+      "objects": [
+        "카트"
+      ]
+    },
+    {
+      "id": "SERVING_043",
+      "group_id": "SERVING_043",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "테이블 수저함을 확인한다",
+      "keywords": [
+        "테이블",
+        "수저함을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "테이블 수저함을 점검한다"
+      ],
+      "search_text": "serving 테이블 수저함을 확인한다 check 테이블 수저함을 확인한다 점검 검사 확인 테이블 수저함을 점검한다",
+      "image": "serving/SERVING_043.webp",
+      "source_file": "SERVING_043_테이블 수저함을 확인한다.png",
+      "action": "check",
+      "objects": [
+        "테이블"
+      ]
+    },
+    {
+      "id": "SERVING_044",
+      "group_id": "SERVING_044",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "테이블 수저함에 비품을 채워넣는다",
+      "keywords": [
+        "테이블",
+        "수저함에",
+        "비품을",
+        "채워넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "serving 테이블 수저함에 비품을 채워넣는다 put_in 테이블 수저함에 비품을 채워넣는다 넣기 담기 꽂기",
+      "image": "serving/SERVING_044.webp",
+      "source_file": "SERVING_044_테이블 수저함에 비품을 채워넣는다.png",
+      "action": "put_in",
+      "objects": [
+        "테이블"
+      ]
+    },
+    {
+      "id": "SERVING_045",
+      "group_id": "SERVING_045",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "티슈함을 확인한다",
+      "keywords": [
+        "티슈함을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "티슈함을 점검한다"
+      ],
+      "search_text": "serving 티슈함을 확인한다 check 티슈함을 확인한다 점검 검사 확인 티슈함을 점검한다",
+      "image": "serving/SERVING_045.webp",
+      "source_file": "SERVING_045_티슈함을 확인한다.png",
+      "action": "check",
+      "objects": []
+    },
+    {
+      "id": "SERVING_046",
+      "group_id": "SERVING_046",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "티슈함에 티슈를 채워넣는다",
+      "keywords": [
+        "티슈함에",
+        "티슈를",
+        "채워넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "serving 티슈함에 티슈를 채워넣는다 put_in 티슈함에 티슈를 채워넣는다 넣기 담기 꽂기",
+      "image": "serving/SERVING_046.webp",
+      "source_file": "SERVING_046_티슈함에 티슈를 채워넣는다.png",
+      "action": "put_in",
+      "objects": []
+    },
+    {
+      "id": "SERVING_047",
+      "group_id": "SERVING_047",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "주방으로부터 메뉴를 받는다",
+      "keywords": [
+        "주방으로부터",
+        "메뉴를",
+        "받는다",
+        "받기",
+        "건네받기",
+        "수령"
+      ],
+      "aliases": [],
+      "search_text": "serving 주방으로부터 메뉴를 받는다 receive 주방으로부터 메뉴를 받는다 받기 건네받기 수령",
+      "image": "serving/SERVING_047.webp",
+      "source_file": "SERVING_047_주방으로부터 메뉴를 받는다.png",
+      "action": "receive",
+      "objects": []
+    },
+    {
+      "id": "SERVING_048",
+      "group_id": "SERVING_048",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "주문과 메뉴가 동일함을 확인한다",
+      "keywords": [
+        "주문과",
+        "메뉴가",
+        "동일함을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "주문과 메뉴가 동일함을 점검한다"
+      ],
+      "search_text": "serving 주문과 메뉴가 동일함을 확인한다 check 주문과 메뉴가 동일함을 확인한다 점검 검사 확인 주문과 메뉴가 동일함을 점검한다",
+      "image": "serving/SERVING_048.webp",
+      "source_file": "SERVING_048_주문과 메뉴가 동일함을 확인한다.png",
+      "action": "check",
+      "objects": []
+    },
+    {
+      "id": "SERVING_049",
+      "group_id": "SERVING_049",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "호출하는 손님에게 다가간다",
+      "keywords": [
+        "고객",
+        "손",
+        "호출하는",
+        "손님에게",
+        "다가간다",
+        "분쇄",
+        "갈기"
+      ],
+      "aliases": [],
+      "search_text": "serving 호출하는 손님에게 다가간다 grind 고객 손 호출하는 손님에게 다가간다 분쇄 갈기",
+      "image": "serving/SERVING_049.webp",
+      "source_file": "SERVING_049_호출하는 손님에게 다가간다.png",
+      "action": "grind",
+      "objects": [
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "SERVING_050",
+      "group_id": "SERVING_050",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "손님에게서 주문을 듣고 적는다",
+      "keywords": [
+        "고객",
+        "손",
+        "손님에게서",
+        "주문을",
+        "듣고",
+        "적는다"
+      ],
+      "aliases": [],
+      "search_text": "serving 손님에게서 주문을 듣고 적는다 other 고객 손 손님에게서 주문을 듣고 적는다",
+      "image": "serving/SERVING_050.webp",
+      "source_file": "SERVING_050_손님에게서 주문을 듣고 적는다.png",
+      "action": "other",
+      "objects": [
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "SERVING_051",
+      "group_id": "SERVING_051",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "주문을 포스에 입력한다",
+      "keywords": [
+        "주문을",
+        "포스에",
+        "입력한다"
+      ],
+      "aliases": [],
+      "search_text": "serving 주문을 포스에 입력한다 other 주문을 포스에 입력한다",
+      "image": "serving/SERVING_051.webp",
+      "source_file": "SERVING_051_주문을 포스에 입력한다.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "SERVING_052",
+      "group_id": "SERVING_052",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "포스에서 결제하러 오는 손님을 받는다",
+      "keywords": [
+        "고객",
+        "손",
+        "포스에서",
+        "결제하러",
+        "오는",
+        "손님을",
+        "받는다",
+        "받기",
+        "건네받기",
+        "수령"
+      ],
+      "aliases": [],
+      "search_text": "serving 포스에서 결제하러 오는 손님을 받는다 receive 고객 손 포스에서 결제하러 오는 손님을 받는다 받기 건네받기 수령",
+      "image": "serving/SERVING_052.webp",
+      "source_file": "SERVING_052_포스에서 결제하러 오는 손님을 받는다.png",
+      "action": "receive",
+      "objects": [
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "SERVING_053",
+      "group_id": "SERVING_053",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "결제 단말기로 결제를 진행한다",
+      "keywords": [
+        "결제",
+        "단말기로",
+        "결제를",
+        "진행한다"
+      ],
+      "aliases": [],
+      "search_text": "serving 결제 단말기로 결제를 진행한다 other 결제 단말기로 결제를 진행한다",
+      "image": "serving/SERVING_053.webp",
+      "source_file": "SERVING_053_결제 단말기로 결제를 진행한다.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "SERVING_054",
+      "group_id": "SERVING_054",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "식기세척기에서 컵들을 꺼낸다",
+      "keywords": [
+        "컵",
+        "식기세척기에서",
+        "컵들을",
+        "꺼낸다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [
+        "식기세척기에서 컵들을 빼낸다"
+      ],
+      "search_text": "serving 식기세척기에서 컵들을 꺼낸다 remove 컵 식기세척기에서 컵들을 꺼낸다 꺼내기 빼기 제거 식기세척기에서 컵들을 빼낸다",
+      "image": "serving/SERVING_054.webp",
+      "source_file": "SERVING_054_식기세척기에서 컵들을 꺼낸다.png",
+      "action": "remove",
+      "objects": [
+        "컵"
+      ]
+    },
+    {
+      "id": "SERVING_055",
+      "group_id": "SERVING_055",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "컵의 물기를 제거한다",
+      "keywords": [
+        "물기",
+        "컵",
+        "컵의",
+        "물기를",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "serving 컵의 물기를 제거한다 remove 물기 컵 컵의 물기를 제거한다 꺼내기 빼기 제거",
+      "image": "serving/SERVING_055.webp",
+      "source_file": "SERVING_055_컵의 물기를 제거한다.png",
+      "action": "remove",
+      "objects": [
+        "물기",
+        "컵"
+      ]
+    },
+    {
+      "id": "SERVING_056",
+      "group_id": "SERVING_056",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "결제하는 손님에게 현금을 받는다",
+      "keywords": [
+        "고객",
+        "손",
+        "결제하는",
+        "손님에게",
+        "현금을",
+        "받는다",
+        "받기",
+        "건네받기",
+        "수령"
+      ],
+      "aliases": [],
+      "search_text": "serving 결제하는 손님에게 현금을 받는다 receive 고객 손 결제하는 손님에게 현금을 받는다 받기 건네받기 수령",
+      "image": "serving/SERVING_056.webp",
+      "source_file": "SERVING_056_결제하는 손님에게 현금을 받는다.png",
+      "action": "receive",
+      "objects": [
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "SERVING_057",
+      "group_id": "SERVING_057",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "손님에게 동전을 거슬러 준다",
+      "keywords": [
+        "고객",
+        "손",
+        "손님에게",
+        "동전을",
+        "거슬러",
+        "준다"
+      ],
+      "aliases": [],
+      "search_text": "serving 손님에게 동전을 거슬러 준다 other 고객 손 손님에게 동전을 거슬러 준다",
+      "image": "serving/SERVING_057.webp",
+      "source_file": "SERVING_057_손님에게 동전을 거슬러 준다.png",
+      "action": "other",
+      "objects": [
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "SERVING_058",
+      "group_id": "SERVING_058",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "손님에게 지폐를 거슬러 준다",
+      "keywords": [
+        "고객",
+        "손",
+        "손님에게",
+        "지폐를",
+        "거슬러",
+        "준다"
+      ],
+      "aliases": [],
+      "search_text": "serving 손님에게 지폐를 거슬러 준다 other 고객 손 손님에게 지폐를 거슬러 준다",
+      "image": "serving/SERVING_058.webp",
+      "source_file": "SERVING_058_손님에게 지폐를 거슬러 준다.png",
+      "action": "other",
+      "objects": [
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "SERVING_059",
+      "group_id": "SERVING_059",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "앞치마 착용",
+      "keywords": [
+        "앞치마",
+        "착용"
+      ],
+      "aliases": [],
+      "search_text": "serving 앞치마 착용 other 앞치마 착용",
+      "image": "serving/SERVING_059.webp",
+      "source_file": "SERVING_059_앞치마 착용.png",
+      "action": "other",
+      "objects": [
+        "앞치마"
+      ]
+    },
+    {
+      "id": "SERVING_060",
+      "group_id": "SERVING_060",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "앞치마 착용 완료",
+      "keywords": [
+        "앞치마",
+        "착용",
+        "완료"
+      ],
+      "aliases": [],
+      "search_text": "serving 앞치마 착용 완료 other 앞치마 착용 완료",
+      "image": "serving/SERVING_060.webp",
+      "source_file": "SERVING_060_앞치마 착용 완료.png",
+      "action": "other",
+      "objects": [
+        "앞치마"
+      ]
+    },
+    {
+      "id": "SERVING_061",
+      "group_id": "SERVING_061",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "세정제를 이용하여 손을 씻는다",
+      "keywords": [
+        "세정제",
+        "손",
+        "세정제를",
+        "이용하여",
+        "손을",
+        "씻는다",
+        "씻기",
+        "헹구기",
+        "세척"
+      ],
+      "aliases": [],
+      "search_text": "serving 세정제를 이용하여 손을 씻는다 wash 세정제 손 세정제를 이용하여 손을 씻는다 씻기 헹구기 세척",
+      "image": "serving/SERVING_061.webp",
+      "source_file": "SERVING_061_세정제를 이용하여 손을 씻는다.png",
+      "action": "wash",
+      "objects": [
+        "세정제",
+        "손"
+      ]
+    },
+    {
+      "id": "SERVING_062",
+      "group_id": "SERVING_062",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "타올로 손의 물기를 닦는다",
+      "keywords": [
+        "물기",
+        "손",
+        "타올로",
+        "손의",
+        "물기를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "serving 타올로 손의 물기를 닦는다 clean 물기 손 타올로 손의 물기를 닦는다 청소 닦기",
+      "image": "serving/SERVING_062.webp",
+      "source_file": "SERVING_062_타올로 손의 물기를 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "물기",
+        "손"
+      ]
+    },
+    {
+      "id": "SERVING_063",
+      "group_id": "SERVING_063",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "장갑을 착용한다",
+      "keywords": [
+        "장갑을",
+        "착용한다",
+        "착용",
+        "입기",
+        "신기"
+      ],
+      "aliases": [],
+      "search_text": "serving 장갑을 착용한다 wear 장갑을 착용한다 착용 입기 신기",
+      "image": "serving/SERVING_063.webp",
+      "source_file": "SERVING_063_장갑을 착용한다.png",
+      "action": "wear",
+      "objects": []
+    },
+    {
+      "id": "SERVING_064",
+      "group_id": "SERVING_064",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "머리를 묶는다",
+      "keywords": [
+        "머리를",
+        "묶는다"
+      ],
+      "aliases": [],
+      "search_text": "serving 머리를 묶는다 other 머리를 묶는다",
+      "image": "serving/SERVING_064.webp",
+      "source_file": "SERVING_064_머리를 묶는다.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "SERVING_065",
+      "group_id": "SERVING_065",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "소지품은 사물함에 보관한다",
+      "keywords": [
+        "소지품은",
+        "사물함에",
+        "보관한다",
+        "보관",
+        "정리"
+      ],
+      "aliases": [],
+      "search_text": "serving 소지품은 사물함에 보관한다 store 소지품은 사물함에 보관한다 보관 정리",
+      "image": "serving/SERVING_065.webp",
+      "source_file": "SERVING_065_소지품은 사물함에 보관한다.png",
+      "action": "store",
+      "objects": []
+    },
+    {
+      "id": "SERVING_066",
+      "group_id": "SERVING_066",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "아기 동반 손님을 확인한다",
+      "keywords": [
+        "고객",
+        "손",
+        "아기",
+        "동반",
+        "손님을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "아기 동반 손님을 점검한다"
+      ],
+      "search_text": "serving 아기 동반 손님을 확인한다 check 고객 손 아기 동반 손님을 확인한다 점검 검사 확인 아기 동반 손님을 점검한다",
+      "image": "serving/SERVING_066.webp",
+      "source_file": "SERVING_066_아기 동반 손님을 확인한다.png",
+      "action": "check",
+      "objects": [
+        "고객",
+        "손"
+      ]
+    },
+    {
+      "id": "SERVING_067",
+      "group_id": "SERVING_067",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "아기용 의자를 가져온다",
+      "keywords": [
+        "의자",
+        "아기용",
+        "의자를",
+        "가져온다",
+        "운반",
+        "가져가기"
+      ],
+      "aliases": [],
+      "search_text": "serving 아기용 의자를 가져온다 carry 의자 아기용 의자를 가져온다 운반 가져가기",
+      "image": "serving/SERVING_067.webp",
+      "source_file": "SERVING_067_아기용 의자를 가져온다.png",
+      "action": "carry",
+      "objects": [
+        "의자"
+      ]
+    },
+    {
+      "id": "SERVING_068",
+      "group_id": "SERVING_068",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "바닥에 쏟아진 물을 확인한다",
+      "keywords": [
+        "바닥",
+        "물",
+        "바닥에",
+        "쏟아진",
+        "물을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "바닥에 쏟아진 물을 점검한다"
+      ],
+      "search_text": "serving 바닥에 쏟아진 물을 확인한다 check 바닥 물 바닥에 쏟아진 물을 확인한다 점검 검사 확인 바닥에 쏟아진 물을 점검한다",
+      "image": "serving/SERVING_068.webp",
+      "source_file": "SERVING_068_바닥에 쏟아진 물을 확인한다.png",
+      "action": "check",
+      "objects": [
+        "바닥",
+        "물"
+      ]
+    },
+    {
+      "id": "SERVING_069",
+      "group_id": "SERVING_069",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "물이 쏟아진 곳 근처에 미끄럼 주의 팻말을 세운다",
+      "keywords": [
+        "물",
+        "물이",
+        "쏟아진",
+        "근처에",
+        "미끄럼",
+        "주의",
+        "팻말을",
+        "세운다",
+        "세우기",
+        "바로 세우기"
+      ],
+      "aliases": [],
+      "search_text": "serving 물이 쏟아진 곳 근처에 미끄럼 주의 팻말을 세운다 stand 물 물이 쏟아진 근처에 미끄럼 주의 팻말을 세운다 세우기 바로 세우기",
+      "image": "serving/SERVING_069.webp",
+      "source_file": "SERVING_069_물이 쏟아진 곳 근처에 미끄럼 주의 팻말을 세운다.png",
+      "action": "stand",
+      "objects": [
+        "물"
+      ]
+    },
+    {
+      "id": "SERVING_070",
+      "group_id": "SERVING_070",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "걸레를 이용하며 물을 닦는다",
+      "keywords": [
+        "물",
+        "걸레를",
+        "이용하며",
+        "물을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "serving 걸레를 이용하며 물을 닦는다 clean 물 걸레를 이용하며 물을 닦는다 청소 닦기",
+      "image": "serving/SERVING_070.webp",
+      "source_file": "SERVING_070_걸레를 이용하며 물을 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "물"
+      ]
+    },
+    {
+      "id": "SERVING_071",
+      "group_id": "SERVING_071",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "마른 천으로 물기를 닦는다",
+      "keywords": [
+        "물기",
+        "마른",
+        "천으로",
+        "물기를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "serving 마른 천으로 물기를 닦는다 clean 물기 마른 천으로 물기를 닦는다 청소 닦기",
+      "image": "serving/SERVING_071.webp",
+      "source_file": "SERVING_071_마른 천으로 물기를 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "물기"
+      ]
+    },
+    {
+      "id": "SERVING_072",
+      "group_id": "SERVING_072",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "바닥이 건조된 것을 확인한다",
+      "keywords": [
+        "바닥",
+        "바닥이",
+        "건조된",
+        "것을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
+      ],
+      "aliases": [
+        "바닥이 건조된 것을 점검한다"
+      ],
+      "search_text": "serving 바닥이 건조된 것을 확인한다 check 바닥 바닥이 건조된 것을 확인한다 점검 검사 확인 바닥이 건조된 것을 점검한다",
+      "image": "serving/SERVING_072.webp",
+      "source_file": "SERVING_072_바닥이 건조된 것을 확인한다.png",
+      "action": "check",
+      "objects": [
+        "바닥"
+      ]
+    },
+    {
+      "id": "SERVING_073",
+      "group_id": "SERVING_073",
+      "job": "serving",
+      "asset_type": "action",
+      "variant": null,
+      "label": "바닥이 건조되었으면 미끄럼 주의 팻말을 치운다",
+      "keywords": [
+        "바닥",
+        "바닥이",
+        "건조되었으면",
+        "미끄럼",
+        "주의",
+        "팻말을",
+        "치운다",
+        "치우기",
+        "정리"
+      ],
+      "aliases": [],
+      "search_text": "serving 바닥이 건조되었으면 미끄럼 주의 팻말을 치운다 clear 바닥 바닥이 건조되었으면 미끄럼 주의 팻말을 치운다 치우기 정리",
+      "image": "serving/SERVING_073.webp",
+      "source_file": "SERVING_073_바닥이 건조되었으면 미끄럼 주의 팻말을 치운다.png",
+      "action": "clear",
+      "objects": [
+        "바닥"
+      ]
+    },
+    {
+      "id": "SERVING_TOOL_001",
+      "group_id": "SERVING_TOOL_001",
+      "job": "serving",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "쟁반",
+      "keywords": [
+        "쟁반"
+      ],
+      "aliases": [],
+      "search_text": "serving 쟁반 other",
+      "image": "serving/SERVING_TOOL_001.webp",
+      "source_file": "SERVING_TOOL_001_쟁반.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "SERVING_TOOL_002",
+      "group_id": "SERVING_TOOL_002",
+      "job": "serving",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "물병",
+      "keywords": [
+        "물병"
+      ],
+      "aliases": [],
+      "search_text": "serving 물병 other",
+      "image": "serving/SERVING_TOOL_002.webp",
+      "source_file": "SERVING_TOOL_002_물병.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "SERVING_TOOL_003",
+      "group_id": "SERVING_TOOL_003",
+      "job": "serving",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "행주",
+      "keywords": [
+        "행주"
+      ],
+      "aliases": [],
+      "search_text": "serving 행주 other",
+      "image": "serving/SERVING_TOOL_003.webp",
+      "source_file": "SERVING_TOOL_003_행주.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "SERVING_TOOL_004",
+      "group_id": "SERVING_TOOL_004",
+      "job": "serving",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "앞치마",
+      "keywords": [
+        "앞치마"
+      ],
+      "aliases": [],
+      "search_text": "serving 앞치마 other",
+      "image": "serving/SERVING_TOOL_004.webp",
+      "source_file": "SERVING_TOOL_004_앞치마.png",
+      "action": "other",
+      "objects": [
+        "앞치마"
+      ]
+    },
+    {
+      "id": "SERVING_TOOL_005",
+      "group_id": "SERVING_TOOL_005",
+      "job": "serving",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "메뉴판",
+      "keywords": [
+        "메뉴판"
+      ],
+      "aliases": [],
+      "search_text": "serving 메뉴판 other",
+      "image": "serving/SERVING_TOOL_005.webp",
+      "source_file": "SERVING_TOOL_005_메뉴판.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "SERVING_TOOL_006",
+      "group_id": "SERVING_TOOL_006",
+      "job": "serving",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "포크와 나이프",
+      "keywords": [
+        "포크와",
+        "나이프"
+      ],
+      "aliases": [],
+      "search_text": "serving 포크와 나이프 other 포크와 나이프",
+      "image": "serving/SERVING_TOOL_006.webp",
+      "source_file": "SERVING_TOOL_006_포크와 나이프.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "SERVING_TOOL_007",
+      "group_id": "SERVING_TOOL_007",
+      "job": "serving",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "냅킨",
+      "keywords": [
+        "냅킨"
+      ],
+      "aliases": [],
+      "search_text": "serving 냅킨 other",
+      "image": "serving/SERVING_TOOL_007.webp",
+      "source_file": "SERVING_TOOL_007_냅킨.png",
+      "action": "other",
+      "objects": [
+        "냅킨"
+      ]
+    },
+    {
+      "id": "SERVING_TOOL_008",
+      "group_id": "SERVING_TOOL_008",
+      "job": "serving",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "물잔",
+      "keywords": [
+        "물잔"
+      ],
+      "aliases": [],
+      "search_text": "serving 물잔 other",
+      "image": "serving/SERVING_TOOL_008.webp",
+      "source_file": "SERVING_TOOL_008_물잔.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "SERVING_TOOL_009",
+      "group_id": "SERVING_TOOL_009",
+      "job": "serving",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "주방 전달창",
+      "keywords": [
+        "주방",
+        "전달창"
+      ],
+      "aliases": [],
+      "search_text": "serving 주방 전달창 other 주방 전달창",
+      "image": "serving/SERVING_TOOL_009.webp",
+      "source_file": "SERVING_TOOL_009_주방 전달창.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "SERVING_TOOL_010",
+      "group_id": "SERVING_TOOL_010",
+      "job": "serving",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "빈접시",
+      "keywords": [
+        "접시",
+        "빈접시"
+      ],
+      "aliases": [],
+      "search_text": "serving 빈접시 other 접시",
+      "image": "serving/SERVING_TOOL_010.webp",
+      "source_file": "SERVING_TOOL_010_빈접시.png",
+      "action": "other",
+      "objects": [
+        "접시"
+      ]
+    },
+    {
+      "id": "SERVING_TOOL_011",
+      "group_id": "SERVING_TOOL_011",
+      "job": "serving",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "장갑",
+      "keywords": [
+        "장갑"
+      ],
+      "aliases": [],
+      "search_text": "serving 장갑 other",
+      "image": "serving/SERVING_TOOL_011.webp",
+      "source_file": "SERVING_TOOL_011_장갑.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "SERVING_TOOL_012",
+      "group_id": "SERVING_TOOL_012",
+      "job": "serving",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "퇴식구",
+      "keywords": [
+        "퇴식구"
+      ],
+      "aliases": [],
+      "search_text": "serving 퇴식구 other",
+      "image": "serving/SERVING_TOOL_012.webp",
+      "source_file": "SERVING_TOOL_012_퇴식구.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "SERVING_TOOL_013",
+      "group_id": "SERVING_TOOL_013",
+      "job": "serving",
+      "asset_type": "tool",
+      "variant": null,
+      "label": "소독용 스프레이",
+      "keywords": [
+        "소독용",
+        "스프레이"
+      ],
+      "aliases": [],
+      "search_text": "serving 소독용 스프레이 other 소독용 스프레이",
+      "image": "serving/SERVING_TOOL_013.webp",
+      "source_file": "SERVING_TOOL_013_소독용 스프레이.png",
+      "action": "other",
+      "objects": []
     }
   ]
 }

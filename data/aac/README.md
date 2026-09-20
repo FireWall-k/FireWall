@@ -11,7 +11,17 @@
 - `images/cleaning/` — 74장
 - `images/packaging/` — 44장
 - `images/retail/` — 76장
-- 총 401장
+- `images/delivery/` — 55장 (배송·택배, 2026-09-21 추가)
+- `images/display/` — 74장 (진열·재고·손님 안내)
+- `images/gas/` — 45장 (주유소·세차)
+- `images/serving/` — 86장 (홀 서빙·퇴식)
+- 총 661장
+
+새 직무 4개는 `scripts/import_aac_images.py`로 등록했다(원본 PNG 1254px 등 → 768×768 WebP,
+원본은 저장소 밖 `_aac_originals/`에 두고 커밋하지 않는다). 번호가 겹친 파일(DELIVERY_035 두 장)은
+한 장만 새 번호(DELIVERY_047)를 받았다. 등록 후 `enrich_aac_metadata.py --job <job> --output
+data/aac/aac_assets.json` → `build_aac_index.py --resume` → `build_aac_embeddings.py` 순서로 돌린다
+(enrich는 기본 출력이 `aac_assets.enriched.json`이라 `--output`을 주지 않으면 반영되지 않는다).
 
 모든 런타임 이미지는 768×768 WebP로 정규화되어 있습니다.
 
@@ -21,7 +31,7 @@
 
 - `id`: 앱 내부에서 사용하는 고유 AAC ID
 - `group_id`: 같은 행동의 여러 시각 변형을 묶는 ID
-- `job`: `assembly | cafe | cleaning | packaging | retail`
+- `job`: `assembly | cafe | cleaning | packaging | retail | delivery | display | gas | serving`
 - `asset_type`: `action | tool | support`
 - `variant`: 동일 행동 이미지의 변형 번호
 - `label`: 한국어 행동/사물 라벨
@@ -149,3 +159,14 @@ ASCII 기반의 안정적인 내부 ID로 다시 저장합니다.
 1차 검색기는 `ai_service/local_aac.py`에 있습니다. 현재는 네트워크나 별도 모델 없이
 문장/키워드 유사도 + 업종 컨텍스트를 사용합니다. 이후 임베딩/벡터 검색을 추가하더라도
 `/ai/map-symbols`, `/api/aac/search` 계약은 유지하도록 설계했습니다.
+
+## aac_embeddings.npz — 임베딩 가산 항용 자산 벡터
+
+자산마다 두 벡터(라벨, 라벨+`keywords_ko/en`)를 `text-embedding-3-large` 256차원으로 임베딩해 저장한다.
+질의 시점에 질의를 같은 모델로 임베딩해 코사인 유사도를 규칙 점수에 더한다(`ai_service/embeddings.py`).
+파일에 텍스트 digest가 들어 있어, `aac_index.json`의 라벨·검색어를 고치고 다시 만들지 않으면 서비스가
+어긋난 벡터를 쓰지 않고 임베딩을 끈다.
+
+    cd ai_service
+    python ../scripts/build_aac_embeddings.py           # 만들기(≈ 요청 2번, 1센트 미만)
+    python ../scripts/build_aac_embeddings.py --check   # 낡았는지 확인(API 호출 없음)

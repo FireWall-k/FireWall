@@ -81,7 +81,8 @@ def test_tool_mention_does_not_beat_the_action():
         3,
     )
 
-    assert results[0]["asset_id"] == "CAFE_077"
+    # SERVING_010(같은 동작, 서빙 직무)이 새로 생겼으므로 둘 다 정답이다.
+    assert results[0]["asset_id"] in {"CAFE_077", "SERVING_010"}
     assert results[0]["asset_type"] == "action"
 
 

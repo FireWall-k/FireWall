@@ -16,7 +16,11 @@ _JOB_ALIASES: dict[str, tuple[str, ...]] = {
     "cafe": ("cafe", "카페", "커피", "음료", "바리스타"),
     "cleaning": ("cleaning", "청소", "세탁", "세차", "환경미화"),
     "packaging": ("packaging", "포장", "패킹", "박스포장"),
-    "retail": ("retail", "마트", "매장", "소매", "진열", "피킹", "계산", "배송"),
+    "retail": ("retail", "마트", "매장", "소매", "피킹", "계산"),
+    "display": ("display", "진열", "매대", "선반"),
+    "delivery": ("delivery", "배송", "택배", "화물"),
+    "gas": ("gas", "주유", "주유소"),
+    "serving": ("serving", "서빙", "식당", "레스토랑", "홀서빙"),
 }
 
 _PARTICLES = (

@@ -17,3 +17,6 @@ backend/data/tts/
 # 블라인드 테스트 결과 — 실행마다 LLM이 새 문장을 생성해 매번 다르다.
 # match_dataset.json(정답셋)과 달리 고정된 기준이 아니라 매 실행의 스냅샷이라 안 남긴다.
 ai_service/eval/blind_test_result.json
+
+# AAC 원본 이미지(변환 전 PNG, 수백 MB) — 변환본만 커밋한다
+_aac_originals/
