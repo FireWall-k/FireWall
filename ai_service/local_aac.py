@@ -7,6 +7,8 @@ from difflib import SequenceMatcher
 from functools import lru_cache
 from pathlib import Path
 
+import embeddings
+
 _TOKEN_RE = re.compile(r"[0-9A-Za-z가-힣]+")
 
 _JOB_ALIASES: dict[str, tuple[str, ...]] = {
@@ -571,8 +573,17 @@ def _tiebreak(asset: dict, preferred_job: str | None, action_type: str | None) -
 # 더 크게 틀린다. 크기를 조절해서 될 문제가 아니라 메커니즘 자체가 안 맞는다.
 
 
+# 임베딩 유사도를 규칙 점수에 '더하는' 항: w × max(0, 유사도 − 기준).
+# 가산만 한다 — 유사도가 낮다고 깎지 않는다("흔한 신호 부재를 감점하는" 방식은 세 번 회귀했다).
+# 기준 0.4 아래의 유사도는 잡음이라 0으로 본다. w·기준·임계값(_EMBED_* 아래 decide)은
+# 블라인드 세트 A/B/C 스윕으로 정했다(독립 검증 249단계에서 오답 채택 19건→9건, 악화 0건).
+_EMBED_WEIGHT = float(os.getenv("AAC_EMBED_WEIGHT", "0.5"))
+_EMBED_BASE = float(os.getenv("AAC_EMBED_BASE", "0.4"))
+
+
 def _score_asset(asset: dict, qf: _QueryFeatures, preferred_job: str | None,
-                 action_type: str | None, is_instruction: bool = False) -> float:
+                 action_type: str | None, is_instruction: bool = False,
+                 emb_sim: float | None = None) -> float:
     relevance = _relevance(asset, qf)
 
     # 사물 카드 게이트 — 지시문에는 동작 그림이 맞다. "얼음통을 씻어주세요"에 도구
@@ -589,7 +600,10 @@ def _score_asset(asset: dict, qf: _QueryFeatures, preferred_job: str | None,
     # 게이트를 통과한다. "남은 재료를 꺼내세요"에 "냉장고에 넣는다"가 붙던 문제.
     relevance *= _verb_antonym_penalty(asset, qf.lemmas)
 
-    return max(0.0, min(relevance + _tiebreak(asset, preferred_job, action_type), 1.0))
+    score = max(0.0, min(relevance + _tiebreak(asset, preferred_job, action_type), 1.0))
+    if emb_sim is not None:
+        score = min(1.0, score + _EMBED_WEIGHT * max(0.0, emb_sim - _EMBED_BASE))
+    return score
 
 
 def _dedupe(ranked: list[tuple[float, dict]]) -> list[tuple[float, dict]]:
@@ -617,6 +631,11 @@ def _dedupe(ranked: list[tuple[float, dict]]) -> list[tuple[float, dict]]:
 
 
 def search_assets(query: str, context: dict | None = None, limit: int = 5) -> list[dict]:
+    return _search(query, context, limit)[0]
+
+
+def _search(query: str, context: dict | None = None, limit: int = 5) -> tuple[list[dict], bool]:
+    """(결과, 임베딩을 썼는가). 채택 임계값이 임베딩 유무에 따라 달라서 함께 돌려준다."""
     ctx = context or {}
     preferred_job = infer_job(ctx, query)
     action_type = str(ctx.get("action_type") or "") or None
@@ -624,10 +643,13 @@ def search_assets(query: str, context: dict | None = None, limit: int = 5) -> li
     # 문장 형태가 흐려지기 때문이다.
     is_instruction = _is_instruction(str(ctx.get("sentence") or query))
     qf = _QueryFeatures(query)  # 질의 분석은 한 번만 — 자산마다 다시 하면 401번 돈다.
+    # 못 쓰면(키·파일 없음, 호출 실패) None — 그러면 임베딩 없는 기존 점수로 그대로 진행한다.
+    sims = embeddings.query_similarities(query)
 
     ranked: list[tuple[float, dict]] = []
     for asset in load_assets():
-        score = _score_asset(asset, qf, preferred_job, action_type, is_instruction)
+        emb_sim = sims.get(asset["id"]) if sims is not None else None
+        score = _score_asset(asset, qf, preferred_job, action_type, is_instruction, emb_sim)
         if score <= 0:
             continue
         ranked.append((score, asset))
@@ -644,10 +666,10 @@ def search_assets(query: str, context: dict | None = None, limit: int = 5) -> li
             "image_url": f"/api/aac/images/{asset['image']}",
             "score": round(score, 4),
         })
-    return results
+    return results, sims is not None
 
 
-def decide(results: list[dict]) -> dict:
+def decide(results: list[dict], embedding: bool = False) -> dict:
     """검색 결과를 자동 채택할지 판정한다.
 
     절대 임계값 하나로는 정답과 오답이 갈리지 않는다. 임계값 스윕 곡선에 오답채택과
@@ -664,24 +686,39 @@ def decide(results: list[dict]) -> dict:
     두 기본값 모두 eval/run_match_eval.py 의 스윕으로 교정했다. 스코어러를 고치면
     점수 척도가 바뀌므로 반드시 다시 교정해야 한다.
 
-    반환: {"match": dict|None, "reason": str, "candidates": list, "margin": float}
+    임계값은 두 벌이다. 임베딩 가산 항이 붙으면 점수 척도가 올라가므로(정답은 더 높게,
+    오답도 조금 높게) 같은 임계값을 쓰면 안 된다 — 임베딩을 쓴 검색은 AAC_EMBED_MATCH_*
+    (0.35 / 0.04), 못 쓴 검색(키 없음·호출 실패)은 기존 AAC_MATCH_*(0.22 / 0.02)로 판정한다.
+    장애로 임베딩이 빠졌는데 임베딩용 임계값(더 엄격)을 그대로 쓰면 전부 폴백되고,
+    반대로 임베딩이 붙었는데 기존 임계값을 쓰면 오답 채택이 다시 늘어난다.
+
+    반환: {"match": dict|None, "reason": str, "candidates": list, "margin": float,
+           "embedding": bool}
       reason — "accepted" | "no_candidate" | "low_score" | "low_margin"
     """
-    threshold = float(os.getenv("AAC_MATCH_THRESHOLD", "0.22"))
-    min_margin = float(os.getenv("AAC_MATCH_MIN_MARGIN", "0.02"))
+    if embedding:
+        threshold = float(os.getenv("AAC_EMBED_MATCH_THRESHOLD", "0.35"))
+        min_margin = float(os.getenv("AAC_EMBED_MATCH_MIN_MARGIN", "0.04"))
+    else:
+        threshold = float(os.getenv("AAC_MATCH_THRESHOLD", "0.22"))
+        min_margin = float(os.getenv("AAC_MATCH_MIN_MARGIN", "0.02"))
 
     if not results:
-        return {"match": None, "reason": "no_candidate", "candidates": [], "margin": 0.0}
+        return {"match": None, "reason": "no_candidate", "candidates": [], "margin": 0.0,
+                "embedding": embedding}
 
     best = results[0]
     # 후보가 하나뿐이면 비교 대상이 없다. 경쟁자가 없으므로 여유는 최대로 본다.
     margin = best["score"] - results[1]["score"] if len(results) > 1 else best["score"]
 
     if best["score"] < threshold:
-        return {"match": None, "reason": "low_score", "candidates": results, "margin": margin}
+        return {"match": None, "reason": "low_score", "candidates": results, "margin": margin,
+                "embedding": embedding}
     if margin < min_margin:
-        return {"match": None, "reason": "low_margin", "candidates": results, "margin": margin}
-    return {"match": best, "reason": "accepted", "candidates": results, "margin": margin}
+        return {"match": None, "reason": "low_margin", "candidates": results, "margin": margin,
+                "embedding": embedding}
+    return {"match": best, "reason": "accepted", "candidates": results, "margin": margin,
+            "embedding": embedding}
 
 
 def search_for_step(keywords: list[str], context: dict | None = None) -> dict | None:
@@ -695,4 +732,5 @@ def search_for_step_detailed(keywords: list[str], context: dict | None = None) -
     sentence = str(ctx.get("sentence") or "").strip()
     query_parts = [sentence] + [str(k).strip() for k in keywords if str(k).strip()]
     query = " ".join(part for part in query_parts if part)
-    return decide(search_assets(query, ctx, limit=5))
+    results, used_embedding = _search(query, ctx, limit=5)
+    return decide(results, embedding=used_embedding)

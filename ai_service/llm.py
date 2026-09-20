@@ -24,9 +24,30 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
 LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "20"))
 
+# 자산 임베딩(data/aac/aac_embeddings.npz)을 만들 때 쓴 모델·차원과 같아야 한다.
+# 다르면 질의와 자산이 서로 다른 벡터 공간에 있어 유사도가 의미가 없다 — 로더가 검사한다.
+EMBED_MODEL = os.getenv("AAC_EMBED_MODEL", "text-embedding-3-large")
+EMBED_DIMS = int(os.getenv("AAC_EMBED_DIMS", "256"))
+
 
 def llm_available() -> bool:
     return bool(OPENAI_API_KEY)
+
+
+def embed_texts(texts: list[str], *, timeout: float = 20.0) -> list[list[float]]:
+    """OpenAI Embeddings 호출. 입력 순서대로 벡터를 돌려준다. 실패 시 예외."""
+    resp = httpx.post(
+        f"{OPENAI_BASE_URL}/embeddings",
+        headers={
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={"model": EMBED_MODEL, "input": texts, "dimensions": EMBED_DIMS},
+        timeout=timeout,
+    )
+    resp.raise_for_status()
+    data = sorted(resp.json()["data"], key=lambda d: d["index"])
+    return [d["embedding"] for d in data]
 
 
 def chat_json(system: str, user: str, *, max_tokens: int = 1200) -> dict:
