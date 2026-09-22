@@ -23,6 +23,10 @@ _JOB_ALIASES: dict[str, tuple[str, ...]] = {
     "serving": ("serving", "서빙", "식당", "레스토랑", "홀서빙"),
 }
 
+# 여러 직무에 두루 쓰이는 말은 절반만 센다. "매장 상품 진열"이 마트(매장) 1점, 진열 1점으로
+# 동점이 되어 이름순으로 마트가 되던 문제 — 진열 그림 74장이 있는데도 마트로만 잡혔다.
+_ALIAS_WEIGHT = {"매장": 0.5}
+
 _PARTICLES = (
     "으로", "에서", "에게", "까지", "부터", "처럼", "보다", "하고", "이며", "이며",
     "을", "를", "이", "가", "은", "는", "에", "의", "와", "과", "도", "만", "로",
@@ -230,9 +234,9 @@ def infer_job(context: dict | None = None, query: str = "") -> str | None:
     if ctx.get("raw_input"):
         haystack += " " + str(ctx["raw_input"])
     norm = _normalize(haystack)
-    scores: list[tuple[int, str]] = []
+    scores: list[tuple[float, str]] = []
     for job, aliases in _JOB_ALIASES.items():
-        count = sum(1 for alias in aliases if alias.lower() in norm)
+        count = sum(_ALIAS_WEIGHT.get(alias, 1.0) for alias in aliases if alias.lower() in norm)
         if count:
             scores.append((count, job))
     return max(scores)[1] if scores else None
