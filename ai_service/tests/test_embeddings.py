@@ -148,10 +148,14 @@ def test_decide_uses_embedding_thresholds_only_when_flagged():
     assert decide(plain, embedding=True)["reason"] == "low_score"
     assert decide(plain, embedding=True)["embedding"] is True
 
-    # 여유 0.03: 기존(0.02)은 채택, 임베딩(0.04)은 후보 경합
-    close = [{"asset_id": "A", "score": 0.50}, {"asset_id": "B", "score": 0.47}]
-    assert decide(close)["reason"] == "accepted"
+    # 여유 임계값 자체는 둘 다 0.02로 같다(독립 블라인드 393문장 스윕으로 확인 — 0.04는
+    # 과했다: 정밀도는 거의 그대로인데 자동 채택만 놓쳤다). 점수 임계값(0.35 vs 0.22)만 다르다.
+    close = [{"asset_id": "A", "score": 0.50}, {"asset_id": "B", "score": 0.485}]  # 여유 0.015
+    assert decide(close)["reason"] == "low_margin"
     assert decide(close, embedding=True)["reason"] == "low_margin"
+    wide = [{"asset_id": "A", "score": 0.50}, {"asset_id": "B", "score": 0.47}]  # 여유 0.03
+    assert decide(wide)["reason"] == "accepted"
+    assert decide(wide, embedding=True)["reason"] == "accepted"
 
 
 def test_search_flags_embedding_usage(monkeypatch):

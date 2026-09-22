@@ -22,7 +22,7 @@ services:
       # 실패하면 자동으로 임베딩 없이(위 임계값으로) 동작한다. "off"로 끌 수 있다.
       AAC_EMBEDDINGS: "auto"
       AAC_EMBED_MATCH_THRESHOLD: "0.35"
-      AAC_EMBED_MATCH_MIN_MARGIN: "0.04"
+      AAC_EMBED_MATCH_MIN_MARGIN: "0.02"
       AAC_EMBED_TIMEOUT: "3"
       # OpenAI(LLM) — 키가 있으면 맥락적응 분해 + AI 코칭이 켜지고, 없으면 규칙 기반 폴백.
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"

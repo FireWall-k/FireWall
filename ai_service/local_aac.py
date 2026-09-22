@@ -696,7 +696,9 @@ def decide(results: list[dict], embedding: bool = False) -> dict:
 
     임계값은 두 벌이다. 임베딩 가산 항이 붙으면 점수 척도가 올라가므로(정답은 더 높게,
     오답도 조금 높게) 같은 임계값을 쓰면 안 된다 — 임베딩을 쓴 검색은 AAC_EMBED_MATCH_*
-    (0.35 / 0.04), 못 쓴 검색(키 없음·호출 실패)은 기존 AAC_MATCH_*(0.22 / 0.02)로 판정한다.
+    (0.35 / 0.02), 못 쓴 검색(키 없음·호출 실패)은 기존 AAC_MATCH_*(0.22 / 0.02)로 판정한다.
+    여유 값은 393문장 독립 블라인드 스윕(2026-09-22)으로 0.04→0.02로 낮췄다 — 정밀도는
+    거의 그대로인데(0.800→0.793) 자동 채택이 91→118건으로 늘었다. 자세한 표는 eval/README.md.
     장애로 임베딩이 빠졌는데 임베딩용 임계값(더 엄격)을 그대로 쓰면 전부 폴백되고,
     반대로 임베딩이 붙었는데 기존 임계값을 쓰면 오답 채택이 다시 늘어난다.
 
@@ -706,7 +708,7 @@ def decide(results: list[dict], embedding: bool = False) -> dict:
     """
     if embedding:
         threshold = float(os.getenv("AAC_EMBED_MATCH_THRESHOLD", "0.35"))
-        min_margin = float(os.getenv("AAC_EMBED_MATCH_MIN_MARGIN", "0.04"))
+        min_margin = float(os.getenv("AAC_EMBED_MATCH_MIN_MARGIN", "0.02"))
     else:
         threshold = float(os.getenv("AAC_MATCH_THRESHOLD", "0.22"))
         min_margin = float(os.getenv("AAC_MATCH_MIN_MARGIN", "0.02"))

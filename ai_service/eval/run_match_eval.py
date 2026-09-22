@@ -177,7 +177,7 @@ def run(only_case: str | None = None, only_job: str | None = None,
         "embedding": used_embedding,
         "threshold": float(os.getenv("AAC_EMBED_MATCH_THRESHOLD", "0.35") if used_embedding
                            else os.getenv("AAC_MATCH_THRESHOLD", "0.22")),
-        "min_margin": float(os.getenv("AAC_EMBED_MATCH_MIN_MARGIN", "0.04") if used_embedding
+        "min_margin": float(os.getenv("AAC_EMBED_MATCH_MIN_MARGIN", "0.02") if used_embedding
                             else os.getenv("AAC_MATCH_MIN_MARGIN", "0.02")),
         "n_cases": len(rows),
         "n_normal": len(normal),
