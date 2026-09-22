@@ -677,6 +677,21 @@ def _search(query: str, context: dict | None = None, limit: int = 5) -> tuple[li
     return results, sims is not None
 
 
+def _same_action(asset_id_a: str, asset_id_b: str) -> bool:
+    """두 자산이 완전히 같은 동작(동사·대상·세부·도구·장소 전부 일치)을 가리키는가.
+
+    LLM 인덱스의 frame이 그 정도로 세밀하게 겹치는 자산 쌍은 거의 항상 같은 그림을
+    다른 번호로 중복 등록한 것이다(예: DELIVERY_022/041 둘 다 "초인종을 누른다").
+    """
+    index = load_index()
+    fa = (index.get(asset_id_a) or {}).get("frame") or {}
+    fb = (index.get(asset_id_b) or {}).get("frame") or {}
+    if not fa.get("verb") or not fb.get("verb"):
+        return False
+    keys = ("verb", "object", "object_detail", "instrument", "location")
+    return all(fa.get(k) == fb.get(k) for k in keys)
+
+
 def decide(results: list[dict], embedding: bool = False) -> dict:
     """검색 결과를 자동 채택할지 판정한다.
 
@@ -724,7 +739,15 @@ def decide(results: list[dict], embedding: bool = False) -> dict:
     if best["score"] < threshold:
         return {"match": None, "reason": "low_score", "candidates": results, "margin": margin,
                 "embedding": embedding}
-    if margin < min_margin:
+    # 여유가 좁아도, 1·2위가 "같은 직무 안에서 같은 동작을 가리키는 쌍둥이 자산"이면
+    # (예: DELIVERY_022/041 둘 다 "초인종을 누른다") 어느 쪽이 나와도 정답이라 위험 신호가
+    # 아니다. 범위를 "같은 직무일 때만"으로 좁힌 이유는, 직무가 다르면 동작 텍스트는 같아도
+    # 그림 속 캐릭터의 복장·배경이 달라 사용자에게 어느 쪽이 맞는지가 텍스트 의미보다 더
+    # 중요할 수 있기 때문(2026-09-22, 사용자 지적으로 무직무 버전은 되돌리고 이렇게 좁혔다).
+    is_twin = (len(results) > 1 and margin < min_margin
+               and best.get("job") == results[1].get("job")
+               and _same_action(best["asset_id"], results[1]["asset_id"]))
+    if margin < min_margin and not is_twin:
         return {"match": None, "reason": "low_margin", "candidates": results, "margin": margin,
                 "embedding": embedding}
     return {"match": best, "reason": "accepted", "candidates": results, "margin": margin,
