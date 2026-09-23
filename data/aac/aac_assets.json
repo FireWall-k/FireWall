@@ -5,16 +5,16 @@
     768,
     768
   ],
-  "asset_count": 918,
+  "asset_count": 1058,
   "jobs": {
     "ASSEMBLY": 243,
     "CAFE": 101,
-    "CLEANING": 74,
+    "CLEANING": 214,
+    "PACKAGING": 164,
+    "RETAIL": 76,
     "DELIVERY": 55,
     "DISPLAY": 74,
     "GAS": 45,
-    "PACKAGING": 164,
-    "RETAIL": 76,
     "SERVING": 86
   },
   "assets": [
@@ -5242,7 +5242,7 @@
         "대걸레"
       ],
       "aliases": [],
-      "search_text": "cleaning 대걸레",
+      "search_text": "cleaning 대걸레 other",
       "image": "cleaning/CLEANING_TOOL_001.webp",
       "source_file": "#Ub300#Uac78#Ub808.png",
       "action": "other",
@@ -5262,12 +5262,13 @@
         "도구"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 건조기 건조기 도구",
+      "search_text": "cleaning 도구 건조기 other 건조기 도구",
       "image": "cleaning/CLEANING_TOOL_002.webp",
       "source_file": "#Ub3c4#Uad6c_#Uac74#Uc870#Uae30.png",
       "action": "other",
       "objects": [
-        "건조기"
+        "건조기",
+        "도구"
       ]
     },
     {
@@ -5278,15 +5279,18 @@
       "variant": null,
       "label": "도구 건조대",
       "keywords": [
-        "도구",
-        "건조대"
+        "건조대",
+        "도구"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 건조대 도구 건조대",
+      "search_text": "cleaning 도구 건조대 other 건조대 도구",
       "image": "cleaning/CLEANING_TOOL_003.webp",
       "source_file": "#Ub3c4#Uad6c_#Uac74#Uc870#Ub300.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "건조대",
+        "도구"
+      ]
     },
     {
       "id": "CLEANING_TOOL_004",
@@ -5300,11 +5304,13 @@
         "건조볼"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 건조볼 도구 건조볼",
+      "search_text": "cleaning 도구 건조볼 other 도구 건조볼",
       "image": "cleaning/CLEANING_TOOL_004.webp",
       "source_file": "#Ub3c4#Uad6c_#Uac74#Uc870#Ubcfc.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "도구"
+      ]
     },
     {
       "id": "CLEANING_TOOL_005",
@@ -5318,11 +5324,13 @@
         "다리미판"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 다리미판 도구 다리미판",
+      "search_text": "cleaning 도구 다리미판 other 도구 다리미판",
       "image": "cleaning/CLEANING_TOOL_005.webp",
       "source_file": "#Ub3c4#Uad6c_#Ub2e4#Ub9ac#Ubbf8#Ud310.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "도구"
+      ]
     },
     {
       "id": "CLEANING_TOOL_006",
@@ -5336,11 +5344,13 @@
         "다리미"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 다리미 도구 다리미",
+      "search_text": "cleaning 도구 다리미 other 도구 다리미",
       "image": "cleaning/CLEANING_TOOL_006.webp",
       "source_file": "#Ub3c4#Uad6c_#Ub2e4#Ub9ac#Ubbf8.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "도구"
+      ]
     },
     {
       "id": "CLEANING_TOOL_007",
@@ -5350,15 +5360,19 @@
       "variant": null,
       "label": "도구 빨래집게",
       "keywords": [
+        "집게",
         "도구",
         "빨래집게"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 빨래집게 도구 빨래집게",
+      "search_text": "cleaning 도구 빨래집게 other 집게 도구 빨래집게",
       "image": "cleaning/CLEANING_TOOL_007.webp",
       "source_file": "#Ub3c4#Uad6c_#Ube68#Ub798#Uc9d1#Uac8c.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "집게",
+        "도구"
+      ]
     },
     {
       "id": "CLEANING_TOOL_008",
@@ -5372,11 +5386,13 @@
         "섬유유연제"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 섬유유연제 도구 섬유유연제",
+      "search_text": "cleaning 도구 섬유유연제 other 도구 섬유유연제",
       "image": "cleaning/CLEANING_TOOL_008.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc12c#Uc720#Uc720#Uc5f0#Uc81c.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "도구"
+      ]
     },
     {
       "id": "CLEANING_TOOL_009",
@@ -5390,11 +5406,13 @@
         "세제스쿱"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 세제스쿱 도구 세제스쿱",
+      "search_text": "cleaning 도구 세제스쿱 other 도구 세제스쿱",
       "image": "cleaning/CLEANING_TOOL_009.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc138#Uc81c#Uc2a4#Ucff1.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "도구"
+      ]
     },
     {
       "id": "CLEANING_TOOL_010",
@@ -5408,12 +5426,13 @@
         "도구"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 세탁기 세탁기 도구",
+      "search_text": "cleaning 도구 세탁기 other 세탁기 도구",
       "image": "cleaning/CLEANING_TOOL_010.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc138#Ud0c1#Uae30.png",
       "action": "other",
       "objects": [
-        "세탁기"
+        "세탁기",
+        "도구"
       ]
     },
     {
@@ -5428,11 +5447,13 @@
         "세탁망"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 세탁망 도구 세탁망",
+      "search_text": "cleaning 도구 세탁망 other 도구 세탁망",
       "image": "cleaning/CLEANING_TOOL_011.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc138#Ud0c1#Ub9dd.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "도구"
+      ]
     },
     {
       "id": "CLEANING_TOOL_012",
@@ -5446,11 +5467,13 @@
         "세탁바구니"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 세탁바구니 도구 세탁바구니",
+      "search_text": "cleaning 도구 세탁바구니 other 도구 세탁바구니",
       "image": "cleaning/CLEANING_TOOL_012.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc138#Ud0c1#Ubc14#Uad6c#Ub2c8.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "도구"
+      ]
     },
     {
       "id": "CLEANING_TOOL_013",
@@ -5464,11 +5487,13 @@
         "세탁세제"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 세탁세제 도구 세탁세제",
+      "search_text": "cleaning 도구 세탁세제 other 도구 세탁세제",
       "image": "cleaning/CLEANING_TOOL_013.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc138#Ud0c1#Uc138#Uc81c.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "도구"
+      ]
     },
     {
       "id": "CLEANING_TOOL_014",
@@ -5482,11 +5507,13 @@
         "세탁주머니"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 세탁주머니 도구 세탁주머니",
+      "search_text": "cleaning 도구 세탁주머니 other 도구 세탁주머니",
       "image": "cleaning/CLEANING_TOOL_014.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc138#Ud0c1#Uc8fc#Uba38#Ub2c8.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "도구"
+      ]
     },
     {
       "id": "CLEANING_TOOL_015",
@@ -5500,11 +5527,13 @@
         "얼룩난"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 얼룩난 천 도구 얼룩난",
+      "search_text": "cleaning 도구 얼룩난 천 other 도구 얼룩난",
       "image": "cleaning/CLEANING_TOOL_015.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc5bc#Ub8e9#Ub09c_#Ucc9c.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "도구"
+      ]
     },
     {
       "id": "CLEANING_TOOL_016",
@@ -5514,16 +5543,17 @@
       "variant": null,
       "label": "도구 옷걸이",
       "keywords": [
-        "옷",
         "도구",
+        "옷",
         "옷걸이"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 옷걸이 옷 도구 옷걸이",
+      "search_text": "cleaning 도구 옷걸이 other 도구 옷 옷걸이",
       "image": "cleaning/CLEANING_TOOL_016.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc637#Uac78#Uc774.png",
       "action": "other",
       "objects": [
+        "도구",
         "옷"
       ]
     },
@@ -5540,12 +5570,13 @@
         "접은"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 접은 세탁물 세탁물 도구 접은",
+      "search_text": "cleaning 도구 접은 세탁물 other 세탁물 도구 접은",
       "image": "cleaning/CLEANING_TOOL_017.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc811#Uc740_#Uc138#Ud0c1#Ubb3c.png",
       "action": "other",
       "objects": [
-        "세탁물"
+        "세탁물",
+        "도구"
       ]
     },
     {
@@ -5559,7 +5590,7 @@
         "밀대"
       ],
       "aliases": [],
-      "search_text": "cleaning 밀대",
+      "search_text": "cleaning 밀대 other",
       "image": "cleaning/CLEANING_TOOL_018.webp",
       "source_file": "#Ubc00#Ub300.png",
       "action": "other",
@@ -5579,7 +5610,7 @@
         "변기"
       ],
       "aliases": [],
-      "search_text": "cleaning 변기솔 변기",
+      "search_text": "cleaning 변기솔 other 변기",
       "image": "cleaning/CLEANING_TOOL_019.webp",
       "source_file": "#Ubcc0#Uae30#Uc194.png",
       "action": "other",
@@ -5599,7 +5630,7 @@
         "분무기"
       ],
       "aliases": [],
-      "search_text": "cleaning 분무기",
+      "search_text": "cleaning 분무기 other",
       "image": "cleaning/CLEANING_TOOL_020.webp",
       "source_file": "#Ubd84#Ubb34#Uae30.png",
       "action": "other",
@@ -5618,7 +5649,7 @@
         "먼지 모으기"
       ],
       "aliases": [],
-      "search_text": "cleaning 빗자루 쓸기 먼지 모으기",
+      "search_text": "cleaning 빗자루 sweep 쓸기 먼지 모으기",
       "image": "cleaning/CLEANING_TOOL_021.webp",
       "source_file": "#Ube57#Uc790#Ub8e8.png",
       "action": "sweep",
@@ -5638,7 +5669,7 @@
         "작업자"
       ],
       "aliases": [],
-      "search_text": "cleaning 빨래를 담는 유니폼 작업자 빨래를 담는 유니폼 작업자",
+      "search_text": "cleaning 빨래를 담는 유니폼 작업자 other 빨래를 담는 유니폼 작업자",
       "image": "cleaning/CLEANING_TOOL_022.webp",
       "source_file": "#Ube68#Ub798#Ub97c #Ub2f4#Ub294 #Uc720#Ub2c8#Ud3fc #Uc791#Uc5c5#Uc790.png",
       "action": "other",
@@ -5656,7 +5687,7 @@
         "세차용"
       ],
       "aliases": [],
-      "search_text": "cleaning 세차용 수건 수건 세차용",
+      "search_text": "cleaning 세차용 수건 other 수건 세차용",
       "image": "cleaning/CLEANING_TOOL_023.webp",
       "source_file": "#Uc138#Ucc28#Uc6a9_#Uc218#Uac74.png",
       "action": "other",
@@ -5676,7 +5707,7 @@
         "세차용"
       ],
       "aliases": [],
-      "search_text": "cleaning 세차용 스펀지 스펀지 세차용",
+      "search_text": "cleaning 세차용 스펀지 other 스펀지 세차용",
       "image": "cleaning/CLEANING_TOOL_024.webp",
       "source_file": "#Uc138#Ucc28#Uc6a9_#Uc2a4#Ud380#Uc9c0.png",
       "action": "other",
@@ -5696,7 +5727,7 @@
         "양동이"
       ],
       "aliases": [],
-      "search_text": "cleaning 세차용 양동이 세차용 양동이",
+      "search_text": "cleaning 세차용 양동이 other 세차용 양동이",
       "image": "cleaning/CLEANING_TOOL_025.webp",
       "source_file": "#Uc138#Ucc28#Uc6a9_#Uc591#Ub3d9#Uc774.png",
       "action": "other",
@@ -5715,7 +5746,7 @@
         "분사기"
       ],
       "aliases": [],
-      "search_text": "cleaning 세차용 호스와 분사기 세차용 호스와 분사기",
+      "search_text": "cleaning 세차용 호스와 분사기 other 세차용 호스와 분사기",
       "image": "cleaning/CLEANING_TOOL_026.webp",
       "source_file": "#Uc138#Ucc28#Uc6a9_#Ud638#Uc2a4#Uc640_#Ubd84#Uc0ac#Uae30.png",
       "action": "other",
@@ -5732,7 +5763,7 @@
         "스펀지"
       ],
       "aliases": [],
-      "search_text": "cleaning 스펀지",
+      "search_text": "cleaning 스펀지 other",
       "image": "cleaning/CLEANING_TOOL_027.webp",
       "source_file": "#Uc2a4#Ud380#Uc9c0.png",
       "action": "other",
@@ -5748,13 +5779,16 @@
       "variant": null,
       "label": "쓰레받기",
       "keywords": [
-        "쓰레받기"
+        "쓰레받기",
+        "받기",
+        "건네받기",
+        "수령"
       ],
       "aliases": [],
-      "search_text": "cleaning 쓰레받기",
+      "search_text": "cleaning 쓰레받기 receive 받기 건네받기 수령",
       "image": "cleaning/CLEANING_TOOL_028.webp",
       "source_file": "#Uc4f0#Ub808#Ubc1b#Uae30.png",
-      "action": "other",
+      "action": "receive",
       "objects": []
     },
     {
@@ -5768,11 +5802,13 @@
         "집게"
       ],
       "aliases": [],
-      "search_text": "cleaning 집게",
+      "search_text": "cleaning 집게 other",
       "image": "cleaning/CLEANING_TOOL_029.webp",
       "source_file": "#Uc9d1#Uac8c.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "집게"
+      ]
     },
     {
       "id": "CLEANING_TOOL_030",
@@ -5786,7 +5822,7 @@
         "청소용"
       ],
       "aliases": [],
-      "search_text": "cleaning 청소용 수건 수건 청소용",
+      "search_text": "cleaning 청소용 수건 other 수건 청소용",
       "image": "cleaning/CLEANING_TOOL_030.webp",
       "source_file": "#Uccad#Uc18c#Uc6a9_#Uc218#Uac74.png",
       "action": "other",
@@ -5805,7 +5841,7 @@
         "화장지"
       ],
       "aliases": [],
-      "search_text": "cleaning 화장지",
+      "search_text": "cleaning 화장지 other",
       "image": "cleaning/CLEANING_TOOL_031.webp",
       "source_file": "#Ud654#Uc7a5#Uc9c0.png",
       "action": "other",
@@ -5832,7 +5868,7 @@
       "aliases": [
         "청소할 구역을 점검한다"
       ],
-      "search_text": "cleaning 청소할 구역을 확인한다 청소 구역 청소할 구역을 확인한다 점검 검사 확인 청소할 구역을 점검한다",
+      "search_text": "cleaning 청소할 구역을 확인한다 check 청소 구역 청소할 구역을 확인한다 점검 검사 확인 청소할 구역을 점검한다",
       "image": "cleaning/CLEANING_004.webp",
       "source_file": "CLEANING_004_#Uccad#Uc18c#Ud560_#Uad6c#Uc5ed#Uc744_#Ud655#Uc778#Ud55c#Ub2e4.png",
       "action": "check",
@@ -5857,7 +5893,7 @@
         "바로 세우기"
       ],
       "aliases": [],
-      "search_text": "cleaning 미끄럼 주의 표지를 세운다 미끄럼 주의 표지 미끄럼 주의 표지를 세운다 세우기 바로 세우기",
+      "search_text": "cleaning 미끄럼 주의 표지를 세운다 stand 미끄럼 주의 표지 미끄럼 주의 표지를 세운다 세우기 바로 세우기",
       "image": "cleaning/CLEANING_005.webp",
       "source_file": "CLEANING_005_#Ubbf8#Ub044#Ub7fc_#Uc8fc#Uc758_#Ud45c#Uc9c0#Ub97c_#Uc138#Uc6b4#Ub2e4.png",
       "action": "stand",
@@ -5883,7 +5919,7 @@
       "aliases": [
         "청소 운반 카트를 가져온다"
       ],
-      "search_text": "cleaning 청소 카트를 가져온다 카트 청소 카트를 가져온다 운반 가져가기 청소 운반 카트를 가져온다",
+      "search_text": "cleaning 청소 카트를 가져온다 carry 카트 청소 카트를 가져온다 운반 가져가기 청소 운반 카트를 가져온다",
       "image": "cleaning/CLEANING_006.webp",
       "source_file": "CLEANING_006_#Uccad#Uc18c_#Uce74#Ud2b8#Ub97c_#Uac00#Uc838#Uc628#Ub2e4.png",
       "action": "carry",
@@ -5906,7 +5942,7 @@
         "장착"
       ],
       "aliases": [],
-      "search_text": "cleaning 새 쓰레기봉투를 끼운다 쓰레기봉투 쓰레기봉투를 끼운다 끼우기 장착",
+      "search_text": "cleaning 새 쓰레기봉투를 끼운다 install 쓰레기봉투 쓰레기봉투를 끼운다 끼우기 장착",
       "image": "cleaning/CLEANING_008.webp",
       "source_file": "CLEANING_008_#Uc0c8_#Uc4f0#Ub808#Uae30#Ubd09#Ud22c#Ub97c_#Ub07c#Uc6b4#Ub2e4.png",
       "action": "install",
@@ -5933,7 +5969,7 @@
         "꽂기"
       ],
       "aliases": [],
-      "search_text": "cleaning 쓰레기를 종류별 통에 넣는다 쓰레기 분리수거통 쓰레기를 종류별 통에 넣는다 넣기 담기 꽂기",
+      "search_text": "cleaning 쓰레기를 종류별 통에 넣는다 put_in 쓰레기 분리수거통 쓰레기를 종류별 통에 넣는다 넣기 담기 꽂기",
       "image": "cleaning/CLEANING_009.webp",
       "source_file": "CLEANING_009_#Uc4f0#Ub808#Uae30#Ub97c_#Uc885#Ub958#Ubcc4_#Ud1b5#Uc5d0_#Ub123#Ub294#Ub2e4.png",
       "action": "put_in",
@@ -5957,7 +5993,7 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "cleaning 책상 위를 닦는다 책상 위를 닦는다 청소 닦기",
+      "search_text": "cleaning 책상 위를 닦는다 clean 책상 위를 닦는다 청소 닦기",
       "image": "cleaning/CLEANING_010.webp",
       "source_file": "CLEANING_010_#Ucc45#Uc0c1_#Uc704#Ub97c_#Ub2e6#Ub294#Ub2e4.png",
       "action": "clean",
@@ -5974,18 +6010,20 @@
       "label": "문손잡이를 닦는다",
       "keywords": [
         "문손잡이",
+        "손",
         "문손잡이를",
         "닦는다",
         "청소",
         "닦기"
       ],
       "aliases": [],
-      "search_text": "cleaning 문손잡이를 닦는다 문손잡이 문손잡이를 닦는다 청소 닦기",
+      "search_text": "cleaning 문손잡이를 닦는다 clean 문손잡이 손 문손잡이를 닦는다 청소 닦기",
       "image": "cleaning/CLEANING_011.webp",
       "source_file": "CLEANING_011_#Ubb38#Uc190#Uc7a1#Uc774#Ub97c_#Ub2e6#Ub294#Ub2e4.png",
       "action": "clean",
       "objects": [
-        "문손잡이"
+        "문손잡이",
+        "손"
       ]
     },
     {
@@ -6003,7 +6041,7 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "cleaning 거울을 닦는다 거울 거울을 닦는다 청소 닦기",
+      "search_text": "cleaning 거울을 닦는다 clean 거울 거울을 닦는다 청소 닦기",
       "image": "cleaning/CLEANING_012.webp",
       "source_file": "CLEANING_012_#Uac70#Uc6b8#Uc744_#Ub2e6#Ub294#Ub2e4.png",
       "action": "clean",
@@ -6026,7 +6064,7 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "cleaning 세면대를 닦는다 세면대 세면대를 닦는다 청소 닦기",
+      "search_text": "cleaning 세면대를 닦는다 clean 세면대 세면대를 닦는다 청소 닦기",
       "image": "cleaning/CLEANING_013.webp",
       "source_file": "CLEANING_013_#Uc138#Uba74#Ub300#Ub97c_#Ub2e6#Ub294#Ub2e4.png",
       "action": "clean",
@@ -6051,7 +6089,7 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "cleaning 변기를 솔로 닦는다 변기 변기솔 변기를 솔로 닦는다 청소 닦기",
+      "search_text": "cleaning 변기를 솔로 닦는다 clean 변기 변기솔 변기를 솔로 닦는다 청소 닦기",
       "image": "cleaning/CLEANING_014.webp",
       "source_file": "CLEANING_014_#Ubcc0#Uae30#Ub97c_#Uc194#Ub85c_#Ub2e6#Ub294#Ub2e4.png",
       "action": "clean",
@@ -6076,7 +6114,7 @@
         "진열 보충"
       ],
       "aliases": [],
-      "search_text": "cleaning 화장지를 채운다 화장지 화장지를 채운다 채우기 보충 진열 보충",
+      "search_text": "cleaning 화장지를 채운다 fill 화장지 화장지를 채운다 채우기 보충 진열 보충",
       "image": "cleaning/CLEANING_015.webp",
       "source_file": "CLEANING_015_#Ud654#Uc7a5#Uc9c0#Ub97c_#Ucc44#Uc6b4#Ub2e4.png",
       "action": "fill",
@@ -6105,7 +6143,7 @@
       "aliases": [
         "바닥의 먼지를 쓸어 한곳에 모은다"
       ],
-      "search_text": "cleaning 바닥의 먼지를 쓸어 모은다 바닥 먼지 바닥의 먼지를 쓸어 모은다 쓸기 빗자루 먼지 모으기 바닥의 먼지를 쓸어 한곳에 모은다",
+      "search_text": "cleaning 바닥의 먼지를 쓸어 모은다 sweep 바닥 먼지 바닥의 먼지를 쓸어 모은다 쓸기 빗자루 먼지 모으기 바닥의 먼지를 쓸어 한곳에 모은다",
       "image": "cleaning/CLEANING_016.webp",
       "source_file": "CLEANING_016_#Ubc14#Ub2e5#Uc758_#Uba3c#Uc9c0#Ub97c_#Uc4f8#Uc5b4_#Ubaa8#Uc740#Ub2e4.png",
       "action": "sweep",
@@ -6131,7 +6169,7 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "cleaning 밀대로 바닥을 닦는다 바닥 밀대 밀대로 바닥을 닦는다 청소 닦기",
+      "search_text": "cleaning 밀대로 바닥을 닦는다 clean 바닥 밀대 밀대로 바닥을 닦는다 청소 닦기",
       "image": "cleaning/CLEANING_018.webp",
       "source_file": "CLEANING_018_#Ubc00#Ub300#Ub85c_#Ubc14#Ub2e5#Uc744_#Ub2e6#Ub294#Ub2e4.png",
       "action": "clean",
@@ -6158,7 +6196,7 @@
         "제거"
       ],
       "aliases": [],
-      "search_text": "cleaning 바닥의 물기를 제거한다 바닥 물기 바닥의 물기를 제거한다 꺼내기 빼기 제거",
+      "search_text": "cleaning 바닥의 물기를 제거한다 remove 바닥 물기 바닥의 물기를 제거한다 꺼내기 빼기 제거",
       "image": "cleaning/CLEANING_019.webp",
       "source_file": "CLEANING_019_#Ubc14#Ub2e5#Uc758_#Ubb3c#Uae30#Ub97c_#Uc81c#Uac70#Ud55c#Ub2e4.png",
       "action": "remove",
@@ -6185,7 +6223,7 @@
         "수거"
       ],
       "aliases": [],
-      "search_text": "cleaning 바닥의 쓰레기를 집는다 쓰레기 바닥 바닥의 쓰레기를 집는다 줍기 집기 수거",
+      "search_text": "cleaning 바닥의 쓰레기를 집는다 pick_up 쓰레기 바닥 바닥의 쓰레기를 집는다 줍기 집기 수거",
       "image": "cleaning/CLEANING_020.webp",
       "source_file": "CLEANING_020_#Ubc14#Ub2e5#Uc758_#Uc4f0#Ub808#Uae30#Ub97c_#Uc9d1#Ub294#Ub2e4.png",
       "action": "pick_up",
@@ -6212,7 +6250,7 @@
         "수거"
       ],
       "aliases": [],
-      "search_text": "cleaning 바닥의 쓰레기를 줍는다 쓰레기 바닥 바닥의 쓰레기를 줍는다 줍기 집기 수거",
+      "search_text": "cleaning 바닥의 쓰레기를 줍는다 pick_up 쓰레기 바닥 바닥의 쓰레기를 줍는다 줍기 집기 수거",
       "image": "cleaning/CLEANING_021.webp",
       "source_file": "CLEANING_021_#Ubc14#Ub2e5#Uc758_#Uc4f0#Ub808#Uae30#Ub97c_#Uc90d#Ub294#Ub2e4.png",
       "action": "pick_up",
@@ -6238,7 +6276,7 @@
         "폐기"
       ],
       "aliases": [],
-      "search_text": "cleaning 쓰레기를 봉투에 버린다 쓰레기 봉투 쓰레기를 봉투에 버린다 버리기 폐기",
+      "search_text": "cleaning 쓰레기를 봉투에 버린다 discard 쓰레기 봉투 쓰레기를 봉투에 버린다 버리기 폐기",
       "image": "cleaning/CLEANING_022.webp",
       "source_file": "CLEANING_022_#Uc4f0#Ub808#Uae30#Ub97c_#Ubd09#Ud22c#Uc5d0_#Ubc84#Ub9b0#Ub2e4.png",
       "action": "discard",
@@ -6265,7 +6303,7 @@
       "aliases": [
         "낙엽을 한 곳에 한곳에 모은다"
       ],
-      "search_text": "cleaning 낙엽을 한 곳에 모은다 낙엽 낙엽을 곳에 모은다 모으기 한곳에 모으기 낙엽을 한 곳에 한곳에 모은다",
+      "search_text": "cleaning 낙엽을 한 곳에 모은다 collect 낙엽 낙엽을 곳에 모은다 모으기 한곳에 모으기 낙엽을 한 곳에 한곳에 모은다",
       "image": "cleaning/CLEANING_023.webp",
       "source_file": "CLEANING_023_#Ub099#Uc5fd#Uc744_#Ud55c_#Uacf3#Uc5d0_#Ubaa8#Uc740#Ub2e4.png",
       "action": "collect",
@@ -6292,7 +6330,7 @@
         "꽂기"
       ],
       "aliases": [],
-      "search_text": "cleaning 모은 낙엽을 봉투에 담는다 봉투 낙엽 모은 낙엽을 봉투에 담는다 넣기 담기 꽂기",
+      "search_text": "cleaning 모은 낙엽을 봉투에 담는다 put_in 봉투 낙엽 모은 낙엽을 봉투에 담는다 넣기 담기 꽂기",
       "image": "cleaning/CLEANING_024.webp",
       "source_file": "CLEANING_024_#Ubaa8#Uc740_#Ub099#Uc5fd#Uc744_#Ubd09#Ud22c#Uc5d0_#Ub2f4#Ub294#Ub2e4.png",
       "action": "put_in",
@@ -6317,7 +6355,7 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "cleaning 야외 의자를 닦는다 의자 야외 의자를 닦는다 청소 닦기",
+      "search_text": "cleaning 야외 의자를 닦는다 clean 의자 야외 의자를 닦는다 청소 닦기",
       "image": "cleaning/CLEANING_025.webp",
       "source_file": "CLEANING_025_#Uc57c#Uc678_#Uc758#Uc790#Ub97c_#Ub2e6#Ub294#Ub2e4.png",
       "action": "clean",
@@ -6343,7 +6381,7 @@
         "바꾸기"
       ],
       "aliases": [],
-      "search_text": "cleaning 외부 쓰레기통의 봉투를 교체한다 쓰레기통 봉투 외부 쓰레기통의 봉투를 교체한다 교체 바꾸기",
+      "search_text": "cleaning 외부 쓰레기통의 봉투를 교체한다 replace 쓰레기통 봉투 외부 쓰레기통의 봉투를 교체한다 교체 바꾸기",
       "image": "cleaning/CLEANING_026.webp",
       "source_file": "CLEANING_026_#Uc678#Ubd80_#Uc4f0#Ub808#Uae30#Ud1b5#Uc758_#Ubd09#Ud22c#Ub97c_#Uad50#Uccb4#Ud55c#Ub2e4.png",
       "action": "replace",
@@ -6361,18 +6399,20 @@
       "label": "세차 도구를 준비한다",
       "keywords": [
         "세차 도구",
+        "도구",
         "세차",
         "도구를",
         "준비한다",
         "준비"
       ],
       "aliases": [],
-      "search_text": "cleaning 세차 도구를 준비한다 세차 도구 세차 도구를 준비한다 준비",
+      "search_text": "cleaning 세차 도구를 준비한다 prepare 세차 도구 도구 세차 도구를 준비한다 준비",
       "image": "cleaning/CLEANING_027.webp",
       "source_file": "CLEANING_027_#Uc138#Ucc28_#Ub3c4#Uad6c#Ub97c_#Uc900#Ube44#Ud55c#Ub2e4.png",
       "action": "prepare",
       "objects": [
-        "세차 도구"
+        "세차 도구",
+        "도구"
       ]
     },
     {
@@ -6392,7 +6432,7 @@
         "분사"
       ],
       "aliases": [],
-      "search_text": "cleaning 차체에 물을 뿌린다 차체 물 차체에 물을 뿌린다 뿌리기 분사",
+      "search_text": "cleaning 차체에 물을 뿌린다 spray 차체 물 차체에 물을 뿌린다 뿌리기 분사",
       "image": "cleaning/CLEANING_028.webp",
       "source_file": "CLEANING_028_#Ucc28#Uccb4#Uc5d0_#Ubb3c#Uc744_#Ubfcc#Ub9b0#Ub2e4.png",
       "action": "spray",
@@ -6418,7 +6458,7 @@
         "바르기"
       ],
       "aliases": [],
-      "search_text": "cleaning 세정제를 스펀지에 묻힌다 세정제 스펀지 세정제를 스펀지에 묻힌다 묻히기 바르기",
+      "search_text": "cleaning 세정제를 스펀지에 묻힌다 apply 세정제 스펀지 세정제를 스펀지에 묻힌다 묻히기 바르기",
       "image": "cleaning/CLEANING_029.webp",
       "source_file": "CLEANING_029_#Uc138#Uc815#Uc81c#Ub97c_#Uc2a4#Ud380#Uc9c0#Uc5d0_#Ubb3b#Ud78c#Ub2e4.png",
       "action": "apply",
@@ -6444,7 +6484,7 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "cleaning 차체를 스펀지로 닦는다 스펀지 차체 차체를 스펀지로 닦는다 청소 닦기",
+      "search_text": "cleaning 차체를 스펀지로 닦는다 clean 스펀지 차체 차체를 스펀지로 닦는다 청소 닦기",
       "image": "cleaning/CLEANING_030.webp",
       "source_file": "CLEANING_030_#Ucc28#Uccb4#Ub97c_#Uc2a4#Ud380#Uc9c0#Ub85c_#Ub2e6#Ub294#Ub2e4.png",
       "action": "clean",
@@ -6472,7 +6512,7 @@
         "세척"
       ],
       "aliases": [],
-      "search_text": "cleaning 차체의 거품을 물로 씻는다 차체 물 차체의 거품을 물로 씻는다 씻기 헹구기 세척",
+      "search_text": "cleaning 차체의 거품을 물로 씻는다 wash 차체 물 차체의 거품을 물로 씻는다 씻기 헹구기 세척",
       "image": "cleaning/CLEANING_031.webp",
       "source_file": "CLEANING_031_#Ucc28#Uccb4#Uc758_#Uac70#Ud488#Uc744_#Ubb3c#Ub85c_#Uc53b#Ub294#Ub2e4.png",
       "action": "wash",
@@ -6499,7 +6539,7 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "cleaning 차체의 물기를 천으로 닦는다 물기 차체 차체의 물기를 천으로 닦는다 청소 닦기",
+      "search_text": "cleaning 차체의 물기를 천으로 닦는다 clean 물기 차체 차체의 물기를 천으로 닦는다 청소 닦기",
       "image": "cleaning/CLEANING_032.webp",
       "source_file": "CLEANING_032_#Ucc28#Uccb4#Uc758_#Ubb3c#Uae30#Ub97c_#Ucc9c#Uc73c#Ub85c_#Ub2e6#Ub294#Ub2e4.png",
       "action": "clean",
@@ -6524,7 +6564,7 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "cleaning 차량 창문을 닦는다 차량 창문 차량 창문을 닦는다 청소 닦기",
+      "search_text": "cleaning 차량 창문을 닦는다 clean 차량 창문 차량 창문을 닦는다 청소 닦기",
       "image": "cleaning/CLEANING_033.webp",
       "source_file": "CLEANING_033_#Ucc28#Ub7c9_#Ucc3d#Ubb38#Uc744_#Ub2e6#Ub294#Ub2e4.png",
       "action": "clean",
@@ -6550,7 +6590,7 @@
         "수거"
       ],
       "aliases": [],
-      "search_text": "cleaning 차량 내부의 쓰레기를 줍는다 쓰레기 차량 내부의 쓰레기를 줍는다 줍기 집기 수거",
+      "search_text": "cleaning 차량 내부의 쓰레기를 줍는다 pick_up 쓰레기 차량 내부의 쓰레기를 줍는다 줍기 집기 수거",
       "image": "cleaning/CLEANING_034.webp",
       "source_file": "CLEANING_034_#Ucc28#Ub7c9_#Ub0b4#Ubd80#Uc758_#Uc4f0#Ub808#Uae30#Ub97c_#Uc90d#Ub294#Ub2e4.png",
       "action": "pick_up",
@@ -6580,7 +6620,7 @@
       "aliases": [
         "차량 바닥 매트를 빼낸다"
       ],
-      "search_text": "cleaning 차량 바닥 매트를 꺼낸다 차량 바닥 매트 차량 바닥 매트를 꺼낸다 꺼내기 빼기 제거 차량 바닥 매트를 빼낸다",
+      "search_text": "cleaning 차량 바닥 매트를 꺼낸다 remove 차량 바닥 매트 차량 바닥 매트를 꺼낸다 꺼내기 빼기 제거 차량 바닥 매트를 빼낸다",
       "image": "cleaning/CLEANING_035.webp",
       "source_file": "CLEANING_035_#Ucc28#Ub7c9_#Ubc14#Ub2e5_#Ub9e4#Ud2b8#Ub97c_#Uaebc#Ub0b8#Ub2e4.png",
       "action": "remove",
@@ -6607,7 +6647,7 @@
         "진공청소"
       ],
       "aliases": [],
-      "search_text": "cleaning 차량 내부 바닥을 청소기로 청소한다 차량 바닥 청소기 차량 내부 바닥을 청소기로 청소한다 진공청소",
+      "search_text": "cleaning 차량 내부 바닥을 청소기로 청소한다 vacuum 차량 바닥 청소기 차량 내부 바닥을 청소기로 청소한다 진공청소",
       "image": "cleaning/CLEANING_036.webp",
       "source_file": "CLEANING_036_#Ucc28#Ub7c9_#Ub0b4#Ubd80_#Ubc14#Ub2e5#Uc744_#Uccad#Uc18c#Uae30#Ub85c_#Uccad#Uc18c#Ud55c#Ub2e4.png",
       "action": "vacuum",
@@ -6632,7 +6672,7 @@
         "한곳에 모으기"
       ],
       "aliases": [],
-      "search_text": "cleaning 사용한 세탁물을 수거한다 세탁물 사용한 세탁물을 수거한다 모으기 한곳에 모으기",
+      "search_text": "cleaning 사용한 세탁물을 수거한다 collect 세탁물 사용한 세탁물을 수거한다 모으기 한곳에 모으기",
       "image": "cleaning/CLEANING_037.webp",
       "source_file": "CLEANING_037_#Uc0ac#Uc6a9#Ud55c_#Uc138#Ud0c1#Ubb3c#Uc744_#Uc218#Uac70#Ud55c#Ub2e4.png",
       "action": "collect",
@@ -6659,7 +6699,7 @@
       "aliases": [
         "세탁물을 운반 카트에 싣는다"
       ],
-      "search_text": "cleaning 세탁물을 카트에 싣는다 카트 세탁물 세탁물을 카트에 싣는다 싣기 적재 세탁물을 운반 카트에 싣는다",
+      "search_text": "cleaning 세탁물을 카트에 싣는다 load 카트 세탁물 세탁물을 카트에 싣는다 싣기 적재 세탁물을 운반 카트에 싣는다",
       "image": "cleaning/CLEANING_038.webp",
       "source_file": "CLEANING_038_#Uc138#Ud0c1#Ubb3c#Uc744_#Uce74#Ud2b8#Uc5d0_#Uc2e3#Ub294#Ub2e4.png",
       "action": "load",
@@ -6686,7 +6726,7 @@
         "나누기"
       ],
       "aliases": [],
-      "search_text": "cleaning 수건과 옷을 나눈다 수건 옷 수건과 옷을 나눈다 분류 종류별 분류 나누기",
+      "search_text": "cleaning 수건과 옷을 나눈다 sort 수건 옷 수건과 옷을 나눈다 분류 종류별 분류 나누기",
       "image": "cleaning/CLEANING_039.webp",
       "source_file": "CLEANING_039_#Uc218#Uac74#Uacfc_#Uc637#Uc744_#Ub098#Ub208#Ub2e4.png",
       "action": "sort",
@@ -6714,7 +6754,7 @@
       "aliases": [
         "세탁물의 주머니를 점검한다"
       ],
-      "search_text": "cleaning 세탁물의 주머니를 확인한다 세탁물 세탁물의 주머니를 확인한다 점검 검사 확인 세탁물의 주머니를 점검한다",
+      "search_text": "cleaning 세탁물의 주머니를 확인한다 check 세탁물 세탁물의 주머니를 확인한다 점검 검사 확인 세탁물의 주머니를 점검한다",
       "image": "cleaning/CLEANING_041.webp",
       "source_file": "CLEANING_041_#Uc138#Ud0c1#Ubb3c#Uc758_#Uc8fc#Uba38#Ub2c8#Ub97c_#Ud655#Uc778#Ud55c#Ub2e4.png",
       "action": "check",
@@ -6740,7 +6780,7 @@
         "골라내기"
       ],
       "aliases": [],
-      "search_text": "cleaning 오염이 심한 세탁물을 골라낸다 세탁물 오염이 심한 세탁물을 골라낸다 고르기 선별 골라내기",
+      "search_text": "cleaning 오염이 심한 세탁물을 골라낸다 select 세탁물 오염이 심한 세탁물을 골라낸다 고르기 선별 골라내기",
       "image": "cleaning/CLEANING_042.webp",
       "source_file": "CLEANING_042_#Uc624#Uc5fc#Uc774_#Uc2ec#Ud55c_#Uc138#Ud0c1#Ubb3c#Uc744_#Uace8#Ub77c#Ub0b8#Ub2e4.png",
       "action": "select",
@@ -6762,7 +6802,7 @@
         "닫기"
       ],
       "aliases": [],
-      "search_text": "cleaning 세탁기 문을 닫는다 세탁기 문을 닫는다 닫기",
+      "search_text": "cleaning 세탁기 문을 닫는다 close 세탁기 문을 닫는다 닫기",
       "image": "cleaning/CLEANING_044.webp",
       "source_file": "CLEANING_044_#Uc138#Ud0c1#Uae30_#Ubb38#Uc744_#Ub2eb#Ub294#Ub2e4.png",
       "action": "close",
@@ -6787,7 +6827,7 @@
         "압착"
       ],
       "aliases": [],
-      "search_text": "cleaning 세탁 시작 버튼을 누른다 세탁 시작 버튼 세탁 시작 버튼을 누른다 누르기 압착",
+      "search_text": "cleaning 세탁 시작 버튼을 누른다 press 세탁 시작 버튼 세탁 시작 버튼을 누른다 누르기 압착",
       "image": "cleaning/CLEANING_045.webp",
       "source_file": "CLEANING_045_#Uc138#Ud0c1_#Uc2dc#Uc791_#Ubc84#Ud2bc#Uc744_#Ub204#Ub978#Ub2e4.png",
       "action": "press",
@@ -6813,7 +6853,7 @@
         "옮기기"
       ],
       "aliases": [],
-      "search_text": "cleaning 젖은 세탁물을 건조기로 옮긴다 세탁물 건조기 젖은 세탁물을 건조기로 옮긴다 이동 옮기기",
+      "search_text": "cleaning 젖은 세탁물을 건조기로 옮긴다 move 세탁물 건조기 젖은 세탁물을 건조기로 옮긴다 이동 옮기기",
       "image": "cleaning/CLEANING_046.webp",
       "source_file": "CLEANING_046_#Uc816#Uc740_#Uc138#Ud0c1#Ubb3c#Uc744_#Uac74#Uc870#Uae30#Ub85c_#Uc62e#Uae34#Ub2e4.png",
       "action": "move",
@@ -6843,7 +6883,7 @@
       "aliases": [
         "마른 세탁물을 건조기에서 빼낸다"
       ],
-      "search_text": "cleaning 마른 세탁물을 건조기에서 꺼낸다 세탁물 건조기 마른 세탁물을 건조기에서 꺼낸다 꺼내기 빼기 제거 마른 세탁물을 건조기에서 빼낸다",
+      "search_text": "cleaning 마른 세탁물을 건조기에서 꺼낸다 remove 세탁물 건조기 마른 세탁물을 건조기에서 꺼낸다 꺼내기 빼기 제거 마른 세탁물을 건조기에서 빼낸다",
       "image": "cleaning/CLEANING_047.webp",
       "source_file": "CLEANING_047_#Ub9c8#Ub978_#Uc138#Ud0c1#Ubb3c#Uc744_#Uac74#Uc870#Uae30#Uc5d0#Uc11c_#Uaebc#Ub0b8#Ub2e4.png",
       "action": "remove",
@@ -6868,7 +6908,7 @@
         "접음"
       ],
       "aliases": [],
-      "search_text": "cleaning 수건을 반듯하게 접는다 수건 수건을 반듯하게 접는다 접기 접음",
+      "search_text": "cleaning 수건을 반듯하게 접는다 fold 수건 수건을 반듯하게 접는다 접기 접음",
       "image": "cleaning/CLEANING_048.webp",
       "source_file": "CLEANING_048_#Uc218#Uac74#Uc744_#Ubc18#Ub4ef#Ud558#Uac8c_#Uc811#Ub294#Ub2e4.png",
       "action": "fold",
@@ -6895,7 +6935,7 @@
         "꽂기"
       ],
       "aliases": [],
-      "search_text": "cleaning 접은 세탁물을 비닐에 넣는다 세탁물 비닐 접은 세탁물을 비닐에 넣는다 넣기 담기 꽂기",
+      "search_text": "cleaning 접은 세탁물을 비닐에 넣는다 put_in 세탁물 비닐 접은 세탁물을 비닐에 넣는다 넣기 담기 꽂기",
       "image": "cleaning/CLEANING_049.webp",
       "source_file": "CLEANING_049_#Uc811#Uc740_#Uc138#Ud0c1#Ubb3c#Uc744_#Ube44#Ub2d0#Uc5d0_#Ub123#Ub294#Ub2e4.png",
       "action": "put_in",
@@ -6931,7 +6971,7 @@
         "포장된 세탁물을 지정 선반에 올린다",
         "포장된 세탁물을 지정 진열대에 올린다"
       ],
-      "search_text": "cleaning 포장된 세탁물을 지정 선반에 놓는다 선반 세탁물 진열대 매대 포장된 세탁물을 지정 선반에 놓는다 놓기 올리기 진열 배치 포장된 세탁물을 지정 진열대에 놓는다 포장된 세탁물을 지정 선반에 올린다 포장된 세탁물을 지정 진열대에 올린다",
+      "search_text": "cleaning 포장된 세탁물을 지정 선반에 놓는다 place 선반 세탁물 진열대 매대 포장된 세탁물을 지정 선반에 놓는다 놓기 올리기 진열 배치 포장된 세탁물을 지정 진열대에 놓는다 포장된 세탁물을 지정 선반에 올린다 포장된 세탁물을 지정 진열대에 올린다",
       "image": "cleaning/CLEANING_050.webp",
       "source_file": "CLEANING_050_#Ud3ec#Uc7a5#Ub41c_#Uc138#Ud0c1#Ubb3c#Uc744_#Uc9c0#Uc815_#Uc120#Ubc18#Uc5d0_#Ub193#Ub294#Ub2e4.png",
       "action": "place",
@@ -23964,6 +24004,3188 @@
       "image": "serving/SERVING_TOOL_013.webp",
       "source_file": "SERVING_TOOL_013_소독용 스프레이.png",
       "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_051",
+      "group_id": "CLEANING_051",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "키보드를 닦는다",
+      "keywords": [
+        "키보드를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 키보드를 닦는다 clean 키보드를 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_051.webp",
+      "source_file": "CLEANING_051_키보드를 닦는다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_052",
+      "group_id": "CLEANING_052",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "엎질러진 물을 걸레로 닦는다",
+      "keywords": [
+        "물",
+        "엎질러진",
+        "물을",
+        "걸레로",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 엎질러진 물을 걸레로 닦는다 clean 물 엎질러진 물을 걸레로 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_052.webp",
+      "source_file": "CLEANING_052_엎질러진 물을 걸레로 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "물"
+      ]
+    },
+    {
+      "id": "CLEANING_053",
+      "group_id": "CLEANING_053",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "먼지가 쌓인 바닥에 청소기를 돌린다",
+      "keywords": [
+        "청소기",
+        "바닥",
+        "먼지",
+        "먼지가",
+        "쌓인",
+        "바닥에",
+        "청소기를",
+        "돌린다",
+        "조이기",
+        "체결",
+        "나사 조이기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 먼지가 쌓인 바닥에 청소기를 돌린다 tighten 청소기 바닥 먼지 먼지가 쌓인 바닥에 청소기를 돌린다 조이기 체결 나사 조이기",
+      "image": "cleaning/CLEANING_053.webp",
+      "source_file": "CLEANING_053_먼지가 쌓인 바닥에 청소기를 돌린다.png",
+      "action": "tighten",
+      "objects": [
+        "청소기",
+        "바닥",
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_054",
+      "group_id": "CLEANING_054",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "더러워진 그릇을 깨끗하게 닦는다",
+      "keywords": [
+        "더러워진",
+        "그릇을",
+        "깨끗하게",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 더러워진 그릇을 깨끗하게 닦는다 clean 더러워진 그릇을 깨끗하게 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_054.webp",
+      "source_file": "CLEANING_054_더러워진 그릇을 깨끗하게 닦는다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_055",
+      "group_id": "CLEANING_055",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "엉킨 전선을 반듯하게 정리한다",
+      "keywords": [
+        "엉킨",
+        "전선을",
+        "반듯하게",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 엉킨 전선을 반듯하게 정리한다 organize 엉킨 전선을 반듯하게 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_055.webp",
+      "source_file": "CLEANING_055_엉킨 전선을 반듯하게 정리한다.png",
+      "action": "organize",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_056",
+      "group_id": "CLEANING_056",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "모니터를 닦는다",
+      "keywords": [
+        "화면",
+        "모니터를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 모니터를 닦는다 clean 화면 모니터를 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_056.webp",
+      "source_file": "CLEANING_056_모니터를 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "화면"
+      ]
+    },
+    {
+      "id": "CLEANING_057",
+      "group_id": "CLEANING_057",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "사용하지 않는 종이들을 파쇄한다",
+      "keywords": [
+        "사용하지",
+        "않는",
+        "종이들을",
+        "파쇄한다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 사용하지 않는 종이들을 파쇄한다 other 사용하지 않는 종이들을 파쇄한다",
+      "image": "cleaning/CLEANING_057.webp",
+      "source_file": "CLEANING_057_사용하지 않는 종이들을 파쇄한다.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_058",
+      "group_id": "CLEANING_058",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "타이어를 세척한다",
+      "keywords": [
+        "타이어를",
+        "세척한다",
+        "씻기",
+        "헹구기",
+        "세척"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 타이어를 세척한다 wash 타이어를 세척한다 씻기 헹구기 세척",
+      "image": "cleaning/CLEANING_058.webp",
+      "source_file": "CLEANING_058_타이어를 세척한다.jpg",
+      "action": "wash",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_059",
+      "group_id": "CLEANING_059",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "복도 바닦을 빗자루로 쓴다",
+      "keywords": [
+        "복도",
+        "바닦을",
+        "빗자루로",
+        "쓴다",
+        "쓸기",
+        "빗자루",
+        "먼지 모으기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 복도 바닦을 빗자루로 쓴다 sweep 복도 바닦을 빗자루로 쓴다 쓸기 빗자루 먼지 모으기",
+      "image": "cleaning/CLEANING_059.webp",
+      "source_file": "CLEANING_059_복도 바닦을 빗자루로 쓴다.png",
+      "action": "sweep",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_060",
+      "group_id": "CLEANING_060",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "창틀을 청소한다",
+      "keywords": [
+        "창틀을",
+        "청소한다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 창틀을 청소한다 clean 창틀을 청소한다 청소 닦기",
+      "image": "cleaning/CLEANING_060.webp",
+      "source_file": "CLEANING_060_창틀을 청소한다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_061",
+      "group_id": "CLEANING_061",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "먼지가 쌓인 로봇청소기를 관리한다",
+      "keywords": [
+        "청소기",
+        "먼지",
+        "먼지가",
+        "쌓인",
+        "로봇청소기를",
+        "관리한다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 먼지가 쌓인 로봇청소기를 관리한다 other 청소기 먼지 먼지가 쌓인 로봇청소기를 관리한다",
+      "image": "cleaning/CLEANING_061.webp",
+      "source_file": "CLEANING_061_먼지가 쌓인 로봇청소기를 관리한다.png",
+      "action": "other",
+      "objects": [
+        "청소기",
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_062",
+      "group_id": "CLEANING_062",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "엘리베이터 버튼을 소독한다",
+      "keywords": [
+        "버튼",
+        "엘리베이터",
+        "버튼을",
+        "소독한다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 엘리베이터 버튼을 소독한다 other 버튼 엘리베이터 버튼을 소독한다",
+      "image": "cleaning/CLEANING_062.webp",
+      "source_file": "CLEANING_062_엘리베이터 버튼을 소독한다.jpg",
+      "action": "other",
+      "objects": [
+        "버튼"
+      ]
+    },
+    {
+      "id": "CLEANING_063",
+      "group_id": "CLEANING_063",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "사용한 걸레를 빤다",
+      "keywords": [
+        "사용한",
+        "걸레를",
+        "빤다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 사용한 걸레를 빤다 other 사용한 걸레를 빤다",
+      "image": "cleaning/CLEANING_063.webp",
+      "source_file": "CLEANING_063_사용한 걸레를 빤다.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_064",
+      "group_id": "CLEANING_064",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "광택제를 이용하여 바닥을 왁싱한다",
+      "keywords": [
+        "바닥",
+        "광택제를",
+        "이용하여",
+        "바닥을",
+        "왁싱한다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 광택제를 이용하여 바닥을 왁싱한다 other 바닥 광택제를 이용하여 바닥을 왁싱한다",
+      "image": "cleaning/CLEANING_064.webp",
+      "source_file": "CLEANING_064_광택제를 이용하여 바닥을 왁싱한다.png",
+      "action": "other",
+      "objects": [
+        "바닥"
+      ]
+    },
+    {
+      "id": "CLEANING_065",
+      "group_id": "CLEANING_065",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부엌 싱크대를 닦는다",
+      "keywords": [
+        "부엌",
+        "싱크대를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 부엌 싱크대를 닦는다 clean 부엌 싱크대를 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_065.webp",
+      "source_file": "CLEANING_065_부엌 싱크대를 닦는다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_066",
+      "group_id": "CLEANING_066",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "냉장고 안을 정리한다",
+      "keywords": [
+        "냉장고",
+        "안을",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 냉장고 안을 정리한다 organize 냉장고 안을 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_066.webp",
+      "source_file": "CLEANING_066_냉장고 안을 정리한다.png",
+      "action": "organize",
+      "objects": [
+        "냉장고"
+      ]
+    },
+    {
+      "id": "CLEANING_067",
+      "group_id": "CLEANING_067",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "전자레인지 안을 닦는다",
+      "keywords": [
+        "전자레인지",
+        "안을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 전자레인지 안을 닦는다 clean 전자레인지 안을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_067.webp",
+      "source_file": "CLEANING_067_전자레인지 안을 닦는다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_068",
+      "group_id": "CLEANING_068",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "욕조를 닦는다",
+      "keywords": [
+        "욕조를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 욕조를 닦는다 clean 욕조를 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_068.webp",
+      "source_file": "CLEANING_068_욕조를 닦는다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_069",
+      "group_id": "CLEANING_069",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "옷을 정리한다",
+      "keywords": [
+        "옷",
+        "옷을",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 옷을 정리한다 organize 옷 옷을 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_069.webp",
+      "source_file": "CLEANING_069_옷을 정리한다.png",
+      "action": "organize",
+      "objects": [
+        "옷"
+      ]
+    },
+    {
+      "id": "CLEANING_070",
+      "group_id": "CLEANING_070",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "샤워기를 깨끗하게 씻는다",
+      "keywords": [
+        "샤워기를",
+        "깨끗하게",
+        "씻는다",
+        "씻기",
+        "헹구기",
+        "세척"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 샤워기를 깨끗하게 씻는다 wash 샤워기를 깨끗하게 씻는다 씻기 헹구기 세척",
+      "image": "cleaning/CLEANING_070.webp",
+      "source_file": "CLEANING_070_샤워기를 깨끗하게 씻는다.png",
+      "action": "wash",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_071",
+      "group_id": "CLEANING_071",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "곰팡이 핀 타일을 청소한다",
+      "keywords": [
+        "곰팡이",
+        "타일을",
+        "청소한다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 곰팡이 핀 타일을 청소한다 clean 곰팡이 타일을 청소한다 청소 닦기",
+      "image": "cleaning/CLEANING_071.webp",
+      "source_file": "CLEANING_071_곰팡이 핀 타일을 청소한다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_072",
+      "group_id": "CLEANING_072",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "서리낀 거울을 닦는다",
+      "keywords": [
+        "거울",
+        "서리낀",
+        "거울을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 서리낀 거울을 닦는다 clean 거울 서리낀 거울을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_072.webp",
+      "source_file": "CLEANING_072_서리낀 거울을 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "거울"
+      ]
+    },
+    {
+      "id": "CLEANING_073",
+      "group_id": "CLEANING_073",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "배수구에 용액을 붓는다",
+      "keywords": [
+        "배수구에",
+        "용액을",
+        "붓는다",
+        "붓기",
+        "따르기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 배수구에 용액을 붓는다 pour 배수구에 용액을 붓는다 붓기 따르기",
+      "image": "cleaning/CLEANING_073.webp",
+      "source_file": "CLEANING_073_배수구에 용액을 붓는다.png",
+      "action": "pour",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_074",
+      "group_id": "CLEANING_074",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "옷을 압축팩에 넣는다",
+      "keywords": [
+        "옷",
+        "옷을",
+        "압축팩에",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 옷을 압축팩에 넣는다 put_in 옷 옷을 압축팩에 넣는다 넣기 담기 꽂기",
+      "image": "cleaning/CLEANING_074.webp",
+      "source_file": "CLEANING_074_옷을 압축팩에 넣는다.jpg",
+      "action": "put_in",
+      "objects": [
+        "옷"
+      ]
+    },
+    {
+      "id": "CLEANING_075",
+      "group_id": "CLEANING_075",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "이불시트를 교체한다",
+      "keywords": [
+        "이불시트를",
+        "교체한다",
+        "교체",
+        "바꾸기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 이불시트를 교체한다 replace 이불시트를 교체한다 교체 바꾸기",
+      "image": "cleaning/CLEANING_075.webp",
+      "source_file": "CLEANING_075_이불시트를 교체한다.jpg",
+      "action": "replace",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_076",
+      "group_id": "CLEANING_076",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "먼지 쌓인 조명을 닦는다",
+      "keywords": [
+        "먼지",
+        "쌓인",
+        "조명을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 먼지 쌓인 조명을 닦는다 clean 먼지 쌓인 조명을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_076.webp",
+      "source_file": "CLEANING_076_먼지 쌓인 조명을 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_077",
+      "group_id": "CLEANING_077",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "우편함 종이를 정리한다",
+      "keywords": [
+        "우편함",
+        "종이를",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 우편함 종이를 정리한다 organize 우편함 종이를 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_077.webp",
+      "source_file": "CLEANING_077_우편함 종이를 정리한다.png",
+      "action": "organize",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_078",
+      "group_id": "CLEANING_078",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "벽면을 밀대로 먼지를 치운다",
+      "keywords": [
+        "먼지",
+        "밀대",
+        "벽면을",
+        "밀대로",
+        "먼지를",
+        "치운다",
+        "치우기",
+        "정리"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 벽면을 밀대로 먼지를 치운다 clear 먼지 밀대 벽면을 밀대로 먼지를 치운다 치우기 정리",
+      "image": "cleaning/CLEANING_078.webp",
+      "source_file": "CLEANING_078_벽면을 밀대로 먼지를 치운다.png",
+      "action": "clear",
+      "objects": [
+        "먼지",
+        "밀대"
+      ]
+    },
+    {
+      "id": "CLEANING_079",
+      "group_id": "CLEANING_079",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "신발장에서 신발을 정리한다",
+      "keywords": [
+        "신발장에서",
+        "신발을",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 신발장에서 신발을 정리한다 organize 신발장에서 신발을 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_079.webp",
+      "source_file": "CLEANING_079_신발장에서 신발을 정리한다.png",
+      "action": "organize",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_080",
+      "group_id": "CLEANING_080",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "흩어진 장난감을 제자리에 가져다 놓는다",
+      "keywords": [
+        "흩어진",
+        "장난감을",
+        "제자리에",
+        "가져다",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "흩어진 장난감을 제자리에 가져다 올린다"
+      ],
+      "search_text": "cleaning 흩어진 장난감을 제자리에 가져다 놓는다 place 흩어진 장난감을 제자리에 가져다 놓는다 놓기 올리기 진열 배치 흩어진 장난감을 제자리에 가져다 올린다",
+      "image": "cleaning/CLEANING_080.webp",
+      "source_file": "CLEANING_080_흩어진 장난감을 제자리에 가져다 놓는다.png",
+      "action": "place",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_081",
+      "group_id": "CLEANING_081",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "흩날리는 털을 청소기로 빨아들인다",
+      "keywords": [
+        "청소기",
+        "흩날리는",
+        "털을",
+        "청소기로",
+        "빨아들인다",
+        "진공청소"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 흩날리는 털을 청소기로 빨아들인다 vacuum 청소기 흩날리는 털을 청소기로 빨아들인다 진공청소",
+      "image": "cleaning/CLEANING_081.webp",
+      "source_file": "CLEANING_081_흩날리는 털을 청소기로 빨아들인다.png",
+      "action": "vacuum",
+      "objects": [
+        "청소기"
+      ]
+    },
+    {
+      "id": "CLEANING_082",
+      "group_id": "CLEANING_082",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "선풍기에 있는 먼지를 제거한다",
+      "keywords": [
+        "먼지",
+        "선풍기에",
+        "있는",
+        "먼지를",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 선풍기에 있는 먼지를 제거한다 remove 먼지 선풍기에 있는 먼지를 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_082.webp",
+      "source_file": "CLEANING_082_선풍기에 있는 먼지를 제거한다.jpg",
+      "action": "remove",
+      "objects": [
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_083",
+      "group_id": "CLEANING_083",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "먼지쌓인 방충망을 닦는다",
+      "keywords": [
+        "먼지",
+        "먼지쌓인",
+        "방충망을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 먼지쌓인 방충망을 닦는다 clean 먼지 먼지쌓인 방충망을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_083.webp",
+      "source_file": "CLEANING_083_먼지쌓인 방충망을 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_084",
+      "group_id": "CLEANING_084",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "청소도구를 청소 도구함에 넣어 정리한다",
+      "keywords": [
+        "도구",
+        "청소도구를",
+        "청소",
+        "도구함에",
+        "넣어",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 청소도구를 청소 도구함에 넣어 정리한다 organize 도구 청소도구를 청소 도구함에 넣어 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_084.webp",
+      "source_file": "CLEANING_084_청소도구를 청소 도구함에 넣어 정리한다.png",
+      "action": "organize",
+      "objects": [
+        "도구"
+      ]
+    },
+    {
+      "id": "CLEANING_085",
+      "group_id": "CLEANING_085",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "깨진 유리를 정리한다",
+      "keywords": [
+        "깨진",
+        "유리를",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 깨진 유리를 정리한다 organize 깨진 유리를 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_085.webp",
+      "source_file": "CLEANING_085_깨진 유리를 정리한다.png",
+      "action": "organize",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_086",
+      "group_id": "CLEANING_086",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "음식물로 얼룩진 벽을 닦는다",
+      "keywords": [
+        "음식물",
+        "음식물로",
+        "얼룩진",
+        "벽을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 음식물로 얼룩진 벽을 닦는다 clean 음식물 음식물로 얼룩진 벽을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_086.webp",
+      "source_file": "CLEANING_086_음식물로 얼룩진 벽을 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "음식물"
+      ]
+    },
+    {
+      "id": "CLEANING_087",
+      "group_id": "CLEANING_087",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "교체한 침대시트를 빨래바구니에 넣는다",
+      "keywords": [
+        "교체한",
+        "침대시트를",
+        "빨래바구니에",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 교체한 침대시트를 빨래바구니에 넣는다 put_in 교체한 침대시트를 빨래바구니에 넣는다 넣기 담기 꽂기",
+      "image": "cleaning/CLEANING_087.webp",
+      "source_file": "CLEANING_087_교체한 침대시트를 빨래바구니에 넣는다.png",
+      "action": "put_in",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_088",
+      "group_id": "CLEANING_088",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "이불을 갠다",
+      "keywords": [
+        "이불을",
+        "갠다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 이불을 갠다 other 이불을 갠다",
+      "image": "cleaning/CLEANING_088.webp",
+      "source_file": "CLEANING_088_이불을 갠다.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_089",
+      "group_id": "CLEANING_089",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "배게 커버를 정리한다",
+      "keywords": [
+        "배게",
+        "커버를",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 배게 커버를 정리한다 organize 배게 커버를 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_089.webp",
+      "source_file": "CLEANING_089_배게 커버를 정리한다.png",
+      "action": "organize",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_090",
+      "group_id": "CLEANING_090",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "에어컨 필터를 교체한다",
+      "keywords": [
+        "에어컨",
+        "필터를",
+        "교체한다",
+        "교체",
+        "바꾸기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 에어컨 필터를 교체한다 replace 에어컨 필터를 교체한다 교체 바꾸기",
+      "image": "cleaning/CLEANING_090.webp",
+      "source_file": "CLEANING_090_에어컨 필터를 교체한다.png",
+      "action": "replace",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_091",
+      "group_id": "CLEANING_091",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "칫솔로 수도꼭지를 청소한다",
+      "keywords": [
+        "칫솔로",
+        "수도꼭지를",
+        "청소한다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 칫솔로 수도꼭지를 청소한다 clean 칫솔로 수도꼭지를 청소한다 청소 닦기",
+      "image": "cleaning/CLEANING_091.webp",
+      "source_file": "CLEANING_091_칫솔로 수도꼭지를 청소한다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_092",
+      "group_id": "CLEANING_092",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "건조기를 돌린다",
+      "keywords": [
+        "건조기",
+        "건조기를",
+        "돌린다",
+        "조이기",
+        "체결",
+        "나사 조이기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 건조기를 돌린다 tighten 건조기 건조기를 돌린다 조이기 체결 나사 조이기",
+      "image": "cleaning/CLEANING_092.webp",
+      "source_file": "CLEANING_092_건조기를 돌린다.png",
+      "action": "tighten",
+      "objects": [
+        "건조기"
+      ]
+    },
+    {
+      "id": "CLEANING_093",
+      "group_id": "CLEANING_093",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "쓰레기봉투를 교체한다",
+      "keywords": [
+        "쓰레기봉투",
+        "쓰레기봉투를",
+        "교체한다",
+        "교체",
+        "바꾸기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 쓰레기봉투를 교체한다 replace 쓰레기봉투 쓰레기봉투를 교체한다 교체 바꾸기",
+      "image": "cleaning/CLEANING_093.webp",
+      "source_file": "CLEANING_093_쓰레기봉투를 교체한다.png",
+      "action": "replace",
+      "objects": [
+        "쓰레기봉투"
+      ]
+    },
+    {
+      "id": "CLEANING_094",
+      "group_id": "CLEANING_094",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "음식물을 버린다",
+      "keywords": [
+        "음식물",
+        "음식물을",
+        "버린다",
+        "버리기",
+        "폐기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 음식물을 버린다 discard 음식물 음식물을 버린다 버리기 폐기",
+      "image": "cleaning/CLEANING_094.webp",
+      "source_file": "CLEANING_094_음식물을 버린다.png",
+      "action": "discard",
+      "objects": [
+        "음식물"
+      ]
+    },
+    {
+      "id": "CLEANING_095",
+      "group_id": "CLEANING_095",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "가스레인지를 닦는다",
+      "keywords": [
+        "가스레인지를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 가스레인지를 닦는다 clean 가스레인지를 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_095.webp",
+      "source_file": "CLEANING_095_가스레인지를 닦는다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_096",
+      "group_id": "CLEANING_096",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "창문 레일 안에 있는 먼지를 치운다",
+      "keywords": [
+        "먼지",
+        "창문",
+        "레일",
+        "안에",
+        "있는",
+        "먼지를",
+        "치운다",
+        "치우기",
+        "정리"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 창문 레일 안에 있는 먼지를 치운다 clear 먼지 창문 레일 안에 있는 먼지를 치운다 치우기 정리",
+      "image": "cleaning/CLEANING_096.webp",
+      "source_file": "CLEANING_096_창문 레일 안에 있는 먼지를 치운다.png",
+      "action": "clear",
+      "objects": [
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_097",
+      "group_id": "CLEANING_097",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "배수구에 있는 머리카락을 치운다",
+      "keywords": [
+        "배수구에",
+        "있는",
+        "머리카락을",
+        "치운다",
+        "치우기",
+        "정리"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 배수구에 있는 머리카락을 치운다 clear 배수구에 있는 머리카락을 치운다 치우기 정리",
+      "image": "cleaning/CLEANING_097.webp",
+      "source_file": "CLEANING_097_배수구에 있는 머리카락을 치운다.png",
+      "action": "clear",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_098",
+      "group_id": "CLEANING_098",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "청소기를 돌린다",
+      "keywords": [
+        "청소기",
+        "청소기를",
+        "돌린다",
+        "조이기",
+        "체결",
+        "나사 조이기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 청소기를 돌린다 tighten 청소기 청소기를 돌린다 조이기 체결 나사 조이기",
+      "image": "cleaning/CLEANING_098.webp",
+      "source_file": "CLEANING_098_청소기를 돌린다.png",
+      "action": "tighten",
+      "objects": [
+        "청소기"
+      ]
+    },
+    {
+      "id": "CLEANING_099",
+      "group_id": "CLEANING_099",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "옷걸이에 옷을 건다",
+      "keywords": [
+        "옷",
+        "옷걸이에",
+        "옷을",
+        "건다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 옷걸이에 옷을 건다 other 옷 옷걸이에 옷을 건다",
+      "image": "cleaning/CLEANING_099.webp",
+      "source_file": "CLEANING_099_옷걸이에 옷을 건다.png",
+      "action": "other",
+      "objects": [
+        "옷"
+      ]
+    },
+    {
+      "id": "CLEANING_100",
+      "group_id": "CLEANING_100",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "문서들을 정리한다",
+      "keywords": [
+        "문서들을",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 문서들을 정리한다 organize 문서들을 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_100.webp",
+      "source_file": "CLEANING_100_문서들을 정리한다.png",
+      "action": "organize",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_101",
+      "group_id": "CLEANING_101",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "휴지를 교체한다",
+      "keywords": [
+        "화장지",
+        "휴지를",
+        "교체한다",
+        "교체",
+        "바꾸기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 휴지를 교체한다 replace 화장지 휴지를 교체한다 교체 바꾸기",
+      "image": "cleaning/CLEANING_101.webp",
+      "source_file": "CLEANING_101_휴지를 교체한다.png",
+      "action": "replace",
+      "objects": [
+        "화장지"
+      ]
+    },
+    {
+      "id": "CLEANING_102",
+      "group_id": "CLEANING_102",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "약봉투를 정리한다",
+      "keywords": [
+        "봉투",
+        "약봉투를",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 약봉투를 정리한다 organize 봉투 약봉투를 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_102.webp",
+      "source_file": "CLEANING_102_약봉투를 정리한다.png",
+      "action": "organize",
+      "objects": [
+        "봉투"
+      ]
+    },
+    {
+      "id": "CLEANING_103",
+      "group_id": "CLEANING_103",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "책상을 정리한다",
+      "keywords": [
+        "책상",
+        "책상을",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 책상을 정리한다 organize 책상 책상을 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_103.webp",
+      "source_file": "CLEANING_103_책상을 정리한다.png",
+      "action": "organize",
+      "objects": [
+        "책상"
+      ]
+    },
+    {
+      "id": "CLEANING_104",
+      "group_id": "CLEANING_104",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "선반을 정리한다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "선반을",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [
+        "진열대을 정리한다"
+      ],
+      "search_text": "cleaning 선반을 정리한다 organize 선반 진열대 매대 선반을 정리한다 정리 정돈 진열대을 정리한다",
+      "image": "cleaning/CLEANING_104.webp",
+      "source_file": "CLEANING_104_선반을 정리한다.png",
+      "action": "organize",
+      "objects": [
+        "선반"
+      ]
+    },
+    {
+      "id": "CLEANING_105",
+      "group_id": "CLEANING_105",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "샤워기 헤드를 대야에 넣는다",
+      "keywords": [
+        "샤워기",
+        "헤드를",
+        "대야에",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 샤워기 헤드를 대야에 넣는다 put_in 샤워기 헤드를 대야에 넣는다 넣기 담기 꽂기",
+      "image": "cleaning/CLEANING_105.webp",
+      "source_file": "CLEANING_105_샤워기 헤드를 대야에 넣는다.png",
+      "action": "put_in",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_106",
+      "group_id": "CLEANING_106",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "소파 밑 먼지를 치운다",
+      "keywords": [
+        "먼지",
+        "소파",
+        "먼지를",
+        "치운다",
+        "치우기",
+        "정리"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 소파 밑 먼지를 치운다 clear 먼지 소파 먼지를 치운다 치우기 정리",
+      "image": "cleaning/CLEANING_106.webp",
+      "source_file": "CLEANING_106_소파 밑 먼지를 치운다.png",
+      "action": "clear",
+      "objects": [
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_107",
+      "group_id": "CLEANING_107",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "소파 쿠션을 닦는다",
+      "keywords": [
+        "소파",
+        "쿠션을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 소파 쿠션을 닦는다 clean 소파 쿠션을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_107.webp",
+      "source_file": "CLEANING_107_소파 쿠션을 닦는다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_108",
+      "group_id": "CLEANING_108",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "천장에 거미줄을 제거한다",
+      "keywords": [
+        "천장에",
+        "거미줄을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 천장에 거미줄을 제거한다 remove 천장에 거미줄을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_108.webp",
+      "source_file": "CLEANING_108_천장에 거미줄을 제거한다.png",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_109",
+      "group_id": "CLEANING_109",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "벽 모서리에 먼지를 턴다",
+      "keywords": [
+        "먼지",
+        "모서리에",
+        "먼지를",
+        "턴다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 벽 모서리에 먼지를 턴다 other 먼지 모서리에 먼지를 턴다",
+      "image": "cleaning/CLEANING_109.webp",
+      "source_file": "CLEANING_109_벽 모서리에 먼지를 턴다.png",
+      "action": "other",
+      "objects": [
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_110",
+      "group_id": "CLEANING_110",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "후드 기름때 제거를 한다",
+      "keywords": [
+        "후드",
+        "기름때",
+        "제거를",
+        "한다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 후드 기름때 제거를 한다 other 후드 기름때 제거를 한다",
+      "image": "cleaning/CLEANING_110.webp",
+      "source_file": "CLEANING_110_후드 기름때 제거를 한다.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_111",
+      "group_id": "CLEANING_111",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "얼룩진 전자레인지를 닦는다",
+      "keywords": [
+        "얼룩진",
+        "전자레인지를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 얼룩진 전자레인지를 닦는다 clean 얼룩진 전자레인지를 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_111.webp",
+      "source_file": "CLEANING_111_얼룩진 전자레인지를 닦는다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_112",
+      "group_id": "CLEANING_112",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "욕실 환풍구를 청소한다",
+      "keywords": [
+        "욕실",
+        "환풍구를",
+        "청소한다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 욕실 환풍구를 청소한다 clean 욕실 환풍구를 청소한다 청소 닦기",
+      "image": "cleaning/CLEANING_112.webp",
+      "source_file": "CLEANING_112_욕실 환풍구를 청소한다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_113",
+      "group_id": "CLEANING_113",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "변기 뚜껑을 닦는다",
+      "keywords": [
+        "변기",
+        "뚜껑을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 변기 뚜껑을 닦는다 clean 변기 뚜껑을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_113.webp",
+      "source_file": "CLEANING_113_변기 뚜껑을 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "변기"
+      ]
+    },
+    {
+      "id": "CLEANING_114",
+      "group_id": "CLEANING_114",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "옷을 다림질 한다",
+      "keywords": [
+        "옷",
+        "옷을",
+        "다림질",
+        "한다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 옷을 다림질 한다 other 옷 옷을 다림질 한다",
+      "image": "cleaning/CLEANING_114.webp",
+      "source_file": "CLEANING_114_옷을 다림질 한다.png",
+      "action": "other",
+      "objects": [
+        "옷"
+      ]
+    },
+    {
+      "id": "CLEANING_115",
+      "group_id": "CLEANING_115",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "다리미 바닥면을 닦는다",
+      "keywords": [
+        "바닥",
+        "다리미",
+        "바닥면을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 다리미 바닥면을 닦는다 clean 바닥 다리미 바닥면을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_115.webp",
+      "source_file": "CLEANING_115_다리미 바닥면을 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "바닥"
+      ]
+    },
+    {
+      "id": "CLEANING_116",
+      "group_id": "CLEANING_116",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "청소기 필터를 교체한다",
+      "keywords": [
+        "청소기",
+        "필터를",
+        "교체한다",
+        "교체",
+        "바꾸기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 청소기 필터를 교체한다 replace 청소기 필터를 교체한다 교체 바꾸기",
+      "image": "cleaning/CLEANING_116.webp",
+      "source_file": "CLEANING_116_청소기 필터를 교체한다.png",
+      "action": "replace",
+      "objects": [
+        "청소기"
+      ]
+    },
+    {
+      "id": "CLEANING_117",
+      "group_id": "CLEANING_117",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "마우스를 닦는다",
+      "keywords": [
+        "마우스를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 마우스를 닦는다 clean 마우스를 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_117.webp",
+      "source_file": "CLEANING_117_마우스를 닦는다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_118",
+      "group_id": "CLEANING_118",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "컴퓨터 본체에 있는 먼지를 청소한다",
+      "keywords": [
+        "먼지",
+        "컴퓨터",
+        "본체에",
+        "있는",
+        "먼지를",
+        "청소한다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 컴퓨터 본체에 있는 먼지를 청소한다 clean 먼지 컴퓨터 본체에 있는 먼지를 청소한다 청소 닦기",
+      "image": "cleaning/CLEANING_118.webp",
+      "source_file": "CLEANING_118_컴퓨터 본체에 있는 먼지를 청소한다.png",
+      "action": "clean",
+      "objects": [
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_119",
+      "group_id": "CLEANING_119",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "리모컨 버튼을 청소한다",
+      "keywords": [
+        "버튼",
+        "리모컨",
+        "버튼을",
+        "청소한다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 리모컨 버튼을 청소한다 clean 버튼 리모컨 버튼을 청소한다 청소 닦기",
+      "image": "cleaning/CLEANING_119.webp",
+      "source_file": "CLEANING_119_리모컨 버튼을 청소한다.png",
+      "action": "clean",
+      "objects": [
+        "버튼"
+      ]
+    },
+    {
+      "id": "CLEANING_120",
+      "group_id": "CLEANING_120",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "가습기 물통을 세척한다",
+      "keywords": [
+        "가습기",
+        "물통을",
+        "세척한다",
+        "씻기",
+        "헹구기",
+        "세척"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 가습기 물통을 세척한다 wash 가습기 물통을 세척한다 씻기 헹구기 세척",
+      "image": "cleaning/CLEANING_120.webp",
+      "source_file": "CLEANING_120_가습기 물통을 세척한다.png",
+      "action": "wash",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_121",
+      "group_id": "CLEANING_121",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "식기류를 정리한다",
+      "keywords": [
+        "식기류를",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 식기류를 정리한다 organize 식기류를 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_121.webp",
+      "source_file": "CLEANING_121_식기류를 정리한다.png",
+      "action": "organize",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_122",
+      "group_id": "CLEANING_122",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "타일사이 곰팡이를 제거한다",
+      "keywords": [
+        "타일사이",
+        "곰팡이를",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 타일사이 곰팡이를 제거한다 remove 타일사이 곰팡이를 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_122.webp",
+      "source_file": "CLEANING_122_타일사이 곰팡이를 제거한다.png",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_123",
+      "group_id": "CLEANING_123",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "옷을 바구니에 넣는다",
+      "keywords": [
+        "옷",
+        "옷을",
+        "바구니에",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 옷을 바구니에 넣는다 put_in 옷 옷을 바구니에 넣는다 넣기 담기 꽂기",
+      "image": "cleaning/CLEANING_123.webp",
+      "source_file": "CLEANING_123_옷을 바구니에 넣는다.png",
+      "action": "put_in",
+      "objects": [
+        "옷"
+      ]
+    },
+    {
+      "id": "CLEANING_124",
+      "group_id": "CLEANING_124",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "의자를 닦는다",
+      "keywords": [
+        "의자",
+        "의자를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 의자를 닦는다 clean 의자 의자를 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_124.webp",
+      "source_file": "CLEANING_124_의자를 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "의자"
+      ]
+    },
+    {
+      "id": "CLEANING_125",
+      "group_id": "CLEANING_125",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "책을 정리한다",
+      "keywords": [
+        "책을",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 책을 정리한다 organize 책을 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_125.webp",
+      "source_file": "CLEANING_125_책을 정리한다.png",
+      "action": "organize",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_126",
+      "group_id": "CLEANING_126",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "옷걸이 봉을 닦는다",
+      "keywords": [
+        "옷",
+        "옷걸이",
+        "봉을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 옷걸이 봉을 닦는다 clean 옷 옷걸이 봉을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_126.webp",
+      "source_file": "CLEANING_126_옷걸이 봉을 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "옷"
+      ]
+    },
+    {
+      "id": "CLEANING_127",
+      "group_id": "CLEANING_127",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "수납칸을 정리한다",
+      "keywords": [
+        "수납칸을",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 수납칸을 정리한다 organize 수납칸을 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_127.webp",
+      "source_file": "CLEANING_127_수납칸을 정리한다.png",
+      "action": "organize",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_128",
+      "group_id": "CLEANING_128",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "창문 잠금장치를 닦는다",
+      "keywords": [
+        "창문",
+        "잠금장치를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 창문 잠금장치를 닦는다 clean 창문 잠금장치를 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_128.webp",
+      "source_file": "CLEANING_128_창문 잠금장치를 닦는다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_129",
+      "group_id": "CLEANING_129",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "도어락을 닦는다",
+      "keywords": [
+        "도어락을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 도어락을 닦는다 clean 도어락을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_129.webp",
+      "source_file": "CLEANING_129_도어락을 닦는다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_130",
+      "group_id": "CLEANING_130",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "현관 바닥먼지를 청소한다",
+      "keywords": [
+        "바닥",
+        "먼지",
+        "현관",
+        "바닥먼지를",
+        "청소한다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 현관 바닥먼지를 청소한다 clean 바닥 먼지 현관 바닥먼지를 청소한다 청소 닦기",
+      "image": "cleaning/CLEANING_130.webp",
+      "source_file": "CLEANING_130_현관 바닥먼지를 청소한다.png",
+      "action": "clean",
+      "objects": [
+        "바닥",
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_131",
+      "group_id": "CLEANING_131",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "막힌 펌프뚜껑을 청소한다",
+      "keywords": [
+        "막힌",
+        "펌프뚜껑을",
+        "청소한다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 막힌 펌프뚜껑을 청소한다 clean 막힌 펌프뚜껑을 청소한다 청소 닦기",
+      "image": "cleaning/CLEANING_131.webp",
+      "source_file": "CLEANING_131_막힌 펌프뚜껑을 청소한다.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_132",
+      "group_id": "CLEANING_132",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "책상 얼룩을 제거한다",
+      "keywords": [
+        "책상",
+        "얼룩을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 책상 얼룩을 제거한다 remove 책상 얼룩을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_132.webp",
+      "source_file": "CLEANING_132_책상 얼룩을 제거한다.png",
+      "action": "remove",
+      "objects": [
+        "책상"
+      ]
+    },
+    {
+      "id": "CLEANING_133",
+      "group_id": "CLEANING_133",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "신발 얼룩을 제거한다",
+      "keywords": [
+        "신발",
+        "얼룩을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 신발 얼룩을 제거한다 remove 신발 얼룩을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_133.webp",
+      "source_file": "CLEANING_133_신발 얼룩을 제거한다.png",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_134",
+      "group_id": "CLEANING_134",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "쓰레기통을 비운다",
+      "keywords": [
+        "쓰레기통",
+        "쓰레기통을",
+        "비운다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 쓰레기통을 비운다 other 쓰레기통 쓰레기통을 비운다",
+      "image": "cleaning/CLEANING_134.webp",
+      "source_file": "CLEANING_134_쓰레기통을 비운다.png",
+      "action": "other",
+      "objects": [
+        "쓰레기통"
+      ]
+    },
+    {
+      "id": "CLEANING_135",
+      "group_id": "CLEANING_135",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "옷에 있는 먼지를 턴다",
+      "keywords": [
+        "먼지",
+        "옷",
+        "옷에",
+        "있는",
+        "먼지를",
+        "턴다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 옷에 있는 먼지를 턴다 other 먼지 옷 옷에 있는 먼지를 턴다",
+      "image": "cleaning/CLEANING_135.webp",
+      "source_file": "CLEANING_135_옷에 있는 먼지를 턴다.png",
+      "action": "other",
+      "objects": [
+        "먼지",
+        "옷"
+      ]
+    },
+    {
+      "id": "CLEANING_136",
+      "group_id": "CLEANING_136",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "화장품을 정리한다",
+      "keywords": [
+        "화장품을",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 화장품을 정리한다 organize 화장품을 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_136.webp",
+      "source_file": "CLEANING_136_화장품을 정리한다.png",
+      "action": "organize",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_137",
+      "group_id": "CLEANING_137",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "벽 얼룩을 제거한다",
+      "keywords": [
+        "얼룩을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 벽 얼룩을 제거한다 remove 얼룩을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_137.webp",
+      "source_file": "CLEANING_137_벽 얼룩을 제거한다.png",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_138",
+      "group_id": "CLEANING_138",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "컵을 닦는다",
+      "keywords": [
+        "컵",
+        "컵을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 컵을 닦는다 clean 컵 컵을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_138.webp",
+      "source_file": "CLEANING_138_컵을 닦는다.png",
+      "action": "clean",
+      "objects": [
+        "컵"
+      ]
+    },
+    {
+      "id": "CLEANING_139",
+      "group_id": "CLEANING_139",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "에어컨 필터를 세척한다",
+      "keywords": [
+        "에어컨",
+        "필터를",
+        "세척한다",
+        "씻기",
+        "헹구기",
+        "세척"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 에어컨 필터를 세척한다 wash 에어컨 필터를 세척한다 씻기 헹구기 세척",
+      "image": "cleaning/CLEANING_139.webp",
+      "source_file": "CLEANING_139_에어컨 필터를 세척한다.png",
+      "action": "wash",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_140",
+      "group_id": "CLEANING_140",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "멀티탭 먼지를 제거한다",
+      "keywords": [
+        "먼지",
+        "멀티탭",
+        "먼지를",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 멀티탭 먼지를 제거한다 remove 먼지 멀티탭 먼지를 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_140.webp",
+      "source_file": "CLEANING_140_멀티탭 먼지를 제거한다.png",
+      "action": "remove",
+      "objects": [
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_141",
+      "group_id": "CLEANING_141",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "청소기 먼지통을 세척한다",
+      "keywords": [
+        "청소기",
+        "먼지",
+        "먼지통을",
+        "세척한다",
+        "씻기",
+        "헹구기",
+        "세척"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 청소기 먼지통을 세척한다 wash 청소기 먼지 먼지통을 세척한다 씻기 헹구기 세척",
+      "image": "cleaning/CLEANING_141.webp",
+      "source_file": "CLEANING_141_청소기 먼지통을 세척한다.png",
+      "action": "wash",
+      "objects": [
+        "청소기",
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_142",
+      "group_id": "CLEANING_142",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "청소기 헤드에 있는 먼지를 제거한다",
+      "keywords": [
+        "청소기",
+        "먼지",
+        "헤드에",
+        "있는",
+        "먼지를",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 청소기 헤드에 있는 먼지를 제거한다 remove 청소기 먼지 헤드에 있는 먼지를 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_142.webp",
+      "source_file": "CLEANING_142_청소기 헤드에 있는 먼지를 제거한다.png",
+      "action": "remove",
+      "objects": [
+        "청소기",
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_143",
+      "group_id": "CLEANING_143",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "청소기 벽 스위치에 얼룩을 제거한다",
+      "keywords": [
+        "청소기",
+        "스위치에",
+        "얼룩을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 청소기 벽 스위치에 얼룩을 제거한다 remove 청소기 스위치에 얼룩을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_143.webp",
+      "source_file": "CLEANING_143_청소기 벽 스위치에 얼룩을 제거한다.png",
+      "action": "remove",
+      "objects": [
+        "청소기"
+      ]
+    },
+    {
+      "id": "CLEANING_144",
+      "group_id": "CLEANING_144",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "가방 먼지를 제거한다",
+      "keywords": [
+        "먼지",
+        "가방",
+        "먼지를",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 가방 먼지를 제거한다 remove 먼지 가방 먼지를 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_144.webp",
+      "source_file": "CLEANING_144_가방 먼지를 제거한다.png",
+      "action": "remove",
+      "objects": [
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_145",
+      "group_id": "CLEANING_145",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "니트 보풀을 제거한다",
+      "keywords": [
+        "니트",
+        "보풀을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 니트 보풀을 제거한다 remove 니트 보풀을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_145.webp",
+      "source_file": "CLEANING_145_니트 보풀을 제거한다.png",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_146",
+      "group_id": "CLEANING_146",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "모자 챙을 정리한다",
+      "keywords": [
+        "모자",
+        "챙을",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 모자 챙을 정리한다 organize 모자 챙을 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_146.webp",
+      "source_file": "CLEANING_146_모자 챙을 정리한다.png",
+      "action": "organize",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_147",
+      "group_id": "CLEANING_147",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "식기건조대 세척을 한다",
+      "keywords": [
+        "건조대",
+        "식기건조대",
+        "세척을",
+        "한다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 식기건조대 세척을 한다 other 건조대 식기건조대 세척을 한다",
+      "image": "cleaning/CLEANING_147.webp",
+      "source_file": "CLEANING_147_식기건조대 세척을 한다.png",
+      "action": "other",
+      "objects": [
+        "건조대"
+      ]
+    },
+    {
+      "id": "CLEANING_148",
+      "group_id": "CLEANING_148",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "프라이팬 탄 자국을 제거한다",
+      "keywords": [
+        "프라이팬",
+        "자국을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 프라이팬 탄 자국을 제거한다 remove 프라이팬 자국을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_148.webp",
+      "source_file": "CLEANING_148_프라이팬 탄 자국을 제거한다.png",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_149",
+      "group_id": "CLEANING_149",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "통에 있는 얼룩을 제거한다",
+      "keywords": [
+        "통에",
+        "있는",
+        "얼룩을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 통에 있는 얼룩을 제거한다 remove 통에 있는 얼룩을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_149.webp",
+      "source_file": "CLEANING_149_통에 있는 얼룩을 제거한다.png",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_150",
+      "group_id": "CLEANING_150",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "도어락 지문을 제거한다",
+      "keywords": [
+        "도어락",
+        "지문을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 도어락 지문을 제거한다 remove 도어락 지문을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_150.webp",
+      "source_file": "CLEANING_150_도어락 지문을 제거한다.jpg",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_151",
+      "group_id": "CLEANING_151",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빗자루에 있는 머리카락을 제거한다",
+      "keywords": [
+        "빗자루에",
+        "있는",
+        "머리카락을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 빗자루에 있는 머리카락을 제거한다 remove 빗자루에 있는 머리카락을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_151.webp",
+      "source_file": "CLEANING_151_빗자루에 있는 머리카락을 제거한다.jpg",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_152",
+      "group_id": "CLEANING_152",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "인터폰 화면을 닦는다",
+      "keywords": [
+        "화면",
+        "인터폰",
+        "화면을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 인터폰 화면을 닦는다 clean 화면 인터폰 화면을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_152.webp",
+      "source_file": "CLEANING_152_인터폰 화면을 닦는다.jpg",
+      "action": "clean",
+      "objects": [
+        "화면"
+      ]
+    },
+    {
+      "id": "CLEANING_153",
+      "group_id": "CLEANING_153",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "거울의 화장품자국을 제거한다",
+      "keywords": [
+        "거울",
+        "거울의",
+        "화장품자국을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 거울의 화장품자국을 제거한다 remove 거울 거울의 화장품자국을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_153.webp",
+      "source_file": "CLEANING_153_거울의 화장품자국을 제거한다.jpg",
+      "action": "remove",
+      "objects": [
+        "거울"
+      ]
+    },
+    {
+      "id": "CLEANING_154",
+      "group_id": "CLEANING_154",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "수도꼭지 물때를 제거한다",
+      "keywords": [
+        "수도꼭지",
+        "물때를",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 수도꼭지 물때를 제거한다 remove 수도꼭지 물때를 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_154.webp",
+      "source_file": "CLEANING_154_수도꼭지 물때를 제거한다.jpg",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_155",
+      "group_id": "CLEANING_155",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "책상 연필자국을 제거한다",
+      "keywords": [
+        "책상",
+        "연필자국을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 책상 연필자국을 제거한다 remove 책상 연필자국을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_155.webp",
+      "source_file": "CLEANING_155_책상 연필자국을 제거한다.jpg",
+      "action": "remove",
+      "objects": [
+        "책상"
+      ]
+    },
+    {
+      "id": "CLEANING_156",
+      "group_id": "CLEANING_156",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "스티커자국을 제거한다",
+      "keywords": [
+        "라벨",
+        "스티커자국을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 스티커자국을 제거한다 remove 라벨 스티커자국을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_156.webp",
+      "source_file": "CLEANING_156_스티커자국을 제거한다.jpg",
+      "action": "remove",
+      "objects": [
+        "라벨"
+      ]
+    },
+    {
+      "id": "CLEANING_157",
+      "group_id": "CLEANING_157",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "선반 모서리 먼지를 제거한다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "먼지",
+        "모서리",
+        "먼지를",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [
+        "진열대 모서리 먼지를 제거한다"
+      ],
+      "search_text": "cleaning 선반 모서리 먼지를 제거한다 remove 선반 먼지 진열대 매대 모서리 먼지를 제거한다 꺼내기 빼기 제거 진열대 모서리 먼지를 제거한다",
+      "image": "cleaning/CLEANING_157.webp",
+      "source_file": "CLEANING_157_선반 모서리 먼지를 제거한다.jpg",
+      "action": "remove",
+      "objects": [
+        "선반",
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_158",
+      "group_id": "CLEANING_158",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "유리창을 닦는다",
+      "keywords": [
+        "유리창을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 유리창을 닦는다 clean 유리창을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_158.webp",
+      "source_file": "CLEANING_158_유리창을 닦는다.jpg",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_159",
+      "group_id": "CLEANING_159",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "로봇 청소기를 돌린다",
+      "keywords": [
+        "청소기",
+        "로봇",
+        "청소기를",
+        "돌린다",
+        "조이기",
+        "체결",
+        "나사 조이기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 로봇 청소기를 돌린다 tighten 청소기 로봇 청소기를 돌린다 조이기 체결 나사 조이기",
+      "image": "cleaning/CLEANING_159.webp",
+      "source_file": "CLEANING_159_로봇 청소기를 돌린다.jpg",
+      "action": "tighten",
+      "objects": [
+        "청소기"
+      ]
+    },
+    {
+      "id": "CLEANING_160",
+      "group_id": "CLEANING_160",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "걸레에 물을 뺀다",
+      "keywords": [
+        "물",
+        "걸레에",
+        "물을",
+        "뺀다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 걸레에 물을 뺀다 remove 물 걸레에 물을 뺀다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_160.webp",
+      "source_file": "CLEANING_160_걸레에 물을 뺀다.jpg",
+      "action": "remove",
+      "objects": [
+        "물"
+      ]
+    },
+    {
+      "id": "CLEANING_161",
+      "group_id": "CLEANING_161",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "계단을 청소한다",
+      "keywords": [
+        "계단을",
+        "청소한다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 계단을 청소한다 clean 계단을 청소한다 청소 닦기",
+      "image": "cleaning/CLEANING_161.webp",
+      "source_file": "CLEANING_161_계단을 청소한다.jpg",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_162",
+      "group_id": "CLEANING_162",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "창고바닥을 청소한다",
+      "keywords": [
+        "바닥",
+        "창고바닥을",
+        "청소한다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 창고바닥을 청소한다 clean 바닥 창고바닥을 청소한다 청소 닦기",
+      "image": "cleaning/CLEANING_162.webp",
+      "source_file": "CLEANING_162_창고바닥을 청소한다.jpg",
+      "action": "clean",
+      "objects": [
+        "바닥"
+      ]
+    },
+    {
+      "id": "CLEANING_163",
+      "group_id": "CLEANING_163",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "매트보풀을 제거한다",
+      "keywords": [
+        "매트",
+        "매트보풀을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 매트보풀을 제거한다 remove 매트 매트보풀을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_163.webp",
+      "source_file": "CLEANING_163_매트보풀을 제거한다.jpg",
+      "action": "remove",
+      "objects": [
+        "매트"
+      ]
+    },
+    {
+      "id": "CLEANING_164",
+      "group_id": "CLEANING_164",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "사용한 박스를 정리한다",
+      "keywords": [
+        "박스",
+        "사용한",
+        "박스를",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 사용한 박스를 정리한다 organize 박스 사용한 박스를 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_164.webp",
+      "source_file": "CLEANING_164_사용한 박스를 정리한다.jpg",
+      "action": "organize",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "CLEANING_165",
+      "group_id": "CLEANING_165",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "에스컬레이터 계단을 청소한다",
+      "keywords": [
+        "에스컬레이터",
+        "계단을",
+        "청소한다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 에스컬레이터 계단을 청소한다 clean 에스컬레이터 계단을 청소한다 청소 닦기",
+      "image": "cleaning/CLEANING_165.webp",
+      "source_file": "CLEANING_165_에스컬레이터 계단을 청소한다.jpg",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_166",
+      "group_id": "CLEANING_166",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "에스컬레이터 손잡이를 닦는다",
+      "keywords": [
+        "손",
+        "에스컬레이터",
+        "손잡이를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 에스컬레이터 손잡이를 닦는다 clean 손 에스컬레이터 손잡이를 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_166.webp",
+      "source_file": "CLEANING_166_에스컬레이터 손잡이를 닦는다.jpg",
+      "action": "clean",
+      "objects": [
+        "손"
+      ]
+    },
+    {
+      "id": "CLEANING_167",
+      "group_id": "CLEANING_167",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "버스 손잡이를 닦는다",
+      "keywords": [
+        "손",
+        "버스",
+        "손잡이를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 버스 손잡이를 닦는다 clean 손 버스 손잡이를 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_167.webp",
+      "source_file": "CLEANING_167_버스 손잡이를 닦는다.jpg",
+      "action": "clean",
+      "objects": [
+        "손"
+      ]
+    },
+    {
+      "id": "CLEANING_168",
+      "group_id": "CLEANING_168",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "길거리 쓰레기를 치운다",
+      "keywords": [
+        "쓰레기",
+        "길거리",
+        "쓰레기를",
+        "치운다",
+        "치우기",
+        "정리"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 길거리 쓰레기를 치운다 clear 쓰레기 길거리 쓰레기를 치운다 치우기 정리",
+      "image": "cleaning/CLEANING_168.webp",
+      "source_file": "CLEANING_168_길거리 쓰레기를 치운다.jpg",
+      "action": "clear",
+      "objects": [
+        "쓰레기"
+      ]
+    },
+    {
+      "id": "CLEANING_169",
+      "group_id": "CLEANING_169",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "공원 벤치를 닦는다",
+      "keywords": [
+        "공원",
+        "벤치를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 공원 벤치를 닦는다 clean 공원 벤치를 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_169.webp",
+      "source_file": "CLEANING_169_공원 벤치를 닦는다.jpg",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_170",
+      "group_id": "CLEANING_170",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "화장실바닥을 닦는다",
+      "keywords": [
+        "바닥",
+        "화장실바닥을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 화장실바닥을 닦는다 clean 바닥 화장실바닥을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_170.webp",
+      "source_file": "CLEANING_170_화장실바닥을 닦는다.jpg",
+      "action": "clean",
+      "objects": [
+        "바닥"
+      ]
+    },
+    {
+      "id": "CLEANING_171",
+      "group_id": "CLEANING_171",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "바닥에 붙은 껌을 제거한다",
+      "keywords": [
+        "바닥",
+        "바닥에",
+        "붙은",
+        "껌을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 바닥에 붙은 껌을 제거한다 remove 바닥 바닥에 붙은 껌을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_171.webp",
+      "source_file": "CLEANING_171_바닥에 붙은 껌을 제거한다.jpg",
+      "action": "remove",
+      "objects": [
+        "바닥"
+      ]
+    },
+    {
+      "id": "CLEANING_172",
+      "group_id": "CLEANING_172",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "엘리베이터 바닥을 닦는다",
+      "keywords": [
+        "바닥",
+        "엘리베이터",
+        "바닥을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 엘리베이터 바닥을 닦는다 clean 바닥 엘리베이터 바닥을 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_172.webp",
+      "source_file": "CLEANING_172_엘리베이터 바닥을 닦는다.jpg",
+      "action": "clean",
+      "objects": [
+        "바닥"
+      ]
+    },
+    {
+      "id": "CLEANING_173",
+      "group_id": "CLEANING_173",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "버스를 청소한다",
+      "keywords": [
+        "버스를",
+        "청소한다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 버스를 청소한다 clean 버스를 청소한다 청소 닦기",
+      "image": "cleaning/CLEANING_173.webp",
+      "source_file": "CLEANING_173_버스를 청소한다.jpg",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_174",
+      "group_id": "CLEANING_174",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "프라이팬 기름을 제거한다",
+      "keywords": [
+        "프라이팬",
+        "기름을",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 프라이팬 기름을 제거한다 remove 프라이팬 기름을 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_174.webp",
+      "source_file": "CLEANING_174_프라이팬 기름을 제거한다.jpg",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_175",
+      "group_id": "CLEANING_175",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "유리창 물때를 제거한다",
+      "keywords": [
+        "유리창",
+        "물때를",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 유리창 물때를 제거한다 remove 유리창 물때를 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_175.webp",
+      "source_file": "CLEANING_175_유리창 물때를 제거한다.jpg",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_176",
+      "group_id": "CLEANING_176",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "창고 먼지를 제거한다",
+      "keywords": [
+        "먼지",
+        "창고",
+        "먼지를",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 창고 먼지를 제거한다 remove 먼지 창고 먼지를 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_176.webp",
+      "source_file": "CLEANING_176_창고 먼지를 제거한다.jpg",
+      "action": "remove",
+      "objects": [
+        "먼지"
+      ]
+    },
+    {
+      "id": "CLEANING_177",
+      "group_id": "CLEANING_177",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "분리수거장을 정리한다",
+      "keywords": [
+        "분리수거장을",
+        "정리한다",
+        "정리",
+        "정돈"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 분리수거장을 정리한다 organize 분리수거장을 정리한다 정리 정돈",
+      "image": "cleaning/CLEANING_177.webp",
+      "source_file": "CLEANING_177_분리수거장을 정리한다.jpg",
+      "action": "organize",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_178",
+      "group_id": "CLEANING_178",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "쓰레기봉투를 쓰레기차에 넣는다",
+      "keywords": [
+        "쓰레기봉투",
+        "쓰레기봉투를",
+        "쓰레기차에",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 쓰레기봉투를 쓰레기차에 넣는다 put_in 쓰레기봉투 쓰레기봉투를 쓰레기차에 넣는다 넣기 담기 꽂기",
+      "image": "cleaning/CLEANING_178.webp",
+      "source_file": "CLEANING_178_쓰레기봉투를 쓰레기차에 넣는다.jpg",
+      "action": "put_in",
+      "objects": [
+        "쓰레기봉투"
+      ]
+    },
+    {
+      "id": "CLEANING_179",
+      "group_id": "CLEANING_179",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "막힌 하수구물을 빨아드린다",
+      "keywords": [
+        "막힌",
+        "하수구물을",
+        "빨아드린다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 막힌 하수구물을 빨아드린다 other 막힌 하수구물을 빨아드린다",
+      "image": "cleaning/CLEANING_179.webp",
+      "source_file": "CLEANING_179_막힌 하수구물을 빨아드린다.jpg",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_180",
+      "group_id": "CLEANING_180",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "담배꽁초를 제거한다",
+      "keywords": [
+        "담배꽁초를",
+        "제거한다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 담배꽁초를 제거한다 remove 담배꽁초를 제거한다 꺼내기 빼기 제거",
+      "image": "cleaning/CLEANING_180.webp",
+      "source_file": "CLEANING_180_담배꽁초를 제거한다.jpg",
+      "action": "remove",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_181",
+      "group_id": "CLEANING_181",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "페인트자국을 지운다",
+      "keywords": [
+        "페인트자국을",
+        "지운다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 페인트자국을 지운다 other 페인트자국을 지운다",
+      "image": "cleaning/CLEANING_181.webp",
+      "source_file": "CLEANING_181_페인트자국을 지운다.jpg",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_182",
+      "group_id": "CLEANING_182",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "물을 뿌린다",
+      "keywords": [
+        "물",
+        "물을",
+        "뿌린다",
+        "뿌리기",
+        "분사"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 물을 뿌린다 spray 물 물을 뿌린다 뿌리기 분사",
+      "image": "cleaning/CLEANING_182.webp",
+      "source_file": "CLEANING_182_물을 뿌린다.jpg",
+      "action": "spray",
+      "objects": [
+        "물"
+      ]
+    },
+    {
+      "id": "CLEANING_183",
+      "group_id": "CLEANING_183",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "디퓨저를 뿌린다",
+      "keywords": [
+        "디퓨저를",
+        "뿌린다",
+        "뿌리기",
+        "분사"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 디퓨저를 뿌린다 spray 디퓨저를 뿌린다 뿌리기 분사",
+      "image": "cleaning/CLEANING_183.webp",
+      "source_file": "CLEANING_183_디퓨저를 뿌린다.jpg",
+      "action": "spray",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_184",
+      "group_id": "CLEANING_184",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "물기를 닦는다",
+      "keywords": [
+        "물기",
+        "물기를",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 물기를 닦는다 clean 물기 물기를 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_184.webp",
+      "source_file": "CLEANING_184_물기를 닦는다.jpg",
+      "action": "clean",
+      "objects": [
+        "물기"
+      ]
+    },
+    {
+      "id": "CLEANING_185",
+      "group_id": "CLEANING_185",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "옷을 소독한다",
+      "keywords": [
+        "옷",
+        "옷을",
+        "소독한다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 옷을 소독한다 other 옷 옷을 소독한다",
+      "image": "cleaning/CLEANING_185.webp",
+      "source_file": "CLEANING_185_옷을 소독한다.jpg",
+      "action": "other",
+      "objects": [
+        "옷"
+      ]
+    },
+    {
+      "id": "CLEANING_186",
+      "group_id": "CLEANING_186",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "냉장고 선반을 닦는다",
+      "keywords": [
+        "선반",
+        "진열대",
+        "매대",
+        "냉장고",
+        "선반을",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [
+        "냉장고 진열대을 닦는다"
+      ],
+      "search_text": "cleaning 냉장고 선반을 닦는다 clean 선반 냉장고 진열대 매대 선반을 닦는다 청소 닦기 냉장고 진열대을 닦는다",
+      "image": "cleaning/CLEANING_186.webp",
+      "source_file": "CLEANING_186_냉장고 선반을 닦는다.jpg",
+      "action": "clean",
+      "objects": [
+        "선반",
+        "냉장고"
+      ]
+    },
+    {
+      "id": "CLEANING_187",
+      "group_id": "CLEANING_187",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "밀대 헤드를 세척한다",
+      "keywords": [
+        "밀대",
+        "헤드를",
+        "세척한다",
+        "씻기",
+        "헹구기",
+        "세척"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 밀대 헤드를 세척한다 wash 밀대 헤드를 세척한다 씻기 헹구기 세척",
+      "image": "cleaning/CLEANING_187.webp",
+      "source_file": "CLEANING_187_밀대 헤드를 세척한다.jpg",
+      "action": "wash",
+      "objects": [
+        "밀대"
+      ]
+    },
+    {
+      "id": "CLEANING_188",
+      "group_id": "CLEANING_188",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "화분주변 흙을 청소한다",
+      "keywords": [
+        "화분주변",
+        "흙을",
+        "청소한다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 화분주변 흙을 청소한다 clean 화분주변 흙을 청소한다 청소 닦기",
+      "image": "cleaning/CLEANING_188.webp",
+      "source_file": "CLEANING_188_화분주변 흙을 청소한다.jpg",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_189",
+      "group_id": "CLEANING_189",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부엌 벽 소스자국을 없앤다",
+      "keywords": [
+        "부엌",
+        "소스자국을",
+        "없앤다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 부엌 벽 소스자국을 없앤다 other 부엌 소스자국을 없앤다",
+      "image": "cleaning/CLEANING_189.webp",
+      "source_file": "CLEANING_189_부엌 벽 소스자국을 없앤다.jpg",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_190",
+      "group_id": "CLEANING_190",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "유리창 스퀴지를 세척한다",
+      "keywords": [
+        "유리창",
+        "스퀴지를",
+        "세척한다",
+        "씻기",
+        "헹구기",
+        "세척"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 유리창 스퀴지를 세척한다 wash 유리창 스퀴지를 세척한다 씻기 헹구기 세척",
+      "image": "cleaning/CLEANING_190.webp",
+      "source_file": "CLEANING_190_유리창 스퀴지를 세척한다.jpg",
+      "action": "wash",
       "objects": []
     }
   ]

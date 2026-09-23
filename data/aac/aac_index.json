@@ -1,10 +1,10 @@
 {
  "version": 1,
- "generated_at": "2026-09-23T03:59:34+00:00",
+ "generated_at": "2026-09-23T12:35:13+00:00",
  "model": "gpt-4o-mini",
- "source_digest": "7cd7d2fa8de41677",
- "source_count": 918,
- "entry_count": 918,
+ "source_digest": "b254f4cfa24022a9",
+ "source_count": 1058,
+ "entry_count": 1058,
  "note": "LLM이 생성한 파생 데이터입니다. 원본은 aac_assets.json이며 이 파일은 재생성 가능합니다. reviewed=false는 사람 검수 전이라는 뜻입니다.",
  "entries": [
   {
@@ -24193,6 +24193,3675 @@
    "keywords_en": [
     "disinfectant spray",
     "cleaning spray"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_051",
+   "label": "키보드를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "키보드",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다",
+    "세척하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "sanitize"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_052",
+   "label": "엎질러진 물을 걸레로 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "물",
+    "object_detail": "엎질러진",
+    "instrument": "걸레",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "문지르다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "mop"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_053",
+   "label": "먼지가 쌓인 바닥에 청소기를 돌린다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "돌리다",
+    "verb_class": "clean",
+    "object": "청소기",
+    "object_detail": null,
+    "instrument": null,
+    "location": "바닥",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "관리하다",
+    "운영하다"
+   ],
+   "keywords_en": [
+    "operate",
+    "vacuum",
+    "clean"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_054",
+   "label": "더러워진 그릇을 깨끗하게 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "그릇",
+    "object_detail": "더러워진",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세척하다",
+    "청소하다",
+    "문지르다"
+   ],
+   "keywords_en": [
+    "clean",
+    "wash",
+    "sanitize"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_055",
+   "label": "엉킨 전선을 반듯하게 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "전선",
+    "object_detail": "엉킨",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "정리정돈",
+    "배치하다"
+   ],
+   "keywords_en": [
+    "organize",
+    "tidy",
+    "arrange"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_056",
+   "label": "모니터를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "모니터",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "sanitize"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_057",
+   "label": "사용하지 않는 종이들을 파쇄한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "파쇄하다",
+    "verb_class": "other",
+    "object": "종이",
+    "object_detail": "사용하지 않는",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "처리하다",
+    "버리다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "shred",
+    "dispose",
+    "manage"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_058",
+   "label": "타이어를 세척한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "세척하다",
+    "verb_class": "clean",
+    "object": "타이어",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "관리하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "wash",
+    "clean",
+    "maintain"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_059",
+   "label": "복도 바닦을 빗자루로 쓴다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "쓴다",
+    "verb_class": "clean",
+    "object": "바닥",
+    "object_detail": null,
+    "instrument": "빗자루",
+    "location": "복도",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "관리하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "sweep",
+    "clean",
+    "maintain"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_060",
+   "label": "창틀을 청소한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "청소하다",
+    "verb_class": "clean",
+    "object": "창틀",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "관리하다",
+    "정리하다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "clean",
+    "maintain",
+    "sanitize"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_061",
+   "label": "먼지가 쌓인 로봇청소기를 관리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "관리하다",
+    "verb_class": "other",
+    "object": "로봇청소기",
+    "object_detail": "먼지가 쌓인",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "운영하다",
+    "조작하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "manage",
+    "operate",
+    "maintain"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_062",
+   "label": "엘리베이터 버튼을 소독한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "소독하다",
+    "verb_class": "clean",
+    "object": "버튼",
+    "object_detail": "엘리베이터",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "관리하다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "sanitize",
+    "clean",
+    "disinfect"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_063",
+   "label": "사용한 걸레를 빤다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "빤다",
+    "verb_class": "clean",
+    "object": "걸레",
+    "object_detail": "사용한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세척하다",
+    "청소하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "wash",
+    "clean",
+    "sanitize"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_064",
+   "label": "광택제를 이용하여 바닥을 왁싱한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "왁싱하다",
+    "verb_class": "clean",
+    "object": "바닥",
+    "object_detail": null,
+    "instrument": "광택제",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "관리하다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "wax",
+    "clean",
+    "maintain"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_065",
+   "label": "부엌 싱크대를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "싱크대",
+    "object_detail": "부엌",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "clean",
+    "wash",
+    "sanitize"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_066",
+   "label": "냉장고 안을 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "냉장고",
+    "object_detail": "안",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "정리정돈"
+   ],
+   "keywords_en": [
+    "organize",
+    "tidy",
+    "arrange"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_067",
+   "label": "전자레인지 안을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "전자레인지",
+    "object_detail": "안",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "clean",
+    "wash",
+    "sanitize"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_068",
+   "label": "욕조를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "욕조",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "clean",
+    "wash",
+    "sanitize"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_069",
+   "label": "옷을 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "옷",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "정리정돈"
+   ],
+   "keywords_en": [
+    "organize",
+    "tidy",
+    "arrange"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_070",
+   "label": "샤워기를 깨끗하게 씻는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "씻다",
+    "verb_class": "clean",
+    "object": "샤워기",
+    "object_detail": "깨끗하게",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "wash",
+    "clean",
+    "sanitize"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_071",
+   "label": "곰팡이 핀 타일을 청소한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "청소하다",
+    "verb_class": "clean",
+    "object": "타일",
+    "object_detail": "곰팡이 핀",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세척",
+    "청소하기",
+    "정리",
+    "닦기"
+   ],
+   "keywords_en": [
+    "clean",
+    "wash",
+    "tile"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_072",
+   "label": "서리낀 거울을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "거울",
+    "object_detail": "서리낀",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세척",
+    "청소하기",
+    "정리",
+    "문지르기"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "mirror"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_073",
+   "label": "배수구에 용액을 붓는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "붓다",
+    "verb_class": "other",
+    "object": "용액",
+    "object_detail": null,
+    "instrument": null,
+    "location": "배수구",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "액체",
+    "부어넣기",
+    "처리하기"
+   ],
+   "keywords_en": [
+    "pour",
+    "solution",
+    "drain"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_074",
+   "label": "옷을 압축팩에 넣는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "pack",
+    "object": "압축팩",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "포장하다",
+    "가방"
+   ],
+   "keywords_en": [
+    "pack",
+    "compress",
+    "bag"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_075",
+   "label": "이불시트를 교체한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "교체하다",
+    "verb_class": "other",
+    "object": "이불시트",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "바꾸다",
+    "새로하다",
+    "교환하다"
+   ],
+   "keywords_en": [
+    "replace",
+    "sheet",
+    "bedding"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_076",
+   "label": "먼지 쌓인 조명을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "조명",
+    "object_detail": "먼지 쌓인",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세척",
+    "청소하기",
+    "정리"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "light"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_077",
+   "label": "우편함 종이를 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "종이",
+    "object_detail": "우편함",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "분류하다",
+    "정리정돈"
+   ],
+   "keywords_en": [
+    "organize",
+    "paper",
+    "mailbox"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_078",
+   "label": "벽면을 밀대로 먼지를 치운다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "치우다",
+    "verb_class": "clean",
+    "object": "먼지",
+    "object_detail": null,
+    "instrument": "밀대",
+    "location": "벽면",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "정리하다",
+    "닦다"
+   ],
+   "keywords_en": [
+    "remove",
+    "dust",
+    "wall"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_079",
+   "label": "신발장에서 신발을 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "신발",
+    "object_detail": null,
+    "instrument": null,
+    "location": "신발장",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "정리정돈"
+   ],
+   "keywords_en": [
+    "organize",
+    "shoes",
+    "shoe rack"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_080",
+   "label": "흩어진 장난감을 제자리에 가져다 놓는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "가져다 놓다",
+    "verb_class": "move",
+    "object": "장난감",
+    "object_detail": "흩어진",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "배치하다",
+    "놓다"
+   ],
+   "keywords_en": [
+    "put away",
+    "toy",
+    "scatter"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_081",
+   "label": "흩날리는 털을 청소기로 빨아들인다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "빨아들이다",
+    "verb_class": "clean",
+    "object": "털",
+    "object_detail": "흩날리는",
+    "instrument": "청소기",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "흡입하다",
+    "청소하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "suck",
+    "fur",
+    "vacuum"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_082",
+   "label": "선풍기에 있는 먼지를 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "먼지",
+    "object_detail": null,
+    "instrument": null,
+    "location": "선풍기",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "정리하다",
+    "닦다"
+   ],
+   "keywords_en": [
+    "remove",
+    "dust",
+    "fan"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_083",
+   "label": "먼지쌓인 방충망을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "방충망",
+    "object_detail": "먼지 쌓인",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세척",
+    "청소하기",
+    "정리"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "screen"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_084",
+   "label": "청소도구를 청소 도구함에 넣어 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "청소도구",
+    "object_detail": null,
+    "instrument": null,
+    "location": "청소 도구함",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "정리정돈"
+   ],
+   "keywords_en": [
+    "organize",
+    "cleaning tools",
+    "toolbox"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_085",
+   "label": "깨진 유리를 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "유리",
+    "object_detail": "깨진",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "처리하다",
+    "정돈하다",
+    "정리"
+   ],
+   "keywords_en": [
+    "organize",
+    "glass",
+    "broken"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_086",
+   "label": "음식물로 얼룩진 벽을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "벽",
+    "object_detail": "음식물로 얼룩진",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세척",
+    "청소하기",
+    "정리"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "wall"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_087",
+   "label": "교체한 침대시트를 빨래바구니에 넣는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "pack",
+    "object": "침대시트",
+    "object_detail": "교체한",
+    "instrument": null,
+    "location": "빨래바구니",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "포장하다",
+    "가방"
+   ],
+   "keywords_en": [
+    "put",
+    "sheet",
+    "laundry basket"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_088",
+   "label": "이불을 갠다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "갠다",
+    "verb_class": "other",
+    "object": "이불",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "펴다",
+    "정돈하다"
+   ],
+   "keywords_en": [
+    "fold",
+    "blanket",
+    "organize"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_089",
+   "label": "배게 커버를 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "커버",
+    "object_detail": "배게",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "정리정돈"
+   ],
+   "keywords_en": [
+    "organize",
+    "cover",
+    "pillow"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_090",
+   "label": "에어컨 필터를 교체한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "교체하다",
+    "verb_class": "other",
+    "object": "필터",
+    "object_detail": "에어컨",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "바꾸다",
+    "새로하다",
+    "교환하다"
+   ],
+   "keywords_en": [
+    "replace",
+    "filter",
+    "air conditioner"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_091",
+   "label": "칫솔로 수도꼭지를 청소한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "청소하다",
+    "verb_class": "clean",
+    "object": "수도꼭지",
+    "object_detail": null,
+    "instrument": "칫솔",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "닦다",
+    "세척하다",
+    "청소용품"
+   ],
+   "keywords_en": [
+    "clean",
+    "tap",
+    "toothbrush"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_092",
+   "label": "건조기를 돌린다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "돌리다",
+    "verb_class": "other",
+    "object": "건조기",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "작동하다",
+    "가동하다",
+    "운전하다"
+   ],
+   "keywords_en": [
+    "run",
+    "dryer",
+    "operate"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_093",
+   "label": "쓰레기봉투를 교체한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "교체하다",
+    "verb_class": "other",
+    "object": "쓰레기봉투",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "바꾸다",
+    "교환하다",
+    "새로하다"
+   ],
+   "keywords_en": [
+    "replace",
+    "trash bag",
+    "change"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_094",
+   "label": "음식물을 버린다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "버리다",
+    "verb_class": "clean",
+    "object": "음식물",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "처리하다",
+    "제거하다",
+    "청소하다"
+   ],
+   "keywords_en": [
+    "throw away",
+    "food waste",
+    "dispose"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_095",
+   "label": "가스레인지를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "가스레인지",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "stove",
+    "clean"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_096",
+   "label": "창문 레일 안에 있는 먼지를 치운다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "치우다",
+    "verb_class": "clean",
+    "object": "먼지",
+    "object_detail": null,
+    "instrument": null,
+    "location": "창문 레일",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "청소하다",
+    "제거하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "dust",
+    "window rail"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_097",
+   "label": "배수구에 있는 머리카락을 치운다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "치우다",
+    "verb_class": "clean",
+    "object": "머리카락",
+    "object_detail": null,
+    "instrument": null,
+    "location": "배수구",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "제거하다",
+    "청소하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "hair",
+    "drain"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_098",
+   "label": "청소기를 돌린다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "돌리다",
+    "verb_class": "other",
+    "object": "청소기",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "작동하다",
+    "가동하다",
+    "운전하다"
+   ],
+   "keywords_en": [
+    "run",
+    "vacuum cleaner",
+    "operate"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_099",
+   "label": "옷걸이에 옷을 건다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "건다",
+    "verb_class": "other",
+    "object": "옷",
+    "object_detail": null,
+    "instrument": "옷걸이",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "걸다",
+    "배치하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "hang",
+    "clothes",
+    "hanging"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_100",
+   "label": "문서들을 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "문서",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "처리하다"
+   ],
+   "keywords_en": [
+    "organize",
+    "documents",
+    "arrange"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_101",
+   "label": "휴지를 교체한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "교체하다",
+    "verb_class": "other",
+    "object": "휴지",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "바꾸다",
+    "새로하다",
+    "교환하다"
+   ],
+   "keywords_en": [
+    "replace",
+    "tissue",
+    "change"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_102",
+   "label": "약봉투를 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "약봉투",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "처리하다"
+   ],
+   "keywords_en": [
+    "organize",
+    "medicine bag",
+    "arrange"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_103",
+   "label": "책상을 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "책상",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "처리하다"
+   ],
+   "keywords_en": [
+    "organize",
+    "desk",
+    "arrange"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_104",
+   "label": "선반을 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "선반",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "처리하다"
+   ],
+   "keywords_en": [
+    "organize",
+    "shelf",
+    "arrange"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_105",
+   "label": "샤워기 헤드를 대야에 넣는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "샤워기 헤드",
+    "object_detail": null,
+    "instrument": null,
+    "location": "대야",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "배치하다",
+    "정리하다",
+    "담다"
+   ],
+   "keywords_en": [
+    "put",
+    "shower head",
+    "basin"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_106",
+   "label": "소파 밑 먼지를 치운다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "치우다",
+    "verb_class": "clean",
+    "object": "먼지",
+    "object_detail": null,
+    "instrument": null,
+    "location": "소파 밑",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "청소하다",
+    "제거하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "dust",
+    "under sofa"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_107",
+   "label": "소파 쿠션을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "소파 쿠션",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "cushion",
+    "clean"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_108",
+   "label": "천장에 거미줄을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "거미줄",
+    "object_detail": null,
+    "instrument": null,
+    "location": "천장",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "제거하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "cobweb",
+    "ceiling"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_109",
+   "label": "벽 모서리에 먼지를 턴다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "털다",
+    "verb_class": "clean",
+    "object": "먼지",
+    "object_detail": null,
+    "instrument": null,
+    "location": "벽 모서리",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "제거하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "dust",
+    "corner",
+    "remove"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_110",
+   "label": "후드 기름때 제거를 한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "기름때",
+    "object_detail": null,
+    "instrument": null,
+    "location": "후드",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "제거하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "grease",
+    "hood"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_111",
+   "label": "얼룩진 전자레인지를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "전자레인지",
+    "object_detail": "얼룩진",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소",
+    "문지르다",
+    "세척",
+    "닦기"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "microwave"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_112",
+   "label": "욕실 환풍구를 청소한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "청소하다",
+    "verb_class": "clean",
+    "object": "환풍구",
+    "object_detail": "욕실",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "닦다",
+    "청소기"
+   ],
+   "keywords_en": [
+    "clean",
+    "vent",
+    "bathroom"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_113",
+   "label": "변기 뚜껑을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "뚜껑",
+    "object_detail": "변기",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "문지르다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "toilet"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_114",
+   "label": "옷을 다림질 한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "다림질하다",
+    "verb_class": "other",
+    "object": "옷",
+    "object_detail": null,
+    "instrument": "다리미",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "옷다리기",
+    "세탁",
+    "정리"
+   ],
+   "keywords_en": [
+    "iron",
+    "clothes",
+    "press"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_115",
+   "label": "다리미 바닥면을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "바닥면",
+    "object_detail": "다리미",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "문지르다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "iron"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_116",
+   "label": "청소기 필터를 교체한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "교체하다",
+    "verb_class": "other",
+    "object": "필터",
+    "object_detail": "청소기",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "바꾸다",
+    "변경하다",
+    "교환하다"
+   ],
+   "keywords_en": [
+    "replace",
+    "filter",
+    "vacuum"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_117",
+   "label": "마우스를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "마우스",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "문지르다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "mouse"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_118",
+   "label": "컴퓨터 본체에 있는 먼지를 청소한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "청소하다",
+    "verb_class": "clean",
+    "object": "먼지",
+    "object_detail": "컴퓨터 본체에 있는",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "닦다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "clean",
+    "dust",
+    "computer"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_119",
+   "label": "리모컨 버튼을 청소한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "청소하다",
+    "verb_class": "clean",
+    "object": "버튼",
+    "object_detail": "리모컨",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "닦다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "clean",
+    "button",
+    "remote"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_120",
+   "label": "가습기 물통을 세척한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "세척하다",
+    "verb_class": "clean",
+    "object": "물통",
+    "object_detail": "가습기",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "닦다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "wash",
+    "clean",
+    "water tank"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_121",
+   "label": "식기류를 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "식기류",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "정리정돈"
+   ],
+   "keywords_en": [
+    "organize",
+    "tableware",
+    "arrange"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_122",
+   "label": "타일사이 곰팡이를 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "곰팡이",
+    "object_detail": "타일사이",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "닦다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "mold",
+    "tile"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_123",
+   "label": "옷을 바구니에 넣는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "옷",
+    "object_detail": null,
+    "instrument": "바구니",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "배치하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "put",
+    "clothes",
+    "basket"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_124",
+   "label": "의자를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "의자",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "문지르다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "chair"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_125",
+   "label": "책을 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "책",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "정리정돈"
+   ],
+   "keywords_en": [
+    "organize",
+    "books",
+    "arrange"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_126",
+   "label": "옷걸이 봉을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "봉",
+    "object_detail": "옷걸이",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "문지르다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "hanger"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_127",
+   "label": "수납칸을 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "수납칸",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "정리정돈"
+   ],
+   "keywords_en": [
+    "organize",
+    "storage",
+    "arrange"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_128",
+   "label": "창문 잠금장치를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "잠금장치",
+    "object_detail": "창문",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "문지르다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "lock"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_129",
+   "label": "도어락을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "도어락",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "문지르다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "door lock"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_130",
+   "label": "현관 바닥먼지를 청소한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "청소하다",
+    "verb_class": "clean",
+    "object": "먼지",
+    "object_detail": "현관 바닥",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "닦다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "clean",
+    "dust",
+    "entrance"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_131",
+   "label": "막힌 펌프뚜껑을 청소한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "청소하다",
+    "verb_class": "clean",
+    "object": "펌프뚜껑",
+    "object_detail": "막힌",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "닦다",
+    "깨끗하게 하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "clean",
+    "organize",
+    "tidy"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_132",
+   "label": "책상 얼룩을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "얼룩",
+    "object_detail": "책상",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "치우다",
+    "없애다",
+    "청소하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "clean",
+    "wipe"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_133",
+   "label": "신발 얼룩을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "얼룩",
+    "object_detail": "신발",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "치우다",
+    "없애다",
+    "청소하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "clean",
+    "wipe"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_134",
+   "label": "쓰레기통을 비운다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "비우다",
+    "verb_class": "clean",
+    "object": "쓰레기통",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "비우다",
+    "청소하다",
+    "처리하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "empty",
+    "clean",
+    "dispose"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_135",
+   "label": "옷에 있는 먼지를 턴다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "털다",
+    "verb_class": "clean",
+    "object": "먼지",
+    "object_detail": "옷에 있는",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "제거하다",
+    "치우다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "dust",
+    "clean",
+    "remove"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_136",
+   "label": "화장품을 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "clean",
+    "object": "화장품",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "관리하다",
+    "치우다"
+   ],
+   "keywords_en": [
+    "organize",
+    "arrange",
+    "tidy"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_137",
+   "label": "벽 얼룩을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "얼룩",
+    "object_detail": "벽",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "치우다",
+    "없애다",
+    "청소하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "clean",
+    "wipe"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_138",
+   "label": "컵을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "컵",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세척하다",
+    "청소하다",
+    "정리하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "wash"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_139",
+   "label": "에어컨 필터를 세척한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "세척하다",
+    "verb_class": "clean",
+    "object": "필터",
+    "object_detail": "에어컨",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "정리하다",
+    "관리하다",
+    "닦다"
+   ],
+   "keywords_en": [
+    "clean",
+    "wash",
+    "filter"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_140",
+   "label": "멀티탭 먼지를 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "먼지",
+    "object_detail": "멀티탭",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "치우다",
+    "정리하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "clean",
+    "dust"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_141",
+   "label": "청소기 먼지통을 세척한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "세척하다",
+    "verb_class": "clean",
+    "object": "먼지통",
+    "object_detail": "청소기",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "정리하다",
+    "관리하다",
+    "닦다"
+   ],
+   "keywords_en": [
+    "clean",
+    "wash",
+    "dustbin"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_142",
+   "label": "청소기 헤드에 있는 먼지를 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "먼지",
+    "object_detail": "청소기 헤드에 있는",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "치우다",
+    "정리하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "clean",
+    "dust"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_143",
+   "label": "청소기 벽 스위치에 얼룩을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "얼룩",
+    "object_detail": "청소기 벽 스위치에",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "치우다",
+    "정리하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "clean",
+    "wipe"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_144",
+   "label": "가방 먼지를 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "먼지",
+    "object_detail": "가방",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "치우다",
+    "정리하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "clean",
+    "dust"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_145",
+   "label": "니트 보풀을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "보풀",
+    "object_detail": "니트",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "치우다",
+    "정리하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "clean",
+    "lint"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_146",
+   "label": "모자 챙을 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "clean",
+    "object": "챙",
+    "object_detail": "모자",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "배치하다",
+    "관리하다",
+    "치우다"
+   ],
+   "keywords_en": [
+    "organize",
+    "arrange",
+    "tidy"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_147",
+   "label": "식기건조대 세척을 한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "세척하다",
+    "verb_class": "clean",
+    "object": "세척",
+    "object_detail": "식기건조대",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "정리하다",
+    "관리하다",
+    "닦다"
+   ],
+   "keywords_en": [
+    "clean",
+    "wash",
+    "dish rack"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_148",
+   "label": "프라이팬 탄 자국을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "자국",
+    "object_detail": "탄 프라이팬",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "치우다",
+    "정리하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "clean",
+    "stain"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_149",
+   "label": "통에 있는 얼룩을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "얼룩",
+    "object_detail": "통에 있는",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "치우다",
+    "없애다",
+    "청소하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "clean",
+    "wipe"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_150",
+   "label": "도어락 지문을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "지문",
+    "object_detail": "도어락",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "치우다",
+    "정리하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "clean",
+    "fingerprint"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_151",
+   "label": "빗자루에 있는 머리카락을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "머리카락",
+    "object_detail": null,
+    "instrument": "빗자루",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "털",
+    "이물질",
+    "청소",
+    "쓰레기"
+   ],
+   "keywords_en": [
+    "hair",
+    "debris",
+    "cleaning",
+    "dirt"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_152",
+   "label": "인터폰 화면을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "화면",
+    "object_detail": "인터폰",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "screen"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_153",
+   "label": "거울의 화장품자국을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "자국",
+    "object_detail": "화장품",
+    "instrument": null,
+    "location": "거울",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "얼굴",
+    "청소",
+    "지우다"
+   ],
+   "keywords_en": [
+    "mark",
+    "cosmetic",
+    "mirror"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_154",
+   "label": "수도꼭지 물때를 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "물때",
+    "object_detail": "수도꼭지",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "얼룩",
+    "청소",
+    "세척"
+   ],
+   "keywords_en": [
+    "stain",
+    "tap",
+    "cleaning"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_155",
+   "label": "책상 연필자국을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "자국",
+    "object_detail": "연필",
+    "instrument": null,
+    "location": "책상",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "흔적",
+    "청소",
+    "지우다"
+   ],
+   "keywords_en": [
+    "mark",
+    "pencil",
+    "desk"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_156",
+   "label": "스티커자국을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "자국",
+    "object_detail": "스티커",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "흔적",
+    "청소",
+    "지우다"
+   ],
+   "keywords_en": [
+    "mark",
+    "sticker",
+    "cleaning"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_157",
+   "label": "선반 모서리 먼지를 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "먼지",
+    "object_detail": "모서리",
+    "instrument": null,
+    "location": "선반",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소",
+    "지우다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "dust",
+    "corner",
+    "shelf"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_158",
+   "label": "유리창을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "유리창",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소",
+    "세척",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "window",
+    "clean",
+    "wipe"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_159",
+   "label": "로봇 청소기를 돌린다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "돌리다",
+    "verb_class": "other",
+    "object": "청소기",
+    "object_detail": "로봇",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "작동하다",
+    "운전하다",
+    "청소하다"
+   ],
+   "keywords_en": [
+    "robot",
+    "vacuum",
+    "operate"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_160",
+   "label": "걸레에 물을 뺀다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "빼다",
+    "verb_class": "other",
+    "object": "물",
+    "object_detail": null,
+    "instrument": "걸레",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "준비하다",
+    "세척하다"
+   ],
+   "keywords_en": [
+    "water",
+    "mop",
+    "remove"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_161",
+   "label": "계단을 청소한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "청소하다",
+    "verb_class": "clean",
+    "object": "계단",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "닦다",
+    "청소"
+   ],
+   "keywords_en": [
+    "stairs",
+    "clean",
+    "tidy"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_162",
+   "label": "창고바닥을 청소한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "청소하다",
+    "verb_class": "clean",
+    "object": "바닥",
+    "object_detail": "창고",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "닦다",
+    "청소"
+   ],
+   "keywords_en": [
+    "floor",
+    "warehouse",
+    "clean"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_163",
+   "label": "매트보풀을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "보풀",
+    "object_detail": "매트",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소",
+    "정리하다",
+    "지우다"
+   ],
+   "keywords_en": [
+    "lint",
+    "mat",
+    "remove"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_164",
+   "label": "사용한 박스를 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "박스",
+    "object_detail": "사용한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "치우다",
+    "정리"
+   ],
+   "keywords_en": [
+    "box",
+    "used",
+    "organize"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_165",
+   "label": "에스컬레이터 계단을 청소한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "청소하다",
+    "verb_class": "clean",
+    "object": "계단",
+    "object_detail": "에스컬레이터",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "닦다",
+    "청소"
+   ],
+   "keywords_en": [
+    "stairs",
+    "escalator",
+    "clean"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_166",
+   "label": "에스컬레이터 손잡이를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "손잡이",
+    "object_detail": "에스컬레이터",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "handle",
+    "escalator",
+    "wipe"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_167",
+   "label": "버스 손잡이를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "손잡이",
+    "object_detail": "버스",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "handle",
+    "bus",
+    "wipe"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_168",
+   "label": "길거리 쓰레기를 치운다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "치우다",
+    "verb_class": "clean",
+    "object": "쓰레기",
+    "object_detail": "길거리",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "정리하다",
+    "버리다"
+   ],
+   "keywords_en": [
+    "trash",
+    "street",
+    "remove"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_169",
+   "label": "공원 벤치를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "벤치",
+    "object_detail": "공원",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "bench",
+    "park",
+    "wipe"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_170",
+   "label": "화장실바닥을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "바닥",
+    "object_detail": "화장실",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "floor",
+    "toilet",
+    "wipe"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_171",
+   "label": "바닥에 붙은 껌을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "껌",
+    "object_detail": "바닥에 붙은",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "치우다",
+    "없애다",
+    "제거",
+    "청소"
+   ],
+   "keywords_en": [
+    "remove",
+    "clean",
+    "gum"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_172",
+   "label": "엘리베이터 바닥을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "바닥",
+    "object_detail": "엘리베이터",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "문지르다",
+    "세척"
+   ],
+   "keywords_en": [
+    "wipe",
+    "clean",
+    "elevator"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_173",
+   "label": "버스를 청소한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "청소하다",
+    "verb_class": "clean",
+    "object": "버스",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세척",
+    "정리하다",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "clean",
+    "bus",
+    "maintain"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_174",
+   "label": "프라이팬 기름을 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "기름",
+    "object_detail": "프라이팬",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "치우다",
+    "없애다",
+    "세척"
+   ],
+   "keywords_en": [
+    "remove",
+    "oil",
+    "frying pan"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_175",
+   "label": "유리창 물때를 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "물때",
+    "object_detail": "유리창",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "없애다",
+    "세척"
+   ],
+   "keywords_en": [
+    "remove",
+    "water stain",
+    "window"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_176",
+   "label": "창고 먼지를 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "먼지",
+    "object_detail": "창고",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "치우다",
+    "청소하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "remove",
+    "dust",
+    "warehouse"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_177",
+   "label": "분리수거장을 정리한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "정리하다",
+    "verb_class": "sort",
+    "object": "분리수거장",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정돈하다",
+    "관리하다",
+    "청소하다"
+   ],
+   "keywords_en": [
+    "organize",
+    "recycling station",
+    "clean"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_178",
+   "label": "쓰레기봉투를 쓰레기차에 넣는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "쓰레기봉투",
+    "object_detail": null,
+    "instrument": "쓰레기차",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "담다",
+    "배치하다",
+    "이동하다"
+   ],
+   "keywords_en": [
+    "put",
+    "trash bag",
+    "garbage truck"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_179",
+   "label": "막힌 하수구물을 빨아드린다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "빨아들이다",
+    "verb_class": "operate",
+    "object": "하수구물",
+    "object_detail": "막힌",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "흡입하다",
+    "청소하다",
+    "제거하다"
+   ],
+   "keywords_en": [
+    "suck",
+    "drain water",
+    "clean"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_180",
+   "label": "담배꽁초를 제거한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "제거하다",
+    "verb_class": "clean",
+    "object": "담배꽁초",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "치우다",
+    "청소하다",
+    "없애다"
+   ],
+   "keywords_en": [
+    "remove",
+    "cigarette butt",
+    "clean"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_181",
+   "label": "페인트자국을 지운다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "지우다",
+    "verb_class": "clean",
+    "object": "페인트자국",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "없애다",
+    "청소하다",
+    "제거하다"
+   ],
+   "keywords_en": [
+    "erase",
+    "paint stain",
+    "clean"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_182",
+   "label": "물을 뿌린다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "뿌리다",
+    "verb_class": "other",
+    "object": "물",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "흘리다",
+    "분사하다",
+    "적시다"
+   ],
+   "keywords_en": [
+    "spray",
+    "water",
+    "moisten"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_183",
+   "label": "디퓨저를 뿌린다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "뿌리다",
+    "verb_class": "other",
+    "object": "디퓨저",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "분사하다",
+    "향기",
+    "청소하다"
+   ],
+   "keywords_en": [
+    "spray",
+    "diffuser",
+    "clean"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_184",
+   "label": "물기를 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "물기",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "제거하다",
+    "없애다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "moisture",
+    "clean"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_185",
+   "label": "옷을 소독한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "소독하다",
+    "verb_class": "clean",
+    "object": "옷",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "위생",
+    "관리하다"
+   ],
+   "keywords_en": [
+    "disinfect",
+    "clothes",
+    "clean"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_186",
+   "label": "냉장고 선반을 닦는다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "선반",
+    "object_detail": "냉장고",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "세척하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "wipe",
+    "shelf",
+    "refrigerator"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_187",
+   "label": "밀대 헤드를 세척한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "세척하다",
+    "verb_class": "clean",
+    "object": "헤드",
+    "object_detail": "밀대",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "관리하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "clean",
+    "mop head",
+    "maintain"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_188",
+   "label": "화분주변 흙을 청소한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "청소하다",
+    "verb_class": "clean",
+    "object": "흙",
+    "object_detail": "화분주변",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "정리하다",
+    "관리하다",
+    "치우다"
+   ],
+   "keywords_en": [
+    "clean",
+    "soil",
+    "around pot"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_189",
+   "label": "부엌 벽 소스자국을 없앤다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "없애다",
+    "verb_class": "clean",
+    "object": "소스자국",
+    "object_detail": "부엌 벽",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "제거하다",
+    "치우다"
+   ],
+   "keywords_en": [
+    "remove",
+    "sauce stain",
+    "kitchen wall"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_190",
+   "label": "유리창 스퀴지를 세척한다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "세척하다",
+    "verb_class": "clean",
+    "object": "스퀴지",
+    "object_detail": "유리창",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "청소하다",
+    "관리하다",
+    "정리하다"
+   ],
+   "keywords_en": [
+    "clean",
+    "squeegee",
+    "window"
    ],
    "reviewed": false
   }
