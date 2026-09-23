@@ -10,11 +10,71 @@ from pathlib import Path
 _TOKEN_RE = re.compile(r"[0-9A-Za-z가-힣]+")
 
 _JOB_ALIASES: dict[str, tuple[str, ...]] = {
-    "assembly": ("assembly", "조립", "제조", "부품", "생산"),
-    "cafe": ("cafe", "카페", "커피", "음료", "바리스타"),
-    "cleaning": ("cleaning", "청소", "세탁", "세차", "환경미화"),
-    "packaging": ("packaging", "포장", "패킹", "박스포장"),
-    "retail": ("retail", "마트", "매장", "소매", "진열", "피킹", "계산", "배송"),
+    "assembly": (
+        "assembly",
+        "조립",
+        "제조",
+        "부품",
+        "생산",
+    ),
+    "cafe": (
+        "cafe",
+        "카페",
+        "커피",
+        "음료",
+        "바리스타",
+    ),
+    "cleaning": (
+        "cleaning",
+        "청소",
+        "세탁",
+        "세차",
+        "환경미화",
+    ),
+    "packaging": (
+        "packaging",
+        "포장",
+        "패킹",
+        "박스포장",
+    ),
+    "retail": (
+        "retail",
+        "마트",
+        "매장",
+        "소매",
+        "피킹",
+        "계산",
+    ),
+    "serving": (
+        "serving",
+        "서빙",
+        "배식",
+        "식당",
+        "음식점",
+        "홀서빙",
+    ),
+    "display": (
+        "display",
+        "진열",
+        "상품진열",
+        "매대",
+        "진열대",
+    ),
+    "delivery": (
+        "delivery",
+        "배송",
+        "배달",
+        "택배",
+        "배송원",
+        "배달원",
+    ),
+    "gas": (
+        "gas",
+        "주유",
+        "주유소",
+        "주유원",
+        "주유작업",
+    ),
 }
 
 _PARTICLES = (
@@ -156,7 +216,13 @@ def _expand_tools(words: set[str]) -> set[str]:
 def infer_job(context: dict | None = None, query: str = "") -> str | None:
     ctx = context or {}
     haystack = " ".join(
-        str(ctx.get(key, "")) for key in ("business_type", "work_environment", "job")
+        str(ctx.get(key, ""))
+        for key in (
+            "business_type",
+            "work_environment",
+            "job",
+            "job_hint",
+        )
     ) + " " + query
     norm = _normalize(haystack)
     scores: list[tuple[int, str]] = []
@@ -165,6 +231,59 @@ def infer_job(context: dict | None = None, query: str = "") -> str | None:
         if count:
             scores.append((count, job))
     return max(scores)[1] if scores else None
+
+
+def _canonical_job(value: str) -> str | None:
+    """명시적으로 전달된 직무명을 내부 canonical job으로 바꾼다."""
+    norm = _normalize(value)
+    if not norm:
+        return None
+    if norm in _JOB_ALIASES:
+        return norm
+
+    for job, aliases in _JOB_ALIASES.items():
+        for alias in aliases:
+            alias_norm = _normalize(alias)
+            if alias_norm and (norm == alias_norm or alias_norm in norm):
+                return job
+    return None
+
+
+def _explicit_job(context: dict | None) -> str | None:
+    """context.job이 명시됐을 때만 hard gate에 사용할 직무를 돌려준다.
+
+    business_type/work_environment/query에서 추론한 직무는 오분류 가능성이 있으므로
+    hard gate에 쓰지 않고 기존처럼 약한 선호 신호로만 사용한다.
+    """
+    ctx = context or {}
+    return _canonical_job(str(ctx.get("job") or ""))
+
+
+_NEGATIVE_PATTERNS = (
+    "하지 않는다",
+    "하지않는다",
+    "하지 마세요",
+    "하지마세요",
+    "하지 말",
+    "하지말",
+    "지 않는다",
+    "지않는다",
+    "지 마세요",
+    "지마세요",
+    "지 말",
+    "지말",
+    "않는다",
+    "않아요",
+    "말아 주세요",
+    "말아주세요",
+    "금지",
+)
+
+
+def _is_negative_text(text: str) -> bool:
+    """금지/부정 지시인지 가볍게 판별한다."""
+    normalized = " ".join(str(text or "").strip().split())
+    return any(pattern in normalized for pattern in _NEGATIVE_PATTERNS)
 
 
 @lru_cache(maxsize=1)
@@ -235,6 +354,16 @@ def load_assets() -> list[dict]:
         asset["_frame"] = frame
         asset["_is_object_card"] = bool(frame.get("is_object_card"))
         asset["_verb_class"] = frame.get("verb_class")
+
+        # 현재 인덱스에 polarity가 없어도 label에서 안전하게 추론한다.
+        # 추후 frame.polarity가 생기면 그 값을 우선 사용한다.
+        polarity = str(frame.get("polarity") or "").strip().lower()
+        if polarity == "negative":
+            asset["_negative"] = True
+        elif polarity == "positive":
+            asset["_negative"] = False
+        else:
+            asset["_negative"] = _is_negative_text(label)
     return assets
 
 
@@ -334,12 +463,12 @@ _VERB_MATCH_BONUS = 0.10
 
 
 class _QueryFeatures:
-    """질의를 한 번만 분석해 자산 401개에 재사용한다.
+    """질의를 한 번만 분석해 전체 AAC 자산에 재사용한다.
 
-    예전에는 자산마다 형태소 추출을 다시 해서 질의 하나에 401번 돌았다.
+    예전에는 자산마다 형태소 추출을 다시 해서 질의 하나에 자산 수만큼 반복해서 돌았다.
     """
 
-    __slots__ = ("norm", "tokens", "bigrams", "lemmas", "tools")
+    __slots__ = ("norm", "tokens", "bigrams", "lemmas", "tools", "negative")
 
     def __init__(self, query: str) -> None:
         self.norm = _normalize(query)
@@ -350,6 +479,7 @@ class _QueryFeatures:
         # "갈아주세요"와 "갈다"가 만나지 못한다.
         self.tokens = _tokens(query) | self.lemmas | self.tools
         self.bigrams = _bigrams(query)
+        self.negative = _is_negative_text(query)
 
 
 def _relevance(asset: dict, qf: _QueryFeatures) -> float:
@@ -504,32 +634,72 @@ def _dedupe(ranked: list[tuple[float, dict]]) -> list[tuple[float, dict]]:
     return out
 
 
+
+
+
 def search_assets(query: str, context: dict | None = None, limit: int = 5) -> list[dict]:
-    ctx = context or {}
-    preferred_job = infer_job(ctx, query)
-    action_type = str(ctx.get("action_type") or "") or None
-    # 단계 문장이 있으면 그것으로 판단한다. query에는 symbol_query가 섞여 있어
-    # 문장 형태가 흐려지기 때문이다.
-    is_instruction = _is_instruction(str(ctx.get("sentence") or query))
-    qf = _QueryFeatures(query)  # 질의 분석은 한 번만 — 자산마다 다시 하면 401번 돈다.
+    """자연어 질의와 가장 가까운 AAC 자산을 찾는다.
+
+    검색 정책:
+    - context.job이 명시된 경우: 해당 직무 자산만 검색(hard gate)
+    - job이 명시되지 않은 경우: infer_job()은 기존처럼 약한 tiebreak로만 사용
+    - 지시문에서는 긍정/금지 의미가 반대인 action 카드를 후보에서 제외
+    - 나머지 점수 계산은 기존 relevance/verb_class/tiebreak 로직을 그대로 사용
+    """
+    ctx = dict(context or {})
+    query = str(query or "").strip()
+    if not query:
+        return []
+
+    explicit_job = _explicit_job(ctx)
+    preferred_job = explicit_job or infer_job(ctx, query)
+    action_type = str(ctx.get("action_type") or "").strip() or None
+
+    sentence = str(ctx.get("sentence") or query).strip()
+    is_instruction = _is_instruction(sentence)
+    qf = _QueryFeatures(query)
+
+    assets = load_assets()
+
+    # LLM/상위 계층에서 canonical job을 명시한 경우 다른 직무 카드를 섞지 않는다.
+    # 반대로 business_type/query에서 추론된 job은 hard gate하지 않는다.
+    if explicit_job:
+        assets = [asset for asset in assets if asset.get("job") == explicit_job]
 
     ranked: list[tuple[float, dict]] = []
-    for asset in load_assets():
-        score = _score_asset(asset, qf, preferred_job, action_type, is_instruction)
+    for asset in assets:
+        # "조인다"와 "조이지 않는다"처럼 의미가 반대인 카드는 지시문에서 제외한다.
+        # 사물 카드/명사 검색에는 이 gate를 적용하지 않는다.
+        if (
+            is_instruction
+            and asset.get("asset_type") == "action"
+            and bool(asset.get("_negative", False)) != qf.negative
+        ):
+            continue
+
+        score = _score_asset(
+            asset,
+            qf,
+            preferred_job,
+            action_type,
+            is_instruction,
+        )
         if score <= 0:
             continue
         ranked.append((score, asset))
+
     ranked.sort(key=lambda item: (-item[0], item[1].get("id", "")))
+    ranked = _dedupe(ranked)
 
     results: list[dict] = []
-    for score, asset in _dedupe(ranked)[: max(1, limit)]:
+    for score, asset in ranked[: max(1, limit)]:
         results.append({
             "asset_id": asset["id"],
             "group_id": asset.get("group_id") or asset["id"],
             "job": asset.get("job", ""),
             "asset_type": asset.get("asset_type", "action"),
             "label": asset.get("label", ""),
-            "image_url": f"/api/aac/images/{asset['image']}",
+            "image_url": f"/api/aac/images/{asset.get('image', '')}",
             "score": round(score, 4),
         })
     return results

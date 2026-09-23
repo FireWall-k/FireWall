@@ -7,12 +7,11 @@ from __future__ import annotations
 
 from typing import Literal
 
+from taxonomy import ActionType, JobType
+
 from pydantic import BaseModel, Field
 
 # --- /ai/decompose ---------------------------------------------------------
-
-ActionType = Literal["observe", "move", "stack", "sort", "pack", "clean", "other"]
-
 
 class Keyword(BaseModel):
     term: str
@@ -36,6 +35,7 @@ class DecomposeRequest(BaseModel):
 
 class DecomposeResult(BaseModel):
     task_title: str
+    job: JobType = "unknown"
     steps: list[Step]
 
 

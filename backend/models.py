@@ -71,6 +71,9 @@ class Task(Base):
     # 재검색할 수 없어, 생성 시 판정과 후보 목록이 어긋난다.
     business_type: Mapped[str] = mapped_column(String, default="")
     work_environment: Mapped[str] = mapped_column(String, default="")
+    # LLM이 생성한 canonical job. 직무 생성 시에만 사용되며, 이후에는 변경되지 않는다.
+    job: Mapped[str] = mapped_column(String, default="")
+
     # draft -> published -> archived
     status: Mapped[str] = mapped_column(String, default="draft")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)

@@ -16,10 +16,14 @@ import re
 
 import llm
 from schemas import DecomposeResult, Keyword, Step
+from taxonomy import VALID_ACTION_TYPES, VALID_JOBS, infer_job_text
 
 logger = logging.getLogger("ai_harness.decompose")
 
 _ACTION_HINTS = {
+    "assemble": ["조립", "결합", "끼우", "연결", "체결", "조이", "맞추", "고정", "부착", "교체"],
+    "wear": ["착용", "입", "신", "보안경", "작업모", "장갑"],
+    "operate": ["누르", "켜", "끄", "작동", "스위치", "버튼"],
     "move": ["옮기", "옮겨", "이동", "넣", "빼", "꺼내", "가져"],
     "stack": ["쌓", "적재", "포개"],
     "sort": ["분류", "나누", "구분", "정리"],
@@ -138,10 +142,11 @@ def _rule_decompose(raw_input: str, context: dict) -> DecomposeResult:
         ))
 
     title = (chunks[0][:20] if chunks else "직무")
-    return DecomposeResult(task_title=title, steps=steps)
+    job_text = " ".join(str(context.get(k, "")) for k in ("job", "business_type", "work_environment"))
+    return DecomposeResult(task_title=title, job=infer_job_text(job_text + " " + raw_input), steps=steps)
 
 
-_VALID_ACTIONS = {"observe", "move", "stack", "sort", "pack", "clean", "other"}
+_VALID_ACTIONS = VALID_ACTION_TYPES
 _MAX_STEPS = 10
 _MAX_SENTENCE = 120
 
@@ -172,7 +177,10 @@ def _build_from_llm(raw: dict) -> DecomposeResult:
     if not steps:
         raise ValueError("LLM 응답에서 유효한 단계를 만들지 못했습니다.")
     title = str(raw.get("task_title") or steps[0].sentence)[:40]
-    return DecomposeResult(task_title=title, steps=steps)
+    job = str(raw.get("job") or "unknown")
+    if job not in VALID_JOBS:
+        job = "unknown"
+    return DecomposeResult(task_title=title, job=job, steps=steps)
 
 
 def decompose(raw_input: str, context: dict) -> DecomposeResult:

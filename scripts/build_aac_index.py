@@ -41,12 +41,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "ai_service"))
 
+from taxonomy import VALID_ACTION_TYPES
+
 ASSETS_PATH = ROOT / "data" / "aac" / "aac_assets.json"
 INDEX_PATH = ROOT / "data" / "aac" / "aac_index.json"
 
-# decompose 프롬프트(ai_service/llm.py)의 action_type과 같은 분류를 쓴다.
-# 질의 쪽 action_type과 자산 쪽 verb_class가 같은 축에 있어야 비교가 된다.
-VERB_CLASSES = {"observe", "move", "stack", "sort", "pack", "clean", "wear", "operate", "other"}
+# 질의 action_type과 자산 verb_class는 taxonomy.py의 같은 축을 사용한다.
+VERB_CLASSES = VALID_ACTION_TYPES
 
 BATCH_SIZE = 20
 
@@ -63,10 +64,14 @@ _SYSTEM = (
     "각 항목 규칙:\n"
     "1) verb: 동작의 기본형(사전형). '쓸어낸다'→'쓸다', '담는다'→'담다', "
     "'착용한다'→'착용하다'. 사물 카드는 null.\n"
-    "2) verb_class: observe(보다/확인/세다), move(옮기다/넣다/꺼내다/놓다/건네다), "
-    "stack(쌓다/적재), sort(분류/나누다/골라내다), pack(담다/포장/밀봉), "
-    "clean(닦다/씻다/쓸다/치우다/버리다), wear(착용/입다/신다/끼다), "
-    "operate(누르다/켜다/끄다/기계 조작), other. 사물 카드는 null.\n"
+    "2) verb_class는 모든 직무가 공유하는 상위 행동군 하나를 고릅니다. 세부 동작은 verb에 남깁니다.\n"
+    "   observe=보다/확인/검사/비교/세다, move=가져오다/옮기다/놓다/꺼내다/전달하다,\n"
+    "   sort=분류/나누다/구분/정리, stack=쌓다/적재, pack=담다/포장/밀봉/접다,\n"
+    "   clean=닦다/씻다/쓸다/치우다/버리다, wear=사람이 작업복·보호구를 착용/벗다,\n"
+    "   operate=버튼·스위치·기계·일반 도구 조작,\n"
+    "   assemble=부품 결합/끼움/연결/체결/맞춤/부착/분리/교체/재조립, other=그 밖의 동작.\n"
+    "   주의: '장갑을 끼다'는 wear, '부품을 홈에 끼우다'는 assemble입니다. "
+    "'나사를 넣다/조이다'가 조립 과정이면 assemble입니다. 사물 카드는 null.\n"
     "3) object: 대상의 **핵심 명사 하나만**. 수식어를 반드시 떼어냅니다.\n"
     "   '빈 포장 봉투'→'봉투', '같은 제품'→'제품', '제품의 방향'→'방향', "
     "'새 쓰레기봉투'→'쓰레기봉투', '완성된 음료'→'음료'. 두 단어 이상이면 잘못된 것입니다.\n"
