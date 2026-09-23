@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import WorkerPage from "../src/pages/WorkerPage";
 
 const logStep = vi.fn().mockResolvedValue({ ok: true });
@@ -38,14 +38,25 @@ beforeEach(() => {
 async function renderAndWait() {
   render(<WorkerPage />);
   await screen.findByText("상자를 옮기세요");
+  // 문장 텍스트는 커밋 시점에 바로 DOM에 반영되지만, 소요시간 측정을 시작하는
+  // useEffect(stepStartRef.current = Date.now())는 그 다음 tick의 passive effect라
+  // 둘 사이에 간극이 있다. 시스템이 느리면(전체 스위트를 함께 돌릴 때) findByText가
+  // 먼저 끝나버려 시작 시각이 아직 0인 채로 클릭이 들어가 "경과 120초 이상"으로
+  // 오판했다(실측, 간헐적 실패). act(async () => {})로 남은 effect를 마저 흘려보낸다.
+  await act(async () => {});
 }
 
 describe("WorkerPage stuck 수집", () => {
   it("정상 완료 시 stuck=false 로 보고한다", async () => {
+    // 소요시간(실제 경과 시간)이 120초를 넘으면 stuck=true가 된다. 전체 테스트 스위트를
+    // 같이 돌릴 때 시스템이 느려지면 렌더~클릭 사이 실제 시간이 드물게 그 문턱을 넘어
+    // 간헐적으로 실패했다(실측). Date.now()를 고정해 경과 시간을 0으로 만든다.
+    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(1_700_000_000_000);
     await renderAndWait();
     fireEvent.click(screen.getByText("✓ 완료"));
     await waitFor(() => expect(logStep).toHaveBeenCalled());
     expect(logStep.mock.calls[0][0]).toMatchObject({ step_id: "s1", stuck: false });
+    nowSpy.mockRestore();
   });
 
   it("'도움이 필요해요'를 누르면 stuck=true 로 보고한다", async () => {
