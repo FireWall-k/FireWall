@@ -146,6 +146,20 @@ class TodayCardOut(BaseModel):
     steps: list[StepOut]
 
 
+class HistoryStepOut(StepOut):
+    completed: bool
+
+
+class HistoryCardOut(BaseModel):
+    """근로자 본인이 지난번에 받았던 일 — 완료 후에도 다시 열어 볼 수 있게 한다."""
+    assignment_id: str
+    task_id: str
+    task_title: str
+    assigned_date: str  # YYYY-MM-DD, 근로자 현지 기준(APP_UTC_OFFSET_HOURS)
+    status: str
+    steps: list[HistoryStepOut]
+
+
 class StepStat(BaseModel):
     order: int
     sentence: str

@@ -62,6 +62,19 @@ export interface TodayCard {
   steps: Step[];
 }
 
+export interface HistoryStep extends Step {
+  completed: boolean;
+}
+
+export interface HistoryCard {
+  assignment_id: string;
+  task_id: string;
+  task_title: string;
+  assigned_date: string; // YYYY-MM-DD
+  status: string;
+  steps: HistoryStep[];
+}
+
 export interface StepStat {
   order: number;
   sentence: string;
@@ -249,6 +262,8 @@ export const api = {
     }),
   deleteWorker: (id: string) => req<{ ok: boolean }>(`/api/workers/${id}`, { method: "DELETE" }),
   today: () => req<TodayCard[]>("/api/worker/me/today"),
+  /** 근로자 본인이 받았던 일 전체(완료 포함, 최신순) — '오늘 할 일'은 완료되면 빠지므로 복습용. */
+  history: () => req<HistoryCard[]>("/api/worker/me/history"),
   logStep: (body: {
     assignment_id: string;
     step_id: string;

@@ -86,6 +86,33 @@ def test_end_to_end_with_stuck(client, employer_token, worker_token):
     assert dash["stuck_steps"] == [2], dash["stuck_steps"]
 
 
+def test_completed_task_disappears_from_today_but_stays_in_history(client, employer_token, worker_token):
+    """완료한 일은 '오늘 할 일'에서 빠지지만, '지난 일'에서는 계속 볼 수 있어야 한다."""
+    task, assignment = _make_published_task(client, employer_token)
+    steps = client.get("/api/worker/me/today", headers=auth(worker_token)).json()[0]["steps"]
+
+    for step in steps:
+        client.post("/api/performance-logs", headers=auth(worker_token), json={
+            "assignment_id": assignment["id"], "step_id": step["id"],
+            "duration_sec": 5.0, "replay_count": 0, "stuck": False})
+
+    today = client.get("/api/worker/me/today", headers=auth(worker_token)).json()
+    assert assignment["id"] not in [c["assignment_id"] for c in today]
+
+    history = client.get("/api/worker/me/history", headers=auth(worker_token))
+    assert history.status_code == 200
+    card = next(c for c in history.json() if c["assignment_id"] == assignment["id"])
+    assert card["task_title"] == task["title"]
+    assert card["status"] == "done"
+    assert all(s["completed"] for s in card["steps"])
+
+
+def test_history_requires_worker_auth(client, employer_token):
+    assert client.get("/api/worker/me/history").status_code == 401
+    # 사업주 토큰으로는 근로자 전용 엔드포인트를 못 부른다.
+    assert client.get("/api/worker/me/history", headers=auth(employer_token)).status_code == 403
+
+
 def test_performance_log_is_upserted(client, employer_token, worker_token):
     task, assignment = _make_published_task(client, employer_token)
     steps = client.get("/api/worker/me/today", headers=auth(worker_token)).json()[0]["steps"]

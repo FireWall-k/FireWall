@@ -48,6 +48,8 @@ from schemas import (
     DashboardOut,
     DashboardWorkerOut,
     EmployerLogin,
+    HistoryCardOut,
+    HistoryStepOut,
     PerformanceLogCreate,
     StepCreate,
     StepOut,
@@ -701,6 +703,42 @@ def worker_today(db: Session = Depends(get_db),
         out.append(TodayCardOut(
             assignment_id=a.id, task_id=task.id, task_title=task.title,
             steps=[_step_to_out(s) for s in task.steps],
+        ))
+    return out
+
+
+@app.get("/api/worker/me/history", response_model=list[HistoryCardOut])
+def worker_history(db: Session = Depends(get_db),
+                   user: dict = Depends(require_worker)) -> list[HistoryCardOut]:
+    """근로자 본인이 받았던 일을 전부 최신순으로 돌려준다(오늘 것 포함).
+
+    /api/worker/me/today는 완료된 배정을 목록에서 뺀다(다음 일에 집중하게 하려는 설계)
+    — 그 결과 근로자가 끝낸 일을 다시 열어 볼 방법이 없었다. 이 API로 지난 단계별
+    그림·문장을 다시 볼 수 있다(완료 처리는 하지 않는 읽기 전용 복습 용도).
+    """
+    assignments = db.scalars(
+        select(Assignment)
+        .where(Assignment.worker_id == user["sub"])
+        .order_by(Assignment.assigned_date.desc())
+    ).all()
+    offset = timedelta(hours=APP_UTC_OFFSET_HOURS)
+    out: list[HistoryCardOut] = []
+    for a in assignments:
+        task = db.get(Task, a.task_id)
+        if task is None:
+            continue
+        completed_step_ids = set(db.scalars(
+            select(PerformanceLog.step_id).where(PerformanceLog.assignment_id == a.id)
+        ).all())
+        out.append(HistoryCardOut(
+            assignment_id=a.id, task_id=task.id, task_title=task.title,
+            assigned_date=(a.assigned_date + offset).date().isoformat(),
+            status=a.status,
+            steps=[
+                HistoryStepOut(**_step_to_out(s).model_dump(),
+                               completed=s.id in completed_step_ids)
+                for s in task.steps
+            ],
         ))
     return out
 
