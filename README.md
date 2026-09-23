@@ -335,9 +335,14 @@ cd ai_service && pip install -r requirements.txt pytest && python -m pytest -q
 
 # 백엔드 통합 테스트(인증/소유권/막힘/업서트/입력검증 + TTS 합성 경로)
 cd backend && pip install -r requirements.txt pytest && python -m pytest -q
+
+# 프론트엔드 컴포넌트 테스트(Vitest + Testing Library, frontend/tests/)
+cd frontend && npm install && npm test
 ```
 
-프론트엔드는 아직 자동화 테스트가 없습니다(`npm run lint`만 있습니다).
+`frontend/tests/`에는 로그인·근로자 화면(오늘 할 일/지난 일 보기)·사업주 화면(사진 업로드/다인
+배정)·동작 시각화 테스트가 있습니다. `DashboardPage.test.tsx`는 오래돼 지금 화면과 안 맞습니다
+(다중 근로자 조회 흐름 도입 전 버전 기준) — 알려진 상태이며 따로 다시 써야 합니다.
 
 LLM·코칭·임베딩 테스트는 OpenAI 호출만 가짜로 대체해 프롬프트→JSON 파싱→스키마 검증→폴백까지
 실제 코드를 실행합니다(실 키 불필요). TTS 합성 테스트는 Google 클라이언트만 가짜로 대체하고

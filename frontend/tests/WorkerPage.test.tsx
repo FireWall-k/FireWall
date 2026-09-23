@@ -4,11 +4,13 @@ import WorkerPage from "../src/pages/WorkerPage";
 
 const logStep = vi.fn().mockResolvedValue({ ok: true });
 const today = vi.fn();
+const history = vi.fn();
 
 vi.mock("../src/api", () => ({
   AuthError: class extends Error {},
   api: {
     today: () => today(),
+    history: () => history(),
     logStep: (b: unknown) => logStep(b),
   },
 }));
@@ -29,6 +31,8 @@ beforeEach(() => {
   logStep.mockClear();
   today.mockReset();
   today.mockResolvedValue([card]);
+  history.mockReset();
+  history.mockResolvedValue([]);
 });
 
 async function renderAndWait() {
@@ -83,4 +87,41 @@ describe("WorkerPage stuck 수집", () => {
     expect(screen.getByText("옮기기")).toBeInTheDocument();
   });
 
+});
+
+// ---------- 지난 일 보기(이번 세션에 추가된 기능) ----------
+// 완료한 일은 today()에서 빠지므로, history()로 다시 볼 수 있는지 검증한다.
+
+describe("WorkerPage 지난 일 보기", () => {
+  const historyCard = {
+    assignment_id: "asg-0", task_id: "task-0", task_title: "바닥 청소",
+    assigned_date: "2026-09-20", status: "done",
+    steps: [
+      { id: "s0", order: 1, sentence: "바닥을 쓸어주세요", action_type: "clean",
+        symbol_url: null, symbol_source: "fallback", needs_fallback: false,
+        tts_audio_url: null, completed: true },
+    ],
+  };
+
+  it("탭을 누르면 완료한 일을 목록으로 보여주고, 눌러 열면 그림을 다시 볼 수 있다", async () => {
+    history.mockResolvedValue([historyCard]);
+    await renderAndWait();
+
+    fireEvent.click(screen.getByText("지난 일 보기"));
+    await screen.findByText("바닥 청소");
+    expect(history).toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText("바닥 청소"));
+    await screen.findByText("바닥을 쓸어주세요");
+    expect(screen.getByText("✓ 완료했어요")).toBeInTheDocument();
+    // 복습 화면은 읽기 전용이다 — 완료 처리를 다시 하면 안 된다.
+    expect(screen.queryByText("✓ 완료")).not.toBeInTheDocument();
+  });
+
+  it("받은 일이 없으면 안내 문구를 보여준다", async () => {
+    history.mockResolvedValue([]);
+    await renderAndWait();
+    fireEvent.click(screen.getByText("지난 일 보기"));
+    await screen.findByText("아직 받은 일이 없어요.");
+  });
 });
