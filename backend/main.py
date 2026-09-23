@@ -645,42 +645,53 @@ def search_aac(
     )
 
 
-# --- 사업주: 근로자에게 배정 ---
-@app.post("/api/tasks/{task_id}/assignments", response_model=AssignmentOut)
+# --- 사업주: 근로자에게 배정(여러 명 동시 가능) ---
+@app.post("/api/tasks/{task_id}/assignments", response_model=list[AssignmentOut])
 def assign_task(task_id: str, payload: AssignRequest = AssignRequest(),
                 db: Session = Depends(get_db),
-                user: dict = Depends(require_employer)) -> AssignmentOut:
+                user: dict = Depends(require_employer)) -> list[AssignmentOut]:
     task = _owned_task(task_id, user["sub"], db)
     if task.status != "published":
         raise HTTPException(status_code=400, detail="게시된 직무만 배정할 수 있습니다.")
 
-    if payload.worker_id:
-        worker = db.get(Worker, payload.worker_id)
-        if worker is None or worker.employer_id != user["sub"]:
-            raise HTTPException(status_code=404, detail="해당 근로자를 찾을 수 없습니다.")
+    if payload.worker_ids:
+        worker_ids = list(dict.fromkeys(payload.worker_ids))  # 순서 보존 중복 제거
+    elif payload.worker_id:
+        worker_ids = [payload.worker_id]
     else:
-        workers = db.scalars(select(Worker).where(Worker.employer_id == user["sub"])).all()
-        if len(workers) != 1:
+        all_workers = db.scalars(select(Worker).where(Worker.employer_id == user["sub"])).all()
+        if len(all_workers) != 1:
             raise HTTPException(status_code=400, detail="배정할 근로자를 지정해 주세요.")
-        worker = workers[0]
+        worker_ids = [all_workers[0].id]
 
-    # 같은 직무를 같은 근로자에게 이미(미완료로) 배정했다면 중복 생성하지 않고 그대로 돌려준다.
-    existing = db.scalar(
-        select(Assignment).where(
-            Assignment.task_id == task_id,
-            Assignment.worker_id == worker.id,
-            Assignment.status != "done",
+    workers = db.scalars(select(Worker).where(Worker.id.in_(worker_ids))).all()
+    found_by_id = {w.id: w for w in workers}
+    for wid in worker_ids:
+        w = found_by_id.get(wid)
+        if w is None or w.employer_id != user["sub"]:
+            raise HTTPException(status_code=404, detail="해당 근로자를 찾을 수 없습니다.")
+
+    out: list[AssignmentOut] = []
+    for wid in worker_ids:
+        # 같은 직무를 같은 근로자에게 이미(미완료로) 배정했다면 중복 생성하지 않고 그대로 돌려준다.
+        existing = db.scalar(
+            select(Assignment).where(
+                Assignment.task_id == task_id,
+                Assignment.worker_id == wid,
+                Assignment.status != "done",
+            )
         )
-    )
-    if existing is not None:
-        return AssignmentOut(id=existing.id, task_id=existing.task_id,
-                             worker_id=existing.worker_id, status=existing.status)
+        if existing is not None:
+            out.append(AssignmentOut(id=existing.id, task_id=existing.task_id,
+                                     worker_id=existing.worker_id, status=existing.status))
+            continue
+        a = Assignment(task_id=task_id, worker_id=wid, status="assigned")
+        db.add(a)
+        db.flush()
+        out.append(AssignmentOut(id=a.id, task_id=a.task_id, worker_id=a.worker_id, status=a.status))
 
-    a = Assignment(task_id=task_id, worker_id=worker.id, status="assigned")
-    db.add(a)
     db.commit()
-    db.refresh(a)
-    return AssignmentOut(id=a.id, task_id=a.task_id, worker_id=a.worker_id, status=a.status)
+    return out
 
 
 # --- 근로자: 오늘의 카드 ---

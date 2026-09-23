@@ -246,11 +246,12 @@ export const api = {
   },
   removeStepPhoto: (taskId: string, stepId: string) =>
     req<Step>(`/api/tasks/${taskId}/steps/${stepId}/photo`, { method: "DELETE" }),
-  assign: (id: string, worker_id?: string) =>
-    req<{ id: string }>(`/api/tasks/${id}/assignments`, {
-      method: "POST",
-      body: JSON.stringify({ worker_id: worker_id ?? null }),
-    }),
+  /** 근로자 한 명 이상에게 게시된 직무를 배정한다(빈 배열이면 사업주의 유일한 근로자에게 자동 배정). */
+  assign: (id: string, workerIds: string[] = []) =>
+    req<{ id: string; task_id: string; worker_id: string; status: string }[]>(
+      `/api/tasks/${id}/assignments`,
+      { method: "POST", body: JSON.stringify({ worker_ids: workerIds }) },
+    ),
   listWorkers: () => req<Worker[]>("/api/workers"),
   workerTasks: (workerId: string, date?: string) =>
     req<TaskSummary[]>(`/api/workers/${workerId}/tasks${date ? `?date=${date}` : ""}`),

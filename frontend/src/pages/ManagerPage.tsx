@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { api, type AacMatch, type StepSymbolCandidates, type Task, type Worker } from "../api";
 import { ActionChip } from "../actions";
@@ -30,11 +30,34 @@ export default function ManagerPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // 1:N — 사업주의 근로자 목록 + 배정 대상 선택 + 인라인 추가
+  // 1:N — 사업주의 근로자 목록 + 배정 대상(여러 명) 선택 + 인라인 추가
   const [workers, setWorkers] = useState<Worker[]>([]);
-  const [selectedWorkerId, setSelectedWorkerId] = useState("");
+  const [selectedWorkerIds, setSelectedWorkerIds] = useState<Set<string>>(new Set());
   const [newWorkerName, setNewWorkerName] = useState("");
   const [newWorkerCode, setNewWorkerCode] = useState("");
+
+  // "보내기" 결과를 버튼 바로 아래에도 보여준다 — 상단 배너(notice)는 직무 내용이 길면
+  // 스크롤 밖으로 벗어나 눈에 안 띄기 때문에(실사용에서 발견), 버튼 옆에 한 번 더 알려준다.
+  const [assignFeedback, setAssignFeedback] = useState<{ ok: boolean; text: string } | null>(null);
+  const assignFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (assignFeedbackTimer.current) clearTimeout(assignFeedbackTimer.current); }, []);
+
+  function flashAssignFeedback(ok: boolean, text: string) {
+    setAssignFeedback({ ok, text });
+    if (assignFeedbackTimer.current) clearTimeout(assignFeedbackTimer.current);
+    // 성공 메시지는 잠시 후 저절로 사라진다(계속 남아 있으면 "또 보낸 건가?" 헷갈릴 수 있어서).
+    // 실패 메시지는 사용자가 알아챌 때까지 남겨둔다.
+    if (ok) assignFeedbackTimer.current = setTimeout(() => setAssignFeedback(null), 5000);
+  }
+
+  function toggleWorkerSelected(id: string) {
+    setSelectedWorkerIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   // 그림을 자동으로 못 고른 단계의 후보 목록 (stepId -> 후보/사유)
   const [stepCandidates, setStepCandidates] = useState<Record<string, StepSymbolCandidates>>({});
@@ -48,7 +71,7 @@ export default function ManagerPage() {
     api.listWorkers()
       .then((ws) => {
         setWorkers(ws);
-        if (ws.length) setSelectedWorkerId((cur) => cur || ws[0].id);
+        if (ws.length) setSelectedWorkerIds((cur) => (cur.size ? cur : new Set([ws[0].id])));
       })
       .catch(() => {
         // 근로자 목록 로드 실패는 직무 작성 자체를 막지 않는다.
@@ -220,7 +243,7 @@ export default function ManagerPage() {
     try {
       const w = await api.createWorker(newWorkerName.trim(), newWorkerCode.trim());
       setWorkers((prev) => [...prev, w]);
-      setSelectedWorkerId(w.id);
+      setSelectedWorkerIds((prev) => new Set(prev).add(w.id));
       setNewWorkerName("");
       setNewWorkerCode("");
       setNotice(`근로자 '${w.display_name}'을(를) 추가했습니다.`);
@@ -241,7 +264,12 @@ export default function ManagerPage() {
       await api.deleteWorker(workerId);
       const remaining = workers.filter((w) => w.id !== workerId);
       setWorkers(remaining);
-      if (selectedWorkerId === workerId) setSelectedWorkerId(remaining[0]?.id ?? "");
+      setSelectedWorkerIds((prev) => {
+        if (!prev.has(workerId)) return prev;
+        const next = new Set(prev);
+        next.delete(workerId);
+        return next;
+      });
       setNotice(`근로자 '${name}'을(를) 삭제했습니다.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "근로자 삭제에 실패했습니다.");
@@ -250,23 +278,29 @@ export default function ManagerPage() {
 
   async function handlePublishAndAssign() {
     if (!task) return;
-    if (!selectedWorkerId) {
-      setError("보낼 근로자를 선택해 주세요.");
+    if (selectedWorkerIds.size === 0) {
+      flashAssignFeedback(false, "보낼 근로자를 한 명 이상 선택해 주세요.");
       return;
     }
     setBusy(true);
     setError(null);
     setNotice(null);
+    setAssignFeedback(null);
     try {
       if (task.status !== "published") {
         await api.publish(task.id);
         setTask({ ...task, status: "published" });
       }
-      await api.assign(task.id, selectedWorkerId);
-      const w = workers.find((x) => x.id === selectedWorkerId);
-      setNotice(`'${w?.display_name ?? "근로자"}'님에게 보냈습니다. 다른 근로자에게도 보낼 수 있어요.`);
+      const ids = [...selectedWorkerIds];
+      const result = await api.assign(task.id, ids);
+      const names = workers.filter((w) => selectedWorkerIds.has(w.id)).map((w) => w.display_name);
+      const text = `✓ ${names.join(", ")}님에게 보냈습니다(${result.length}명). 다른 근로자에게도 더 보낼 수 있어요.`;
+      setNotice(text);
+      flashAssignFeedback(true, text);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "게시/배정에 실패했습니다.");
+      const text = e instanceof Error ? e.message : "게시/배정에 실패했습니다.";
+      setError(text);
+      flashAssignFeedback(false, text);
     } finally {
       setBusy(false);
     }
@@ -619,30 +653,57 @@ export default function ManagerPage() {
           </div>
 
           <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <h3 className="text-sm font-bold text-slate-900">근로자에게 보내기</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900">근로자에게 보내기</h3>
+              {workers.length > 1 && (
+                <div className="flex gap-2 text-xs font-medium text-blue-700">
+                  <button type="button" onClick={() => setSelectedWorkerIds(new Set(workers.map((w) => w.id)))}>
+                    전체 선택
+                  </button>
+                  <button type="button" onClick={() => setSelectedWorkerIds(new Set())}>
+                    선택 해제
+                  </button>
+                </div>
+              )}
+            </div>
 
             {workers.length > 0 ? (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <select
-                  value={selectedWorkerId}
-                  onChange={(e) => setSelectedWorkerId(e.target.value)}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-                  aria-label="배정할 근로자 선택"
-                >
-                  {workers.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.display_name} (코드 {w.access_code})
-                    </option>
-                  ))}
-                </select>
+              <>
+                {/* 체크박스 — 여러 근로자를 한 번에 고를 수 있다(기존엔 한 명만 고를 수 있었음). */}
+                <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="배정할 근로자 선택(여러 명 가능)">
+                  {workers.map((w) => {
+                    const checked = selectedWorkerIds.has(w.id);
+                    return (
+                      <label key={w.id}
+                        className={"flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm " +
+                          (checked
+                            ? "border-green-600 bg-green-50 text-green-900"
+                            : "border-slate-300 bg-white text-slate-700")}>
+                        <input type="checkbox" className="h-4 w-4" checked={checked}
+                          onChange={() => toggleWorkerSelected(w.id)} />
+                        {w.display_name} (코드 {w.access_code})
+                      </label>
+                    );
+                  })}
+                </div>
                 <button
                   onClick={handlePublishAndAssign}
-                  disabled={busy || !selectedWorkerId}
-                  className="rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  disabled={busy || selectedWorkerIds.size === 0}
+                  className="mt-2 rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
-                  {busy ? "처리 중…" : "게시하고 보내기"}
+                  {busy ? "처리 중…" : selectedWorkerIds.size > 1
+                    ? `게시하고 ${selectedWorkerIds.size}명에게 보내기`
+                    : "게시하고 보내기"}
                 </button>
-              </div>
+                {/* 버튼 바로 아래에 결과를 보여준다 — 위쪽 배너는 내용이 길면 화면 밖으로 벗어난다. */}
+                {assignFeedback && (
+                  <p role="status"
+                    className={"mt-2 text-sm font-semibold " +
+                      (assignFeedback.ok ? "text-green-700" : "text-red-700")}>
+                    {assignFeedback.text}
+                  </p>
+                )}
+              </>
             ) : (
               <p className="mt-2 text-sm text-slate-500">
                 등록된 근로자가 없습니다. 아래에서 먼저 추가해 주세요.
