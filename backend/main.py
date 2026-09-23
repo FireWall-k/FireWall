@@ -18,7 +18,7 @@ import os
 import re
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -48,6 +48,8 @@ from schemas import (
     DashboardOut,
     DashboardWorkerOut,
     EmployerLogin,
+    HistoryCardOut,
+    HistoryStepOut,
     PerformanceLogCreate,
     StepCreate,
     StepOut,
@@ -99,6 +101,21 @@ app.mount(
     ),
     name="aac-images",
 )
+
+# 날짜 경계의 기준 시간대. 배정 시각은 UTC로 저장하지만 "오늘"은 사용자가 사는 곳의 날짜여야 한다.
+# 서버(UTC)와 브라우저(KST)가 서로 다른 날짜를 오늘이라 부르면, 한국 시간 0~9시에 배정한
+# 직무가 대시보드의 "오늘"에 안 보였다. 한국은 서머타임이 없어 고정 오프셋으로 충분하다.
+APP_UTC_OFFSET_HOURS = int(os.getenv("APP_UTC_OFFSET_HOURS", "9"))
+_SQL_LOCAL_DATE_MODIFIER = f"{APP_UTC_OFFSET_HOURS:+d} hours"
+
+
+def local_day_start_utc(now: datetime | None = None) -> datetime:
+    """현지 기준 오늘 0시를 UTC 시각으로 돌려준다(저장된 UTC 시각과 바로 비교할 수 있다)."""
+    now = now or datetime.now(timezone.utc)
+    offset = timedelta(hours=APP_UTC_OFFSET_HOURS)
+    local_midnight = (now + offset).replace(hour=0, minute=0, second=0, microsecond=0)
+    return local_midnight - offset
+
 
 def _cors_origins() -> list[str]:
     raw = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
@@ -223,14 +240,16 @@ def worker_tasks(worker_id: str, date: str | None = None,
     """특정 근로자에게 배정된 직무 목록(중복 제거, 최신순).
 
     date(YYYY-MM-DD)를 주면 그 날짜에 배정된 직무만 반환한다(달력 보기용).
-    날짜 비교는 저장 기준인 UTC 일자로 한다(worker_today와 동일 기준).
+    날짜는 현지(APP_UTC_OFFSET_HOURS) 기준이다 — 브라우저의 "오늘"·worker_today와 같은 기준.
     """
     worker = db.get(Worker, worker_id)
     if worker is None or worker.employer_id != user["sub"]:
         raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
     assignment_query = select(Assignment).where(Assignment.worker_id == worker_id)
     if date:
-        assignment_query = assignment_query.where(func.date(Assignment.assigned_date) == date)
+        assignment_query = assignment_query.where(
+            func.date(Assignment.assigned_date, _SQL_LOCAL_DATE_MODIFIER) == date
+        )
     task_ids = list({a.task_id for a in db.scalars(assignment_query).all()})
     if not task_ids:
         return []
@@ -251,7 +270,7 @@ def worker_active_dates(worker_id: str, db: Session = Depends(get_db),
     if worker is None or worker.employer_id != user["sub"]:
         raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
     rows = db.scalars(
-        select(func.date(Assignment.assigned_date))
+        select(func.date(Assignment.assigned_date, _SQL_LOCAL_DATE_MODIFIER))
         .where(Assignment.worker_id == worker_id)
         .distinct()
     ).all()
@@ -305,6 +324,11 @@ def _task_context(task: Task, sentence: str, action_type: str) -> dict:
 
         "sentence": sentence,
         "action_type": action_type,
+        # 업종을 안 넣은 직무는 단계 문장 하나만으로 직무를 못 알아낼 때가 많다
+        # ("큰 나사를 나누세요"만 봐서는 조립인지 알 수 없다). 원문 전체에는 대개
+        # 직무를 알려주는 단어가 하나쯤 있다("부품 상자에서 나사를...") — AAC 검색의
+        # infer_job()이 이걸 보조 신호로 쓴다.
+        "raw_input": task.raw_input or "",
     }
 
 
@@ -351,6 +375,8 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
         "business_type": payload.business_type or "",
         "work_environment": payload.work_environment or "",
         "worker_note": payload.worker_note or "",
+        # _task_context()와 같은 이유로 넣는다 — 업종 미입력 시 직무 추론의 보조 신호.
+        "raw_input": payload.raw_input,
     }
     try:
         decomposed = ai_client.decompose(payload.raw_input, context)
@@ -656,49 +682,60 @@ def search_aac(
     )
 
 
-# --- 사업주: 근로자에게 배정 ---
-@app.post("/api/tasks/{task_id}/assignments", response_model=AssignmentOut)
+# --- 사업주: 근로자에게 배정(여러 명 동시 가능) ---
+@app.post("/api/tasks/{task_id}/assignments", response_model=list[AssignmentOut])
 def assign_task(task_id: str, payload: AssignRequest = AssignRequest(),
                 db: Session = Depends(get_db),
-                user: dict = Depends(require_employer)) -> AssignmentOut:
+                user: dict = Depends(require_employer)) -> list[AssignmentOut]:
     task = _owned_task(task_id, user["sub"], db)
     if task.status != "published":
         raise HTTPException(status_code=400, detail="게시된 직무만 배정할 수 있습니다.")
 
-    if payload.worker_id:
-        worker = db.get(Worker, payload.worker_id)
-        if worker is None or worker.employer_id != user["sub"]:
-            raise HTTPException(status_code=404, detail="해당 근로자를 찾을 수 없습니다.")
+    if payload.worker_ids:
+        worker_ids = list(dict.fromkeys(payload.worker_ids))  # 순서 보존 중복 제거
+    elif payload.worker_id:
+        worker_ids = [payload.worker_id]
     else:
-        workers = db.scalars(select(Worker).where(Worker.employer_id == user["sub"])).all()
-        if len(workers) != 1:
+        all_workers = db.scalars(select(Worker).where(Worker.employer_id == user["sub"])).all()
+        if len(all_workers) != 1:
             raise HTTPException(status_code=400, detail="배정할 근로자를 지정해 주세요.")
-        worker = workers[0]
+        worker_ids = [all_workers[0].id]
 
-    # 같은 직무를 같은 근로자에게 이미(미완료로) 배정했다면 중복 생성하지 않고 그대로 돌려준다.
-    existing = db.scalar(
-        select(Assignment).where(
-            Assignment.task_id == task_id,
-            Assignment.worker_id == worker.id,
-            Assignment.status != "done",
+    workers = db.scalars(select(Worker).where(Worker.id.in_(worker_ids))).all()
+    found_by_id = {w.id: w for w in workers}
+    for wid in worker_ids:
+        w = found_by_id.get(wid)
+        if w is None or w.employer_id != user["sub"]:
+            raise HTTPException(status_code=404, detail="해당 근로자를 찾을 수 없습니다.")
+
+    out: list[AssignmentOut] = []
+    for wid in worker_ids:
+        # 같은 직무를 같은 근로자에게 이미(미완료로) 배정했다면 중복 생성하지 않고 그대로 돌려준다.
+        existing = db.scalar(
+            select(Assignment).where(
+                Assignment.task_id == task_id,
+                Assignment.worker_id == wid,
+                Assignment.status != "done",
+            )
         )
-    )
-    if existing is not None:
-        return AssignmentOut(id=existing.id, task_id=existing.task_id,
-                             worker_id=existing.worker_id, status=existing.status)
+        if existing is not None:
+            out.append(AssignmentOut(id=existing.id, task_id=existing.task_id,
+                                     worker_id=existing.worker_id, status=existing.status))
+            continue
+        a = Assignment(task_id=task_id, worker_id=wid, status="assigned")
+        db.add(a)
+        db.flush()
+        out.append(AssignmentOut(id=a.id, task_id=a.task_id, worker_id=a.worker_id, status=a.status))
 
-    a = Assignment(task_id=task_id, worker_id=worker.id, status="assigned")
-    db.add(a)
     db.commit()
-    db.refresh(a)
-    return AssignmentOut(id=a.id, task_id=a.task_id, worker_id=a.worker_id, status=a.status)
+    return out
 
 
 # --- 근로자: 오늘의 카드 ---
 @app.get("/api/worker/me/today", response_model=list[TodayCardOut])
 def worker_today(db: Session = Depends(get_db),
                  user: dict = Depends(require_worker)) -> list[TodayCardOut]:
-    start_of_day = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    start_of_day = local_day_start_utc()
     assignments = db.scalars(
         select(Assignment).where(
             Assignment.worker_id == user["sub"],
@@ -714,6 +751,42 @@ def worker_today(db: Session = Depends(get_db),
         out.append(TodayCardOut(
             assignment_id=a.id, task_id=task.id, task_title=task.title,
             steps=[_step_to_out(s) for s in task.steps],
+        ))
+    return out
+
+
+@app.get("/api/worker/me/history", response_model=list[HistoryCardOut])
+def worker_history(db: Session = Depends(get_db),
+                   user: dict = Depends(require_worker)) -> list[HistoryCardOut]:
+    """근로자 본인이 받았던 일을 전부 최신순으로 돌려준다(오늘 것 포함).
+
+    /api/worker/me/today는 완료된 배정을 목록에서 뺀다(다음 일에 집중하게 하려는 설계)
+    — 그 결과 근로자가 끝낸 일을 다시 열어 볼 방법이 없었다. 이 API로 지난 단계별
+    그림·문장을 다시 볼 수 있다(완료 처리는 하지 않는 읽기 전용 복습 용도).
+    """
+    assignments = db.scalars(
+        select(Assignment)
+        .where(Assignment.worker_id == user["sub"])
+        .order_by(Assignment.assigned_date.desc())
+    ).all()
+    offset = timedelta(hours=APP_UTC_OFFSET_HOURS)
+    out: list[HistoryCardOut] = []
+    for a in assignments:
+        task = db.get(Task, a.task_id)
+        if task is None:
+            continue
+        completed_step_ids = set(db.scalars(
+            select(PerformanceLog.step_id).where(PerformanceLog.assignment_id == a.id)
+        ).all())
+        out.append(HistoryCardOut(
+            assignment_id=a.id, task_id=task.id, task_title=task.title,
+            assigned_date=(a.assigned_date + offset).date().isoformat(),
+            status=a.status,
+            steps=[
+                HistoryStepOut(**_step_to_out(s).model_dump(),
+                               completed=s.id in completed_step_ids)
+                for s in task.steps
+            ],
         ))
     return out
 

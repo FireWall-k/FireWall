@@ -106,6 +106,7 @@ def eval_case(case: dict, accept: set[str], recall_depth: int, shortlist: int,
         "gap": is_gap,
         "sentence": case["sentence"],
         "reason": decision["reason"],
+        "embedding": decision.get("embedding", False),
         "top1_hit": top1_hit,
         "in_shortlist": any(i in accept for i in ranked_ids[:shortlist]),
         "in_recall": any(i in accept for i in ranked_ids[:recall_depth]),
@@ -168,10 +169,16 @@ def run(only_case: str | None = None, only_job: str | None = None,
     for row in rows:
         reasons[row["reason"]] = reasons.get(row["reason"], 0) + 1
 
+    # 임베딩을 쓴 검색은 임베딩용 임계값으로 판정된다(local_aac.decide). 케이스 중 하나라도
+    # 임베딩이 붙었으면 그 임계값을 보여 준다(호출 실패로 일부만 빠지면 섞일 수 있다).
+    used_embedding = any(row["embedding"] for row in rows)
     return {
         "query_mode": query_mode,
-        "threshold": float(os.getenv("AAC_MATCH_THRESHOLD", "0.22")),
-        "min_margin": float(os.getenv("AAC_MATCH_MIN_MARGIN", "0.02")),
+        "embedding": used_embedding,
+        "threshold": float(os.getenv("AAC_EMBED_MATCH_THRESHOLD", "0.35") if used_embedding
+                           else os.getenv("AAC_MATCH_THRESHOLD", "0.22")),
+        "min_margin": float(os.getenv("AAC_EMBED_MATCH_MIN_MARGIN", "0.02") if used_embedding
+                            else os.getenv("AAC_MATCH_MIN_MARGIN", "0.02")),
         "n_cases": len(rows),
         "n_normal": len(normal),
         "n_gap": len(gaps),
@@ -191,6 +198,8 @@ def _print_report(report: dict, verbose: bool) -> None:
           f"(일반 {report['n_normal']} / 커버리지갭 {report['n_gap']}), "
           f"채택 기준 점수≥{report['threshold']} 및 여유≥{report['min_margin']}")
     print(f"질의 모드: {mode_label}")
+    print("임베딩: " + ("사용 (임베딩용 임계값)" if report["embedding"]
+                       else "미사용 (기존 규칙 점수, 기존 임계값)"))
     print("=" * 78)
     for key, value in m.items():
         bar = "#" * int(value * 30)
@@ -242,23 +251,20 @@ def _memoize_retrieval():
     """
     import local_aac
 
-    original = local_aac.search_assets
-    cache: dict[tuple, list[dict]] = {}
+    # search_assets와 search_for_step_detailed 둘 다 _search를 거치므로 그것만 감싸면 된다.
+    original = local_aac._search
+    cache: dict[tuple, tuple[list[dict], bool]] = {}
 
-    def cached(query: str, context: dict | None = None, limit: int = 5) -> list[dict]:
+    def cached(query: str, context: dict | None = None, limit: int = 5):
         key = (query, json.dumps(context or {}, sort_keys=True, ensure_ascii=False), limit)
         if key not in cache:
             cache[key] = original(query, context, limit)
         return cache[key]
 
-    local_aac.search_assets = cached
-    # search_for_step은 같은 모듈 전역을 보므로 위 교체만으로 함께 적용된다.
-    # 이 모듈이 import 시점에 바인딩한 이름도 바꿔준다.
-    globals()["search_assets"] = cached
+    local_aac._search = cached
 
     def restore() -> None:
-        local_aac.search_assets = original
-        globals()["search_assets"] = original
+        local_aac._search = original
 
     return restore
 
@@ -271,16 +277,18 @@ def sweep(query_mode: str, thresholds: list[float],
     바뀌므로 두 값 모두 재교정해야 한다. 눈대중으로 숫자를 찍지 말고 곡선을 보고
     운영점을 고른다.
     """
-    saved = {k: os.environ.get(k)
-             for k in ("AAC_MATCH_THRESHOLD", "AAC_MATCH_MIN_MARGIN")}
+    pairs = (("AAC_MATCH_THRESHOLD", "AAC_MATCH_MIN_MARGIN"),
+             ("AAC_EMBED_MATCH_THRESHOLD", "AAC_EMBED_MATCH_MIN_MARGIN"))
+    saved = {k: os.environ.get(k) for pair in pairs for k in pair}
     restore = _memoize_retrieval()
     rows = []
     try:
         for t in thresholds:
             for mg in (margins if margins is not None else [None]):
-                os.environ["AAC_MATCH_THRESHOLD"] = str(t)
-                if mg is not None:
-                    os.environ["AAC_MATCH_MIN_MARGIN"] = str(mg)
+                for thr_key, margin_key in pairs:  # 임베딩 유무에 맞는 쪽이 쓰인다
+                    os.environ[thr_key] = str(t)
+                    if mg is not None:
+                        os.environ[margin_key] = str(mg)
                 report = run(query_mode=query_mode)
                 row = {"threshold": t, **report["metrics"]}
                 if mg is not None:
@@ -335,7 +343,11 @@ def main() -> None:
     ap.add_argument("--sweep-margin", action="store_true",
                     help="임계값 × 여유(margin) 2차원 스윕")
     ap.add_argument("--json", help="결과를 JSON 파일로 저장(수정 전/후 비교용)")
+    ap.add_argument("--no-embedding", action="store_true",
+                    help="임베딩 가산 항을 끈다(기존 규칙 점수만). 재현·전후 비교용")
     args = ap.parse_args()
+    if args.no_embedding:
+        os.environ["AAC_EMBEDDINGS"] = "off"
 
     if args.sweep or args.sweep_margin:
         if args.sweep_margin:

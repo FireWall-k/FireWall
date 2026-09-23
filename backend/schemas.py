@@ -68,8 +68,10 @@ class StepReorder(BaseModel):
 
 
 class AssignRequest(BaseModel):
-    # 미지정 시 사업주의 근로자가 정확히 1명일 때만 자동 배정한다.
+    # worker_ids가 있으면 여러 명에게 한 번에 배정한다. 없고 worker_id만 있으면 그 한 명에게,
+    # 둘 다 없으면 사업주의 근로자가 정확히 1명일 때만 자동 배정한다.
     worker_id: str | None = None
+    worker_ids: list[str] | None = None
 
 
 class WorkerCreate(BaseModel):
@@ -144,6 +146,20 @@ class TodayCardOut(BaseModel):
     task_id: str
     task_title: str
     steps: list[StepOut]
+
+
+class HistoryStepOut(StepOut):
+    completed: bool
+
+
+class HistoryCardOut(BaseModel):
+    """근로자 본인이 지난번에 받았던 일 — 완료 후에도 다시 열어 볼 수 있게 한다."""
+    assignment_id: str
+    task_id: str
+    task_title: str
+    assigned_date: str  # YYYY-MM-DD, 근로자 현지 기준(APP_UTC_OFFSET_HOURS)
+    status: str
+    steps: list[HistoryStepOut]
 
 
 class StepStat(BaseModel):

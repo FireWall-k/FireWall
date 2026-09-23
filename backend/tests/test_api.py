@@ -59,7 +59,7 @@ def _make_published_task(client, employer_token):
     client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token))
     a = client.post(f"/api/tasks/{task['id']}/assignments", headers=auth(employer_token))
     assert a.status_code == 200, a.text
-    return task, a.json()
+    return task, a.json()[0]
 
 
 def test_end_to_end_with_stuck(client, employer_token, worker_token):
@@ -84,6 +84,74 @@ def test_end_to_end_with_stuck(client, employer_token, worker_token):
     assert dash["completed_steps"] == 2
     # stuck 신호가 실제로 대시보드까지 전달된다(평가에서 죽어있던 핵심 지표).
     assert dash["stuck_steps"] == [2], dash["stuck_steps"]
+
+
+def test_assign_task_to_multiple_workers_at_once(client, employer_token):
+    """근로자 여러 명에게 한 번에 보낼 수 있어야 한다(기존: 한 명씩만 가능했음).
+
+    DB가 테스트 세션 내내 공유되고("근로자가 정확히 1명"에 기대는 다른 테스트가 있음),
+    미완료 배정은 /today에 계속 남으므로, 이 테스트 전용 근로자 둘을 새로 만들어 쓰고
+    끝나면 반드시 지운다 — 공유 데모 근로자(worker_token)는 건드리지 않는다.
+    """
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기고 수량을 확인하세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token))
+
+    w1 = client.post("/api/workers", json={"display_name": "박근로", "access_code": "5677"},
+                     headers=auth(employer_token)).json()
+    w2 = client.post("/api/workers", json={"display_name": "김근로", "access_code": "5678"},
+                     headers=auth(employer_token)).json()
+    try:
+        r = client.post(f"/api/tasks/{task['id']}/assignments",
+                        json={"worker_ids": [w1["id"], w2["id"]]},
+                        headers=auth(employer_token))
+        assert r.status_code == 200, r.text
+        assignments = r.json()
+        assert {a["worker_id"] for a in assignments} == {w1["id"], w2["id"]}
+
+        # 두 근로자 모두 자기 화면에서 오늘 할 일로 받는다.
+        for code in ("5677", "5678"):
+            tok = client.post("/api/auth/worker-login", json={"access_code": code}).json()["token"]
+            today = client.get("/api/worker/me/today", headers=auth(tok))
+            assert len(today.json()) == 1
+            assert today.json()[0]["task_id"] == task["id"]
+
+        # 같은 요청을 다시 보내도 배정이 중복 생성되지 않는다(기존 단일 배정과 같은 멱등성 보장).
+        r2 = client.post(f"/api/tasks/{task['id']}/assignments",
+                         json={"worker_ids": [w1["id"], w2["id"]]},
+                         headers=auth(employer_token))
+        assert {a["id"] for a in r2.json()} == {a["id"] for a in assignments}
+    finally:
+        client.delete(f"/api/workers/{w1['id']}", headers=auth(employer_token))
+        client.delete(f"/api/workers/{w2['id']}", headers=auth(employer_token))
+
+
+def test_completed_task_disappears_from_today_but_stays_in_history(client, employer_token, worker_token):
+    """완료한 일은 '오늘 할 일'에서 빠지지만, '지난 일'에서는 계속 볼 수 있어야 한다."""
+    task, assignment = _make_published_task(client, employer_token)
+    steps = client.get("/api/worker/me/today", headers=auth(worker_token)).json()[0]["steps"]
+
+    for step in steps:
+        client.post("/api/performance-logs", headers=auth(worker_token), json={
+            "assignment_id": assignment["id"], "step_id": step["id"],
+            "duration_sec": 5.0, "replay_count": 0, "stuck": False})
+
+    today = client.get("/api/worker/me/today", headers=auth(worker_token)).json()
+    assert assignment["id"] not in [c["assignment_id"] for c in today]
+
+    history = client.get("/api/worker/me/history", headers=auth(worker_token))
+    assert history.status_code == 200
+    card = next(c for c in history.json() if c["assignment_id"] == assignment["id"])
+    assert card["task_title"] == task["title"]
+    assert card["status"] == "done"
+    assert all(s["completed"] for s in card["steps"])
+
+
+def test_history_requires_worker_auth(client, employer_token):
+    assert client.get("/api/worker/me/history").status_code == 401
+    # 사업주 토큰으로는 근로자 전용 엔드포인트를 못 부른다.
+    assert client.get("/api/worker/me/history", headers=auth(employer_token)).status_code == 403
 
 
 def test_performance_log_is_upserted(client, employer_token, worker_token):
@@ -483,3 +551,53 @@ def test_add_and_reorder_require_ownership(client, employer_token, worker_token)
     assert client.patch(f"/api/tasks/{task['id']}/steps/reorder",
                         json={"step_ids": [task["steps"][0]["id"]]},
                         headers=auth(worker_token)).status_code == 403
+
+
+# ---------- 날짜 기준(현지 시간) ----------
+def test_local_day_start_follows_local_midnight():
+    """"오늘" 경계는 UTC 0시가 아니라 현지 0시다(한국이면 UTC 15시)."""
+    from datetime import datetime, timezone
+
+    import main
+
+    just_after_midnight_kst = datetime(2026, 9, 20, 15, 33, tzinfo=timezone.utc)  # KST 9/21 00:33
+    assert main.local_day_start_utc(just_after_midnight_kst) == datetime(
+        2026, 9, 20, 15, 0, tzinfo=timezone.utc)
+
+    just_before_midnight_kst = datetime(2026, 9, 20, 14, 59, tzinfo=timezone.utc)  # KST 9/20 23:59
+    assert main.local_day_start_utc(just_before_midnight_kst) == datetime(
+        2026, 9, 19, 15, 0, tzinfo=timezone.utc)
+
+
+def test_worker_tasks_and_active_dates_use_local_date(client, employer_token):
+    """한국 시간 0~9시에 배정한 직무가 UTC 날짜가 아니라 한국 날짜로 조회돼야 한다.
+
+    UTC 1/10 15:32는 한국 시간 1/11 00:32다. 예전에는 1/10으로 저장·필터돼서
+    브라우저의 "오늘"에 안 보였다. DB를 다른 테스트와 공유하므로 내 직무만 검사하고,
+    다른 테스트의 배정(오늘 날짜)과 겹치지 않게 과거 날짜를 쓴다.
+    """
+    from datetime import datetime
+
+    from database import SessionLocal
+    from models import Assignment
+
+    task, assignment = _make_published_task(client, employer_token)
+    with SessionLocal() as db:
+        a = db.get(Assignment, assignment["id"])
+        a.assigned_date = datetime(2026, 1, 10, 15, 32)  # naive = UTC 저장 형식
+        worker_id = a.worker_id
+        db.commit()
+
+    def task_ids_on(day: str) -> list[str]:
+        r = client.get(f"/api/workers/{worker_id}/tasks?date={day}",
+                       headers=auth(employer_token))
+        assert r.status_code == 200, r.text
+        return [t["id"] for t in r.json()]
+
+    assert task["id"] in task_ids_on("2026-01-11")       # 한국 날짜
+    assert task["id"] not in task_ids_on("2026-01-10")   # UTC 날짜로는 안 잡힌다
+
+    dates = client.get(f"/api/workers/{worker_id}/active-dates",
+                       headers=auth(employer_token)).json()
+    assert "2026-01-11" in dates
+    assert "2026-01-10" not in dates

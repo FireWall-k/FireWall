@@ -62,6 +62,19 @@ export interface TodayCard {
   steps: Step[];
 }
 
+export interface HistoryStep extends Step {
+  completed: boolean;
+}
+
+export interface HistoryCard {
+  assignment_id: string;
+  task_id: string;
+  task_title: string;
+  assigned_date: string; // YYYY-MM-DD
+  status: string;
+  steps: HistoryStep[];
+}
+
 export interface StepStat {
   order: number;
   sentence: string;
@@ -233,11 +246,12 @@ export const api = {
   },
   removeStepPhoto: (taskId: string, stepId: string) =>
     req<Step>(`/api/tasks/${taskId}/steps/${stepId}/photo`, { method: "DELETE" }),
-  assign: (id: string, worker_id?: string) =>
-    req<{ id: string }>(`/api/tasks/${id}/assignments`, {
-      method: "POST",
-      body: JSON.stringify({ worker_id: worker_id ?? null }),
-    }),
+  /** 근로자 한 명 이상에게 게시된 직무를 배정한다(빈 배열이면 사업주의 유일한 근로자에게 자동 배정). */
+  assign: (id: string, workerIds: string[] = []) =>
+    req<{ id: string; task_id: string; worker_id: string; status: string }[]>(
+      `/api/tasks/${id}/assignments`,
+      { method: "POST", body: JSON.stringify({ worker_ids: workerIds }) },
+    ),
   listWorkers: () => req<Worker[]>("/api/workers"),
   workerTasks: (workerId: string, date?: string) =>
     req<TaskSummary[]>(`/api/workers/${workerId}/tasks${date ? `?date=${date}` : ""}`),
@@ -249,6 +263,8 @@ export const api = {
     }),
   deleteWorker: (id: string) => req<{ ok: boolean }>(`/api/workers/${id}`, { method: "DELETE" }),
   today: () => req<TodayCard[]>("/api/worker/me/today"),
+  /** 근로자 본인이 받았던 일 전체(완료 포함, 최신순) — '오늘 할 일'은 완료되면 빠지므로 복습용. */
+  history: () => req<HistoryCard[]>("/api/worker/me/history"),
   logStep: (body: {
     assignment_id: string;
     step_id: string;
