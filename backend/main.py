@@ -314,6 +314,14 @@ def _task_context(task: Task, sentence: str, action_type: str) -> dict:
     return {
         "business_type": task.business_type or "",
         "work_environment": task.work_environment or "",
+
+        "job": (
+            (task.business_type or "")
+            if (task.business_type or "").strip()
+            else ""
+        ),
+        "job_hint": task.job or "",
+
         "sentence": sentence,
         "action_type": action_type,
         # 업종을 안 넣은 직무는 단계 문장 하나만으로 직무를 못 알아낼 때가 많다
@@ -375,39 +383,68 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
     except Exception as e:  # noqa: BLE001 - AI 하네스 장애는 502로 명확히 전달
         raise HTTPException(status_code=502, detail=f"AI 분해 서비스 오류: {e}")
 
+    job = str(decomposed.get("job") or "").strip()
+    explicit_business_type = bool(
+        context["business_type"].strip()
+    )
     # 맥락을 저장해 둔다. 나중에 후보 재검색/단계 추가가 같은 조건으로 돌아야 한다.
     task = Task(employer_id=user["sub"], title=decomposed.get("task_title", "직무"),
                 raw_input=payload.raw_input, status="draft",
                 business_type=context["business_type"],
-                work_environment=context["work_environment"])
+                work_environment=context["work_environment"],
+                job=job,
+                )
     db.add(task)
     db.flush()
 
+
     for step in decomposed.get("steps", []):
         sentence = step["sentence"]
-        # LLM이 제공한 구체 명사(symbol_query)를 우선 사용, 없으면 키워드로 폴백.
-        symbol_terms = step.get("symbol_query") or [k["term"] for k in step.get("keywords", [])]
+        action_type = step.get("action_type", "other")
+
+        symbol_terms = (
+            step.get("symbol_query")
+            or [k["term"] for k in step.get("keywords", [])]
+        )
         symbol_terms = symbol_terms[:4] or [sentence[:12]]
+
         sym = _pick_symbol(
             symbol_terms,
             context={
                 **context,
+
+                # 사용자가 직접 입력한 업종만 hard gate로 사용
+                "job": (
+                    context["business_type"]
+                    if explicit_business_type
+                    else ""
+                ),
+
+                # LLM이 추론한 직무는 약한 힌트로만 사용
+                "job_hint": job,
+
                 "sentence": sentence,
-                # action_type이 있어야 AAC 검색이 도구/보조 카드보다 동작 카드를 선호한다.
-                # 빠뜨리면 "테이블을 닦으세요"에 행주 사진이 붙는다.
-                "action_type": step.get("action_type", "other"),
+                "action_type": action_type,
             },
         )
-        db.add(Step(
-            task_id=task.id, order_index=step["order"], sentence=sentence,
-            action_type=step.get("action_type", "other"),
-            # 검토 화면 후보 조회가 같은 질의를 재현하도록 저장한다.
-            symbol_query=",".join(symbol_terms),
-            symbol_url=sym.get("image_url"),
-            symbol_source=sym.get("source", "fallback"),
-            needs_fallback=sym.get("needs_fallback", True),
-            tts_audio_url=synthesize_tts_url(sentence),
-        ))
+
+        db.add(
+            Step(
+                task_id=task.id,
+                order_index=step["order"],
+                sentence=sentence,
+                action_type=action_type,
+                symbol_query=",".join(
+                            str(term).strip()
+                            for term in symbol_terms
+                            if str(term).strip()
+                        ),
+                symbol_url=sym.get("image_url"),
+                symbol_source=sym.get("source", "fallback"),
+                needs_fallback=sym.get("needs_fallback", True),
+                tts_audio_url=synthesize_tts_url(sentence),
+            )
+        )
 
     db.commit()
     db.refresh(task)
