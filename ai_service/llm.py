@@ -24,9 +24,29 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
 LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "20"))
 
+# AAC 매칭의 임베딩 가산 항(local_aac.py, embeddings.py)에서 쓴다.
+EMBED_MODEL = os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-large")
+EMBED_DIMS = int(os.getenv("OPENAI_EMBED_DIMS", "256"))
+
 
 def llm_available() -> bool:
     return bool(OPENAI_API_KEY)
+
+
+def embed_texts(texts: list[str], *, timeout: float = 20.0) -> list[list[float]]:
+    """텍스트 목록을 임베딩 벡터로 바꾼다. 실패 시 예외(호출부가 폴백 처리)."""
+    resp = httpx.post(
+        f"{OPENAI_BASE_URL}/embeddings",
+        headers={
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={"model": EMBED_MODEL, "input": texts, "dimensions": EMBED_DIMS},
+        timeout=timeout,
+    )
+    resp.raise_for_status()
+    data = resp.json()["data"]
+    return [row["embedding"] for row in data]
 
 
 def chat_json(system: str, user: str, *, max_tokens: int = 1200) -> dict:

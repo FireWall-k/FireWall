@@ -7,6 +7,8 @@ from difflib import SequenceMatcher
 from functools import lru_cache
 from pathlib import Path
 
+import embeddings
+
 _TOKEN_RE = re.compile(r"[0-9A-Za-z가-힣]+")
 
 _JOB_ALIASES: dict[str, tuple[str, ...]] = {
@@ -77,6 +79,10 @@ _JOB_ALIASES: dict[str, tuple[str, ...]] = {
     ),
 }
 
+# 여러 직무에 두루 쓰이는 말은 절반만 센다. "매장 상품 진열"이 마트(매장) 1점, 진열 1점으로
+# 동점이 되어 이름순으로 마트가 되던 문제 — 진열 그림이 있는데도 마트로만 잡혔다.
+_ALIAS_WEIGHT = {"매장": 0.5}
+
 _PARTICLES = (
     "으로", "에서", "에게", "까지", "부터", "처럼", "보다", "하고", "이며", "이며",
     "을", "를", "이", "가", "은", "는", "에", "의", "와", "과", "도", "만", "로",
@@ -103,7 +109,13 @@ def _stem_token(token: str) -> str:
             value = value[: -len(p)]
             break
     # Common polite/statement endings from task sentences.
-    for ending in ("하세요", "해주세요", "합니다", "하십시오", "한다", "해요", "세요", "니다", "다"):
+    #
+    # '하다' 원형을 반드시 '한다'보다 먼저 검사한다. 순서가 바뀌면 "정리하다"(원형)는
+    # '다'만 떨어져 '정리하'가 남고 "정리한다"(활용형)는 '한다'가 떨어져 '정리'가 남아,
+    # 같은 뜻인데 토큰이 달라져 자산 검색어(원형이 많다)와 질의(활용형이 많다)가 서로
+    # 못 만난다. 실사용 중 발견 — "의자들을 정리하세요"가 라벨에 '정리'가 그대로 박힌
+    # 무관한 자산(상품 정리)에 밀렸다.
+    for ending in ("하세요", "해주세요", "합니다", "하십시오", "하다", "한다", "해요", "세요", "니다", "다"):
         if len(value) > len(ending) + 1 and value.endswith(ending):
             value = value[: -len(ending)]
             break
@@ -130,15 +142,49 @@ def _jaccard(a: set[str], b: set[str]) -> float:
 # 어간 끝 모음이 어미와 만나 줄어드는 형태. '세우-'+'어' → '세워', '하-'+'여' → '해'.
 _STEM_CONTRACTIONS = {"우": "워", "오": "와", "이": "여", "하": "해", "리": "려", "기": "겨"}
 
+_HANGUL_BASE = 0xAC00
+_HANGUL_LAST = 0xD7A3
+_RIEUL_FINAL_INDEX = 8  # 종성 28개 중 ㄹ의 순번(없음=0, ㄱ=1, ... ㄹ=8)
+
+
+def _drop_rieul_final(char: str) -> str | None:
+    """받침 ㄹ을 뗀 글자를 돌려준다. ㄹ받침이 아니면 None.
+
+    ㄹ받침 어간(열다/만들다/쓸다/갈다 등)은 '-세요/-ㅂ니다/-는' 앞에서 받침이
+    탈락한다: 열다→여세요, 만들다→만드세요, 쓸다→쓰세요, 갈다→가세요.
+    이 규칙이 없으면 "창문을 여세요"에서 '열다'를 못 알아낸다.
+    """
+    if len(char) != 1:
+        return None
+    code = ord(char)
+    if not (_HANGUL_BASE <= code <= _HANGUL_LAST):
+        return None
+    if (code - _HANGUL_BASE) % 28 != _RIEUL_FINAL_INDEX:
+        return None
+    return chr(code - _RIEUL_FINAL_INDEX)
+
 
 def _stem_variants(stem: str) -> tuple[str, ...]:
     """어간의 표면형 후보. 활용형에서 어간을 찾아내기 위한 것이다."""
     if not stem:
         return ()
+    variants = [stem]
     contracted = _STEM_CONTRACTIONS.get(stem[-1])
     if contracted:
-        return (stem, stem[:-1] + contracted)
-    return (stem,)
+        variants.append(stem[:-1] + contracted)
+    dropped = _drop_rieul_final(stem[-1])
+    if dropped:
+        variants.append(stem[:-1] + dropped)
+    return tuple(variants)
+
+
+# ㄹ탈락으로 만든 표면형이 한 글자가 되면서, 훨씬 흔한 다른 동사의 원형과 우연히
+# 같은 글자가 되는 경우가 있다. '갈다'(갈아주세요로 이미 원래 어간 '갈'이 잡힌다)의
+# 탈락형 '가'가 대표적 — 이동을 뜻하는 '가다'의 원형과 같은 글자라, "고객님 댁에
+# 가세요"·"창고에 가세요" 같은 문장에서 커피 원두를 "간다"는 엉뚱한 동사로 잡혔다.
+# '갈다'의 실제 존댓말 요청형은 거의 항상 모음축약형 '갈아(주세요)'라 기본 어간 '갈'만
+# 으로 충분히 잡힌다 — 탈락형 '가'는 실익 없이 충돌만 만들어 제외한다.
+_RIEUL_DROP_EXCLUDE_LEMMAS = frozenset({"갈다"})
 
 
 @lru_cache(maxsize=1)
@@ -164,9 +210,13 @@ def _verb_stem_map() -> tuple[tuple[str, str], ...]:
         if len(stem) < 1:
             continue
         for surface in _stem_variants(stem):
+            if surface != stem and lemma in _RIEUL_DROP_EXCLUDE_LEMMAS:
+                continue  # ㄹ탈락형만 제외 — 기본 어간(예: '갈')은 그대로 둔다.
             pairs.add((surface, lemma))
-    # 긴 어간 우선 — '준비하'가 '준'보다 먼저 걸려야 한다.
-    return tuple(sorted(pairs, key=lambda p: -len(p[0])))
+    # 긴 어간 우선 — '준비하'가 '준'보다 먼저 걸려야 한다. 길이가 같으면(예: 표면형
+    # '쓰'가 '쓰다'·'쓸다' 둘 다에서 나옴) 원형 문자열로 2차 정렬해 결과가 매 실행마다
+    # 바뀌지 않게 한다.
+    return tuple(sorted(pairs, key=lambda p: (-len(p[0]), p[1])))
 
 
 def _verb_lemmas(text: str) -> set[str]:
@@ -174,9 +224,15 @@ def _verb_lemmas(text: str) -> set[str]:
 
     "원두를 갈아주세요" → {'갈다'}. 자산 쪽 검색어는 원형('갈다')이라 이 변환이 없으면
     질의 토큰('갈아주')과 영영 만나지 못한다 — 인덱스를 만들어도 아무 효과가 없다.
+
+    한 표면형이 서로 다른 원형에 동시에 걸리는 경우가 있다("쓰"는 '쓰다'(사용/착용)
+    와 '쓸다'(쓸기) 둘 다에서 나온다 — "쓰세요"는 한국어 자체가 중의적이다). 같은
+    길이로 묶인 원형을 전부 후보로 남긴다 — 최종 판단(직무·명사 겹침)은 이미
+    `_score_asset`이 한다: 문맥과 맞는 자산만 가산점의 이득을 본다.
     """
     found: set[str] = set()
     for word in _TOKEN_RE.findall(text):
+        best_len: int | None = None
         for surface, lemma in _verb_stem_map():
             # 어간만 덜렁 있는 게 아니라 뒤에 어미가 붙어 있어야 동사로 본다.
             if len(word) <= len(surface) or not word.startswith(surface):
@@ -185,8 +241,10 @@ def _verb_lemmas(text: str) -> set[str]:
             # 붙어 있을 때만 인정한다('갈아주세요'는 통과, '갈색'은 탈락).
             if len(surface) == 1 and len(word) < 3:
                 continue
+            if best_len is not None and len(surface) < best_len:
+                break  # 더 짧은 어간은(정렬상 이제부터 전부) 무시 — 가장 긴 것만 본다.
+            best_len = len(surface)
             found.add(lemma)
-            break  # 가장 긴 어간 하나만
     return found
 
 
@@ -224,10 +282,15 @@ def infer_job(context: dict | None = None, query: str = "") -> str | None:
             "job_hint",
         )
     ) + " " + query
+    # 업종을 안 넣으면 단계 문장 하나로는 직무를 못 알아낼 때가 많다("큰 나사를
+    # 나누세요"만 봐서는 조립인지 알 수 없다). 원문 전체("부품 상자에서 나사를...")에는
+    # 대개 직무를 알려주는 단어가 있으므로 보조 신호로 함께 본다.
+    if ctx.get("raw_input"):
+        haystack += " " + str(ctx["raw_input"])
     norm = _normalize(haystack)
-    scores: list[tuple[int, str]] = []
+    scores: list[tuple[float, str]] = []
     for job, aliases in _JOB_ALIASES.items():
-        count = sum(1 for alias in aliases if alias.lower() in norm)
+        count = sum(_ALIAS_WEIGHT.get(alias, 1.0) for alias in aliases if alias.lower() in norm)
         if count:
             scores.append((count, job))
     return max(scores)[1] if scores else None
@@ -549,6 +612,32 @@ def _verb_class_penalty(asset: dict, action_type: str | None) -> float:
     return _VERB_CLASS_PENALTY
 
 
+# 실사용 중 발견: "남은 재료를 꺼내세요"(냉장고에서 빼기)가 "남은 재료를 냉장고에
+# 넣는다"(CAFE_088)로 붙었다. 원인은 verb_class가 방향을 구분 못 하는 것 —
+# '넣다'/'꺼내다'는 둘 다 verb_class="move"라 _verb_class_penalty가 안 걸린다.
+# 동사 원형 매칭(_verb_lemmas)도 일치할 때만 가산할 뿐 불일치를 벌점 주지 않으므로,
+# 진짜 반대말 쌍만 좁게 골라 따로 깎는다(동의어까지 걸리면 회귀하므로 목록을 넓히지 않는다).
+_VERB_ANTONYMS: tuple[frozenset[str], ...] = (
+    frozenset({"넣다", "꺼내다"}),
+    frozenset({"열다", "닫다"}),
+    frozenset({"켜다", "끄다"}),
+    frozenset({"붙이다", "떼다"}),
+    frozenset({"올리다", "내리다"}),
+)
+_VERB_ANTONYM_PENALTY = 0.4
+
+
+def _verb_antonym_penalty(asset: dict, query_lemmas: set[str]) -> float:
+    """질의 동사와 자산 동사가 진짜 반대말이면 깎는다(동의어·무관한 동사는 안 깎는다)."""
+    verb = (asset.get("_frame") or {}).get("verb")
+    if not verb or not query_lemmas:
+        return 1.0
+    for group in _VERB_ANTONYMS:
+        if verb in group and (query_lemmas & group) - {verb}:
+            return _VERB_ANTONYM_PENALTY
+    return 1.0
+
+
 def _is_instruction(text: str) -> bool:
     """질의가 '무엇을 하라'는 문장인가, 아니면 물건 이름인가.
 
@@ -593,8 +682,16 @@ def _tiebreak(asset: dict, preferred_job: str | None, action_type: str | None) -
 # 더 크게 틀린다. 크기를 조절해서 될 문제가 아니라 메커니즘 자체가 안 맞는다.
 
 
+# 임베딩 유사도를 규칙 점수에 '더하는' 항: w × max(0, 유사도 − 기준).
+# 가산만 한다 — 유사도가 낮다고 깎지 않는다("흔한 신호 부재를 감점하는" 방식은 여러 번
+# 회귀했다). 기준 0.4 아래의 유사도는 잡음이라 0으로 본다.
+_EMBED_WEIGHT = float(os.getenv("AAC_EMBED_WEIGHT", "0.5"))
+_EMBED_BASE = float(os.getenv("AAC_EMBED_BASE", "0.4"))
+
+
 def _score_asset(asset: dict, qf: _QueryFeatures, preferred_job: str | None,
-                 action_type: str | None, is_instruction: bool = False) -> float:
+                 action_type: str | None, is_instruction: bool = False,
+                 emb_sim: float | None = None) -> float:
     relevance = _relevance(asset, qf)
 
     # 사물 카드 게이트 — 지시문에는 동작 그림이 맞다. "얼음통을 씻어주세요"에 도구
@@ -607,7 +704,14 @@ def _score_asset(asset: dict, qf: _QueryFeatures, preferred_job: str | None,
     # "넘어진 상품을 세워주세요"에 "냉동 상품을 냉동 진열대에 놓는다"가 붙던 문제.
     relevance *= _verb_class_penalty(asset, action_type)
 
-    return max(0.0, min(relevance + _tiebreak(asset, preferred_job, action_type), 1.0))
+    # 반대 동사 — verb_class는 방향을 구분 못 해서("넣다"/"꺼내다" 둘 다 move) 위
+    # 게이트를 통과한다. "남은 재료를 꺼내세요"에 "냉장고에 넣는다"가 붙던 문제.
+    relevance *= _verb_antonym_penalty(asset, qf.lemmas)
+
+    score = max(0.0, min(relevance + _tiebreak(asset, preferred_job, action_type), 1.0))
+    if emb_sim is not None:
+        score = min(1.0, score + _EMBED_WEIGHT * max(0.0, emb_sim - _EMBED_BASE))
+    return score
 
 
 def _dedupe(ranked: list[tuple[float, dict]]) -> list[tuple[float, dict]]:
@@ -638,7 +742,12 @@ def _dedupe(ranked: list[tuple[float, dict]]) -> list[tuple[float, dict]]:
 
 
 def search_assets(query: str, context: dict | None = None, limit: int = 5) -> list[dict]:
-    """자연어 질의와 가장 가까운 AAC 자산을 찾는다.
+    return _search(query, context, limit)[0]
+
+
+def _search(query: str, context: dict | None = None, limit: int = 5) -> tuple[list[dict], bool]:
+    """자연어 질의와 가장 가까운 AAC 자산을 찾는다. (결과, 임베딩을 썼는가)를 돌려준다
+    — 채택 임계값이 임베딩 유무에 따라 달라서 함께 돌려준다.
 
     검색 정책:
     - context.job이 명시된 경우: 해당 직무 자산만 검색(hard gate)
@@ -649,7 +758,7 @@ def search_assets(query: str, context: dict | None = None, limit: int = 5) -> li
     ctx = dict(context or {})
     query = str(query or "").strip()
     if not query:
-        return []
+        return [], False
 
     explicit_job = _explicit_job(ctx)
     preferred_job = explicit_job or infer_job(ctx, query)
@@ -666,6 +775,9 @@ def search_assets(query: str, context: dict | None = None, limit: int = 5) -> li
     if explicit_job:
         assets = [asset for asset in assets if asset.get("job") == explicit_job]
 
+    # 못 쓰면(키·파일 없음, 호출 실패) None — 그러면 임베딩 없는 기존 점수로 그대로 진행한다.
+    sims = embeddings.query_similarities(query)
+
     ranked: list[tuple[float, dict]] = []
     for asset in assets:
         # "조인다"와 "조이지 않는다"처럼 의미가 반대인 카드는 지시문에서 제외한다.
@@ -677,12 +789,14 @@ def search_assets(query: str, context: dict | None = None, limit: int = 5) -> li
         ):
             continue
 
+        emb_sim = sims.get(asset["id"]) if sims is not None else None
         score = _score_asset(
             asset,
             qf,
             preferred_job,
             action_type,
             is_instruction,
+            emb_sim,
         )
         if score <= 0:
             continue
@@ -702,10 +816,25 @@ def search_assets(query: str, context: dict | None = None, limit: int = 5) -> li
             "image_url": f"/api/aac/images/{asset.get('image', '')}",
             "score": round(score, 4),
         })
-    return results
+    return results, sims is not None
 
 
-def decide(results: list[dict]) -> dict:
+def _same_action(asset_id_a: str, asset_id_b: str) -> bool:
+    """두 자산이 완전히 같은 동작(동사·대상·세부·도구·장소 전부 일치)을 가리키는가.
+
+    LLM 인덱스의 frame이 그 정도로 세밀하게 겹치는 자산 쌍은 거의 항상 같은 그림을
+    다른 번호로 중복 등록한 것이다(예: DELIVERY_022/041 둘 다 "초인종을 누른다").
+    """
+    index = load_index()
+    fa = (index.get(asset_id_a) or {}).get("frame") or {}
+    fb = (index.get(asset_id_b) or {}).get("frame") or {}
+    if not fa.get("verb") or not fb.get("verb"):
+        return False
+    keys = ("verb", "object", "object_detail", "instrument", "location")
+    return all(fa.get(k) == fb.get(k) for k in keys)
+
+
+def decide(results: list[dict], embedding: bool = False) -> dict:
     """검색 결과를 자동 채택할지 판정한다.
 
     절대 임계값 하나로는 정답과 오답이 갈리지 않는다. 임계값 스윕 곡선에 오답채택과
@@ -722,24 +851,47 @@ def decide(results: list[dict]) -> dict:
     두 기본값 모두 eval/run_match_eval.py 의 스윕으로 교정했다. 스코어러를 고치면
     점수 척도가 바뀌므로 반드시 다시 교정해야 한다.
 
-    반환: {"match": dict|None, "reason": str, "candidates": list, "margin": float}
+    임계값은 두 벌이다. 임베딩 가산 항이 붙으면 점수 척도가 올라가므로(정답은 더 높게,
+    오답도 조금 높게) 같은 임계값을 쓰면 안 된다 — 임베딩을 쓴 검색은 AAC_EMBED_MATCH_*
+    (0.35 / 0.02), 못 쓴 검색(키 없음·호출 실패)은 기존 AAC_MATCH_*(0.22 / 0.02)로 판정한다.
+    여유 값은 독립 블라인드 스윕으로 0.04→0.02로 낮췄다 — 정밀도는 거의 그대로인데
+    자동 채택이 크게 늘었다. 자세한 표는 eval/README.md.
+
+    반환: {"match": dict|None, "reason": str, "candidates": list, "margin": float,
+           "embedding": bool}
       reason — "accepted" | "no_candidate" | "low_score" | "low_margin"
     """
-    threshold = float(os.getenv("AAC_MATCH_THRESHOLD", "0.22"))
-    min_margin = float(os.getenv("AAC_MATCH_MIN_MARGIN", "0.02"))
+    if embedding:
+        threshold = float(os.getenv("AAC_EMBED_MATCH_THRESHOLD", "0.35"))
+        min_margin = float(os.getenv("AAC_EMBED_MATCH_MIN_MARGIN", "0.02"))
+    else:
+        threshold = float(os.getenv("AAC_MATCH_THRESHOLD", "0.22"))
+        min_margin = float(os.getenv("AAC_MATCH_MIN_MARGIN", "0.02"))
 
     if not results:
-        return {"match": None, "reason": "no_candidate", "candidates": [], "margin": 0.0}
+        return {"match": None, "reason": "no_candidate", "candidates": [], "margin": 0.0,
+                "embedding": embedding}
 
     best = results[0]
     # 후보가 하나뿐이면 비교 대상이 없다. 경쟁자가 없으므로 여유는 최대로 본다.
     margin = best["score"] - results[1]["score"] if len(results) > 1 else best["score"]
 
     if best["score"] < threshold:
-        return {"match": None, "reason": "low_score", "candidates": results, "margin": margin}
-    if margin < min_margin:
-        return {"match": None, "reason": "low_margin", "candidates": results, "margin": margin}
-    return {"match": best, "reason": "accepted", "candidates": results, "margin": margin}
+        return {"match": None, "reason": "low_score", "candidates": results, "margin": margin,
+                "embedding": embedding}
+    # 여유가 좁아도, 1·2위가 "같은 직무 안에서 같은 동작을 가리키는 쌍둥이 자산"이면
+    # (예: DELIVERY_022/041 둘 다 "초인종을 누른다") 어느 쪽이 나와도 정답이라 위험 신호가
+    # 아니다. 범위를 "같은 직무일 때만"으로 좁힌 이유는, 직무가 다르면 동작 텍스트는 같아도
+    # 그림 속 캐릭터의 복장·배경이 달라 사용자에게 어느 쪽이 맞는지가 텍스트 의미보다 더
+    # 중요할 수 있기 때문.
+    is_twin = (len(results) > 1 and margin < min_margin
+               and best.get("job") == results[1].get("job")
+               and _same_action(best["asset_id"], results[1]["asset_id"]))
+    if margin < min_margin and not is_twin:
+        return {"match": None, "reason": "low_margin", "candidates": results, "margin": margin,
+                "embedding": embedding}
+    return {"match": best, "reason": "accepted", "candidates": results, "margin": margin,
+            "embedding": embedding}
 
 
 def search_for_step(keywords: list[str], context: dict | None = None) -> dict | None:
@@ -753,4 +905,5 @@ def search_for_step_detailed(keywords: list[str], context: dict | None = None) -
     sentence = str(ctx.get("sentence") or "").strip()
     query_parts = [sentence] + [str(k).strip() for k in keywords if str(k).strip()]
     query = " ".join(part for part in query_parts if part)
-    return decide(search_assets(query, ctx, limit=5))
+    results, used_embedding = _search(query, ctx, limit=5)
+    return decide(results, embedding=used_embedding)
