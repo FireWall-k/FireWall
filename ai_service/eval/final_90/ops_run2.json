@@ -1,0 +1,3817 @@
+{
+ "run": "2",
+ "started": "2026-09-25 22:50:36",
+ "total_sec": 1248.5,
+ "rows": [
+  {
+   "biz": "카페",
+   "sentence": "시럽 병을 채워 두세요.",
+   "latency_sec": 8.41,
+   "steps": [
+    {
+     "sentence": "시럽 병을 채우세요.",
+     "action_type": "other",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "fd1b1ad1-6982-4965-8270-8de55843db6e",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "CAFE_052",
+        "group_id": "CAFE_052",
+        "job": "cafe",
+        "asset_type": "action",
+        "label": "시럽병을 정해진 위치에 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_052.webp",
+        "score": 0.2509
+       },
+       {
+        "asset_id": "CAFE_030",
+        "group_id": "CAFE_030",
+        "job": "cafe",
+        "asset_type": "action",
+        "label": "시럽을 컵에 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_030.webp",
+        "score": 0.2273
+       },
+       {
+        "asset_id": "CAFE_TOOL_010",
+        "group_id": "CAFE_TOOL_010",
+        "job": "cafe",
+        "asset_type": "tool",
+        "label": "시럽병",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_TOOL_010.webp",
+        "score": 0.2252
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "카페",
+   "sentence": "우유 스팀을 하세요.",
+   "latency_sec": 8.29,
+   "steps": [
+    {
+     "sentence": "우유를 스팀하세요.",
+     "action_type": "other",
+     "chosen": "CAFE_008",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "b31d6be9-251b-4172-83f8-0eb5e8b995ee",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CAFE_008",
+        "group_id": "CAFE_008",
+        "job": "",
+        "asset_type": "action",
+        "label": "우유를 준비한다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_008.webp",
+        "score": 0.4184
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "카페",
+   "sentence": "원두를 그라인더에 넣으세요.",
+   "latency_sec": 7.85,
+   "steps": [
+    {
+     "sentence": "원두를 그라인더에 넣으세요.",
+     "action_type": "move",
+     "chosen": "CAFE_012",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "5fbabf0f-c64c-453a-a734-c7d48999a9d4",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CAFE_012",
+        "group_id": "CAFE_012",
+        "job": "",
+        "asset_type": "action",
+        "label": "원두를 그라인더에 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_012.webp",
+        "score": 0.7619
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "카페",
+   "sentence": "다 쓴 컵을 식기세척기에 넣으세요.",
+   "latency_sec": 8.26,
+   "steps": [
+    {
+     "sentence": "컵을 식기세척기에 넣으세요.",
+     "action_type": "move",
+     "chosen": "CAFE_046",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "b048d0b7-1d1b-410c-8a54-31ff974434aa",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CAFE_046",
+        "group_id": "CAFE_046",
+        "job": "",
+        "asset_type": "action",
+        "label": "컵을 보관대에 채운다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_046.webp",
+        "score": 0.4409
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "카페",
+   "sentence": "테이블 위 쟁반을 치우세요.",
+   "latency_sec": 11.47,
+   "steps": [
+    {
+     "sentence": "쟁반을 치우세요.",
+     "action_type": "move",
+     "chosen": "CAFE_075",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "466c69f6-0565-4d21-959c-c29322810f40",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CAFE_075",
+        "group_id": "CAFE_075",
+        "job": "",
+        "asset_type": "action",
+        "label": "빈 컵을 테이블에서 치운다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_075.webp",
+        "score": 0.3922
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "테이블 위를 정리하세요.",
+     "action_type": "clean",
+     "chosen": "CAFE_077",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "f35671ee-f95a-474e-b255-4754d8d5e4ca",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CAFE_077",
+        "group_id": "CAFE_077",
+        "job": "",
+        "asset_type": "action",
+        "label": "테이블 위를 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_077.webp",
+        "score": 0.564
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "카페",
+   "sentence": "빨대와 냅킨을 채워 두세요.",
+   "latency_sec": 10.53,
+   "steps": [
+    {
+     "sentence": "빨대를 채우세요.",
+     "action_type": "move",
+     "chosen": "CAFE_048",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "9fb3f073-64cc-4c79-86f5-59948eb4a040",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CAFE_048",
+        "group_id": "CAFE_048",
+        "job": "",
+        "asset_type": "action",
+        "label": "빨대를 채운다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_048.webp",
+        "score": 0.6427
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "냅킨을 채우세요.",
+     "action_type": "move",
+     "chosen": "CAFE_049",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "a6b1a5c4-c8fd-4baf-ac4e-2a3fb0e29609",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CAFE_049",
+        "group_id": "CAFE_049",
+        "job": "",
+        "asset_type": "action",
+        "label": "냅킨을 채운다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_049.webp",
+        "score": 0.6681
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "카페",
+   "sentence": "케이크 진열장 문을 닫으세요.",
+   "latency_sec": 7.81,
+   "steps": [
+    {
+     "sentence": "케이크 진열장 문을 닫으세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "4516079a-90f1-426f-960e-e2f20ecc6621",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "CAFE_056",
+        "group_id": "CAFE_056",
+        "job": "cafe",
+        "asset_type": "action",
+        "label": "디저트 상자를 닫는다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_056.webp",
+        "score": 0.2863
+       },
+       {
+        "asset_id": "CAFE_033",
+        "group_id": "CAFE_033",
+        "job": "cafe",
+        "asset_type": "action",
+        "label": "컵에 뚜껑을 닫는다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_033.webp",
+        "score": 0.2259
+       },
+       {
+        "asset_id": "CAFE_058",
+        "group_id": "CAFE_058",
+        "job": "cafe",
+        "asset_type": "action",
+        "label": "상품을 진열대에 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_058.webp",
+        "score": 0.0935
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "카페",
+   "sentence": "주문 영수증을 확인하세요.",
+   "latency_sec": 7.92,
+   "steps": [
+    {
+     "sentence": "주문 영수증을 확인하세요.",
+     "action_type": "observe",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "620e3ec2-6855-4a34-95b4-57f7530ff185",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "CAFE_032",
+        "group_id": "CAFE_032",
+        "job": "cafe",
+        "asset_type": "action",
+        "label": "음료 양을 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_032.webp",
+        "score": 0.3431
+       },
+       {
+        "asset_id": "CAFE_089",
+        "group_id": "CAFE_089",
+        "job": "cafe",
+        "asset_type": "action",
+        "label": "매장이 깨끗한지 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_089.webp",
+        "score": 0.2914
+       },
+       {
+        "asset_id": "CAFE_042",
+        "group_id": "CAFE_042",
+        "job": "cafe",
+        "asset_type": "action",
+        "label": "주문표와 음료를 비교한다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_042.webp",
+        "score": 0.2609
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "카페",
+   "sentence": "커피 머신 거름망을 헹구세요.",
+   "latency_sec": 7.97,
+   "steps": [
+    {
+     "sentence": "커피 머신 거름망을 헹구세요.",
+     "action_type": "clean",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "ad9f3ebf-86da-4112-a919-744a03badb9f",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "CAFE_085",
+        "group_id": "CAFE_085",
+        "job": "cafe",
+        "asset_type": "action",
+        "label": "커피머신 주변을 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_085.webp",
+        "score": 0.2528
+       },
+       {
+        "asset_id": "CAFE_TOOL_018",
+        "group_id": "CAFE_TOOL_018",
+        "job": "cafe",
+        "asset_type": "tool",
+        "label": "커피머신",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_TOOL_018.webp",
+        "score": 0.188
+       },
+       {
+        "asset_id": "CAFE_070",
+        "group_id": "CAFE_070",
+        "job": "cafe",
+        "asset_type": "action",
+        "label": "식기의 거품을 물로 헹군다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_070.webp",
+        "score": 0.1825
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "카페",
+   "sentence": "쓰레기봉투를 묶어서 내놓으세요.",
+   "latency_sec": 7.77,
+   "steps": [
+    {
+     "sentence": "쓰레기봉투를 묶으세요.",
+     "action_type": "other",
+     "chosen": "CAFE_083",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "a5b5cee5-58a3-457e-a8f0-8df16dccca1b",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CAFE_083",
+        "group_id": "CAFE_083",
+        "job": "",
+        "asset_type": "action",
+        "label": "새 쓰레기봉투를 끼운다",
+        "image_url": "http://localhost:8000/api/aac/images/cafe/CAFE_083.webp",
+        "score": 0.4771
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "청소",
+   "sentence": "화장실 변기를 솔로 닦으세요.",
+   "latency_sec": 7.68,
+   "steps": [
+    {
+     "sentence": "변기를 솔로 닦으세요.",
+     "action_type": "clean",
+     "chosen": "CLEANING_014",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "ddcc1972-2bad-4418-9304-461c9ec8216b",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CLEANING_014",
+        "group_id": "CLEANING_014",
+        "job": "",
+        "asset_type": "action",
+        "label": "변기를 솔로 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_014.webp",
+        "score": 0.7938
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "청소",
+   "sentence": "복도 바닥을 대걸레로 닦으세요.",
+   "latency_sec": 7.92,
+   "steps": [
+    {
+     "sentence": "복도 바닥을 닦으세요.",
+     "action_type": "clean",
+     "chosen": "CLEANING_018",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "f6a19764-7356-48b3-91fa-8ec85624825a",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CLEANING_018",
+        "group_id": "CLEANING_018",
+        "job": "",
+        "asset_type": "action",
+        "label": "밀대로 바닥을 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_018.webp",
+        "score": 0.5108
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "청소",
+   "sentence": "세면대 거울을 닦으세요.",
+   "latency_sec": 7.86,
+   "steps": [
+    {
+     "sentence": "세면대 거울을 닦으세요.",
+     "action_type": "clean",
+     "chosen": "CLEANING_012",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "b2f3b62a-f028-4985-9838-12dc00ff25aa",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CLEANING_012",
+        "group_id": "CLEANING_012",
+        "job": "",
+        "asset_type": "action",
+        "label": "거울을 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_012.webp",
+        "score": 0.5374
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "청소",
+   "sentence": "휴지를 휴지걸이에 걸어 두세요.",
+   "latency_sec": 11.66,
+   "steps": [
+    {
+     "sentence": "휴지를 걸어두세요.",
+     "action_type": "move",
+     "chosen": "CLEANING_101",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "dc843b59-c345-4bfe-9e3c-d0d7af433107",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CLEANING_101",
+        "group_id": "CLEANING_101",
+        "job": "",
+        "asset_type": "action",
+        "label": "휴지를 교체한다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_101.webp",
+        "score": 0.3612
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "휴지걸이를 확인하세요.",
+     "action_type": "observe",
+     "chosen": "CLEANING_041",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "372cbbe8-553d-44cf-9ed8-40965b10be8b",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CLEANING_041",
+        "group_id": "CLEANING_041",
+        "job": "",
+        "asset_type": "action",
+        "label": "세탁물의 주머니를 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_041.webp",
+        "score": 0.4184
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "청소",
+   "sentence": "창틀의 먼지를 털어내세요.",
+   "latency_sec": 8.11,
+   "steps": [
+    {
+     "sentence": "창틀의 먼지를 털어내세요.",
+     "action_type": "clean",
+     "chosen": "CLEANING_135",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "d5436a4b-50df-47f7-8de7-917f844e3c93",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CLEANING_135",
+        "group_id": "CLEANING_135",
+        "job": "",
+        "asset_type": "action",
+        "label": "옷에 있는 먼지를 턴다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_135.webp",
+        "score": 0.4124
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "청소",
+   "sentence": "사무실 쓰레기통을 비우세요.",
+   "latency_sec": 10.73,
+   "steps": [
+    {
+     "sentence": "사무실 쓰레기통을 비우세요.",
+     "action_type": "move",
+     "chosen": "CLEANING_134",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "4e1f0105-e66c-4022-9970-57660acf7e93",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CLEANING_134",
+        "group_id": "CLEANING_134",
+        "job": "",
+        "asset_type": "action",
+        "label": "쓰레기통을 비운다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_134.webp",
+        "score": 0.5174
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "쓰레기를 버리세요.",
+     "action_type": "move",
+     "chosen": "CLEANING_022",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "595df1cc-8b4c-410a-9867-e18ad595eb22",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CLEANING_022",
+        "group_id": "CLEANING_022",
+        "job": "",
+        "asset_type": "action",
+        "label": "쓰레기를 봉투에 버린다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_022.webp",
+        "score": 0.5157
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "청소",
+   "sentence": "계단 손잡이를 소독하세요.",
+   "latency_sec": 8.13,
+   "steps": [
+    {
+     "sentence": "계단 손잡이를 소독하세요.",
+     "action_type": "clean",
+     "chosen": "CLEANING_062",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "7f865d68-5f09-4a13-8bdc-2edd5017d978",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CLEANING_062",
+        "group_id": "CLEANING_062",
+        "job": "",
+        "asset_type": "action",
+        "label": "엘리베이터 버튼을 소독한다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_062.webp",
+        "score": 0.3703
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "청소",
+   "sentence": "청소 도구를 창고에 넣으세요.",
+   "latency_sec": 10.54,
+   "steps": [
+    {
+     "sentence": "청소 도구를 넣으세요.",
+     "action_type": "move",
+     "chosen": "CLEANING_084",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "8a68c8ed-9e27-4bd7-a546-b8c44c557a1d",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CLEANING_084",
+        "group_id": "CLEANING_084",
+        "job": "",
+        "asset_type": "action",
+        "label": "청소도구를 청소 도구함에 넣어 정리한다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_084.webp",
+        "score": 0.5104
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "창고에 넣으세요.",
+     "action_type": "move",
+     "chosen": "CLEANING_084",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "5a188f59-2b71-4474-938c-4b94367583d4",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CLEANING_084",
+        "group_id": "CLEANING_084",
+        "job": "",
+        "asset_type": "action",
+        "label": "청소도구를 청소 도구함에 넣어 정리한다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_084.webp",
+        "score": 0.4538
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "청소",
+   "sentence": "미끄럼 주의 표지판을 세우세요.",
+   "latency_sec": 8.14,
+   "steps": [
+    {
+     "sentence": "미끄럼 주의 표지판을 세우세요.",
+     "action_type": "other",
+     "chosen": "CLEANING_005",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "2901bcae-6746-4c3f-84f0-2d2e3254a1d0",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CLEANING_005",
+        "group_id": "CLEANING_005",
+        "job": "",
+        "asset_type": "action",
+        "label": "미끄럼 주의 표지를 세운다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_005.webp",
+        "score": 0.669
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "청소",
+   "sentence": "엘리베이터 바닥을 청소기로 미세요.",
+   "latency_sec": 12.13,
+   "steps": [
+    {
+     "sentence": "청소기로 미세요.",
+     "action_type": "clean",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "56d4baa1-fc7d-41c1-b383-ad025ec4ad44",
+      "reason": "low_margin",
+      "candidates": [
+       {
+        "asset_id": "CLEANING_036",
+        "group_id": "CLEANING_036",
+        "job": "cleaning",
+        "asset_type": "action",
+        "label": "차량 내부 바닥을 청소기로 청소한다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_036.webp",
+        "score": 0.4128
+       },
+       {
+        "asset_id": "CLEANING_053",
+        "group_id": "CLEANING_053",
+        "job": "cleaning",
+        "asset_type": "action",
+        "label": "먼지가 쌓인 바닥에 청소기를 돌린다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_053.webp",
+        "score": 0.4072
+       },
+       {
+        "asset_id": "CLEANING_018",
+        "group_id": "CLEANING_018",
+        "job": "cleaning",
+        "asset_type": "action",
+        "label": "밀대로 바닥을 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_018.webp",
+        "score": 0.4019
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "엘리베이터 바닥을 청소하세요.",
+     "action_type": "clean",
+     "chosen": "CLEANING_172",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "abb9be09-c21c-4d06-bc64-71bc5cb4b854",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "CLEANING_172",
+        "group_id": "CLEANING_172",
+        "job": "",
+        "asset_type": "action",
+        "label": "엘리베이터 바닥을 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/cleaning/CLEANING_172.webp",
+        "score": 0.7854
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "조립",
+   "sentence": "전동 드라이버를 충전기에 꽂으세요.",
+   "latency_sec": 7.81,
+   "steps": [
+    {
+     "sentence": "전동 드라이버를 충전기에 꽂으세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "2ddca1b1-b87d-482a-a08b-91f7eff52a16",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "ASSEMBLY_083",
+        "group_id": "ASSEMBLY_083",
+        "job": "assembly",
+        "asset_type": "action",
+        "label": "드라이버를 수직으로 세운다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_083.webp",
+        "score": 0.278
+       },
+       {
+        "asset_id": "ASSEMBLY_050",
+        "group_id": "ASSEMBLY_050",
+        "job": "assembly",
+        "asset_type": "action",
+        "label": "드라이버를 가져온다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_050.webp",
+        "score": 0.2589
+       },
+       {
+        "asset_id": "ASSEMBLY_082",
+        "group_id": "ASSEMBLY_082",
+        "job": "assembly",
+        "asset_type": "action",
+        "label": "드라이버를 나사 홈에 맞춘다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_082.webp",
+        "score": 0.2574
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "조립",
+   "sentence": "부품을 상자에서 꺼내세요.",
+   "latency_sec": 7.87,
+   "steps": [
+    {
+     "sentence": "부품을 상자에서 꺼내세요.",
+     "action_type": "move",
+     "chosen": "ASSEMBLY_160",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "a0102c34-a55f-46ee-a6da-d61c0ce13331",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "ASSEMBLY_160",
+        "group_id": "ASSEMBLY_160",
+        "job": "",
+        "asset_type": "action",
+        "label": "부품을 종류별 상자에 나누어 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_160.webp",
+        "score": 0.4077
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "조립",
+   "sentence": "불량 부품을 빨간 상자에 넣으세요.",
+   "latency_sec": 10.45,
+   "steps": [
+    {
+     "sentence": "불량 부품을 넣으세요.",
+     "action_type": "move",
+     "chosen": "ASSEMBLY_135",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "22d9c8b4-a8c8-4668-9108-9e3c0f82149b",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "ASSEMBLY_135",
+        "group_id": "ASSEMBLY_135",
+        "job": "",
+        "asset_type": "action",
+        "label": "불량 제품을 불량품 통에 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_135.webp",
+        "score": 0.4772
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "조립",
+   "sentence": "작업대 위를 정리하세요.",
+   "latency_sec": 8.35,
+   "steps": [
+    {
+     "sentence": "작업대 위를 정리하세요.",
+     "action_type": "other",
+     "chosen": "ASSEMBLY_162",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "7b2aede7-49ab-43e0-a1dc-df473043e875",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "ASSEMBLY_162",
+        "group_id": "ASSEMBLY_162",
+        "job": "",
+        "asset_type": "action",
+        "label": "작업대 위 부품을 정리한다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_162.webp",
+        "score": 0.6603
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "조립",
+   "sentence": "보호 안경을 쓰세요.",
+   "latency_sec": 7.6,
+   "steps": [
+    {
+     "sentence": "보호 안경을 쓰세요.",
+     "action_type": "wear",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "d64a1038-fd0e-420c-a890-aac5b92df1a8",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "ASSEMBLY_173",
+        "group_id": "ASSEMBLY_173",
+        "job": "assembly",
+        "asset_type": "action",
+        "label": "보안경을 벗는다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_173.webp",
+        "score": 0.3222
+       },
+       {
+        "asset_id": "ASSEMBLY_AUX_040",
+        "group_id": "ASSEMBLY_AUX_040",
+        "job": "assembly",
+        "asset_type": "action",
+        "label": "보안경을 눈에 맞춘다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_AUX_040.webp",
+        "score": 0.3119
+       },
+       {
+        "asset_id": "ASSEMBLY_AUX_006",
+        "group_id": "ASSEMBLY_AUX_006",
+        "job": "assembly",
+        "asset_type": "support",
+        "label": "보안경을 착용하는 모습",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_AUX_006.webp",
+        "score": 0.2791
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "조립",
+   "sentence": "완성된 제품 개수를 세세요.",
+   "latency_sec": 7.8,
+   "steps": [
+    {
+     "sentence": "완성된 제품 개수를 세세요.",
+     "action_type": "observe",
+     "chosen": "ASSEMBLY_149",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "ad3f63a1-7be2-4541-abc5-bfaeb2567762",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "ASSEMBLY_149",
+        "group_id": "ASSEMBLY_149",
+        "job": "",
+        "asset_type": "action",
+        "label": "완성된 제품 개수를 센다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_149.webp",
+        "score": 0.864
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "조립",
+   "sentence": "케이블을 커넥터에 꽂으세요.",
+   "latency_sec": 9.18,
+   "steps": [
+    {
+     "sentence": "케이블을 커넥터에 꽂으세요.",
+     "action_type": "assemble",
+     "chosen": "ASSEMBLY_106",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "67db0640-a54e-412b-b56a-e2b26e65a0f2",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "ASSEMBLY_106",
+        "group_id": "ASSEMBLY_106",
+        "job": "",
+        "asset_type": "action",
+        "label": "커넥터를 전선 끝에 끼운다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_106.webp",
+        "score": 0.3682
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "조립",
+   "sentence": "뚜껑을 제품에 끼우세요.",
+   "latency_sec": 7.78,
+   "steps": [
+    {
+     "sentence": "뚜껑을 제품에 끼우세요.",
+     "action_type": "assemble",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "0bc9af64-4ac2-41cd-9142-ea1bb0054292",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "ASSEMBLY_074",
+        "group_id": "ASSEMBLY_074",
+        "job": "assembly",
+        "asset_type": "action",
+        "label": "작은 부품을 홈에 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_074.webp",
+        "score": 0.2807
+       },
+       {
+        "asset_id": "ASSEMBLY_096",
+        "group_id": "ASSEMBLY_096",
+        "job": "assembly",
+        "asset_type": "action",
+        "label": "스티커를 제품에 붙인다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_096.webp",
+        "score": 0.2771
+       },
+       {
+        "asset_id": "ASSEMBLY_075",
+        "group_id": "ASSEMBLY_075",
+        "job": "assembly",
+        "asset_type": "action",
+        "label": "고무 패킹을 홈에 끼운다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_075.webp",
+        "score": 0.2756
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "조립",
+   "sentence": "라벨을 제품 뒷면에 붙이세요.",
+   "latency_sec": 8.51,
+   "steps": [
+    {
+     "sentence": "라벨을 붙이세요.",
+     "action_type": "assemble",
+     "chosen": "ASSEMBLY_155",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "bb52fc17-cd25-4fec-8a91-035fcce1f60c",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "ASSEMBLY_155",
+        "group_id": "ASSEMBLY_155",
+        "job": "",
+        "asset_type": "action",
+        "label": "상자에 라벨을 붙인다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_155.webp",
+        "score": 0.5046
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "조립",
+   "sentence": "작업 일지에 수량을 적으세요.",
+   "latency_sec": 8.35,
+   "steps": [
+    {
+     "sentence": "수량을 적으세요.",
+     "action_type": "other",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "25ec1887-bcff-4d51-ab87-784887b7687d",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "ASSEMBLY_153",
+        "group_id": "ASSEMBLY_153",
+        "job": "assembly",
+        "asset_type": "action",
+        "label": "상자 수량을 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_153.webp",
+        "score": 0.2255
+       },
+       {
+        "asset_id": "ASSEMBLY_156",
+        "group_id": "ASSEMBLY_156",
+        "job": "assembly",
+        "asset_type": "action",
+        "label": "수량표를 담당자에게 보여준다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_156.webp",
+        "score": 0.1956
+       },
+       {
+        "asset_id": "ASSEMBLY_AUX_053",
+        "group_id": "ASSEMBLY_AUX_053",
+        "job": "assembly",
+        "asset_type": "action",
+        "label": "작업 순서표를 들고 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/assembly/ASSEMBLY_AUX_053.webp",
+        "score": 0.1892
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "포장",
+   "sentence": "상자를 접어서 만드세요.",
+   "latency_sec": 12.58,
+   "steps": [
+    {
+     "sentence": "상자를 접으세요.",
+     "action_type": "pack",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "8f91e9c1-8d99-4dd1-9e61-773e945afde1",
+      "reason": "low_margin",
+      "candidates": [
+       {
+        "asset_id": "PACKAGING_162",
+        "group_id": "PACKAGING_162",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "큰 상자를 양손으로 든다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_162.webp",
+        "score": 0.3665
+       },
+       {
+        "asset_id": "PACKAGING_166",
+        "group_id": "PACKAGING_166",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "상자를 선반 아래칸에 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_166.webp",
+        "score": 0.3514
+       },
+       {
+        "asset_id": "PACKAGING_161",
+        "group_id": "PACKAGING_161",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "작은 상자를 한 손으로 든다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_161.webp",
+        "score": 0.3467
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "상자를 만드세요.",
+     "action_type": "pack",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "ab9d4632-a40f-4d08-b05a-e3e784360ae6",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "PACKAGING_081",
+        "group_id": "PACKAGING_081",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "작은 상자를 큰 상자 안에 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_081.webp",
+        "score": 0.3253
+       },
+       {
+        "asset_id": "PACKAGING_113",
+        "group_id": "PACKAGING_113",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "상자를 카트에 한 줄로 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_113.webp",
+        "score": 0.3124
+       },
+       {
+        "asset_id": "PACKAGING_166",
+        "group_id": "PACKAGING_166",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "상자를 선반 아래칸에 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_166.webp",
+        "score": 0.3104
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "포장",
+   "sentence": "테이프로 상자를 봉하세요.",
+   "latency_sec": 10.75,
+   "steps": [
+    {
+     "sentence": "상자를 봉하세요.",
+     "action_type": "pack",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "ecc7678a-b0f1-49c4-a6e5-a81eaa52c6b7",
+      "reason": "low_margin",
+      "candidates": [
+       {
+        "asset_id": "PACKAGING_095",
+        "group_id": "PACKAGING_095",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "상자 옆면에 테이프를 붙인다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_095.webp",
+        "score": 0.4916
+       },
+       {
+        "asset_id": "PACKAGING_096",
+        "group_id": "PACKAGING_096",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "상자 모서리에 테이프를 붙인다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_096.webp",
+        "score": 0.4767
+       },
+       {
+        "asset_id": "PACKAGING_076",
+        "group_id": "PACKAGING_076",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "포장지를 테이프로 고정한다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_076.webp",
+        "score": 0.3599
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "테이프를 잘라내세요.",
+     "action_type": "move",
+     "chosen": "PACKAGING_093",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "b38f74b2-4c53-4254-963e-fa7b6ada3472",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "PACKAGING_093",
+        "group_id": "PACKAGING_093",
+        "job": "",
+        "asset_type": "action",
+        "label": "테이프를 자른다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_093.webp",
+        "score": 0.5691
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "포장",
+   "sentence": "완충재를 상자에 넣으세요.",
+   "latency_sec": 8.03,
+   "steps": [
+    {
+     "sentence": "완충재를 상자에 넣으세요.",
+     "action_type": "pack",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "683edd42-2eae-4919-96fc-3bc212ce1206",
+      "reason": "low_margin",
+      "candidates": [
+       {
+        "asset_id": "PACKAGING_046",
+        "group_id": "PACKAGING_046",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "빈 공간에 완충재를 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_046.webp",
+        "score": 0.4582
+       },
+       {
+        "asset_id": "PACKAGING_041",
+        "group_id": "PACKAGING_041",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "박스 바닥에 완충재를 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_041.webp",
+        "score": 0.4574
+       },
+       {
+        "asset_id": "PACKAGING_036",
+        "group_id": "PACKAGING_036",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "소포장 제품을 완성품 상자에 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_036.webp",
+        "score": 0.4244
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "포장",
+   "sentence": "제품을 비닐봉투에 넣으세요.",
+   "latency_sec": 7.81,
+   "steps": [
+    {
+     "sentence": "제품을 비닐봉투에 넣으세요.",
+     "action_type": "pack",
+     "chosen": "PACKAGING_030",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "f72c81f7-6963-4042-8682-083961ff7d04",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "PACKAGING_030",
+        "group_id": "PACKAGING_030",
+        "job": "",
+        "asset_type": "action",
+        "label": "제품을 봉투 안에 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_030.webp",
+        "score": 0.6013
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "포장",
+   "sentence": "송장을 상자 위에 붙이세요.",
+   "latency_sec": 7.93,
+   "steps": [
+    {
+     "sentence": "송장을 상자 위에 붙이세요.",
+     "action_type": "other",
+     "chosen": "PACKAGING_102",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "b2837a6d-bf6e-4249-be44-e43f49d21e5c",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "PACKAGING_102",
+        "group_id": "PACKAGING_102",
+        "job": "",
+        "asset_type": "action",
+        "label": "라벨을 상자 옆면에 붙인다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_102.webp",
+        "score": 0.4893
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "포장",
+   "sentence": "무게를 저울로 재세요.",
+   "latency_sec": 7.81,
+   "steps": [
+    {
+     "sentence": "무게를 저울로 재세요.",
+     "action_type": "observe",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "89663ee2-8700-41cf-8004-a583f07b59fd",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "PACKAGING_162",
+        "group_id": "PACKAGING_162",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "큰 상자를 양손으로 든다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_162.webp",
+        "score": 0.1467
+       },
+       {
+        "asset_id": "PACKAGING_111",
+        "group_id": "PACKAGING_111",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "포장된 상자를 양손으로 든다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_111.webp",
+        "score": 0.1304
+       },
+       {
+        "asset_id": "PACKAGING_161",
+        "group_id": "PACKAGING_161",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "작은 상자를 한 손으로 든다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_161.webp",
+        "score": 0.1235
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "포장",
+   "sentence": "포장한 상자를 팔레트에 쌓으세요.",
+   "latency_sec": 7.9,
+   "steps": [
+    {
+     "sentence": "상자를 팔레트에 쌓으세요.",
+     "action_type": "stack",
+     "chosen": "PACKAGING_168",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "46a245bd-ea19-43bb-9c61-b0711a6cbfbd",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "PACKAGING_168",
+        "group_id": "PACKAGING_168",
+        "job": "",
+        "asset_type": "action",
+        "label": "상자를 팔레트 위에 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_168.webp",
+        "score": 0.5983
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "포장",
+   "sentence": "찢어진 포장지를 버리세요.",
+   "latency_sec": 7.97,
+   "steps": [
+    {
+     "sentence": "찢어진 포장지를 버리세요.",
+     "action_type": "clean",
+     "chosen": "PACKAGING_071",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "df951fea-53d0-42fb-a5f8-040cd6efd071",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "PACKAGING_071",
+        "group_id": "PACKAGING_071",
+        "job": "",
+        "asset_type": "action",
+        "label": "포장지를 펼친다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_071.webp",
+        "score": 0.3829
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "포장",
+   "sentence": "제품 수량을 확인하세요.",
+   "latency_sec": 7.81,
+   "steps": [
+    {
+     "sentence": "제품 수량을 확인하세요.",
+     "action_type": "observe",
+     "chosen": "PACKAGING_022",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "764ba896-1109-49cd-8f5a-f4071a8cef87",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "PACKAGING_022",
+        "group_id": "PACKAGING_022",
+        "job": "",
+        "asset_type": "action",
+        "label": "제품 표면을 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_022.webp",
+        "score": 0.5873
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "포장",
+   "sentence": "박스에 날짜 도장을 찍으세요.",
+   "latency_sec": 8.59,
+   "steps": [
+    {
+     "sentence": "박스에 도장을 찍으세요.",
+     "action_type": "other",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "f66168a5-a862-49d7-a91a-3387647025da",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "PACKAGING_049",
+        "group_id": "PACKAGING_049",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "박스 윗면에 라벨을 붙인다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_049.webp",
+        "score": 0.3471
+       },
+       {
+        "asset_id": "PACKAGING_042",
+        "group_id": "PACKAGING_042",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "제품을 박스 안에 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_042.webp",
+        "score": 0.2853
+       },
+       {
+        "asset_id": "PACKAGING_048",
+        "group_id": "PACKAGING_048",
+        "job": "packaging",
+        "asset_type": "action",
+        "label": "박스 가운데에 테이프를 붙인다",
+        "image_url": "http://localhost:8000/api/aac/images/packaging/PACKAGING_048.webp",
+        "score": 0.2795
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "마트",
+   "sentence": "카트를 입구로 모으세요.",
+   "latency_sec": 7.97,
+   "steps": [
+    {
+     "sentence": "카트를 입구로 모으세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "77242509-c513-4d4f-aba1-8f54a2600f23",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "RETAIL_026",
+        "group_id": "RETAIL_026",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "카트를 통행에 방해되지 않게 세운다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_026.webp",
+        "score": 0.3126
+       },
+       {
+        "asset_id": "RETAIL_023",
+        "group_id": "RETAIL_023",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "카트를 천천히 밀어 이동한다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_023.webp",
+        "score": 0.258
+       },
+       {
+        "asset_id": "RETAIL_091",
+        "group_id": "RETAIL_091",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "배송 카트를 이동한다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_091.webp",
+        "score": 0.252
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "마트",
+   "sentence": "유통기한이 지난 상품을 빼세요.",
+   "latency_sec": 7.86,
+   "steps": [
+    {
+     "sentence": "유통기한이 지난 상품을 빼세요.",
+     "action_type": "move",
+     "chosen": "RETAIL_043",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "9d5b1a51-283e-4f05-89ac-b6aed3bfbd9c",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "RETAIL_043",
+        "group_id": "RETAIL_043",
+        "job": "",
+        "asset_type": "action",
+        "label": "유통기한이 지난 상품을 진열대에서 뺀다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_043.webp",
+        "score": 0.7267
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "마트",
+   "sentence": "가격표를 선반에 붙이세요.",
+   "latency_sec": 8.36,
+   "steps": [
+    {
+     "sentence": "가격표를 선반에 붙이세요.",
+     "action_type": "other",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "f5fb32fb-b4fc-4e36-b026-f3663c5ea91b",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "RETAIL_051",
+        "group_id": "RETAIL_051",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "없는 가격표를 진열대에 꽂는다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_051.webp",
+        "score": 0.3466
+       },
+       {
+        "asset_id": "RETAIL_029",
+        "group_id": "RETAIL_029",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "상품을 선반에 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_029.webp",
+        "score": 0.3199
+       },
+       {
+        "asset_id": "RETAIL_052",
+        "group_id": "RETAIL_052",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "삐뚤어진 가격표를 바로 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_052.webp",
+        "score": 0.3198
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "마트",
+   "sentence": "장바구니를 정리하세요.",
+   "latency_sec": 7.99,
+   "steps": [
+    {
+     "sentence": "장바구니를 정리하세요.",
+     "action_type": "other",
+     "chosen": "RETAIL_066",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "3c5e5ba6-c25c-4f56-803d-ffbe4cc39117",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "RETAIL_066",
+        "group_id": "RETAIL_066",
+        "job": "",
+        "asset_type": "action",
+        "label": "쇼핑바구니를 포개어 정리한다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_066.webp",
+        "score": 0.5858
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "마트",
+   "sentence": "계산대 주변을 닦으세요.",
+   "latency_sec": 7.96,
+   "steps": [
+    {
+     "sentence": "계산대를 닦으세요.",
+     "action_type": "clean",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "96cf6e65-a82b-496d-9858-7eb2c0bde1c1",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "RETAIL_070",
+        "group_id": "RETAIL_070",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "쇼핑카트의 손잡이를 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_070.webp",
+        "score": 0.2681
+       },
+       {
+        "asset_id": "RETAIL_063",
+        "group_id": "RETAIL_063",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "계산한 상품을 봉투에 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_063.webp",
+        "score": 0.1039
+       },
+       {
+        "asset_id": "RETAIL_052",
+        "group_id": "RETAIL_052",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "삐뚤어진 가격표를 바로 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_052.webp",
+        "score": 0.0807
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "마트",
+   "sentence": "우유를 냉장고에 채우세요.",
+   "latency_sec": 13.15,
+   "steps": [
+    {
+     "sentence": "우유를 가져오세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "edce746a-a8de-4dcd-9146-82c6df78dbcc",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "RETAIL_067",
+        "group_id": "RETAIL_067",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "사용한 쇼핑카트를 가져온다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_067.webp",
+        "score": 0.2624
+       },
+       {
+        "asset_id": "RETAIL_065",
+        "group_id": "RETAIL_065",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "사용한 쇼핑바구니를 가져온다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_065.webp",
+        "score": 0.2596
+       },
+       {
+        "asset_id": "RETAIL_024",
+        "group_id": "RETAIL_024",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "상품을 해당 매장 구역으로 가져간다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_024.webp",
+        "score": 0.1137
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "우유를 냉장고에 채우세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "73ab6944-5631-4c1c-a81a-25c1afaaca78",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "RETAIL_047",
+        "group_id": "RETAIL_047",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "냉장 상품을 냉장 진열대에 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_047.webp",
+        "score": 0.2307
+       },
+       {
+        "asset_id": "RETAIL_034",
+        "group_id": "RETAIL_034",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "비어 있는 진열 공간을 채운다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_034.webp",
+        "score": 0.2289
+       },
+       {
+        "asset_id": "RETAIL_078",
+        "group_id": "RETAIL_078",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "냉장 상품을 따로 담는다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_078.webp",
+        "score": 0.1829
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "냉장고 문을 닫으세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "876ce6f1-f128-40b0-b233-82d4fa4a4c4b",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "RETAIL_047",
+        "group_id": "RETAIL_047",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "냉장 상품을 냉장 진열대에 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_047.webp",
+        "score": 0.2294
+       },
+       {
+        "asset_id": "RETAIL_086",
+        "group_id": "RETAIL_086",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "배송 봉투 또는 상자를 닫는다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_086.webp",
+        "score": 0.2228
+       },
+       {
+        "asset_id": "RETAIL_078",
+        "group_id": "RETAIL_078",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "냉장 상품을 따로 담는다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_078.webp",
+        "score": 0.1983
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "마트",
+   "sentence": "빈 박스를 분리수거하세요.",
+   "latency_sec": 8.14,
+   "steps": [
+    {
+     "sentence": "빈 박스를 분리수거하세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "73d74e8a-314b-4985-a844-147a1486504a",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "RETAIL_066",
+        "group_id": "RETAIL_066",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "쇼핑바구니를 포개어 정리한다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_066.webp",
+        "score": 0.1608
+       },
+       {
+        "asset_id": "RETAIL_018",
+        "group_id": "RETAIL_018",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "상품을 종류별로 나눈다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_018.webp",
+        "score": 0.1303
+       },
+       {
+        "asset_id": "RETAIL_085",
+        "group_id": "RETAIL_085",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "큰 주문 상품을 배송 상자에 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_085.webp",
+        "score": 0.1277
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "마트",
+   "sentence": "바코드를 스캐너로 찍으세요.",
+   "latency_sec": 7.82,
+   "steps": [
+    {
+     "sentence": "바코드를 스캐너로 찍으세요.",
+     "action_type": "operate",
+     "chosen": "RETAIL_060",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "93135293-cfa7-4327-8d1a-96377aeaacdf",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "RETAIL_060",
+        "group_id": "RETAIL_060",
+        "job": "",
+        "asset_type": "action",
+        "label": "상품의 바코드를 스캐너에 찍는다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_060.webp",
+        "score": 0.6678
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "마트",
+   "sentence": "고객에게 인사하세요.",
+   "latency_sec": 8.03,
+   "steps": [
+    {
+     "sentence": "고객에게 인사하세요.",
+     "action_type": "other",
+     "chosen": "RETAIL_055",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "e458d836-9ad3-433e-9382-1846900006d4",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "RETAIL_055",
+        "group_id": "RETAIL_055",
+        "job": "",
+        "asset_type": "action",
+        "label": "고객에게 인사한다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_055.webp",
+        "score": 0.8778
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "마트",
+   "sentence": "재고 수량을 세세요.",
+   "latency_sec": 8.01,
+   "steps": [
+    {
+     "sentence": "재고 수량을 세세요.",
+     "action_type": "observe",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "c6e4b2d5-eb3e-4bd8-90c9-96c32500bd53",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "RETAIL_075",
+        "group_id": "RETAIL_075",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "주문한 상품의 수량을 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_075.webp",
+        "score": 0.2818
+       },
+       {
+        "asset_id": "RETAIL_036",
+        "group_id": "RETAIL_036",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "새 상품을 뒤쪽에 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_036.webp",
+        "score": 0.1512
+       },
+       {
+        "asset_id": "RETAIL_043",
+        "group_id": "RETAIL_043",
+        "job": "retail",
+        "asset_type": "action",
+        "label": "유통기한이 지난 상품을 진열대에서 뺀다",
+        "image_url": "http://localhost:8000/api/aac/images/retail/RETAIL_043.webp",
+        "score": 0.1367
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "매장 진열",
+   "sentence": "상품을 앞으로 당겨 정리하세요.",
+   "latency_sec": 7.97,
+   "steps": [
+    {
+     "sentence": "상품을 앞으로 당기세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "02a63c06-18f5-4f1a-8651-1c6af2e4b950",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "DISPLAY_031",
+        "group_id": "DISPLAY_031",
+        "job": "display",
+        "asset_type": "action",
+        "label": "새 상품을 채워 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_031.webp",
+        "score": 0.2859
+       },
+       {
+        "asset_id": "DISPLAY_026",
+        "group_id": "DISPLAY_026",
+        "job": "display",
+        "asset_type": "action",
+        "label": "이상 없는 상품을 대차에 옮겨 담는다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_026.webp",
+        "score": 0.2747
+       },
+       {
+        "asset_id": "DISPLAY_002",
+        "group_id": "DISPLAY_002",
+        "job": "display",
+        "asset_type": "action",
+        "label": "상품을 매장 선반 위에 올려놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_002.webp",
+        "score": 0.2625
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "매장 진열",
+   "sentence": "옷을 옷걸이에 거세요.",
+   "latency_sec": 8.24,
+   "steps": [
+    {
+     "sentence": "옷을 옷걸이에 거세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "46393c03-1b2f-4354-930f-6cd89ba2fc98",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "DISPLAY_008",
+        "group_id": "DISPLAY_008",
+        "job": "display",
+        "asset_type": "action",
+        "label": "삐뚤어진 라벨을 손으로 바르게 다시 붙인다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_008.webp",
+        "score": 0.1362
+       },
+       {
+        "asset_id": "DISPLAY_002",
+        "group_id": "DISPLAY_002",
+        "job": "display",
+        "asset_type": "action",
+        "label": "상품을 매장 선반 위에 올려놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_002.webp",
+        "score": 0.125
+       },
+       {
+        "asset_id": "DISPLAY_054",
+        "group_id": "DISPLAY_054",
+        "job": "display",
+        "asset_type": "action",
+        "label": "명찰 착용",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_054.webp",
+        "score": 0.116
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "매장 진열",
+   "sentence": "행사 안내판을 세우세요.",
+   "latency_sec": 8.06,
+   "steps": [
+    {
+     "sentence": "행사 안내판을 세우세요.",
+     "action_type": "other",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "7075a080-2159-44d4-91f4-f4ef9e20309d",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "DISPLAY_TOOL_013",
+        "group_id": "DISPLAY_TOOL_013",
+        "job": "display",
+        "asset_type": "tool",
+        "label": "매대와 표지판",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_TOOL_013.webp",
+        "score": 0.1234
+       },
+       {
+        "asset_id": "DISPLAY_006",
+        "group_id": "DISPLAY_006",
+        "job": "display",
+        "asset_type": "action",
+        "label": "선반에 가격표 라벨을 붙인다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_006.webp",
+        "score": 0.0948
+       },
+       {
+        "asset_id": "DISPLAY_033",
+        "group_id": "DISPLAY_033",
+        "job": "display",
+        "asset_type": "action",
+        "label": "손님에게 다가가 원하는 방향을 안내한다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_033.webp",
+        "score": 0.0938
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "매장 진열",
+   "sentence": "신상품을 맨 앞에 진열하세요.",
+   "latency_sec": 7.78,
+   "steps": [
+    {
+     "sentence": "신상품을 맨 앞에 진열하세요.",
+     "action_type": "other",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "66256af1-67ed-47b9-8516-b750f5eb1751",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "DISPLAY_002",
+        "group_id": "DISPLAY_002",
+        "job": "display",
+        "asset_type": "action",
+        "label": "상품을 매장 선반 위에 올려놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_002.webp",
+        "score": 0.2454
+       },
+       {
+        "asset_id": "DISPLAY_027",
+        "group_id": "DISPLAY_027",
+        "job": "display",
+        "asset_type": "action",
+        "label": "선반 위 상품을 하나씩 집어 든다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_027.webp",
+        "score": 0.1962
+       },
+       {
+        "asset_id": "DISPLAY_TOOL_017",
+        "group_id": "DISPLAY_TOOL_017",
+        "job": "display",
+        "asset_type": "tool",
+        "label": "상품이 진열된 선반",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_TOOL_017.webp",
+        "score": 0.1943
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "매장 진열",
+   "sentence": "진열대 먼지를 닦으세요.",
+   "latency_sec": 12.27,
+   "steps": [
+    {
+     "sentence": "진열대 먼지를 닦으세요.",
+     "action_type": "clean",
+     "chosen": "DISPLAY_048",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "074af263-bd7c-4100-ae80-4bcd9871187d",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "DISPLAY_048",
+        "group_id": "DISPLAY_048",
+        "job": "",
+        "asset_type": "action",
+        "label": "매대 위 먼지를 마른 걸레로 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_048.webp",
+        "score": 0.4039
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "진열대의 먼지를 확인하세요.",
+     "action_type": "observe",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "320af48a-984f-488f-b7b4-84355decabe0",
+      "reason": "low_margin",
+      "candidates": [
+       {
+        "asset_id": "DISPLAY_004",
+        "group_id": "DISPLAY_004",
+        "job": "display",
+        "asset_type": "action",
+        "label": "한 걸음 물러서서 진열된 선반을 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_004.webp",
+        "score": 0.3795
+       },
+       {
+        "asset_id": "DISPLAY_020",
+        "group_id": "DISPLAY_020",
+        "job": "display",
+        "asset_type": "action",
+        "label": "빈 상자를 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_020.webp",
+        "score": 0.3669
+       },
+       {
+        "asset_id": "DISPLAY_040",
+        "group_id": "DISPLAY_040",
+        "job": "display",
+        "asset_type": "action",
+        "label": "선반에 상품이 빈 곳을 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_040.webp",
+        "score": 0.3452
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "매장 진열",
+   "sentence": "상품 라벨이 앞을 보게 돌리세요.",
+   "latency_sec": 8.61,
+   "steps": [
+    {
+     "sentence": "상품 라벨을 돌리세요.",
+     "action_type": "other",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "b868518e-a2bf-477d-80dd-702be9645afa",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "DISPLAY_007",
+        "group_id": "DISPLAY_007",
+        "job": "display",
+        "asset_type": "action",
+        "label": "가격표 라벨과 선반 위 상품을 번갈아 확인",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_007.webp",
+        "score": 0.2965
+       },
+       {
+        "asset_id": "DISPLAY_006",
+        "group_id": "DISPLAY_006",
+        "job": "display",
+        "asset_type": "action",
+        "label": "선반에 가격표 라벨을 붙인다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_006.webp",
+        "score": 0.2675
+       },
+       {
+        "asset_id": "DISPLAY_005",
+        "group_id": "DISPLAY_005",
+        "job": "display",
+        "asset_type": "action",
+        "label": "작은 빈 가격표 라벨을 집어 든다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_005.webp",
+        "score": 0.253
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "매장 진열",
+   "sentence": "빈 칸을 상품으로 채우세요.",
+   "latency_sec": 8.39,
+   "steps": [
+    {
+     "sentence": "빈 칸을 상품으로 채우세요.",
+     "action_type": "other",
+     "chosen": "DISPLAY_031",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "c4dd1b21-99eb-4d37-852a-ba5fe1f6662d",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "DISPLAY_031",
+        "group_id": "DISPLAY_031",
+        "job": "",
+        "asset_type": "action",
+        "label": "새 상품을 채워 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_031.webp",
+        "score": 0.37
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "매장 진열",
+   "sentence": "마네킹에 옷을 입히세요.",
+   "latency_sec": 7.86,
+   "steps": [
+    {
+     "sentence": "마네킹에 옷을 입히세요.",
+     "action_type": "other",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "89d64b4d-a8ef-459b-bf0e-2dfa0eb8730e",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "DISPLAY_054",
+        "group_id": "DISPLAY_054",
+        "job": "display",
+        "asset_type": "action",
+        "label": "명찰 착용",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_054.webp",
+        "score": 0.2477
+       },
+       {
+        "asset_id": "DISPLAY_052",
+        "group_id": "DISPLAY_052",
+        "job": "display",
+        "asset_type": "action",
+        "label": "앞치마 착용",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_052.webp",
+        "score": 0.1892
+       },
+       {
+        "asset_id": "DISPLAY_011",
+        "group_id": "DISPLAY_011",
+        "job": "display",
+        "asset_type": "action",
+        "label": "태블릿에 수량을 입력한다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_011.webp",
+        "score": 0.0903
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "매장 진열",
+   "sentence": "할인 스티커를 붙이세요.",
+   "latency_sec": 7.91,
+   "steps": [
+    {
+     "sentence": "할인 스티커를 붙이세요.",
+     "action_type": "other",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "571bb2f3-36a0-49bb-bfab-792dc2eca9ec",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "DISPLAY_006",
+        "group_id": "DISPLAY_006",
+        "job": "display",
+        "asset_type": "action",
+        "label": "선반에 가격표 라벨을 붙인다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_006.webp",
+        "score": 0.2609
+       },
+       {
+        "asset_id": "DISPLAY_TOOL_012",
+        "group_id": "DISPLAY_TOOL_012",
+        "job": "display",
+        "asset_type": "tool",
+        "label": "유통기한 스티커",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_TOOL_012.webp",
+        "score": 0.2196
+       },
+       {
+        "asset_id": "DISPLAY_TOOL_011",
+        "group_id": "DISPLAY_TOOL_011",
+        "job": "display",
+        "asset_type": "tool",
+        "label": "가격표 스티커",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_TOOL_011.webp",
+        "score": 0.1828
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "매장 진열",
+   "sentence": "쓰러진 상품을 세우세요.",
+   "latency_sec": 8.9,
+   "steps": [
+    {
+     "sentence": "상품을 세우세요.",
+     "action_type": "other",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "f4573f85-c3a6-443c-a05b-b155d9a95c63",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "DISPLAY_002",
+        "group_id": "DISPLAY_002",
+        "job": "display",
+        "asset_type": "action",
+        "label": "상품을 매장 선반 위에 올려놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_002.webp",
+        "score": 0.3022
+       },
+       {
+        "asset_id": "DISPLAY_031",
+        "group_id": "DISPLAY_031",
+        "job": "display",
+        "asset_type": "action",
+        "label": "새 상품을 채워 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_031.webp",
+        "score": 0.2853
+       },
+       {
+        "asset_id": "DISPLAY_036",
+        "group_id": "DISPLAY_036",
+        "job": "display",
+        "asset_type": "action",
+        "label": "파손되거나 찌그러진 상품을 선반에서 찾아낸다",
+        "image_url": "http://localhost:8000/api/aac/images/display/DISPLAY_036.webp",
+        "score": 0.2843
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "택배 배송",
+   "sentence": "택배 상자를 수레에 실으세요.",
+   "latency_sec": 8.13,
+   "steps": [
+    {
+     "sentence": "택배 상자를 수레에 실으세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "481671f0-3acb-4c95-84fd-153dc222d615",
+      "reason": "low_margin",
+      "candidates": [
+       {
+        "asset_id": "DELIVERY_015",
+        "group_id": "DELIVERY_015",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "확인이 끝난 상자를 손수레에 옮겨 싣는다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_015.webp",
+        "score": 0.3757
+       },
+       {
+        "asset_id": "DELIVERY_006",
+        "group_id": "DELIVERY_006",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "상자를 트럭 적재함 안으로 밀어 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_006.webp",
+        "score": 0.3634
+       },
+       {
+        "asset_id": "DELIVERY_001",
+        "group_id": "DELIVERY_001",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "바닥에 쌓인 상자를 두 손으로 든다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_001.webp",
+        "score": 0.2724
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "택배 배송",
+   "sentence": "송장 번호를 확인하세요.",
+   "latency_sec": 7.9,
+   "steps": [
+    {
+     "sentence": "송장 번호를 확인하세요.",
+     "action_type": "observe",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "e8dbcc0d-e454-4b66-931e-c33c054a63f6",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "DELIVERY_009",
+        "group_id": "DELIVERY_009",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "상자에 붙은 사각형 라벨을 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_009.webp",
+        "score": 0.2879
+       },
+       {
+        "asset_id": "DELIVERY_035",
+        "group_id": "DELIVERY_035",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "촬영한 사진을 화면으로 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_035.webp",
+        "score": 0.2733
+       },
+       {
+        "asset_id": "DELIVERY_026",
+        "group_id": "DELIVERY_026",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "명세서 내용을 손가락으로 짚으며 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_026.webp",
+        "score": 0.2376
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "택배 배송",
+   "sentence": "상자를 트럭에 실으세요.",
+   "latency_sec": 7.86,
+   "steps": [
+    {
+     "sentence": "상자를 트럭에 실으세요.",
+     "action_type": "move",
+     "chosen": "DELIVERY_006",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "cdbfd2bb-3b04-468c-9ab2-a00dd3d37004",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "DELIVERY_006",
+        "group_id": "DELIVERY_006",
+        "job": "",
+        "asset_type": "action",
+        "label": "상자를 트럭 적재함 안으로 밀어 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_006.webp",
+        "score": 0.6014
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "택배 배송",
+   "sentence": "받는 사람에게 상자를 전달하세요.",
+   "latency_sec": 11.37,
+   "steps": [
+    {
+     "sentence": "상자를 전달하세요.",
+     "action_type": "move",
+     "chosen": "DELIVERY_020",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "aeea00ea-0db0-4805-8750-1e305b4cc01e",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "DELIVERY_020",
+        "group_id": "DELIVERY_020",
+        "job": "",
+        "asset_type": "action",
+        "label": "상자를 가지고 배송지에 간다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_020.webp",
+        "score": 0.4772
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "받는 사람에게 전달하세요.",
+     "action_type": "move",
+     "chosen": "DELIVERY_016",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "17eff59c-56eb-42c4-a1fc-83d7d33b5749",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "DELIVERY_016",
+        "group_id": "DELIVERY_016",
+        "job": "",
+        "asset_type": "action",
+        "label": "상자를 문 앞에 선 손님에게 건넨다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_016.webp",
+        "score": 0.4231
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "택배 배송",
+   "sentence": "배송 완료 사진을 찍으세요.",
+   "latency_sec": 7.84,
+   "steps": [
+    {
+     "sentence": "배송 완료 사진을 찍으세요.",
+     "action_type": "other",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "63491cf7-6717-4678-bfb1-e9c8fe7033a0",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "DELIVERY_035",
+        "group_id": "DELIVERY_035",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "촬영한 사진을 화면으로 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_035.webp",
+        "score": 0.2629
+       },
+       {
+        "asset_id": "DELIVERY_034",
+        "group_id": "DELIVERY_034",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "화면을 보며 사진을 찍는 자세를 취한다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_034.webp",
+        "score": 0.2065
+       },
+       {
+        "asset_id": "DELIVERY_037",
+        "group_id": "DELIVERY_037",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "조끼 착용 완료",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_037.webp",
+        "score": 0.1707
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "택배 배송",
+   "sentence": "무거운 상자는 둘이 함께 드세요.",
+   "latency_sec": 8.15,
+   "steps": [
+    {
+     "sentence": "무거운 상자를 드세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "e78740a6-0e9f-4829-85f6-74d79a3e0085",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "DELIVERY_001",
+        "group_id": "DELIVERY_001",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "바닥에 쌓인 상자를 두 손으로 든다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_001.webp",
+        "score": 0.343
+       },
+       {
+        "asset_id": "DELIVERY_033",
+        "group_id": "DELIVERY_033",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "휴대전화를 양손으로 들어 상자를 향해 겨눈다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_033.webp",
+        "score": 0.3346
+       },
+       {
+        "asset_id": "DELIVERY_024",
+        "group_id": "DELIVERY_024",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "상자와 함께 있는 거래명세서를 손에 든다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_024.webp",
+        "score": 0.3201
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "택배 배송",
+   "sentence": "상자를 지역별로 나누세요.",
+   "latency_sec": 7.87,
+   "steps": [
+    {
+     "sentence": "상자를 지역별로 나누세요.",
+     "action_type": "sort",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "bb29bd15-d375-40c2-978f-b25d1abce028",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "DELIVERY_020",
+        "group_id": "DELIVERY_020",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "상자를 가지고 배송지에 간다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_020.webp",
+        "score": 0.2711
+       },
+       {
+        "asset_id": "DELIVERY_031",
+        "group_id": "DELIVERY_031",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "반품 처리된 상자를 별도의 칸에 따로 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_031.webp",
+        "score": 0.2484
+       },
+       {
+        "asset_id": "DELIVERY_013",
+        "group_id": "DELIVERY_013",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "상자를 하나씩 꺼내 바닥에 내려놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_013.webp",
+        "score": 0.2449
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "택배 배송",
+   "sentence": "수레를 제자리에 가져다 두세요.",
+   "latency_sec": 10.4,
+   "steps": [
+    {
+     "sentence": "수레를 가져오세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "d6a4898e-12e7-437a-948b-d129ba479671",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "DELIVERY_001",
+        "group_id": "DELIVERY_001",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "바닥에 쌓인 상자를 두 손으로 든다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_001.webp",
+        "score": 0.1021
+       },
+       {
+        "asset_id": "DELIVERY_015",
+        "group_id": "DELIVERY_015",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "확인이 끝난 상자를 손수레에 옮겨 싣는다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_015.webp",
+        "score": 0.0984
+       },
+       {
+        "asset_id": "DELIVERY_020",
+        "group_id": "DELIVERY_020",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "상자를 가지고 배송지에 간다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_020.webp",
+        "score": 0.0973
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "수레를 제자리에 놓으세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "987ef27c-8007-40bf-b9fb-283f3570dc14",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "DELIVERY_029",
+        "group_id": "DELIVERY_029",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "들고 있던 상자를 다시 카트에 올려놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_029.webp",
+        "score": 0.2757
+       },
+       {
+        "asset_id": "DELIVERY_027",
+        "group_id": "DELIVERY_027",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "확인이 끝난 명세서를 상자 위에 다시 올려놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_027.webp",
+        "score": 0.245
+       },
+       {
+        "asset_id": "DELIVERY_031",
+        "group_id": "DELIVERY_031",
+        "job": "delivery",
+        "asset_type": "action",
+        "label": "반품 처리된 상자를 별도의 칸에 따로 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_031.webp",
+        "score": 0.2119
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "택배 배송",
+   "sentence": "파손된 상자를 따로 두세요.",
+   "latency_sec": 7.82,
+   "steps": [
+    {
+     "sentence": "파손된 상자를 따로 두세요.",
+     "action_type": "sort",
+     "chosen": "DELIVERY_031",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "cdd38ab1-77e6-4f3f-b29a-1653845af4d4",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "DELIVERY_031",
+        "group_id": "DELIVERY_031",
+        "job": "",
+        "asset_type": "action",
+        "label": "반품 처리된 상자를 별도의 칸에 따로 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_031.webp",
+        "score": 0.4962
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "택배 배송",
+   "sentence": "서명을 받으세요.",
+   "latency_sec": 7.8,
+   "steps": [
+    {
+     "sentence": "서명을 받으세요.",
+     "action_type": "other",
+     "chosen": "DELIVERY_019",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "fbffdc6e-3d9d-4ff0-9baf-bfaa13442b89",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "DELIVERY_019",
+        "group_id": "DELIVERY_019",
+        "job": "",
+        "asset_type": "action",
+        "label": "서명이 끝난 태블릿을 다시 받아 든다",
+        "image_url": "http://localhost:8000/api/aac/images/delivery/DELIVERY_019.webp",
+        "score": 0.3746
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "주유소 세차장",
+   "sentence": "주유기 노즐을 차에 꽂으세요.",
+   "latency_sec": 7.82,
+   "steps": [
+    {
+     "sentence": "주유기 노즐을 차에 꽂으세요.",
+     "action_type": "other",
+     "chosen": "GAS_037",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "33e770ce-1d6d-424d-aca4-eb26f55333a5",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "GAS_037",
+        "group_id": "GAS_037",
+        "job": "",
+        "asset_type": "action",
+        "label": "주유건을 자동차 주유구에 꽂고 기다린다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_037.webp",
+        "score": 0.4281
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "주유소 세차장",
+   "sentence": "차에 물을 뿌리세요.",
+   "latency_sec": 7.7,
+   "steps": [
+    {
+     "sentence": "차에 물을 뿌리세요.",
+     "action_type": "clean",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "22962e19-13a7-4639-9d59-e71431b6483b",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "GAS_024",
+        "group_id": "GAS_024",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "차량의 창문에 스프레이를 뿌린다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_024.webp",
+        "score": 0.2697
+       },
+       {
+        "asset_id": "GAS_006",
+        "group_id": "GAS_006",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "분무기로 자동차에 세정액을 뿌린다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_006.webp",
+        "score": 0.2611
+       },
+       {
+        "asset_id": "GAS_001",
+        "group_id": "GAS_001",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "차를 멈춰 세운다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_001.webp",
+        "score": 0.1623
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "주유소 세차장",
+   "sentence": "거품 솔로 차를 닦으세요.",
+   "latency_sec": 8.05,
+   "steps": [
+    {
+     "sentence": "거품 솔로 차를 닦으세요.",
+     "action_type": "clean",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "9df090bd-2500-4b20-b3cc-73f6c9bcb517",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "GAS_026",
+        "group_id": "GAS_026",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "천으로 차량의 프론트글라스를 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_026.webp",
+        "score": 0.3362
+       },
+       {
+        "asset_id": "GAS_007",
+        "group_id": "GAS_007",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "스퀴지로 유리를 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_007.webp",
+        "score": 0.3112
+       },
+       {
+        "asset_id": "GAS_027",
+        "group_id": "GAS_027",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "천으로 차량의 옆창문을 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_027.webp",
+        "score": 0.3108
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "주유소 세차장",
+   "sentence": "수건으로 물기를 닦으세요.",
+   "latency_sec": 7.9,
+   "steps": [
+    {
+     "sentence": "수건으로 물기를 닦으세요.",
+     "action_type": "clean",
+     "chosen": "GAS_008",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "8db0a27b-655b-495b-b930-b806c212b511",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "GAS_008",
+        "group_id": "GAS_008",
+        "job": "",
+        "asset_type": "action",
+        "label": "마른 천으로 유리에 남은 물기를 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_008.webp",
+        "score": 0.4306
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "주유소 세차장",
+   "sentence": "타이어를 닦으세요.",
+   "latency_sec": 7.88,
+   "steps": [
+    {
+     "sentence": "타이어를 닦으세요.",
+     "action_type": "clean",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "4f7de629-128b-4081-abd7-87e64bace0c3",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "GAS_018",
+        "group_id": "GAS_018",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "타이어 옆면의 밸브를 확인한다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_018.webp",
+        "score": 0.3018
+       },
+       {
+        "asset_id": "GAS_022",
+        "group_id": "GAS_022",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "타이어 밸브 캡을 배낸다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_022.webp",
+        "score": 0.2998
+       },
+       {
+        "asset_id": "GAS_026",
+        "group_id": "GAS_026",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "천으로 차량의 프론트글라스를 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_026.webp",
+        "score": 0.2852
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "주유소 세차장",
+   "sentence": "주유소 휴지통을 비우세요.",
+   "latency_sec": 10.38,
+   "steps": [
+    {
+     "sentence": "주유소 휴지통을 비우세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "842641ec-0463-4b26-8779-6ec2265e8f13",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "GAS_035",
+        "group_id": "GAS_035",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "주유건을 거치대에서 꺼낸다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_035.webp",
+        "score": 0.2084
+       },
+       {
+        "asset_id": "GAS_036",
+        "group_id": "GAS_036",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "주유건을 자동차 주유구에 꽂는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_036.webp",
+        "score": 0.203
+       },
+       {
+        "asset_id": "GAS_037",
+        "group_id": "GAS_037",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "주유건을 자동차 주유구에 꽂고 기다린다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_037.webp",
+        "score": 0.2024
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "휴지통을 정리하세요.",
+     "action_type": "clean",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "115c8596-5508-4a63-b69e-ef9261ebf06d",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "GAS_011",
+        "group_id": "GAS_011",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "쓰레기통에 쓰레기를 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_011.webp",
+        "score": 0.2917
+       },
+       {
+        "asset_id": "GAS_010",
+        "group_id": "GAS_010",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "근처의 쓰레기를 줍는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_010.webp",
+        "score": 0.2496
+       },
+       {
+        "asset_id": "GAS_013",
+        "group_id": "GAS_013",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "쓰레기통을 정해진 자리에 가져다 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_013.webp",
+        "score": 0.2164
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "주유소 세차장",
+   "sentence": "차 문을 닫으세요.",
+   "latency_sec": 7.82,
+   "steps": [
+    {
+     "sentence": "차 문을 닫으세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "102e6217-100e-47f5-a6fa-f43fa167517e",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "GAS_001",
+        "group_id": "GAS_001",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "차를 멈춰 세운다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_001.webp",
+        "score": 0.2016
+       },
+       {
+        "asset_id": "GAS_027",
+        "group_id": "GAS_027",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "천으로 차량의 옆창문을 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_027.webp",
+        "score": 0.1764
+       },
+       {
+        "asset_id": "GAS_025",
+        "group_id": "GAS_025",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "스퀴지로 차량의 창문을 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_025.webp",
+        "score": 0.164
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "주유소 세차장",
+   "sentence": "세차 도구를 정리하세요.",
+   "latency_sec": 8.01,
+   "steps": [
+    {
+     "sentence": "세차 도구를 정리하세요.",
+     "action_type": "other",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "210d4645-9cb4-45b5-90d0-ae38ac4ed9b7",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "GAS_011",
+        "group_id": "GAS_011",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "쓰레기통에 쓰레기를 넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_011.webp",
+        "score": 0.2199
+       },
+       {
+        "asset_id": "GAS_010",
+        "group_id": "GAS_010",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "근처의 쓰레기를 줍는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_010.webp",
+        "score": 0.2155
+       },
+       {
+        "asset_id": "GAS_005",
+        "group_id": "GAS_005",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "주유건을 주유기 거치대에 건다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_005.webp",
+        "score": 0.1932
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "주유소 세차장",
+   "sentence": "카드 결제기를 손님에게 건네세요.",
+   "latency_sec": 12.04,
+   "steps": [
+    {
+     "sentence": "카드 결제기를 건네세요.",
+     "action_type": "move",
+     "chosen": "GAS_014",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "c15c8cf4-98bd-4526-a71b-127ca537ad7b",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "GAS_014",
+        "group_id": "GAS_014",
+        "job": "",
+        "asset_type": "action",
+        "label": "휴대용 결제 단말기를 손님에게 건넨다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_014.webp",
+        "score": 0.3591
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "손님에게 전달하세요.",
+     "action_type": "move",
+     "chosen": "GAS_014",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "aae28bb9-79ce-4066-91c4-f4c9a1723a20",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "GAS_014",
+        "group_id": "GAS_014",
+        "job": "",
+        "asset_type": "action",
+        "label": "휴대용 결제 단말기를 손님에게 건넨다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_014.webp",
+        "score": 0.4743
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "주유소 세차장",
+   "sentence": "매트를 털어 주세요.",
+   "latency_sec": 7.96,
+   "steps": [
+    {
+     "sentence": "매트를 털어주세요.",
+     "action_type": "clean",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "1c28f9a6-f723-46b7-a550-325c3228158f",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "GAS_026",
+        "group_id": "GAS_026",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "천으로 차량의 프론트글라스를 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_026.webp",
+        "score": 0.13
+       },
+       {
+        "asset_id": "GAS_029",
+        "group_id": "GAS_029",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "천으로 창문을 문질러서 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_029.webp",
+        "score": 0.1184
+       },
+       {
+        "asset_id": "GAS_028",
+        "group_id": "GAS_028",
+        "job": "gas",
+        "asset_type": "action",
+        "label": "창문을 내린 상태에서 창문의 단면을 천으로 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/gas/GAS_028.webp",
+        "score": 0.1099
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "식당",
+   "sentence": "물컵을 테이블에 놓으세요.",
+   "latency_sec": 7.89,
+   "steps": [
+    {
+     "sentence": "물컵을 테이블에 놓으세요.",
+     "action_type": "move",
+     "chosen": "SERVING_006",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "8037b1d1-66ce-4884-9089-e70a56d0b82e",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "SERVING_006",
+        "group_id": "SERVING_006",
+        "job": "",
+        "asset_type": "action",
+        "label": "물병을 테이블에 올려둔다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_006.webp",
+        "score": 0.5501
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "식당",
+   "sentence": "주문서를 주방에 전달하세요.",
+   "latency_sec": 8.08,
+   "steps": [
+    {
+     "sentence": "주문서를 주방에 전달하세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "04421e01-6c69-43ae-bb79-2e404b7c155a",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "SERVING_057",
+        "group_id": "SERVING_057",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "손님에게 동전을 거슬러 준다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_057.webp",
+        "score": 0.2401
+       },
+       {
+        "asset_id": "SERVING_003",
+        "group_id": "SERVING_003",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "쟁반에서 접시를 들어 테이블 위로 옮긴다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_003.webp",
+        "score": 0.2364
+       },
+       {
+        "asset_id": "SERVING_058",
+        "group_id": "SERVING_058",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "손님에게 지폐를 거슬러 준다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_058.webp",
+        "score": 0.2278
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "식당",
+   "sentence": "음식을 손님 테이블로 가져가세요.",
+   "latency_sec": 8.52,
+   "steps": [
+    {
+     "sentence": "음식을 가져가세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "cc86061f-80af-4940-af2a-435cbb2e2f6c",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "SERVING_023",
+        "group_id": "SERVING_023",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "빈 접시가 든 쟁반을 퇴식대로 가지고 간다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_023.webp",
+        "score": 0.2508
+       },
+       {
+        "asset_id": "SERVING_002",
+        "group_id": "SERVING_002",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "쟁반을 들고 테이블로 이동한다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_002.webp",
+        "score": 0.2443
+       },
+       {
+        "asset_id": "SERVING_009",
+        "group_id": "SERVING_009",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "사용된 식기가 담긴 쟁반을 들고 이동한다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_009.webp",
+        "score": 0.2428
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "식당",
+   "sentence": "빈 그릇을 치우세요.",
+   "latency_sec": 8.23,
+   "steps": [
+    {
+     "sentence": "빈 그릇을 치우세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "bd87d6b2-5c62-4bb8-b122-0de3d4e236dd",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "SERVING_021",
+        "group_id": "SERVING_021",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "빈 접시들을 쟁반에 담는다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_021.webp",
+        "score": 0.2527
+       },
+       {
+        "asset_id": "SERVING_022",
+        "group_id": "SERVING_022",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "빈 접시가 담긴 쟁반을 든다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_022.webp",
+        "score": 0.2482
+       },
+       {
+        "asset_id": "SERVING_020",
+        "group_id": "SERVING_020",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "빈 접시를 쟁반에 담는다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_020.webp",
+        "score": 0.2439
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "식당",
+   "sentence": "테이블을 행주로 닦으세요.",
+   "latency_sec": 8.06,
+   "steps": [
+    {
+     "sentence": "테이블을 닦으세요.",
+     "action_type": "clean",
+     "chosen": "SERVING_010",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "cc7b2b63-dd68-4335-8f99-3055b5118756",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "SERVING_010",
+        "group_id": "SERVING_010",
+        "job": "",
+        "asset_type": "action",
+        "label": "테이블을 행주로 닦는다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_010.webp",
+        "score": 0.7225
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "식당",
+   "sentence": "수저를 수저통에 채우세요.",
+   "latency_sec": 8.55,
+   "steps": [
+    {
+     "sentence": "수저를 수저통에 채우세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "a609a088-24ee-4ce4-a749-6b941cb3c19d",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "SERVING_016",
+        "group_id": "SERVING_016",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "테이블에 수저를 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_016.webp",
+        "score": 0.3048
+       },
+       {
+        "asset_id": "SERVING_027",
+        "group_id": "SERVING_027",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "잔에 얼음을 담는다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_027.webp",
+        "score": 0.2904
+       },
+       {
+        "asset_id": "SERVING_044",
+        "group_id": "SERVING_044",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "테이블 수저함에 비품을 채워넣는다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_044.webp",
+        "score": 0.2296
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "식당",
+   "sentence": "의자를 가지런히 정리하세요.",
+   "latency_sec": 8.1,
+   "steps": [
+    {
+     "sentence": "의자를 가지런히 정리하세요.",
+     "action_type": "other",
+     "chosen": "SERVING_011",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "d712ac79-f3af-416b-9754-f3a2131553af",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "SERVING_011",
+        "group_id": "SERVING_011",
+        "job": "",
+        "asset_type": "action",
+        "label": "의자를 정리한다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_011.webp",
+        "score": 0.6572
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "식당",
+   "sentence": "메뉴판을 테이블에 올려 두세요.",
+   "latency_sec": 7.9,
+   "steps": [
+    {
+     "sentence": "메뉴판을 테이블에 올리세요.",
+     "action_type": "move",
+     "chosen": "SERVING_018",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "84d38764-c5d2-422b-9559-b36ef0bbba01",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "SERVING_018",
+        "group_id": "SERVING_018",
+        "job": "",
+        "asset_type": "action",
+        "label": "테이블에 메뉴판을 놓는다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_018.webp",
+        "score": 0.5876
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "식당",
+   "sentence": "손님에게 물을 따라 드리세요.",
+   "latency_sec": 11.85,
+   "steps": [
+    {
+     "sentence": "손님에게 물을 따라 드리세요.",
+     "action_type": "move",
+     "chosen": "SERVING_007",
+     "source": "LOCAL_AAC",
+     "cands": {
+      "step_id": "00416143-d6d1-4a28-be9e-537fb41562f6",
+      "reason": "accepted",
+      "candidates": [
+       {
+        "asset_id": "SERVING_007",
+        "group_id": "SERVING_007",
+        "job": "",
+        "asset_type": "action",
+        "label": "물잔에 물을 따른다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_007.webp",
+        "score": 0.4032
+       }
+      ]
+     }
+    },
+    {
+     "sentence": "물컵을 손님에게 드리세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "423c616e-e4f5-4c4f-b09b-83828159007a",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "SERVING_057",
+        "group_id": "SERVING_057",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "손님에게 동전을 거슬러 준다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_057.webp",
+        "score": 0.2986
+       },
+       {
+        "asset_id": "SERVING_058",
+        "group_id": "SERVING_058",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "손님에게 지폐를 거슬러 준다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_058.webp",
+        "score": 0.2791
+       },
+       {
+        "asset_id": "SERVING_049",
+        "group_id": "SERVING_049",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "호출하는 손님에게 다가간다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_049.webp",
+        "score": 0.2679
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "biz": "식당",
+   "sentence": "계산서를 손님에게 드리세요.",
+   "latency_sec": 7.94,
+   "steps": [
+    {
+     "sentence": "계산서를 손님에게 드리세요.",
+     "action_type": "move",
+     "chosen": null,
+     "source": "fallback",
+     "cands": {
+      "step_id": "4564561c-8cfa-46bc-9be8-16f1a19cfd33",
+      "reason": "low_score",
+      "candidates": [
+       {
+        "asset_id": "SERVING_058",
+        "group_id": "SERVING_058",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "손님에게 지폐를 거슬러 준다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_058.webp",
+        "score": 0.2985
+       },
+       {
+        "asset_id": "SERVING_057",
+        "group_id": "SERVING_057",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "손님에게 동전을 거슬러 준다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_057.webp",
+        "score": 0.295
+       },
+       {
+        "asset_id": "SERVING_056",
+        "group_id": "SERVING_056",
+        "job": "serving",
+        "asset_type": "action",
+        "label": "결제하는 손님에게 현금을 받는다",
+        "image_url": "http://localhost:8000/api/aac/images/serving/SERVING_056.webp",
+        "score": 0.2848
+       }
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

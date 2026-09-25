@@ -243,27 +243,30 @@ npm run dev
 - 비밀번호: `pbkdf2_hmac(sha256, 200k)` + 랜덤 솔트
 - 토큰: HMAC-SHA256 서명 JSON (`sub`, `role`, `exp`)
 - 모든 자원 엔드포인트는 인증 + **소유권 검사**(타 사업주의 직무는 404)
+- 근로자 접속 코드: 비워 두면 서버가 겹치지 않는 **6자리 무작위 숫자**를 발급한다. 직접 정할 때도
+  6~12자리 숫자만 받는다. 예전의 짧은 코드는 계속 로그인되지만 근로자 관리 화면에서 경고하고
+  "코드 새로 만들기"(`POST /api/workers/{id}/access-code`)로 바꿀 수 있다.
+- 로그인 시도 제한(`backend/ratelimit.py`): 사업주는 IP·계정별 15분에 10회, 근로자는 IP별 10분에
+  30회 실패하면 잠시 막는다(429). 한 작업장이 IP 하나를 같이 쓰므로 근로자 쪽은 넉넉하게 잡았다.
+  프로세스 메모리에서 세므로 **uvicorn 단일 프로세스** 운영을 전제로 한다.
+- 단계 그림 URL은 이 서버의 AAC 이미지·업로드 사진만 받는다(외부 이미지를 근로자 화면에 못 띄움).
 
-데모 계정(환경변수로 변경 가능):
+데모 계정(개발 모드에서만 자동 생성, 환경변수로 변경 가능):
 
 | 역할 | 자격증명 | 환경변수 |
 | --- | --- | --- |
 | 사업주 | `demo` / `demo1234` | `DEMO_EMPLOYER_LOGIN`, `DEMO_EMPLOYER_PASSWORD` |
 | 근로자 | 접속 코드 `1234` | `DEMO_WORKER_CODE` |
 
-운영 필수 환경변수:
-
-```env
-JOBCARD_SECRET=<강한 랜덤 문자열>   # 미설정 시 dev 기본값, JOBCARD_ENV=prod에서는 기동 거부
-JOBCARD_ENV=prod
-JOBCARD_TOKEN_TTL=86400
-```
+운영 설정은 아래 [운영 배포](#운영-배포)를 따른다. `JOBCARD_ENV=prod`에서는 데모 계정을 만들지 않는다.
 
 주요 엔드포인트:
 
 ```text
 POST /api/auth/login                        # 사업주 로그인 -> 토큰
 POST /api/auth/worker-login                 # 근로자 접속 코드 -> 토큰
+POST /api/workers                           # (사업주) 근로자 추가(접속 코드 비우면 자동 발급)
+POST /api/workers/{id}/access-code          # (사업주) 접속 코드 재발급
 GET  /api/tasks                             # (사업주) 내 직무 목록
 POST /api/tasks                             # (사업주) 직무 생성 = AI 분해 + AAC 매칭 트리거
 GET  /api/tasks/{id}/steps/{step}/symbol-candidates  # (사업주) 후보 경합 시 대체 상징 조회
@@ -341,12 +344,44 @@ cd frontend && npm install && npm test
 ```
 
 `frontend/tests/`에는 로그인·근로자 화면(오늘 할 일/지난 일 보기)·사업주 화면(사진 업로드/다인
-배정)·동작 시각화 테스트가 있습니다. `DashboardPage.test.tsx`는 오래돼 지금 화면과 안 맞습니다
-(다중 근로자 조회 흐름 도입 전 버전 기준) — 알려진 상태이며 따로 다시 써야 합니다.
+배정/자동 선택 그림 확인)·근로자 관리(접속 코드 발급·재발급)·대시보드·동작 시각화 테스트가 있습니다.
+
+푸시·PR마다 GitHub Actions(`.github/workflows/ci.yml`)가 세 부분의 테스트와 프론트엔드 린트·빌드를
+돌립니다. 외부 API 키 없이 돕니다(AI 호출·TTS는 테스트에서 목으로 대체).
 
 LLM·코칭·임베딩 테스트는 OpenAI 호출만 가짜로 대체해 프롬프트→JSON 파싱→스키마 검증→폴백까지
 실제 코드를 실행합니다(실 키 불필요). TTS 합성 테스트는 Google 클라이언트만 가짜로 대체하고
 mp3 기록·해시 캐시·URL 반환·예외 폴백까지 실제 코드를 실행합니다(실 네트워크 호출 없음).
+
+## 운영 배포
+
+단일 서버에 `docker compose`로 올리는 구성이다. 순서대로 확인한다.
+
+1. **`.env` 채우기** (`.env.example` 참고)
+   ```env
+   JOBCARD_ENV=prod
+   JOBCARD_SECRET=<python -c "import secrets; print(secrets.token_urlsafe(48))" 결과>
+   CORS_ORIGINS=https://jobcard.example.kr
+   PUBLIC_BACKEND_URL=https://api.jobcard.example.kr
+   VITE_API_BASE=https://api.jobcard.example.kr
+   TRUST_FORWARDED_FOR=1          # HTTPS 리버스 프록시 뒤일 때만
+   OPENAI_API_KEY=sk-...          # 없으면 규칙 기반으로 동작
+   ```
+   `JOBCARD_ENV=prod`인데 시크릿이 비었거나 32자 미만이면 백엔드가 **기동을 거부**한다.
+2. **HTTPS**: 컨테이너 포트는 `127.0.0.1`에만 열려 있다. 앞에 리버스 프록시(Caddy/nginx)를 두고
+   프론트(5173)와 API(8000)를 각 도메인으로 연결한다. 근로자 접속 코드가 평문으로 오가므로 HTTP로 공개하지 않는다.
+3. **기동 후 사업주 계정 만들기** (운영에서는 데모 계정이 없다)
+   ```bash
+   docker compose up -d --build
+   docker compose exec backend python manage.py create-employer --login itda --org "잇다 보호작업장"
+   ```
+4. **Google TTS**: 서비스 계정 JSON을 `secrets/google-tts.json`에 두고, **해당 GCP 프로젝트에 결제가
+   연결돼 있어야 한다**(없으면 403 → 브라우저 음성으로 대체되며, 실패 후 5분간은 호출을 건너뛴다).
+5. **백업**: DB는 named volume `jobcard-data`의 `jobcard.db`(SQLite, WAL 모드). 예:
+   `docker compose exec backend python -c "import sqlite3; s=sqlite3.connect('/app/data/jobcard.db'); d=sqlite3.connect('/app/data/backup.db'); s.backup(d)"`
+
+알려진 한계: DB는 SQLite만 지원한다(날짜 집계가 SQLite 전용 문법). 로그인 시도 제한이 프로세스
+메모리 기반이라 uvicorn 워커를 늘리려면 Redis 같은 공유 저장소로 바꿔야 한다.
 
 ## 주의
 
