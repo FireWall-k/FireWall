@@ -14,6 +14,10 @@ JobType = Literal[
     "cleaning",
     "packaging",
     "retail",
+    "serving",
+    "display",
+    "delivery",
+    "gas",
     "unknown",
 ]
 
@@ -34,20 +38,90 @@ VALID_JOBS: set[str] = set(get_args(JobType))
 VALID_ACTION_TYPES: set[str] = set(get_args(ActionType))
 
 JOB_ALIASES: dict[str, tuple[str, ...]] = {
-    "assembly": ("assembly", "조립", "제조", "부품", "생산", "조립원"),
-    "cafe": ("cafe", "카페", "커피", "음료", "바리스타"),
-    "cleaning": ("cleaning", "청소", "세탁", "세차", "환경미화", "미화"),
-    "packaging": ("packaging", "포장", "패킹", "박스포장", "포장원"),
-    "retail": ("retail", "리테일", "마트", "대형마트", "매장", "소매", "진열", "피킹", "계산", "편의점"),
+    "assembly": (
+        "assembly",
+        "조립",
+        "제조",
+        "부품",
+        "생산",
+    ),
+    "cafe": (
+        "cafe",
+        "카페",
+        "커피",
+        "음료",
+        "바리스타",
+    ),
+    "cleaning": (
+        "cleaning",
+        "청소",
+        "세탁",
+        "환경미화",
+        "미화",
+    ),
+    "packaging": (
+        "packaging",
+        "포장",
+        "패킹",
+        "박스포장",
+    ),
+    "retail": (
+        "retail",
+        "리테일",
+        "마트",
+        "매장",
+        "소매",
+        "피킹",
+        "계산",
+        "편의점",
+    ),
+    "serving": (
+        "serving",
+        "서빙",
+        "배식",
+        "식당",
+        "음식점",
+        "홀서빙",
+    ),
+    "display": (
+        "display",
+        "진열",
+        "상품진열",
+        "매대",
+        "진열대",
+    ),
+    "delivery": (
+        "delivery",
+        "배송",
+        "배달",
+        "택배",
+        "배송원",
+        "배달원",
+    ),
+    "gas": (
+        "gas",
+        "주유",
+        "주유소",
+        "주유원",
+        "주유작업",
+        # 세차 그림(차체 물 뿌리기·타이어 세척 등)은 gas 직무에 있다. 예전에는 "세차"가
+        # cleaning 별칭이라 "주유소 세차장"이 청소로 분류되어 세탁기 그림이 채택됐다.
+        "세차",
+        "세차장",
+    ),
 }
+
+# 여러 직무에 두루 쓰이는 말은 절반만 센다. "매장 상품 진열"이 마트(매장) 1점, 진열 1점으로
+# 동점이 되어 이름순으로 마트가 되던 문제 — 진열 그림이 있는데도 마트로만 잡혔다.
+ALIAS_WEIGHT = {"매장": 0.5}
 
 
 def infer_job_text(text: str) -> str:
     """업종/환경 텍스트에서 canonical job을 보수적으로 추정한다."""
     norm = str(text or "").lower()
-    scored: list[tuple[int, str]] = []
+    scored: list[tuple[float, str]] = []
     for job, aliases in JOB_ALIASES.items():
-        count = sum(1 for alias in aliases if alias.lower() in norm)
+        count = sum(ALIAS_WEIGHT.get(alias, 1.0) for alias in aliases if alias.lower() in norm)
         if count:
             scored.append((count, job))
     if not scored:

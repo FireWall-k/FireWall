@@ -8,80 +8,13 @@ from functools import lru_cache
 from pathlib import Path
 
 import embeddings
+from taxonomy import ALIAS_WEIGHT, JOB_ALIASES
 
 _TOKEN_RE = re.compile(r"[0-9A-Za-z가-힣]+")
 
-_JOB_ALIASES: dict[str, tuple[str, ...]] = {
-    "assembly": (
-        "assembly",
-        "조립",
-        "제조",
-        "부품",
-        "생산",
-    ),
-    "cafe": (
-        "cafe",
-        "카페",
-        "커피",
-        "음료",
-        "바리스타",
-    ),
-    "cleaning": (
-        "cleaning",
-        "청소",
-        "세탁",
-        "세차",
-        "환경미화",
-    ),
-    "packaging": (
-        "packaging",
-        "포장",
-        "패킹",
-        "박스포장",
-    ),
-    "retail": (
-        "retail",
-        "마트",
-        "매장",
-        "소매",
-        "피킹",
-        "계산",
-    ),
-    "serving": (
-        "serving",
-        "서빙",
-        "배식",
-        "식당",
-        "음식점",
-        "홀서빙",
-    ),
-    "display": (
-        "display",
-        "진열",
-        "상품진열",
-        "매대",
-        "진열대",
-    ),
-    "delivery": (
-        "delivery",
-        "배송",
-        "배달",
-        "택배",
-        "배송원",
-        "배달원",
-    ),
-    "gas": (
-        "gas",
-        "주유",
-        "주유소",
-        "주유원",
-        "주유작업",
-    ),
-}
-
-# 여러 직무에 두루 쓰이는 말은 절반만 센다. "매장 상품 진열"이 마트(매장) 1점, 진열 1점으로
-# 동점이 되어 이름순으로 마트가 되던 문제 — 진열 그림이 있는데도 마트로만 잡혔다.
-_ALIAS_WEIGHT = {"매장": 0.5}
+# 직무 사전은 LLM 분해 검증·규칙 폴백과 같아야 하므로 taxonomy 한 곳에 둔다.
+_JOB_ALIASES = JOB_ALIASES
+_ALIAS_WEIGHT = ALIAS_WEIGHT
 
 _PARTICLES = (
     "으로", "에서", "에게", "까지", "부터", "처럼", "보다", "하고", "이며", "이며",
@@ -304,12 +237,20 @@ def _canonical_job(value: str) -> str | None:
     if norm in _JOB_ALIASES:
         return norm
 
+    # 첫 번째로 걸리는 직무를 고르면 사전 순서에 따라 결과가 달라진다("매장 진열" → 마트).
+    # infer_job()과 같은 가중치로 모든 직무를 점수화하고, 동점이면 더 긴 별칭이 맞은 쪽을 고른다.
+    best: tuple[float, int, str] | None = None
     for job, aliases in _JOB_ALIASES.items():
+        score = 0.0
+        longest = 0
         for alias in aliases:
             alias_norm = _normalize(alias)
             if alias_norm and (norm == alias_norm or alias_norm in norm):
-                return job
-    return None
+                score += _ALIAS_WEIGHT.get(alias, 1.0)
+                longest = max(longest, len(alias_norm))
+        if score and (best is None or (score, longest) > best[:2]):
+            best = (score, longest, job)
+    return best[2] if best else None
 
 
 def _explicit_job(context: dict | None) -> str | None:

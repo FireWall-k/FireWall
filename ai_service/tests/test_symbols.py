@@ -332,3 +332,14 @@ def test_fallback_when_no_relevant_match(monkeypatch):
 
     assert s.needs_fallback is True
     assert s.source == "fallback"
+
+def test_canonical_job_business_type_mapping():
+    """업종명 → 직무 매핑 회귀 테스트(2026-09-25 최종 평가에서 발견한 결함)."""
+    from local_aac import _canonical_job
+    assert _canonical_job("주유소 세차장") == "gas"
+    assert _canonical_job("세차장") == "gas"
+    assert _canonical_job("매장 진열") == "display"
+    assert _canonical_job("청소") == "cleaning"
+    assert _canonical_job("세탁") == "cleaning"
+    assert _canonical_job("마트") == "retail"
+    assert _canonical_job("택배 배송") == "delivery"
