@@ -142,3 +142,57 @@ describe("ManagerPage — 근로자 여러 명에게 보내기", () => {
     expect((await screen.findAllByText("네트워크 오류")).length).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe("ManagerPage — 자동으로 고른 그림은 확인해야 보낼 수 있다", () => {
+  const autoStep = {
+    ...baseStep, symbol_url: "http://localhost:8000/api/aac/images/cafe/CAFE_012.webp",
+    symbol_source: "LOCAL_AAC", needs_fallback: false,
+  };
+
+  beforeEach(() => {
+    listWorkers.mockResolvedValue(workers);
+    createTask.mockResolvedValue({ id: "task-1", title: "직무", status: "draft", steps: [autoStep] });
+    publish.mockResolvedValue({ id: "task-1", title: "직무", status: "published", steps: [autoStep] });
+    assign.mockResolvedValue([{ id: "a1", task_id: "task-1", worker_id: "w1", status: "assigned" }]);
+  });
+
+  it("확인 전에는 보내기 버튼이 막히고 안내가 뜬다", async () => {
+    const user = userEvent.setup();
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeDisabled();
+    expect(screen.getByText(/자동으로 고른 그림 1장을 확인해야/)).toBeInTheDocument();
+    expect(publish).not.toHaveBeenCalled();
+  });
+
+  it("그림을 확인하면 보낼 수 있다", async () => {
+    const user = userEvent.setup();
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    await user.click(screen.getByRole("button", { name: "1단계 그림 확인" }));
+    expect(screen.getByText("✓ 확인함")).toBeInTheDocument();
+    const send = screen.getByRole("button", { name: /게시하고 보내기/ });
+    expect(send).toBeEnabled();
+    await user.click(send);
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("task-1", ["w1"]));
+  });
+
+  it("그림 대신 사진을 올린 단계는 따로 확인하지 않아도 된다", async () => {
+    const user = userEvent.setup();
+    uploadStepPhoto.mockResolvedValue({
+      ...autoStep, symbol_url: "http://localhost:8000/api/photos/x.png", symbol_source: "photo",
+    });
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    const file = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "p.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText("1단계 사진 업로드"), { target: { files: [file] } });
+    await screen.findByText("사진 교체");
+    expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeEnabled();
+  });
+});

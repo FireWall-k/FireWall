@@ -177,10 +177,9 @@ function DashboardPage() {
 
   // 근로자가 바뀌면 그 근로자의 활동일(달력 표시용)을 불러온다.
   useEffect(() => {
-    if (!workerId) {
-      setActiveDates([]);
-      return;
-    }
+    // workerId는 ""(첫 렌더)에서 근로자 id로만 바뀐다(선택 목록에 빈 항목이 없다).
+    // 빈 값일 때 상태는 이미 초기값(빈 목록)이므로 따로 비우지 않는다.
+    if (!workerId) return;
     let alive = true;
     api.workerActiveDates(workerId)
       .then((ds) => { if (alive) setActiveDates(ds); })
@@ -190,14 +189,10 @@ function DashboardPage() {
 
   // (근로자, 날짜)가 정해지면 그 날짜에 배정된 직무 목록을 불러와 첫 직무를 고른다.
   useEffect(() => {
-    if (!workerId) {
-      setWorkerTasks([]);
-      setTaskId("");
-      return;
-    }
+    if (!workerId) return; // 위와 같은 이유로 초기값 그대로 둔다.
+    // 이전 화면 지우기(setDashboard/setCoaching(null))는 근로자·날짜를 바꾸는 핸들러
+    // (selectWorker, 달력 onPick)가 한다 — effect 안에서 바로 setState하면 렌더가 연쇄된다.
     let alive = true;
-    setDashboard(null);
-    setCoaching(null);
     api.workerTasks(workerId, selectedDate)
       .then((ts) => {
         if (!alive) return;
@@ -371,7 +366,13 @@ function DashboardPage() {
                   <MiniCalendar
                     selected={selectedDate}
                     activeDates={activeDates}
-                    onPick={(d) => { setSelectedDate(d); setShowCalendar(false); }}
+                    onPick={(d) => {
+                      setShowCalendar(false);
+                      if (d === selectedDate) return; // 같은 날짜면 직무 목록을 다시 불러오지 않으니 화면도 그대로 둔다.
+                      setSelectedDate(d);
+                      setDashboard(null);
+                      setCoaching(null);
+                    }}
                   />
                 </>
               )}
