@@ -53,9 +53,18 @@ services:
       # LLM(OpenAI) 분해는 10초 이상 걸릴 수 있어 넉넉히 둔다. 규칙 기반만 쓸 땐 6초로도 충분했음.
       AI_TIMEOUT: "30"
       DATABASE_URL: "sqlite:////app/data/jobcard.db"
-      CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173"
+      # --- 운영 설정 (.env에서 넣는다. 비워 두면 로컬 개발용 기본값) ---
+      # prod로 두면: 약한 JOBCARD_SECRET이면 기동 실패, 데모 계정 미생성(manage.py로 사업주 생성).
+      JOBCARD_ENV: "${JOBCARD_ENV:-dev}"
+      # 토큰 서명 키. 예전에는 이 줄이 없어 컨테이너가 저장소에 적힌 개발용 기본 키로 서명했다
+      # (누구나 사업주 토큰을 위조할 수 있었다). 생성: python -c "import secrets; print(secrets.token_urlsafe(48))"
+      JOBCARD_SECRET: "${JOBCARD_SECRET:-}"
+      DEMO_SEED: "${DEMO_SEED:-}"
+      # 리버스 프록시(HTTPS 종단) 뒤에 둘 때만 1. 로그인 시도 제한이 실제 접속자 IP를 보게 한다.
+      TRUST_FORWARDED_FOR: "${TRUST_FORWARDED_FOR:-0}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}"
       # ports를 127.0.0.1로 고정했으니(위 ai_service 주석) localhost가 정상 동작한다.
-      PUBLIC_BACKEND_URL: "http://localhost:8000"
+      PUBLIC_BACKEND_URL: "${PUBLIC_BACKEND_URL:-http://localhost:8000}"
       # Google Cloud Text-to-Speech 기본 사용 설정
       GOOGLE_APPLICATION_CREDENTIALS: "/app/secrets/google-tts.json"
       GOOGLE_TTS_LANGUAGE: "ko-KR"
@@ -88,7 +97,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE: "http://localhost:8000"
+        VITE_API_BASE: "${VITE_API_BASE:-http://localhost:8000}"
     container_name: jobcard-web
     ports:
       - "127.0.0.1:5173:80"  # 위 ai_service 주석 참고

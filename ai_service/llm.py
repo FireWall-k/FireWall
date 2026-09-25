@@ -28,6 +28,11 @@ LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "20"))
 EMBED_MODEL = os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-large")
 EMBED_DIMS = int(os.getenv("OPENAI_EMBED_DIMS", "256"))
 
+# OpenAI 연결을 재사용하는 공용 클라이언트(스레드 안전). httpx.post()는 호출마다 SSL 설정을 새로
+# 읽고 TLS 연결을 새로 맺어, 질의 임베딩(짧은 타임아웃)처럼 잦은 호출에서 지연이 컸다.
+# 타임아웃은 호출마다 따로 준다(임베딩 3초, 채팅 LLM_TIMEOUT).
+_http = httpx.Client(limits=httpx.Limits(max_connections=16, max_keepalive_connections=8))
+
 
 def llm_available() -> bool:
     return bool(OPENAI_API_KEY)
@@ -35,7 +40,7 @@ def llm_available() -> bool:
 
 def embed_texts(texts: list[str], *, timeout: float = 20.0) -> list[list[float]]:
     """텍스트 목록을 임베딩 벡터로 바꾼다. 실패 시 예외(호출부가 폴백 처리)."""
-    resp = httpx.post(
+    resp = _http.post(
         f"{OPENAI_BASE_URL}/embeddings",
         headers={
             "Authorization": f"Bearer {OPENAI_API_KEY}",
@@ -51,7 +56,7 @@ def embed_texts(texts: list[str], *, timeout: float = 20.0) -> list[list[float]]
 
 def chat_json(system: str, user: str, *, max_tokens: int = 1200) -> dict:
     """OpenAI Chat Completions(JSON 모드) 호출 후 dict로 반환. 실패 시 예외."""
-    resp = httpx.post(
+    resp = _http.post(
         f"{OPENAI_BASE_URL}/chat/completions",
         headers={
             "Authorization": f"Bearer {OPENAI_API_KEY}",

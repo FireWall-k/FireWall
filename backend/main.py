@@ -14,13 +14,16 @@
 from __future__ import annotations
 
 import logging
+import mimetypes
 import os
 import re
+import secrets
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, func, select
@@ -29,7 +32,10 @@ from aac_assets import get_aac_image_dir, public_aac_url
 
 import ai_client
 from auth import (
+    check_production_config,
+    code_fingerprint,
     hash_password,
+    is_production,
     make_token,
     require_employer,
     require_worker,
@@ -66,6 +72,7 @@ from schemas import (
     WorkerLogin,
     WorkerOut,
 )
+from ratelimit import client_ip, employer_throttle, ensure_not_blocked, worker_throttle
 from photos import MAX_PHOTO_BYTES, get_photo_dir, save_photo, sniff_image
 from tts import get_tts_cache_dir, synthesize_tts_url
 
@@ -75,6 +82,8 @@ logger = logging.getLogger("jobcard.backend")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # 운영 설정이 잘못됐으면(약한 시크릿 등) 첫 로그인 때가 아니라 지금 멈춘다.
+    check_production_config()
     Base.metadata.create_all(bind=engine)
     # create_all은 기존 테이블에 컬럼을 추가하지 않는다. 모델에 새로 생긴 컬럼을 메운다.
     added = apply_pending_columns()
@@ -85,6 +94,11 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="JOB CARD - Backend", version="0.3.0", lifespan=lifespan)
+
+# 정적 파일의 Content-Type은 운영체제 MIME 표를 따른다. python:3.12-slim 이미지에는 .webp가 없어
+# AAC 그림이 text/plain으로 나갔다(Windows 개발 환경에서는 레지스트리 덕에 정상이라 몰랐다).
+mimetypes.add_type("image/webp", ".webp")
+mimetypes.add_type("audio/mpeg", ".mp3")
 
 # 서버 생성 TTS mp3 캐시 제공. URL 예: http://localhost:8000/api/tts/<hash>.mp3
 app.mount("/api/tts", StaticFiles(directory=str(get_tts_cache_dir())), name="tts")
@@ -131,11 +145,20 @@ app.add_middleware(
 
 
 # --- 시드 ---
+def _demo_seed_enabled() -> bool:
+    """운영(JOBCARD_ENV=prod)에서는 기본으로 끈다. 공개 저장소에 적힌 demo/demo1234 계정이
+    운영 서버에 생기면 그대로 로그인된다. 운영 사업주 계정은 manage.py로 만든다."""
+    default = "0" if is_production() else "1"
+    return os.getenv("DEMO_SEED", default).strip() == "1"
+
+
 def _ensure_seed() -> None:
     """데모 사업주 1명 + 근로자 1명을 보장한다(없으면 생성).
 
-    데모 자격증명은 환경변수로 덮어쓸 수 있다. 운영에서는 반드시 변경한다.
+    데모 자격증명은 환경변수로 덮어쓸 수 있다. 운영에서는 만들지 않는다(_demo_seed_enabled).
     """
+    if not _demo_seed_enabled():
+        return
     db = next(get_db())
     try:
         if db.scalar(select(Employer).limit(1)) is not None:
@@ -188,21 +211,51 @@ def health() -> dict:
 
 # --- 인증 ---
 @app.post("/api/auth/login", response_model=TokenOut)
-def employer_login(payload: EmployerLogin, db: Session = Depends(get_db)) -> TokenOut:
+def employer_login(payload: EmployerLogin, request: Request,
+                   db: Session = Depends(get_db)) -> TokenOut:
+    # IP 단위(여러 계정 대입)와 계정 단위(여러 IP에서 한 계정 대입)를 모두 센다.
+    keys = (f"ip:{client_ip(request)}", f"id:{payload.login_id}")
+    ensure_not_blocked(employer_throttle, *keys)
     employer = db.scalar(select(Employer).where(Employer.login_id == payload.login_id))
     if employer is None or not verify_password(payload.password, employer.password_hash):
+        for k in keys:
+            employer_throttle.fail(k)
         raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다.")
+    employer_throttle.reset(f"id:{payload.login_id}")
     return TokenOut(token=make_token(employer.id, "employer"), role="employer",
                     display_name=employer.org_name or employer.name)
 
 
 @app.post("/api/auth/worker-login", response_model=TokenOut)
-def worker_login(payload: WorkerLogin, db: Session = Depends(get_db)) -> TokenOut:
-    worker = db.scalar(select(Worker).where(Worker.access_code == payload.access_code))
+def worker_login(payload: WorkerLogin, request: Request,
+                 db: Session = Depends(get_db)) -> TokenOut:
+    # 성공해도 IP 카운터를 비우지 않는다. 비우면 공격자가 자기 코드로 한 번씩 로그인해
+    # 카운터를 계속 초기화하며 대입할 수 있다. 창(window)이 지나면 저절로 풀린다.
+    key = f"ip:{client_ip(request)}"
+    ensure_not_blocked(worker_throttle, key)
+    worker = db.scalar(select(Worker).where(Worker.access_code == payload.access_code.strip()))
     if worker is None:
+        worker_throttle.fail(key)
         raise HTTPException(status_code=401, detail="접속 코드가 올바르지 않습니다.")
-    return TokenOut(token=make_token(worker.id, "worker"), role="worker",
+    return TokenOut(token=make_token(worker.id, "worker",
+                                     extra={"cf": code_fingerprint(worker.access_code)}),
+                    role="worker",
                     display_name=worker.display_name)
+
+
+def current_worker(user: dict = Depends(require_worker), db: Session = Depends(get_db)) -> dict:
+    """근로자 토큰이 지금도 유효한 근로자를 가리키는지 확인한다.
+
+    토큰은 서명만 확인하면 만료(24시간)까지 통과한다. 그러면 삭제된 근로자나, 코드가 새어
+    재발급한 뒤의 예전 토큰도 계속 쓰인다. 근로자 존재와 접속 코드 지문(cf)을 DB와 대조한다.
+    지문이 없는 토큰은 이 기능 이전에 발급된 것이라 만료까지만 받아 준다.
+    """
+    worker = db.get(Worker, user["sub"])
+    if worker is None:
+        raise HTTPException(status_code=401, detail="근로자 정보를 찾을 수 없습니다. 다시 로그인해 주세요.")
+    if "cf" in user and user["cf"] != code_fingerprint(worker.access_code):
+        raise HTTPException(status_code=401, detail="접속 코드가 바뀌었습니다. 새 코드로 다시 로그인해 주세요.")
+    return user
 
 
 # --- 사업주: 근로자 관리 ---
@@ -219,17 +272,52 @@ def list_workers(db: Session = Depends(get_db),
 @app.post("/api/workers", response_model=WorkerOut, status_code=201)
 def create_worker(payload: WorkerCreate, db: Session = Depends(get_db),
                   user: dict = Depends(require_employer)) -> WorkerOut:
-    # 접속 코드는 로그인 키라 전역 unique. 중복이면 다른 코드를 받도록 409로 막는다.
-    if db.scalar(select(Worker).where(Worker.access_code == payload.access_code)) is not None:
-        raise HTTPException(status_code=409, detail="이미 사용 중인 접속 코드입니다. 다른 코드를 입력해 주세요.")
+    if payload.access_code is None:
+        code = _new_access_code(db)
+    else:
+        # 접속 코드는 로그인 키라 전역 unique. 중복이면 다른 코드를 받도록 409로 막는다.
+        if _access_code_taken(db, payload.access_code):
+            raise HTTPException(status_code=409, detail="이미 사용 중인 접속 코드입니다. 다른 코드를 입력해 주세요.")
+        code = payload.access_code
     worker = Worker(
         employer_id=user["sub"],
         display_name=payload.display_name,
-        access_code=payload.access_code,
+        access_code=code,
     )
     db.add(worker)
     db.commit()
     db.refresh(worker)
+    return WorkerOut(id=worker.id, display_name=worker.display_name, access_code=worker.access_code)
+
+
+ACCESS_CODE_DIGITS = 6
+
+
+def _access_code_taken(db: Session, code: str) -> bool:
+    return db.scalar(select(Worker.id).where(Worker.access_code == code)) is not None
+
+
+def _new_access_code(db: Session) -> str:
+    """겹치지 않는 6자리 무작위 숫자 코드. 근로자가 누르기 쉽게 숫자만 쓴다."""
+    for _ in range(50):
+        code = "".join(secrets.choice("0123456789") for _ in range(ACCESS_CODE_DIGITS))
+        if not _access_code_taken(db, code):
+            return code
+    raise HTTPException(status_code=503, detail="접속 코드를 만들지 못했습니다. 다시 시도해 주세요.")
+
+
+@app.post("/api/workers/{worker_id}/access-code", response_model=WorkerOut)
+def reissue_access_code(worker_id: str, db: Session = Depends(get_db),
+                        user: dict = Depends(require_employer)) -> WorkerOut:
+    """접속 코드를 새 6자리 무작위 코드로 바꾼다(예전 짧은 코드 교체·코드 유출 시).
+
+    이미 발급된 로그인 토큰은 만료(JOBCARD_TOKEN_TTL)까지 유효하다 — 코드만 바뀐다.
+    """
+    worker = db.get(Worker, worker_id)
+    if worker is None or worker.employer_id != user["sub"]:
+        raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
+    worker.access_code = _new_access_code(db)
+    db.commit()
     return WorkerOut(id=worker.id, display_name=worker.display_name, access_code=worker.access_code)
 
 
@@ -368,6 +456,10 @@ def _pick_symbol(
     return sym
 
 
+# 직무 생성 시 동시에 준비할 단계 수. AI 서비스·TTS에 한꺼번에 몰리는 요청 수의 상한이기도 하다.
+_STEP_WORKERS = int(os.getenv("STEP_PREP_WORKERS", "8"))
+
+
 @app.post("/api/tasks", response_model=TaskOut, status_code=201)
 def create_task(payload: TaskCreate, db: Session = Depends(get_db),
                 user: dict = Depends(require_employer)) -> TaskOut:
@@ -387,18 +479,10 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
     explicit_business_type = bool(
         context["business_type"].strip()
     )
-    # 맥락을 저장해 둔다. 나중에 후보 재검색/단계 추가가 같은 조건으로 돌아야 한다.
-    task = Task(employer_id=user["sub"], title=decomposed.get("task_title", "직무"),
-                raw_input=payload.raw_input, status="draft",
-                business_type=context["business_type"],
-                work_environment=context["work_environment"],
-                job=job,
-                )
-    db.add(task)
-    db.flush()
+    steps = decomposed.get("steps", [])
 
-
-    for step in decomposed.get("steps", []):
+    def prepare(step: dict) -> dict:
+        """단계 하나의 그림·음성을 준비한다(네트워크 호출만 하고 DB는 건드리지 않는다)."""
         sentence = step["sentence"]
         action_type = step.get("action_type", "other")
 
@@ -427,22 +511,50 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
                 "action_type": action_type,
             },
         )
+        return {
+            "sentence": sentence,
+            "action_type": action_type,
+            "symbol_terms": symbol_terms,
+            "sym": sym,
+            "tts": synthesize_tts_url(sentence),
+        }
 
+    # 단계마다 그림 검색·음성 합성을 순서대로 하면 5~7단계 직무가 20~30초 걸렸다.
+    # 단계끼리는 서로 기다릴 이유가 없으니 동시에 돌린다. 결과 순서는 map이 입력 순서대로 지킨다.
+    # DB 쓰기는 네트워크 호출이 끝난 뒤에 한다 — SQLite는 쓰는 동안 다른 쓰기를 막는다.
+    if steps:
+        with ThreadPoolExecutor(max_workers=min(_STEP_WORKERS, len(steps))) as pool:
+            prepared = list(pool.map(prepare, steps))
+    else:
+        prepared = []
+
+    # 맥락을 저장해 둔다. 나중에 후보 재검색/단계 추가가 같은 조건으로 돌아야 한다.
+    task = Task(employer_id=user["sub"], title=decomposed.get("task_title", "직무"),
+                raw_input=payload.raw_input, status="draft",
+                business_type=context["business_type"],
+                work_environment=context["work_environment"],
+                job=job,
+                )
+    db.add(task)
+    db.flush()
+
+    for step, p in zip(steps, prepared):
+        sym = p["sym"]
         db.add(
             Step(
                 task_id=task.id,
                 order_index=step["order"],
-                sentence=sentence,
-                action_type=action_type,
+                sentence=p["sentence"],
+                action_type=p["action_type"],
                 symbol_query=",".join(
                             str(term).strip()
-                            for term in symbol_terms
+                            for term in p["symbol_terms"]
                             if str(term).strip()
                         ),
                 symbol_url=sym.get("image_url"),
                 symbol_source=sym.get("source", "fallback"),
                 needs_fallback=sym.get("needs_fallback", True),
-                tts_audio_url=synthesize_tts_url(sentence),
+                tts_audio_url=p["tts"],
             )
         )
 
@@ -533,6 +645,19 @@ def reorder_steps(task_id: str, payload: StepReorder, db: Session = Depends(get_
     return _task_out(task)
 
 
+_OWN_IMAGE_PATHS = ("/api/aac/images/", "/api/photos/")
+
+
+def _is_own_image_url(url: str) -> bool:
+    """근로자 화면에 뜨는 그림은 이 서버가 내주는 AAC 이미지나 업로드 사진이어야 한다.
+
+    아무 URL이나 받으면 외부 이미지(부적절한 그림, 접속 추적용 픽셀)가 근로자 화면에 뜬다.
+    """
+    base = os.getenv("PUBLIC_BACKEND_URL", "http://localhost:8000").rstrip("/")
+    path = url[len(base):] if url.startswith(base + "/") else url
+    return path.startswith(_OWN_IMAGE_PATHS) and ".." not in path and "//" not in path
+
+
 @app.patch("/api/tasks/{task_id}/steps/{step_id}", response_model=StepOut)
 def update_step(task_id: str, step_id: str, payload: StepUpdate,
                 db: Session = Depends(get_db),
@@ -548,6 +673,8 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
         # 검색어를 다시 뽑는다.
         step.symbol_query = ""
     if payload.symbol_url is not None:
+        if not _is_own_image_url(payload.symbol_url):
+            raise HTTPException(status_code=400, detail="이 서비스의 그림이나 사진만 단계에 붙일 수 있습니다.")
         step.symbol_url = payload.symbol_url
         # 검토 화면에서 AAC 후보를 고른 경우 출처를 LOCAL_AAC로 남긴다.
         # (예전에는 무조건 fallback으로 적어 어디서 온 그림인지 알 수 없었다.)
@@ -734,7 +861,7 @@ def assign_task(task_id: str, payload: AssignRequest = AssignRequest(),
 # --- 근로자: 오늘의 카드 ---
 @app.get("/api/worker/me/today", response_model=list[TodayCardOut])
 def worker_today(db: Session = Depends(get_db),
-                 user: dict = Depends(require_worker)) -> list[TodayCardOut]:
+                 user: dict = Depends(current_worker)) -> list[TodayCardOut]:
     start_of_day = local_day_start_utc()
     assignments = db.scalars(
         select(Assignment).where(
@@ -757,7 +884,7 @@ def worker_today(db: Session = Depends(get_db),
 
 @app.get("/api/worker/me/history", response_model=list[HistoryCardOut])
 def worker_history(db: Session = Depends(get_db),
-                   user: dict = Depends(require_worker)) -> list[HistoryCardOut]:
+                   user: dict = Depends(current_worker)) -> list[HistoryCardOut]:
     """근로자 본인이 받았던 일을 전부 최신순으로 돌려준다(오늘 것 포함).
 
     /api/worker/me/today는 완료된 배정을 목록에서 뺀다(다음 일에 집중하게 하려는 설계)
@@ -794,7 +921,7 @@ def worker_history(db: Session = Depends(get_db),
 # --- 근로자: 단계 완료 로그(업서트) ---
 @app.post("/api/performance-logs", status_code=201)
 def create_log(payload: PerformanceLogCreate, db: Session = Depends(get_db),
-               user: dict = Depends(require_worker)) -> dict:
+               user: dict = Depends(current_worker)) -> dict:
     a = db.get(Assignment, payload.assignment_id)
     if a is None or a.worker_id != user["sub"]:
         raise HTTPException(status_code=404, detail="배정을 찾을 수 없습니다.")
@@ -953,7 +1080,8 @@ async def upload_step_photo(task_id: str, step_id: str,
     if step is None or step.task_id != task_id:
         raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
 
-    data = await file.read()
+    # 한도보다 1바이트만 더 읽는다. 전부 읽고 나서 크기를 재면 큰 파일이 통째로 메모리에 올라간다.
+    data = await file.read(MAX_PHOTO_BYTES + 1)
     if not data:
         raise HTTPException(status_code=400, detail="빈 파일입니다.")
     if len(data) > MAX_PHOTO_BYTES:
