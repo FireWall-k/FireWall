@@ -3,6 +3,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -10,6 +11,7 @@ import {
 } from "recharts";
 import { AlertCircle, BarChart3, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, RefreshCw, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { api, AuthError, type Coaching, type Dashboard, type TaskSummary, type Worker } from "../api";
+import { BAR_COLOR, SLOWEST_BAR_COLOR, slowestIndex } from "../dashboardChart";
 
 const DASHBOARD_POLL_MS = 10_000;
 
@@ -298,6 +300,7 @@ function DashboardPage() {
     })) ?? [],
     [dashboard]
   );
+  const slowest = useMemo(() => slowestIndex(chartData.map((d) => d.소요시간)), [chartData]);
 
   const replayTotal = dashboard?.steps.reduce((sum, step) => sum + step.replay_count, 0) ?? 0;
   const stuckTotal = dashboard?.stuck_steps.length ?? 0;
@@ -499,6 +502,11 @@ function DashboardPage() {
               </div>
               <p className="mb-4 text-xs text-ink-500">
                 완료 로그가 쌓이면 어떤 단계에서 시간이 오래 걸렸는지 확인할 수 있어요.
+                {slowest >= 0 && (
+                  <span className="ml-1 font-medium" style={{ color: SLOWEST_BAR_COLOR }}>
+                    빨간 막대는 가장 오래 걸린 단계({chartData[slowest].name})예요.
+                  </span>
+                )}
               </p>
               {chartData.length ? (
                 <ResponsiveContainer width="100%" height={280}>
@@ -511,7 +519,11 @@ function DashboardPage() {
                       labelFormatter={(_, payload) => payload?.[0]?.payload?.sentence ?? ""}
                       contentStyle={{ borderRadius: 12, border: "1px solid #E6E0D2", fontSize: 13 }}
                     />
-                    <Bar dataKey="소요시간" radius={[6, 6, 0, 0]} fill="#5C7A52" />
+                    <Bar dataKey="소요시간" radius={[6, 6, 0, 0]}>
+                      {chartData.map((d, i) => (
+                        <Cell key={d.name} fill={i === slowest ? SLOWEST_BAR_COLOR : BAR_COLOR} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
