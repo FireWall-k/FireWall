@@ -71,3 +71,24 @@ def test_mixed_adjective_and_verb():
     assert len(steps) == 2, steps
     assert "씻" in steps[0]
     assert "선반" in steps[1]
+
+
+def test_llm_job_keeps_all_registered_jobs():
+    """LLM이 고른 직무가 나중에 추가된 직무(식당·진열·택배·주유)여도 버리지 않는다.
+
+    직무 목록이 초기 5개에 머물러 있어 LLM이 'gas'라고 답해도 'unknown'으로 바뀌었다.
+    """
+    from decompose import _build_from_llm
+
+    for job in ("serving", "display", "delivery", "gas"):
+        raw = {"task_title": "t", "job": job,
+               "steps": [{"sentence": "차 문을 닫으세요.", "symbol_query": ["문 닫기"],
+                          "action_type": "operate"}]}
+        assert _build_from_llm(raw).job == job
+
+
+def test_fallback_job_inference_matches_matcher():
+    """규칙 폴백의 직무 추론도 매칭과 같은 사전을 쓴다(세차장 → 주유, 매장 진열 → 진열)."""
+    assert decompose("차에 물을 뿌리세요.", {"business_type": "주유소 세차장"}).job == "gas"
+    assert decompose("상품을 앞으로 당기세요.", {"business_type": "매장 진열"}).job == "display"
+    assert decompose("빈 그릇을 치우세요.", {"business_type": "식당"}).job == "serving"

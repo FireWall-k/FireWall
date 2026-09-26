@@ -13,9 +13,35 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import threading
+import time
 from pathlib import Path
 
 logger = logging.getLogger("jobcard.tts")
+
+# 합성이 실패하면(결제 미설정 403, 인증 파일 없음, 네트워크 장애) 이 시간 동안은 시도하지 않는다.
+# 실패가 설정 문제면 매 단계 호출이 똑같이 실패하면서 단계마다 0.4~1초씩 직무 생성을 늦춘다.
+_FAILURE_COOLDOWN_SEC = float(os.getenv("TTS_FAILURE_COOLDOWN", "300"))
+_state_lock = threading.Lock()
+_cooldown_until = 0.0
+_client_cache: tuple[object, object] | None = None  # (texttospeech 모듈, 클라이언트)
+
+
+def _reset_state() -> None:
+    """테스트용: 쿨다운과 클라이언트 캐시를 비운다."""
+    global _cooldown_until, _client_cache
+    with _state_lock:
+        _cooldown_until = 0.0
+        _client_cache = None
+
+
+def _get_client(texttospeech):
+    """클라이언트를 재사용한다. 호출마다 만들면 인증 파일을 읽고 연결을 새로 맺는다."""
+    global _client_cache
+    with _state_lock:
+        if _client_cache is None or _client_cache[0] is not texttospeech:
+            _client_cache = (texttospeech, texttospeech.TextToSpeechClient())
+        return _client_cache[1]
 
 
 def _env(name: str, default: str = "") -> str:
@@ -60,10 +86,18 @@ def synthesize_tts_url(text: str) -> str | None:
     if out_path.exists() and out_path.stat().st_size > 0:
         return _public_url(filename)
 
+    global _cooldown_until
+    if time.monotonic() < _cooldown_until:
+        return None
     try:
         _synthesize_google(text, out_path)
     except Exception as exc:  # noqa: BLE001 - TTS 장애가 전체 MVP 흐름을 막지 않도록 fallback
-        logger.warning("Google TTS synthesis failed. Browser TTS fallback will be used. error=%s", exc)
+        with _state_lock:
+            _cooldown_until = time.monotonic() + _FAILURE_COOLDOWN_SEC
+        logger.warning(
+            "Google TTS synthesis failed; skipping TTS for %.0fs (browser TTS fallback). error=%s",
+            _FAILURE_COOLDOWN_SEC, str(exc).splitlines()[0][:300],
+        )
         return None
 
     if out_path.exists() and out_path.stat().st_size > 0:
@@ -89,7 +123,7 @@ def _synthesize_google(text: str, out_path: Path) -> None:
     speaking_rate = float(_env("GOOGLE_TTS_SPEAKING_RATE", "0.9"))
     pitch = float(_env("GOOGLE_TTS_PITCH", "0"))
 
-    client = texttospeech.TextToSpeechClient()
+    client = _get_client(texttospeech)
     synthesis_input = texttospeech.SynthesisInput(text=text)
     voice = texttospeech.VoiceSelectionParams(
         language_code=language_code,

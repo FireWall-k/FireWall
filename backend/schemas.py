@@ -76,8 +76,15 @@ class AssignRequest(BaseModel):
 
 class WorkerCreate(BaseModel):
     display_name: str = Field(min_length=1, max_length=50)
-    # 접속 코드는 근로자 로그인 키. 현장 디바이스 공유를 가정한 짧은 코드.
-    access_code: str = Field(min_length=1, max_length=32)
+    # 접속 코드는 근로자 로그인 키. 비워 두면 서버가 6자리 무작위 코드를 만든다.
+    # 직접 정할 때도 6자리 이상 숫자만 받는다 — 4자리는 1만 번 대입이면 뚫린다.
+    # (예전에 만든 짧은 코드는 WorkerLogin이 그대로 받아 주므로 기존 근로자는 계속 로그인된다.)
+    access_code: str | None = Field(default=None, pattern=r"^\d{6,12}$")
+
+    @field_validator("access_code", mode="before")
+    @classmethod
+    def _blank_is_none(cls, v):
+        return None if isinstance(v, str) and not v.strip() else v
 
 
 class PerformanceLogCreate(BaseModel):

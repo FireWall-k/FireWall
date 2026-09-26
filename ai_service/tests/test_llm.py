@@ -121,7 +121,7 @@ def test_chat_json_parses_openai_wire_format(monkeypatch):
         return _Resp()
 
     monkeypatch.setattr(llm, "OPENAI_API_KEY", "sk-test")
-    monkeypatch.setattr(llm.httpx, "post", fake_post)
+    monkeypatch.setattr(llm, "_http", types.SimpleNamespace(post=fake_post))
 
     out = llm.chat_json("sys", "usr")
     assert out == {"task_title": "t", "steps": []}

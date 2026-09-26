@@ -10,7 +10,17 @@ import types
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import pytest  # noqa: E402
+
 import tts  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _fresh_tts_state():
+    # 실패 쿨다운·클라이언트 캐시는 모듈 전역이다. 테스트끼리 영향을 주지 않게 비운다.
+    tts._reset_state()
+    yield
+    tts._reset_state()
 
 
 def _install_fake_google(monkeypatch, audio=b"FAKEMP3BYTES", counter=None):
@@ -105,3 +115,40 @@ def test_client_failure_falls_back_to_none(monkeypatch, tmp_path):
 
     assert tts.synthesize_tts_url("문장") is None
     assert list(tmp_path.glob("*.mp3")) == []
+
+
+def test_failure_starts_cooldown_so_later_steps_skip_the_call(monkeypatch, tmp_path):
+    """결제 미설정처럼 설정 문제로 실패하면 이후 단계는 호출하지 않고 바로 폴백한다."""
+    monkeypatch.setenv("TTS_CACHE_DIR", str(tmp_path))
+    calls = {"n": 0}
+
+    def boom(text, out_path):
+        calls["n"] += 1
+        raise RuntimeError("403 billing disabled")
+
+    monkeypatch.setattr(tts, "_synthesize_google", boom)
+    assert tts.synthesize_tts_url("첫 문장") is None
+    assert tts.synthesize_tts_url("둘째 문장") is None
+    assert tts.synthesize_tts_url("셋째 문장") is None
+    assert calls["n"] == 1
+
+    # 쿨다운이 지나면 다시 시도한다.
+    monkeypatch.setattr(tts, "_cooldown_until", 0.0)
+    assert tts.synthesize_tts_url("넷째 문장") is None
+    assert calls["n"] == 2
+
+
+def test_client_is_reused_across_calls(monkeypatch, tmp_path):
+    monkeypatch.setenv("TTS_CACHE_DIR", str(tmp_path))
+    _install_fake_google(monkeypatch)
+    made = {"n": 0}
+    m = sys.modules["google.cloud.texttospeech"]
+    original = m.TextToSpeechClient
+
+    def counting_client():
+        made["n"] += 1
+        return original()
+
+    monkeypatch.setattr(m, "TextToSpeechClient", counting_client)
+    assert tts.synthesize_tts_url("하나") and tts.synthesize_tts_url("둘")
+    assert made["n"] == 1

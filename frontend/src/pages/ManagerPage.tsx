@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
-import { api, type AacMatch, type StepSymbolCandidates, type Task, type Worker } from "../api";
+import { api, type AacMatch, type Step, type StepSymbolCandidates, type Task, type Worker } from "../api";
 import { ActionChip } from "../actions";
 
 const SAMPLE =
@@ -61,6 +61,17 @@ export default function ManagerPage() {
 
   // 그림을 자동으로 못 고른 단계의 후보 목록 (stepId -> 후보/사유)
   const [stepCandidates, setStepCandidates] = useState<Record<string, StepSymbolCandidates>>({});
+  // 사업주가 "맞다"고 확인한 단계. 자동으로 고른 그림은 최종 평가에서 약 10%가 틀렸다 —
+  // 확인 없이 게시하면 틀린 그림이 그대로 근로자에게 간다. 직접 고른 후보·사진은 이미 본 것이라 확인으로 친다.
+  const [confirmedSteps, setConfirmedSteps] = useState<Set<string>>(new Set());
+  const confirmStep = (stepId: string) =>
+    setConfirmedSteps((prev) => new Set(prev).add(stepId));
+  const unconfirmStep = (stepId: string) =>
+    setConfirmedSteps((prev) => {
+      const next = new Set(prev);
+      next.delete(stepId);
+      return next;
+    });
 
   // 단계 드래그 정렬 + 단계 직접 추가
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -78,11 +89,18 @@ export default function ManagerPage() {
       });
   }, []);
 
+  // 자동으로 고른 그림 중 아직 확인하지 않은 단계. 이미 게시한 직무는 다시 막지 않는다.
+  const needsConfirm = (s: Step) =>
+    !!task && task.status !== "published" && !!s.symbol_url
+    && s.symbol_source === "LOCAL_AAC" && !confirmedSteps.has(s.id);
+  const unconfirmedCount = task ? task.steps.filter(needsConfirm).length : 0;
+
   async function handleDecompose() {
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
+      setConfirmedSteps(new Set());
       setTask(await api.createTask(rawInput, {
         business_type: businessType.trim() || undefined,
         work_environment: workEnvironment.trim() || undefined,
@@ -139,6 +157,8 @@ export default function ManagerPage() {
       ...task,
       steps: task.steps.map((s) => (s.id === stepId ? updated : s)),
     });
+    // 문장이 바뀌면 그림이 여전히 맞는지 다시 봐야 한다.
+    unconfirmStep(stepId);
     // 문장이 바뀌면 후보도 달라진다. 캐시를 버려 다시 받아오게 한다.
     setStepCandidates((prev) => {
       const next = { ...prev };
@@ -156,6 +176,7 @@ export default function ManagerPage() {
         symbol_source: "LOCAL_AAC",
       });
       setTask({ ...task, steps: task.steps.map((s) => (s.id === stepId ? updated : s)) });
+      confirmStep(stepId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "그림 선택에 실패했습니다.");
     }
@@ -167,6 +188,7 @@ export default function ManagerPage() {
     try {
       const updated = await api.uploadStepPhoto(task.id, stepId, file);
       setTask({ ...task, steps: task.steps.map((s) => (s.id === stepId ? updated : s)) });
+      confirmStep(stepId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "사진 업로드에 실패했습니다.");
     }
@@ -233,20 +255,24 @@ export default function ManagerPage() {
   }
 
   async function handleAddWorker() {
-    if (!newWorkerName.trim() || !newWorkerCode.trim()) {
-      setError("근로자 이름과 접속 코드를 입력해 주세요.");
+    if (!newWorkerName.trim()) {
+      setError("근로자 이름을 입력해 주세요.");
+      return;
+    }
+    if (newWorkerCode.trim() && !/^\d{6,12}$/.test(newWorkerCode.trim())) {
+      setError("접속 코드는 6~12자리 숫자로 정해 주세요. 비워 두면 자동으로 만들어요.");
       return;
     }
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
-      const w = await api.createWorker(newWorkerName.trim(), newWorkerCode.trim());
+      const w = await api.createWorker(newWorkerName.trim(), newWorkerCode.trim() || undefined);
       setWorkers((prev) => [...prev, w]);
       setSelectedWorkerIds((prev) => new Set(prev).add(w.id));
       setNewWorkerName("");
       setNewWorkerCode("");
-      setNotice(`근로자 '${w.display_name}'을(를) 추가했습니다.`);
+      setNotice(`근로자 '${w.display_name}'을(를) 추가했습니다. 접속 코드: ${w.access_code}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "근로자 추가에 실패했습니다.");
     } finally {
@@ -278,6 +304,10 @@ export default function ManagerPage() {
 
   async function handlePublishAndAssign() {
     if (!task) return;
+    if (unconfirmedCount > 0) {
+      flashAssignFeedback(false, `자동으로 고른 그림 ${unconfirmedCount}장이 문장과 맞는지 먼저 확인해 주세요.`);
+      return;
+    }
     if (selectedWorkerIds.size === 0) {
       flashAssignFeedback(false, "보낼 근로자를 한 명 이상 선택해 주세요.");
       return;
@@ -557,6 +587,17 @@ export default function ManagerPage() {
                         그림: {s.symbol_source === "photo" ? "직접 올린 사진" : "그림 카드"}
                       </span>
                     )}
+                    {needsConfirm(s) && (
+                      <button type="button" onClick={() => confirmStep(s.id)}
+                              aria-label={`${s.order}단계 그림 확인`}
+                              className="rounded border border-amber-400 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 hover:bg-amber-100">
+                        자동 선택 · 그림이 맞으면 누르세요
+                      </button>
+                    )}
+                    {task.status !== "published" && s.symbol_url && s.symbol_source === "LOCAL_AAC"
+                      && confirmedSteps.has(s.id) && (
+                      <span className="text-[11px] font-semibold text-emerald-700">✓ 확인함</span>
+                    )}
                   </div>
 
                   {/* 자동으로 못 고른 단계 — 재조회 결과에 따라 다르게 안내한다.
@@ -688,13 +729,18 @@ export default function ManagerPage() {
                 </div>
                 <button
                   onClick={handlePublishAndAssign}
-                  disabled={busy || selectedWorkerIds.size === 0}
+                  disabled={busy || selectedWorkerIds.size === 0 || unconfirmedCount > 0}
                   className="mt-2 rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
                   {busy ? "처리 중…" : selectedWorkerIds.size > 1
                     ? `게시하고 ${selectedWorkerIds.size}명에게 보내기`
                     : "게시하고 보내기"}
                 </button>
+                {unconfirmedCount > 0 && (
+                  <p className="mt-2 text-sm font-semibold text-amber-700">
+                    자동으로 고른 그림 {unconfirmedCount}장을 확인해야 보낼 수 있어요. 틀린 그림은 후보에서 다시 고르거나 사진을 올려 주세요.
+                  </p>
+                )}
                 {/* 버튼 바로 아래에 결과를 보여준다 — 위쪽 배너는 내용이 길면 화면 밖으로 벗어난다. */}
                 {assignFeedback && (
                   <p role="status"
@@ -719,12 +765,13 @@ export default function ManagerPage() {
               />
               <input
                 value={newWorkerCode} onChange={(e) => setNewWorkerCode(e.target.value)}
-                placeholder="접속 코드 (예: 5678)" aria-label="새 근로자 접속 코드"
+                placeholder="접속 코드 (비우면 자동)" aria-label="새 근로자 접속 코드"
+                inputMode="numeric"
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
               />
               <button
                 onClick={handleAddWorker}
-                disabled={busy || !newWorkerName.trim() || !newWorkerCode.trim()}
+                disabled={busy || !newWorkerName.trim()}
                 className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
               >
                 + 근로자 추가

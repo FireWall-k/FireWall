@@ -16,13 +16,20 @@ logger = logging.getLogger("ai_client")
 AI_BASE_URL = os.getenv("AI_BASE_URL", "http://localhost:8001")
 TIMEOUT = float(os.getenv("AI_TIMEOUT", "15"))
 
+# 연결을 재사용하는 공용 클라이언트(스레드 안전). httpx.post()는 호출마다 클라이언트를 새로 만들어
+# SSL 설정을 읽고 TCP 연결을 새로 맺는다 — 실측 호출당 약 1초(재사용 시 18ms). 직무 하나에
+# 단계마다 호출하므로 이 비용이 직무 생성 지연의 대부분이었다.
+_http = httpx.Client(
+    timeout=TIMEOUT,
+    limits=httpx.Limits(max_connections=32, max_keepalive_connections=16),
+)
+
 
 def decompose(raw_input: str, context: dict | None = None) -> dict:
     """원문 -> {task_title, steps[]}. 실패 시 예외를 올린다(상위에서 처리)."""
-    resp = httpx.post(
+    resp = _http.post(
         f"{AI_BASE_URL}/ai/decompose",
         json={"raw_input": raw_input, "context": context or {}},
-        timeout=TIMEOUT,
     )
     resp.raise_for_status()
     return resp.json()
@@ -31,10 +38,9 @@ def decompose(raw_input: str, context: dict | None = None) -> dict:
 def map_symbols(keywords: list[str], context: dict | None = None) -> dict:
     """키워드 -> {symbols[]}. 실패하면 모두 폴백으로 처리한 결과를 돌려준다."""
     try:
-        resp = httpx.post(
+        resp = _http.post(
             f"{AI_BASE_URL}/ai/map-symbols",
             json={"keywords": keywords, "context": context or {}},
-            timeout=TIMEOUT,
         )
         resp.raise_for_status()
         return resp.json()
@@ -57,14 +63,13 @@ def search_aac(
     AI 하네스가 죽어 있거나 요청에 실패하면 빈 결과로 안전하게 떨어진다.
     """
     try:
-        resp = httpx.post(
+        resp = _http.post(
             f"{AI_BASE_URL}/ai/aac/search",
             json={
                 "query": query,
                 "context": context or {},
                 "limit": limit,
             },
-            timeout=TIMEOUT,
         )
         resp.raise_for_status()
         return resp.json()
@@ -83,10 +88,9 @@ def coaching(task_title: str, steps: list[dict], context: dict | None = None) ->
     AI 하네스가 죽어 있거나 실패하면 빈 제안으로 안전하게 떨어진다.
     """
     try:
-        resp = httpx.post(
+        resp = _http.post(
             f"{AI_BASE_URL}/ai/coaching",
             json={"task_title": task_title, "steps": steps, "context": context or {}},
-            timeout=TIMEOUT,
         )
         resp.raise_for_status()
         return resp.json()

@@ -256,11 +256,15 @@ export const api = {
   workerTasks: (workerId: string, date?: string) =>
     req<TaskSummary[]>(`/api/workers/${workerId}/tasks${date ? `?date=${date}` : ""}`),
   workerActiveDates: (workerId: string) => req<string[]>(`/api/workers/${workerId}/active-dates`),
-  createWorker: (display_name: string, access_code: string) =>
+  /** access_code를 비우면 서버가 겹치지 않는 6자리 무작위 코드를 만든다. */
+  createWorker: (display_name: string, access_code?: string) =>
     req<Worker>("/api/workers", {
       method: "POST",
-      body: JSON.stringify({ display_name, access_code }),
+      body: JSON.stringify(access_code ? { display_name, access_code } : { display_name }),
     }),
+  /** 접속 코드를 새 6자리 무작위 코드로 바꾼다(예전 짧은 코드 교체·유출 시). */
+  reissueAccessCode: (id: string) =>
+    req<Worker>(`/api/workers/${id}/access-code`, { method: "POST" }),
   deleteWorker: (id: string) => req<{ ok: boolean }>(`/api/workers/${id}`, { method: "DELETE" }),
   today: () => req<TodayCard[]>("/api/worker/me/today"),
   /** 근로자 본인이 받았던 일 전체(완료 포함, 최신순) — '오늘 할 일'은 완료되면 빠지므로 복습용. */

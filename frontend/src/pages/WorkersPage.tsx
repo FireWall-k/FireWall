@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
-import { Trash2, UserPlus, UserRound } from "lucide-react";
+import { KeyRound, Trash2, UserPlus, UserRound } from "lucide-react";
 import { api, AuthError, type Worker } from "../api";
+
+// 직접 정하는 코드는 6~12자리 숫자만 받는다(서버와 같은 규칙). 비우면 서버가 6자리를 만든다.
+const CODE_RE = /^\d{6,12}$/;
+// 예전에 만든 짧은 코드. 로그인은 되지만 대입으로 뚫리기 쉬워 새로 만들기를 권한다.
+const isWeakCode = (code: string) => code.length < 6;
 
 export default function WorkersPage() {
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -21,23 +26,42 @@ export default function WorkersPage() {
   }, []);
 
   async function addWorker() {
-    if (!name.trim() || !code.trim()) {
-      setError("이름과 접속 코드를 입력해 주세요.");
+    if (!name.trim()) {
+      setError("이름을 입력해 주세요.");
+      return;
+    }
+    if (code.trim() && !CODE_RE.test(code.trim())) {
+      setError("접속 코드는 6~12자리 숫자로 정해 주세요. 비워 두면 자동으로 만들어요.");
       return;
     }
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
-      const w = await api.createWorker(name.trim(), code.trim());
+      const w = await api.createWorker(name.trim(), code.trim() || undefined);
       setWorkers((prev) => [...prev, w]);
       setName("");
       setCode("");
-      setNotice(`근로자 '${w.display_name}'을(를) 추가했습니다.`);
+      setNotice(`근로자 '${w.display_name}'을(를) 추가했습니다. 접속 코드: ${w.access_code}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "근로자 추가에 실패했습니다.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function reissueCode(id: string, displayName: string) {
+    if (!window.confirm(`'${displayName}'의 접속 코드를 새로 만들까요?\n예전 코드로는 더 이상 로그인할 수 없어요.`)) {
+      return;
+    }
+    setError(null);
+    setNotice(null);
+    try {
+      const w = await api.reissueAccessCode(id);
+      setWorkers((prev) => prev.map((x) => (x.id === id ? w : x)));
+      setNotice(`'${w.display_name}'의 새 접속 코드: ${w.access_code}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "접속 코드를 바꾸지 못했습니다.");
     }
   }
 
@@ -81,20 +105,23 @@ export default function WorkersPage() {
           <input
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="접속 코드 (예: 5678)"
+            placeholder="접속 코드 (비우면 자동)"
             aria-label="접속 코드"
+            inputMode="numeric"
             className="rounded-lg border border-paper-200 px-3 py-2 text-sm focus:border-moss-500 focus:outline-none"
           />
           <button
             onClick={addWorker}
-            disabled={busy || !name.trim() || !code.trim()}
+            disabled={busy || !name.trim()}
             className="inline-flex items-center gap-1.5 rounded-lg bg-moss-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             <UserPlus size={15} />
             추가
           </button>
         </div>
-        <p className="mt-2 text-xs text-ink-500">접속 코드는 전체에서 겹치지 않아야 해요(로그인 키로 쓰입니다).</p>
+        <p className="mt-2 text-xs text-ink-500">
+          접속 코드를 비워 두면 겹치지 않는 6자리 숫자를 자동으로 만들어요. 직접 정할 때는 6~12자리 숫자로 입력해 주세요.
+        </p>
       </section>
 
       <section className="rounded-2xl border border-paper-200 bg-white p-5 shadow-sm">
@@ -115,9 +142,23 @@ export default function WorkersPage() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-ink-900">{w.display_name}</p>
-                    <p className="text-xs text-ink-500">접속 코드 {w.access_code}</p>
+                    <p className="text-xs text-ink-500">
+                      접속 코드 {w.access_code}
+                      {isWeakCode(w.access_code) && (
+                        <span className="ml-1.5 font-semibold text-signal-red">짧은 코드예요 — 새로 만들어 주세요</span>
+                      )}
+                    </p>
                   </div>
                 </div>
+                <div className="flex items-center gap-2">
+                <button
+                  onClick={() => reissueCode(w.id, w.display_name)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-paper-200 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-paper-100"
+                  aria-label={`근로자 ${w.display_name} 접속 코드 새로 만들기`}
+                >
+                  <KeyRound size={14} />
+                  코드 새로 만들기
+                </button>
                 <button
                   onClick={() => removeWorker(w.id, w.display_name)}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-paper-200 px-3 py-1.5 text-sm font-medium text-signal-red hover:bg-signal-red/5"
@@ -126,6 +167,7 @@ export default function WorkersPage() {
                   <Trash2 size={14} />
                   삭제
                 </button>
+                </div>
               </li>
             ))}
           </ul>

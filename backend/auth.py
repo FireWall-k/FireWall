@@ -21,11 +21,29 @@ from fastapi import Depends, Header, HTTPException
 _DEV_SECRET = "dev-insecure-secret-change-me"
 
 
+_MIN_PROD_SECRET_LEN = 32
+
+
+def is_production() -> bool:
+    return os.getenv("JOBCARD_ENV", "dev").strip().lower() in {"prod", "production"}
+
+
 def _secret() -> str:
-    secret = os.getenv("JOBCARD_SECRET", _DEV_SECRET)
-    if os.getenv("JOBCARD_ENV", "dev").lower() in {"prod", "production"} and secret == _DEV_SECRET:
-        raise RuntimeError("운영 환경에서는 JOBCARD_SECRET를 반드시 설정해야 합니다.")
+    # docker-compose의 "${JOBCARD_SECRET:-}"처럼 빈 값으로 넘어오면 '설정 안 함'과 같다.
+    # 빈 문자열을 그대로 HMAC 키로 쓰면 누구나 토큰을 위조할 수 있다.
+    secret = (os.getenv("JOBCARD_SECRET") or "").strip() or _DEV_SECRET
+    if is_production() and (secret == _DEV_SECRET or len(secret) < _MIN_PROD_SECRET_LEN):
+        raise RuntimeError(
+            f"운영 환경에서는 JOBCARD_SECRET를 {_MIN_PROD_SECRET_LEN}자 이상의 무작위 값으로 설정해야 합니다. "
+            "예: python -c \"import secrets; print(secrets.token_urlsafe(48))\""
+        )
     return secret
+
+
+def check_production_config() -> None:
+    """운영 기동 시 설정을 미리 검사한다(첫 로그인 때가 아니라 서버가 뜰 때 실패하게)."""
+    if is_production():
+        _secret()
 
 
 TOKEN_TTL_SEC = int(os.getenv("JOBCARD_TOKEN_TTL", "86400"))
@@ -60,10 +78,21 @@ def _sign(body: str) -> str:
     return _b64e(hmac.new(_secret().encode("utf-8"), body.encode("ascii"), hashlib.sha256).digest())
 
 
-def make_token(sub: str, role: str, ttl: int = TOKEN_TTL_SEC) -> str:
-    payload = {"sub": sub, "role": role, "exp": int(time.time()) + ttl}
+def make_token(sub: str, role: str, ttl: int = TOKEN_TTL_SEC, extra: dict | None = None) -> str:
+    payload = {**(extra or {}), "sub": sub, "role": role, "exp": int(time.time()) + ttl}
     body = _b64e(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
     return f"{body}.{_sign(body)}"
+
+
+def code_fingerprint(access_code: str) -> str:
+    """근로자 토큰에 넣는 접속 코드 지문. 코드를 재발급하면 지문이 바뀌어 예전 토큰이 무효가 된다.
+
+    토큰 본문은 서명만 될 뿐 누구나 읽을 수 있다. 평문 해시(sha256(code))를 넣으면 6자리 코드는
+    100만 번 대입으로 바로 복원되므로, 서버 시크릿으로 HMAC한 값을 넣는다.
+    """
+    digest = hmac.new(_secret().encode("utf-8"), f"worker-code:{access_code}".encode("utf-8"),
+                      hashlib.sha256).digest()
+    return _b64e(digest[:12])
 
 
 def verify_token(token: str) -> dict | None:

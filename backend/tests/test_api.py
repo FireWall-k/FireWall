@@ -98,9 +98,9 @@ def test_assign_task_to_multiple_workers_at_once(client, employer_token):
     task = r.json()
     client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token))
 
-    w1 = client.post("/api/workers", json={"display_name": "박근로", "access_code": "5677"},
+    w1 = client.post("/api/workers", json={"display_name": "박근로", "access_code": "567701"},
                      headers=auth(employer_token)).json()
-    w2 = client.post("/api/workers", json={"display_name": "김근로", "access_code": "5678"},
+    w2 = client.post("/api/workers", json={"display_name": "김근로", "access_code": "567802"},
                      headers=auth(employer_token)).json()
     try:
         r = client.post(f"/api/tasks/{task['id']}/assignments",
@@ -111,7 +111,7 @@ def test_assign_task_to_multiple_workers_at_once(client, employer_token):
         assert {a["worker_id"] for a in assignments} == {w1["id"], w2["id"]}
 
         # 두 근로자 모두 자기 화면에서 오늘 할 일로 받는다.
-        for code in ("5677", "5678"):
+        for code in ("567701", "567802"):
             tok = client.post("/api/auth/worker-login", json={"access_code": code}).json()["token"]
             today = client.get("/api/worker/me/today", headers=auth(tok))
             assert len(today.json()) == 1
@@ -490,7 +490,7 @@ def test_symbol_source_defaults_to_fallback(client, employer_token):
     step_id = task["steps"][0]["id"]
 
     patched = client.patch(f"/api/tasks/{task['id']}/steps/{step_id}",
-                           json={"symbol_url": "http://example.test/x.webp"},
+                           json={"symbol_url": "http://localhost:8000/api/aac/images/cafe/CAFE_013.webp"},
                            headers=auth(employer_token))
     assert patched.status_code == 200, patched.text
     assert patched.json()["symbol_source"] == "fallback"
@@ -601,3 +601,53 @@ def test_worker_tasks_and_active_dates_use_local_date(client, employer_token):
                        headers=auth(employer_token)).json()
     assert "2026-01-11" in dates
     assert "2026-01-10" not in dates
+
+
+def test_parallel_step_preparation_keeps_order_and_pairing(client, employer_token, monkeypatch):
+    """단계 준비를 동시에 돌려도 순서와 (문장, 그림, 음성) 짝이 어긋나지 않는다.
+
+    뒤 단계가 먼저 끝나도록 앞 단계일수록 오래 걸리게 만든다.
+    """
+    import time as _time
+
+    import ai_client
+    import main
+
+    sentences = [f"{i}번 상자를 옮기세요." for i in range(1, 7)]
+    monkeypatch.setattr(ai_client, "decompose", lambda raw, ctx=None: {
+        "task_title": "순서", "steps": [
+            {"order": i, "sentence": s, "action_type": "move", "symbol_query": [s]}
+            for i, s in enumerate(sentences, start=1)
+        ]})
+
+    def slow_map(keywords, context=None):
+        n = int(context["sentence"][0])
+        _time.sleep(0.05 * (7 - n))
+        return {"symbols": [{"keyword": keywords[0], "source": "LOCAL_AAC", "needs_fallback": False,
+                             "image_url": f"/api/aac/images/x/STEP_{n}.webp"}]}
+
+    monkeypatch.setattr(ai_client, "map_symbols", slow_map)
+    monkeypatch.setattr(main, "synthesize_tts_url", lambda text: f"tts:{text}")
+
+    started = _time.perf_counter()
+    r = client.post("/api/tasks", json={"raw_input": "순서 확인"}, headers=auth(employer_token))
+    elapsed = _time.perf_counter() - started
+    assert r.status_code == 201, r.text
+    steps = r.json()["steps"]
+    assert [s["sentence"] for s in steps] == sentences
+    for s in steps:
+        n = s["sentence"][0]
+        assert s["symbol_url"].endswith(f"STEP_{n}.webp")
+        assert s["tts_audio_url"] == f"tts:{s['sentence']}"
+    # 순서대로 했다면 0.05*(6+5+...+1)=1.05초. 동시에 돌면 가장 느린 한 단계(0.3초) 수준이다.
+    assert elapsed < 0.9, elapsed
+
+
+def test_static_images_have_image_content_type(monkeypatch):
+    """AAC 그림(.webp)·음성(.mp3)이 올바른 Content-Type으로 나가야 한다(slim 이미지 MIME 누락 회귀)."""
+    import mimetypes
+
+    import main  # noqa: F401 - import 시 MIME 등록이 일어난다
+
+    assert mimetypes.guess_type("CAFE_012.webp")[0] == "image/webp"
+    assert mimetypes.guess_type("x.mp3")[0] == "audio/mpeg"
