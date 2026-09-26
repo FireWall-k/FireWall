@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { AlertCircle, BarChart3, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, RefreshCw, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { api, AuthError, type Coaching, type Dashboard, type TaskSummary, type Worker } from "../api";
-import { BAR_COLOR, SLOWEST_BAR_COLOR, slowestIndex } from "../dashboardChart";
+import { BAR_COLOR, STUCK_BAR_COLOR, stuckIndices } from "../dashboardChart";
 
 const DASHBOARD_POLL_MS = 10_000;
 
@@ -300,7 +300,7 @@ function DashboardPage() {
     })) ?? [],
     [dashboard]
   );
-  const slowest = useMemo(() => slowestIndex(chartData.map((d) => d.소요시간)), [chartData]);
+  const stuckStepIndices = useMemo(() => stuckIndices(chartData.map((d) => d.막힘 > 0)), [chartData]);
 
   const replayTotal = dashboard?.steps.reduce((sum, step) => sum + step.replay_count, 0) ?? 0;
   const stuckTotal = dashboard?.stuck_steps.length ?? 0;
@@ -521,7 +521,7 @@ function DashboardPage() {
                     />
                     <Bar dataKey="소요시간" radius={[6, 6, 0, 0]}>
                       {chartData.map((d, i) => (
-                        <Cell key={d.name} fill={i === slowest ? SLOWEST_BAR_COLOR : BAR_COLOR} />
+                        <Cell key={d.name} fill={stuckStepIndices.includes(i) ? STUCK_BAR_COLOR : BAR_COLOR} />
                       ))}
                     </Bar>
                   </BarChart>
