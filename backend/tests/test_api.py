@@ -651,3 +651,18 @@ def test_static_images_have_image_content_type(monkeypatch):
 
     assert mimetypes.guess_type("CAFE_012.webp")[0] == "image/webp"
     assert mimetypes.guess_type("x.mp3")[0] == "audio/mpeg"
+
+
+def test_ai_failure_message_does_not_leak_exception_text(client, employer_token, monkeypatch):
+    """AI 서비스 호출이 실패해도 사용자 화면에는 예외 원문(내부 호스트명 등)이 나가지 않는다."""
+    import ai_client
+
+    def boom(raw, ctx=None):
+        raise RuntimeError("connect failed: http://ai_service:8001 refused")
+
+    monkeypatch.setattr(ai_client, "decompose", boom)
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"}, headers=auth(employer_token))
+    assert r.status_code == 502
+    detail = r.json()["detail"]
+    assert "ai_service" not in detail and "refused" not in detail and "RuntimeError" not in detail
+    assert "다시 시도" in detail

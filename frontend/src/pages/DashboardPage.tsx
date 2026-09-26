@@ -348,7 +348,7 @@ function DashboardPage() {
         <div>
           <h1 className="font-display text-2xl font-semibold text-ink-900">수행 대시보드</h1>
           <p className="mt-1 text-sm text-ink-500">
-            백엔드 수행 로그를 집계해 완료율, 반복 청취, 막힘 단계를 보여줘요.
+            근로자의 수행 기록을 모아 완료율, 반복 청취, 막힘 단계를 보여줘요.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

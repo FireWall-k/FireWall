@@ -354,7 +354,7 @@ export default function ManagerPage() {
       setError(
         e instanceof Error
           ? e.message
-          : "AAC 검색에 실패했습니다.",
+          : "그림 검색에 실패했습니다.",
       );
     } finally {
       setBusy(false);
@@ -407,12 +407,11 @@ export default function ManagerPage() {
 
       <section className="rounded-lg border border-slate-200 bg-white p-4">
         <h2 className="text-lg font-bold text-slate-900">
-          자체 AAC 검색
+          그림 카드 검색
         </h2>
 
         <p className="mt-1 text-sm text-slate-600">
-          프로젝트에서 제작한 직무 AAC 이미지 중
-          작업 문장과 가장 가까운 이미지를 검색합니다.
+          직무별 그림 카드 중 작업 문장과 가장 가까운 그림을 찾아 줍니다.
         </p>
 
         <div className="mt-3 flex gap-2">
@@ -420,7 +419,7 @@ export default function ManagerPage() {
             className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-base"
             value={aacQuery}
             onChange={(e) => setAacQuery(e.target.value)}
-            aria-label="AAC 검색어"
+            aria-label="그림 검색어"
             placeholder="예: 상품을 선반에 놓는다"
           />
 
@@ -454,20 +453,8 @@ export default function ManagerPage() {
                     className="h-32 w-full rounded border border-slate-100 object-contain"
                   />
 
-                  <div className="mt-2 text-xs text-slate-500">
-                    {match.job}
-                  </div>
-
-                  <div className="text-sm font-medium text-slate-900">
+                  <div className="mt-2 text-sm font-medium text-slate-900">
                     {match.label}
-                  </div>
-
-                  <div className="mt-1 text-xs text-slate-400">
-                    {match.asset_id}
-                  </div>
-
-                  <div className="text-xs text-slate-400">
-                    유사도 {Math.round(match.score * 100)}%
                   </div>
                 </a>
               ))}

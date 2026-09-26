@@ -215,9 +215,6 @@ function TodayView({ cards }: { cards: TodayCard[] }) {
           className="mt-6 inline-flex min-h-touch items-center justify-center gap-2 rounded-xl border-2 border-blue-200 bg-blue-50 px-6 text-worker font-semibold text-blue-800">
           🔊 다시 듣기
         </button>
-        <p className="mt-2 text-xs text-slate-400">
-          {step?.tts_audio_url ? "Google TTS API 음성" : "브라우저 음성 fallback"}
-        </p>
       </div>
 
       {/* 도움 요청: 누르면 이 단계가 '막힘'으로 기록되어 사업주 대시보드에 표시된다 */}
