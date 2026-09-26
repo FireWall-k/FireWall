@@ -502,9 +502,9 @@ function DashboardPage() {
               </div>
               <p className="mb-4 text-xs text-ink-500">
                 완료 로그가 쌓이면 어떤 단계에서 시간이 오래 걸렸는지 확인할 수 있어요.
-                {slowest >= 0 && (
-                  <span className="ml-1 font-medium" style={{ color: SLOWEST_BAR_COLOR }}>
-                    빨간 막대는 가장 오래 걸린 단계({chartData[slowest].name})예요.
+                {stuckStepIndices.length > 0 && (
+                  <span className="ml-1 font-medium" style={{ color: STUCK_BAR_COLOR }}>
+                    빨간 막대는 막힘 기록이 있는 단계예요.
                   </span>
                 )}
               </p>
