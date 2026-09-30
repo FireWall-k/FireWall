@@ -274,7 +274,9 @@ function DashboardPage() {
     loadDashboard({ coaching: true, initial: true });
   }, [taskId, workerId, loadDashboard]);
 
-  // 10초마다, 그리고 탭으로 돌아왔을 때 다시 불러온다. 숨겨진 탭에서는 요청하지 않는다.
+  // DASHBOARD_POLL_MS 간격으로, 그리고 탭으로 돌아왔을 때 다시 불러온다. 숨겨진 탭에서는 요청하지
+  // 않는다. 코칭(coaching:false)은 LLM 호출이라 폴링에 안 넣는다 — 3초마다 다시 물으면 비용이
+  // 과하다. 코칭은 최초 진입과 수동 새로고침(위 두 호출)때만 갱신한다.
   useEffect(() => {
     if (!taskId || !workerId) return;
     const tick = () => {
