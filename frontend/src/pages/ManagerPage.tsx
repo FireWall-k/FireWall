@@ -363,6 +363,19 @@ export default function ManagerPage() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
+          {error}
+        </div>
+      )}
+      {notice && (
+        <div role="status" className="rounded-lg bg-green-50 p-3 text-sm text-green-800">
+          {notice}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[380px_1fr] lg:items-start">
+        <div className="space-y-6">
       <section>
         <h1 className="text-xl font-bold text-slate-900">오늘 직무 입력</h1>
         <p className="mt-1 text-sm text-slate-600">
@@ -481,17 +494,7 @@ export default function ManagerPage() {
           </div>
         )}
       </section>
-
-      {error && (
-        <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
-          {error}
-        </div>
-      )}
-      {notice && (
-        <div role="status" className="rounded-lg bg-green-50 p-3 text-sm text-green-800">
-          {notice}
-        </div>
-      )}
+      </div>
 
       {task && (
         <section>
@@ -807,6 +810,7 @@ export default function ManagerPage() {
           </div>
         </section>
       )}
+      </div>
     </div>
   );
 }
