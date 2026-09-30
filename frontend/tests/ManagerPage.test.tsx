@@ -196,3 +196,19 @@ describe("ManagerPage — 자동으로 고른 그림은 확인해야 보낼 수 
     expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeEnabled();
   });
 });
+
+describe("ManagerPage — 단계로 나누기 전/후 레이아웃", () => {
+  it("직무가 없을 땐 입력·검색이 전체 폭을 쓴다(오른쪽을 빈 채로 예약하지 않는다)", async () => {
+    const { container } = render(<ManagerPage />);
+    await screen.findByText("오늘 직무 입력");
+    expect(container.innerHTML).not.toContain("lg:grid-cols-[380px_1fr]");
+  });
+
+  it("단계로 나눈 뒤에는 왼쪽 380px + 오른쪽 검토 2단으로 바뀐다", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByText(/검토 · 수정/);
+    expect(container.innerHTML).toContain("lg:grid-cols-[380px_1fr]");
+  });
+});

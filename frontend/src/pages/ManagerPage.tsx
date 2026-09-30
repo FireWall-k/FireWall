@@ -374,7 +374,12 @@ export default function ManagerPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[380px_1fr] lg:items-start">
+      {/* 단계로 나누기 전에는 2단 그리드가 오른쪽을 빈 채로 예약해 화면 오른쪽이 통째로 비어 보였다.
+          직무가 생기기 전에는 입력·검색이 전체 폭을 쓰고, 생긴 뒤에만 왼쪽 380px + 오른쪽 검토로 나눈다. */}
+      <div className={task
+        ? "grid grid-cols-1 gap-6 lg:grid-cols-[380px_1fr] lg:items-start"
+        : "flex flex-col gap-6"}
+      >
         <div className="space-y-6">
       <section>
         <h1 className="text-xl font-bold text-slate-900">오늘 직무 입력</h1>
