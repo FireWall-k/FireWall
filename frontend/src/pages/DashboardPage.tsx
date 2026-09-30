@@ -13,7 +13,7 @@ import { AlertCircle, BarChart3, CalendarDays, CheckCircle2, ChevronLeft, Chevro
 import { api, AuthError, type Coaching, type Dashboard, type TaskSummary, type Worker } from "../api";
 import { BAR_COLOR, STUCK_BAR_COLOR, stuckIndices } from "../dashboardChart";
 
-const DASHBOARD_POLL_MS = 10_000;
+const DASHBOARD_POLL_MS = 3_000;
 
 const formatClock = (d: Date) =>
   d.toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
