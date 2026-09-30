@@ -58,7 +58,6 @@ function TodayView({ cards }: { cards: TodayCard[] }) {
   const [cardIdx, setCardIdx] = useState(0); // 오늘 받은 여러 직무 중 현재 보는 직무
   const [stepIdx, setStepIdx] = useState(0);
   const [replayCount, setReplayCount] = useState(0);
-  const [needHelp, setNeedHelp] = useState(false);
   const stepStartRef = useRef<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [jobDone, setJobDone] = useState(false); // 현재 직무 완료(다음 직무 대기)
@@ -104,12 +103,13 @@ function TodayView({ cards }: { cards: TodayCard[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step?.id]);
 
-  async function completeStep() {
+  // askedHelp=true: "도움이 필요해요"를 눌러 온 경우 — 그 자리에서 바로 다음 단계로 넘어간다.
+  async function completeStep(askedHelp = false) {
     if (!card || !step) return;
     const duration = (Date.now() - stepStartRef.current) / 1000;
     // 실제 stuck 신호: 본인 도움요청 OR 다시듣기 과다 OR 소요시간 초과
     const stuck =
-      needHelp ||
+      askedHelp ||
       replayCount >= STUCK_REPLAY_THRESHOLD ||
       duration >= STUCK_DURATION_SEC;
     try {
@@ -135,7 +135,6 @@ function TodayView({ cards }: { cards: TodayCard[] }) {
     } else {
       setStepIdx((i) => i + 1);
       setReplayCount(0);
-      setNeedHelp(false);
       stepStartRef.current = Date.now();
     }
   }
@@ -144,7 +143,6 @@ function TodayView({ cards }: { cards: TodayCard[] }) {
     setCardIdx((i) => i + 1);
     setStepIdx(0);
     setReplayCount(0);
-    setNeedHelp(false);
     setJobDone(false);
     stepStartRef.current = Date.now();
   }
@@ -220,16 +218,14 @@ function TodayView({ cards }: { cards: TodayCard[] }) {
         </p>
       </div>
 
-      {/* 도움 요청: 누르면 이 단계가 '막힘'으로 기록되어 사업주 대시보드에 표시된다 */}
-      <button onClick={() => setNeedHelp(true)} aria-pressed={needHelp}
-        className={"mt-4 min-h-touch w-full rounded-2xl border-2 text-worker font-semibold " +
-          (needHelp
-            ? "border-amber-500 bg-amber-100 text-amber-900"
-            : "border-amber-300 bg-amber-50 text-amber-800")}>
-        {needHelp ? "🙋 도움을 요청했어요" : "🙋 도움이 필요해요"}
+      {/* 도움 요청: 누르면 이 단계가 '막힘'으로 기록되고 바로 다음 단계로 넘어간다.
+          망설이다 다시 누르는 걸 막기 위해 별도 확인 없이 즉시 진행한다. */}
+      <button onClick={() => completeStep(true)}
+        className="mt-4 min-h-touch w-full rounded-2xl border-2 border-amber-300 bg-amber-50 text-worker font-semibold text-amber-800">
+        🙋 도움이 필요해요
       </button>
 
-      <button onClick={completeStep}
+      <button onClick={() => completeStep()}
         className="mt-3 min-h-touch w-full rounded-2xl bg-green-700 text-worker-lg font-bold text-white">
         ✓ 완료
       </button>
