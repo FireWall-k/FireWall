@@ -22,6 +22,7 @@ from schemas import (
     AacSearchResult,
     CoachingRequest,
     CoachingResult,
+    CoachingStepInput,
     CoachingSuggestion,
     DecomposeRequest,
     DecomposeResult,
@@ -108,27 +109,57 @@ _STUCK_REPLAY = 3
 _STUCK_DURATION = 120.0
 
 
+def _is_stuck(s: CoachingStepInput) -> bool:
+    return s.stuck or s.replay_count >= _STUCK_REPLAY or s.duration_sec >= _STUCK_DURATION
+
+
+def _heuristic_suggestion(s: CoachingStepInput) -> CoachingSuggestion:
+    """단계 하나에 대한 규칙 기반 제안. LLM 미사용 폴백과, LLM이 놓친 막힘 단계를
+    채워 넣는 보강(_ensure_stuck_steps_covered) 둘 다에서 쓴다."""
+    if s.duration_sec >= _STUCK_DURATION:
+        action, sug = "split", "이 단계를 두 개의 더 작은 동작으로 나눠보세요."
+    elif s.replay_count >= _STUCK_REPLAY:
+        action, sug = "photo", "그림이 잘 전달되지 않을 수 있어요. 실제 현장 사진으로 교체해 보세요."
+    elif s.action_type == "assemble":
+        action, sug = "split", "조립 단계는 부품을 미리 나눠 두거나 두 동작으로 쪼개 보세요."
+    else:
+        action, sug = "rephrase", "문장을 더 짧고 쉬운 말로 바꿔보세요."
+    return CoachingSuggestion(
+        order=s.order,
+        issue=f"{s.order}단계에서 어려움 징후(다시듣기 {s.replay_count}회, "
+              f"소요 {round(s.duration_sec)}초, 막힘 {'예' if s.stuck else '아니오'}).",
+        suggestion=sug, action=action,
+    )
+
+
 def _rule_coaching(req: CoachingRequest) -> CoachingResult:
     """LLM 미사용/실패 시 휴리스틱 코칭(수행 데이터 기반)."""
-    suggestions: list[CoachingSuggestion] = []
-    for s in req.steps:
-        if s.stuck or s.replay_count >= _STUCK_REPLAY or s.duration_sec >= _STUCK_DURATION:
-            if s.duration_sec >= _STUCK_DURATION:
-                action, sug = "split", "이 단계를 두 개의 더 작은 동작으로 나눠보세요."
-            elif s.replay_count >= _STUCK_REPLAY:
-                action, sug = "photo", "그림이 잘 전달되지 않을 수 있어요. 실제 현장 사진으로 교체해 보세요."
-            else:
-                action, sug = "rephrase", "문장을 더 짧고 쉬운 말로 바꿔보세요."
-            suggestions.append(CoachingSuggestion(
-                order=s.order,
-                issue=f"{s.order}단계에서 어려움 징후(다시듣기 {s.replay_count}회, "
-                      f"소요 {round(s.duration_sec)}초, 막힘 {'예' if s.stuck else '아니오'}).",
-                suggestion=sug, action=action,
-            ))
+    suggestions = [_heuristic_suggestion(s) for s in req.steps if _is_stuck(s)]
     if suggestions:
         summary = f"{len(suggestions)}개 단계에서 개선이 필요해 보입니다."
     else:
         summary = "전반적으로 무난하게 수행하고 있습니다."
+    return CoachingResult(summary=summary, suggestions=suggestions)
+
+
+def _ensure_stuck_steps_covered(req: CoachingRequest, result: CoachingResult) -> CoachingResult:
+    """막힘 신호가 있는 단계는 LLM이 빠뜨렸어도 반드시 제안을 받는다.
+
+    프롬프트로 "막힘 단계는 전부 다루라"고 지시는 하지만, LLM이 지시를 놓치거나 판단이
+    달라(예: replay_count=3인데 "경미하다"고 스스로 판단) 응답에서 통째로 빠질 수 있다.
+    지시만 믿지 않고, 서버가 실제 수행 데이터로 계산한 막힘 여부와 대조해 빠진 단계를
+    규칙 기반 제안으로 채운다 — LLM 응답을 지우지 않고 보태기만 한다.
+    """
+    covered = {sg.order for sg in result.suggestions}
+    missing = [s for s in req.steps if _is_stuck(s) and s.order not in covered]
+    if not missing:
+        return result
+    suggestions = sorted(
+        [*result.suggestions, *(_heuristic_suggestion(s) for s in missing)],
+        key=lambda sg: sg.order,
+    )
+    summary = result.summary.strip() or f"{len(suggestions)}개 단계에서 개선이 필요해 보입니다."
+    logger.info("coaching: LLM이 놓친 막힘 단계 %s개를 보강함", len(missing))
     return CoachingResult(summary=summary, suggestions=suggestions)
 
 
@@ -142,6 +173,7 @@ def ai_coaching(req: CoachingRequest) -> CoachingResult:
                 req.context,
             )
             result = CoachingResult(**raw)  # 가드레일: 스키마 검증
+            result = _ensure_stuck_steps_covered(req, result)
             logger.info("coaching via LLM: %s suggestions", len(result.suggestions))
             return result
         except Exception as e:  # noqa: BLE001 - LLM 실패 시 휴리스틱 폴백

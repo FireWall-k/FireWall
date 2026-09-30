@@ -100,6 +100,44 @@ def test_coaching_via_llm(monkeypatch):
     assert r.json()["suggestions"][0]["action"] == "rephrase"
 
 
+def test_coaching_backfills_stuck_steps_the_llm_omitted(monkeypatch):
+    """막힘 신호가 있는 단계는 LLM 응답에 없어도 서버가 채워 넣어야 한다."""
+    monkeypatch.setattr(llm, "llm_available", lambda: True)
+    # LLM이 3단계(막힘)를 통째로 빠뜨리고 1단계(정상)만 답한 상황을 흉내낸다.
+    monkeypatch.setattr(llm, "chat_json", lambda system, user, **kw: {
+        "summary": "1단계 확인",
+        "suggestions": [{"order": 1, "issue": "가벼운 지연", "suggestion": "괜찮아요", "action": "ok"}],
+    })
+    client = TestClient(ai_main.app)
+    r = client.post("/ai/coaching", json={"task_title": "t", "steps": [
+        {"order": 1, "sentence": "상자를 옮기세요", "stuck": False, "replay_count": 0, "duration_sec": 5},
+        {"order": 3, "sentence": "부품을 조립하세요", "action_type": "assemble",
+         "stuck": True, "replay_count": 0, "duration_sec": 10},
+    ]})
+    assert r.status_code == 200
+    orders = sorted(s["order"] for s in r.json()["suggestions"])
+    assert orders == [1, 3]  # LLM이 준 1단계 + 서버가 보강한 3단계
+    backfilled = next(s for s in r.json()["suggestions"] if s["order"] == 3)
+    assert backfilled["action"] == "split"  # action_type=assemble 휴리스틱
+
+
+def test_coaching_llm_response_already_covers_all_stuck_steps(monkeypatch):
+    """LLM이 이미 다 다뤘으면 보강이 끼어들어 내용을 바꾸지 않는다."""
+    monkeypatch.setattr(llm, "llm_available", lambda: True)
+    monkeypatch.setattr(llm, "chat_json", lambda system, user, **kw: {
+        "summary": "요약",
+        "suggestions": [{"order": 1, "issue": "LLM이 준 사유", "suggestion": "LLM이 준 조치", "action": "photo"}],
+    })
+    client = TestClient(ai_main.app)
+    r = client.post("/ai/coaching", json={"task_title": "t", "steps": [
+        {"order": 1, "sentence": "x", "stuck": True, "replay_count": 0, "duration_sec": 5},
+    ]})
+    body = r.json()
+    assert len(body["suggestions"]) == 1
+    assert body["suggestions"][0] == {"order": 1, "issue": "LLM이 준 사유",
+                                      "suggestion": "LLM이 준 조치", "action": "photo"}
+
+
 # ---------- chat_json: OpenAI 응답 파싱부 직접 검증 ----------
 def test_chat_json_parses_openai_wire_format(monkeypatch):
     import types

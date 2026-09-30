@@ -229,6 +229,33 @@ def test_coaching_employer_only_and_returns_suggestions(client, employer_token, 
     assert body["suggestions"][0]["action"] == "photo"
 
 
+def test_coaching_sends_business_context_and_action_type(client, employer_token, monkeypatch):
+    """코칭 호출이 빈 dict가 아니라 실제 업종·환경·직무와 단계별 action_type을 받아야 한다.
+
+    예전엔 backend가 ai_client.coaching(title, steps, {})로 늘 빈 context를 넘겨서,
+    LLM이 이 직무가 카페인지 조립인지도 모른 채 제안을 짰다.
+    """
+    import ai_client
+    captured = {}
+
+    def fake_coaching(title, steps, context=None):
+        captured["context"] = context
+        captured["steps"] = steps
+        return {"summary": "", "suggestions": []}
+
+    monkeypatch.setattr(ai_client, "coaching", fake_coaching)
+    r = client.post("/api/tasks", json={"raw_input": "부품을 조립하세요",
+                                        "business_type": "제조", "work_environment": "생산 라인"},
+                    headers=auth(employer_token))
+    task_id = r.json()["id"]
+
+    c = client.get(f"/api/dashboard/tasks/{task_id}/coaching", headers=auth(employer_token))
+    assert c.status_code == 200, c.text
+    assert captured["context"]["business_type"] == "제조"
+    assert captured["context"]["work_environment"] == "생산 라인"
+    assert captured["steps"][0]["action_type"] == "move"
+
+
 def test_create_task_accepts_context(client, employer_token):
     # 맥락 필드가 있어도 정상 생성(LLM 컨텍스트로 전달)
     r = client.post("/api/tasks", json={

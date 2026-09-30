@@ -1046,13 +1046,21 @@ def task_coaching(task_id: str, worker_id: str | None = None,
         steps_payload.append({
             "order": s.order_index,
             "sentence": s.sentence,
+            "action_type": s.action_type,
             "completed": log is not None,
             "stuck": bool(log.stuck) if log else False,
             "replay_count": log.replay_count if log else 0,
             "duration_sec": log.duration_sec if log else 0.0,
         })
 
-    raw = ai_client.coaching(task.title, steps_payload, {})
+    # 업종·환경을 안 넘기면 LLM이 이 직무가 카페인지 조립인지도 모른 채 제안을 짠다
+    # (예전엔 빈 dict를 그대로 넘겨 항상 그런 상태였다).
+    coaching_context = {
+        "business_type": task.business_type or "",
+        "work_environment": task.work_environment or "",
+        "job": task.job or "",
+    }
+    raw = ai_client.coaching(task.title, steps_payload, coaching_context)
     suggestions = []
     for s in raw.get("suggestions", []):
         suggestions.append(CoachingSuggestionOut(

@@ -267,13 +267,24 @@ def llm_decompose(raw_input: str, context: dict | None = None) -> dict:
 # --- 2) 사업주용 AI 코칭 가이드 ---------------------------------------------
 _COACHING_SYSTEM = (
     "당신은 발달장애인 직업 코치입니다. 근로자의 단계별 수행 데이터(막힘 여부, "
-    "다시듣기 횟수, 소요시간, 완료 여부)를 보고, 어려움이 보이는 단계에 대해 "
-    "사업주가 바로 적용할 구체적 개선책을 제안합니다. 규칙:\n"
-    "1) 어려움 징후가 있는 단계만 제안합니다(막힘=true, 다시듣기≥3, 소요≥120초 등).\n"
-    "2) 각 제안은 원인 추정(issue)과 구체적 조치(suggestion), 그리고 action을 포함합니다.\n"
-    "3) action은 다음 중 하나: 'rephrase'(문장 더 쉽게), 'photo'(그림→실제 현장 사진 교체), "
-    "'split'(한 단계를 둘로 분할), 'ok'(양호).\n"
-    "4) 과장 없이, 현장에서 실행 가능한 한국어로.\n"
+    "다시듣기 횟수, 소요시간, 완료 여부, 동작 유형)와 이 직무의 업종·작업 환경을 보고, "
+    "어려움이 보이는 단계에 대해 사업주가 오늘 바로 적용할 구체적 개선책을 제안합니다. 규칙:\n"
+    "1) 막힘=true, 다시듣기≥3, 소요≥120초 중 하나라도 해당하는 단계는 예외 없이 전부 "
+    "제안을 답니다. 하나라도 빠뜨리면 안 됩니다(서버가 누락 여부를 검사합니다).\n"
+    "2) 그 밖에 수치는 애매해도 문장 자체가 근로자에게 어려워 보이는 단계(추상적 표현, "
+    "긴 문장, 여러 동작이 한 문장에 들어있음)가 있으면 함께 짚어 주세요.\n"
+    "3) issue는 왜 어려운지를 그 단계의 실제 문장·수치를 근거로 구체적으로 씁니다"
+    "('2단계에서 어려움 징후'처럼 번호만 반복하는 문장 금지 — 예: "
+    "'\"수량을 확인하세요\"는 무엇을 어떻게 세는지가 없어 다시듣기가 5회 발생').\n"
+    "4) suggestion은 이 업종·환경과 이 단계의 동작 유형(action_type)에 맞게 구체적으로 씁니다.\n"
+    "   - action_type이 assemble/operate: 손동작이 복잡할 수 있음 → 세부 동작으로 분할(split) 우선.\n"
+    "   - observe: 무엇을 어떻게 확인하는지가 문장에 없을 때가 많음 → 기준을 명시하도록 rephrase.\n"
+    "   - 그림이 실물과 다르거나 다시듣기가 반복되면 → 실제 현장 사진으로 교체(photo).\n"
+    "5) action은 다음 중 하나: 'rephrase'(문장 더 쉽게/구체적으로), "
+    "'photo'(그림→실제 현장 사진 교체), 'split'(한 단계를 둘로 분할), 'ok'(양호).\n"
+    "6) 어려움 징후가 여럿이면 issue에 원인 조합을(예: '다시듣기 5회+소요 140초') 함께 적어 "
+    "가장 시급한 단계를 사업주가 한눈에 알 수 있게 합니다.\n"
+    "7) 과장 없이, 오늘 현장에서 바로 실행 가능한 한국어 지시문으로.\n"
     "출력은 반드시 JSON 한 개. 형식:\n"
     '{"summary": "한 줄 요약", "suggestions": [{"order": 2, "issue": "...", '
     '"suggestion": "...", "action": "rephrase|photo|split|ok"}]}'
@@ -283,4 +294,4 @@ _COACHING_SYSTEM = (
 def llm_coaching(task_title: str, steps: list[dict], context: dict | None = None) -> dict:
     payload = {"task_title": task_title, "context": context or {}, "steps": steps}
     user = "다음 수행 데이터를 분석해 제안하세요:\n" + json.dumps(payload, ensure_ascii=False)
-    return chat_json(_COACHING_SYSTEM, user, max_tokens=800)
+    return chat_json(_COACHING_SYSTEM, user, max_tokens=1200)

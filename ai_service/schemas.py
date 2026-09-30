@@ -103,6 +103,9 @@ class CoachingStepInput(BaseModel):
     stuck: bool = False
     replay_count: int = 0
     duration_sec: float = 0.0
+    # 동작 특성(관찰/조작/조립 등). LLM이 action_type에 맞는 조치를 고르는 데 쓴다
+    # (예: assemble이면 split, observe면 rephrase 쪽이 더 맞는 경우가 많다).
+    action_type: ActionType = "other"
 
 
 class CoachingRequest(BaseModel):
