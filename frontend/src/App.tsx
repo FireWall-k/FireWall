@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate } from "react-router-dom";
-import { Briefcase, BarChart3, LogOut, Tablet, UserRound, Users } from "lucide-react";
+import { Briefcase, BarChart3, LogOut, Users } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { clearAuth, getAuth, type AuthState, type Role } from "./api";
 import LoginPage from "./pages/LoginPage";
@@ -8,8 +8,9 @@ import DashboardPage from "./pages/DashboardPage";
 import WorkersPage from "./pages/WorkersPage";
 import WorkerPage from "./pages/WorkerPage";
 
-const navItem =
-  "flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors";
+// 위쪽 가로 탭. 사업주 화면 상단 바에서 쓴다(예전 왼쪽 사이드바 메뉴를 대체).
+const tabItem =
+  "flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors";
 
 function RequireAuth({
   auth,
@@ -57,85 +58,56 @@ function Shell({ auth, onLogout, children }: { auth: AuthState; onLogout: () => 
 
   return (
     <div className="min-h-screen bg-paper-50 font-body">
-      <div className="flex min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-paper-200 bg-paper-100/70 px-4 py-6 md:block">
-          <div className="mb-8 px-2">
-            <div className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-moss-500 text-white">
-                <Briefcase size={18} />
-              </div>
-              <div>
-                <p className="font-display text-lg font-semibold leading-tight text-ink-900">설리번</p>
-                <p className="text-[11px] font-bold uppercase tracking-wide text-ink-500">JOB CARD</p>
-              </div>
-            </div>
-          </div>
-
-          <nav className="flex flex-col gap-1">
+      <header className="sticky top-0 z-30 border-b border-paper-200 bg-paper-100/80 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-8">
+          <div className="flex flex-wrap items-center gap-1">
+            {/* 2번째(원래 순서 기준 대시보드)를 맨 앞에 둔다 */}
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                `${tabItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
+              }
+            >
+              <BarChart3 size={16} />
+              사업주 · 대시보드
+            </NavLink>
             <NavLink
               to="/manager"
               className={({ isActive }) =>
-                `${navItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
+                `${tabItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
               }
             >
-              <Briefcase size={17} />
-              직무 입력 · 검토
+              <Briefcase size={16} />
+              사업주 · 직무 만들기
             </NavLink>
             <NavLink
               to="/workers"
               className={({ isActive }) =>
-                `${navItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
+                `${tabItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
               }
             >
-              <Users size={17} />
+              <Users size={16} />
               근로자 관리
             </NavLink>
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                `${navItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
-              }
-            >
-              <BarChart3 size={17} />
-              수행 대시보드
-            </NavLink>
-          </nav>
+          </div>
 
-          <div className="mt-8 border-t border-paper-200 pt-5">
+          <div className="flex items-center gap-3">
+            <div className="text-right leading-tight">
+              <p className="text-xs text-ink-500">현재 역할: 사업주 로그인 중</p>
+              <p className="text-sm font-semibold text-ink-900">{auth.displayName || "사업주"}</p>
+            </div>
             <button
               onClick={logout}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-semibold text-clay-600 hover:bg-clay-400/10"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm font-semibold text-ink-700 hover:bg-paper-100"
             >
-              <Tablet size={17} />
-              근로자 로그인으로 전환
-            </button>
-          </div>
-
-          <div className="absolute bottom-6 left-4 right-4 rounded-xl bg-white/80 p-3 shadow-sm">
-            <div className="flex items-center gap-2 text-sm font-semibold text-ink-900">
-              <UserRound size={16} />
-              {auth.displayName || "사업주"}
-            </div>
-            <button onClick={logout} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-ink-500 hover:text-ink-900">
-              <LogOut size={13} />
+              <LogOut size={14} />
               로그아웃
             </button>
           </div>
-        </aside>
+        </div>
+      </header>
 
-        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
-          <div className="mb-5 flex items-center justify-between md:hidden">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-moss-600">JOB CARD</p>
-              <h1 className="text-lg font-bold text-ink-900">설리번</h1>
-            </div>
-            <button onClick={logout} className="rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm font-semibold text-ink-700">
-              로그아웃
-            </button>
-          </div>
-          {children}
-        </main>
-      </div>
+      <main className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">{children}</main>
     </div>
   );
 }
