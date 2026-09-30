@@ -3,13 +3,17 @@ import { auth, type AuthState } from "../api";
 
 export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void }) {
   const [tab, setTab] = useState<"employer" | "worker">("employer");
-  const [loginId, setLoginId] = useState("demo");
-  const [password, setPassword] = useState("demo1234");
-  const [code, setCode] = useState("1234");
+  const [loginId, setLoginId] = useState("");
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // 비어 있으면 서버 검증(422) 응답을 받게 되는데, 그 메시지는 사용자용 문장이 아니다.
+  const ready = tab === "employer" ? !!loginId.trim() && !!password : !!code.trim();
+
   async function submit() {
+    if (!ready) return;
     setBusy(true);
     setError(null);
     try {
@@ -57,13 +61,10 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
 
       {error && <div role="alert" className="mt-3 rounded-lg bg-red-50 p-2 text-sm text-red-800">{error}</div>}
 
-      <button onClick={submit} disabled={busy}
+      <button onClick={submit} disabled={busy || !ready}
         className="mt-4 w-full rounded-lg bg-blue-700 py-2.5 font-semibold text-white disabled:opacity-50">
         {busy ? "확인 중…" : "로그인"}
       </button>
-      <p className="mt-3 text-center text-xs text-slate-400">
-        데모: 사업주 demo / demo1234 · 근로자 코드 1234
-      </p>
     </div>
   );
 }

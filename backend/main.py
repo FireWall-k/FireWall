@@ -472,8 +472,11 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
     }
     try:
         decomposed = ai_client.decompose(payload.raw_input, context)
-    except Exception as e:  # noqa: BLE001 - AI 하네스 장애는 502로 명확히 전달
-        raise HTTPException(status_code=502, detail=f"AI 분해 서비스 오류: {e}")
+    except Exception:  # noqa: BLE001 - AI 하네스 장애는 502로 전달한다
+        # 예외 원문(내부 호스트명·연결 오류 등)은 사용자 화면에 나가면 안 된다. 로그에만 남긴다.
+        logger.exception("직무 분해 호출 실패")
+        raise HTTPException(status_code=502,
+                            detail="직무를 단계로 나누지 못했습니다. 잠시 뒤 다시 시도해 주세요.")
 
     job = str(decomposed.get("job") or "").strip()
     explicit_business_type = bool(

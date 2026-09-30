@@ -54,12 +54,6 @@ export const AdminLayout: React.FC = () => {
               근로자 화면 미리보기
             </a>
           </div>
-
-          <div className="absolute bottom-6 left-4 right-4 rounded-lg bg-paper-200/60 p-3">
-            <p className="text-xs leading-relaxed text-ink-500">
-              프론트엔드 단독 데모 · 실제 백엔드 연동 전 목 데이터로 동작합니다.
-            </p>
-          </div>
         </aside>
 
         <main className="flex-1 px-8 py-8">
