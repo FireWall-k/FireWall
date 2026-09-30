@@ -34,9 +34,21 @@ def test_blank_string_code_is_treated_as_auto(client, employer_token):
     _cleanup(client, employer_token, r.json()["id"])
 
 
-@pytest.mark.parametrize("code", ["1234", "12345", "abcdef", "12 3456"])
+@pytest.mark.parametrize("code", ["123", "abcdef", "12 3456", "1" * 13])
 def test_short_or_non_numeric_codes_are_rejected(client, employer_token, code):
     assert _create_worker(client, employer_token, access_code=code).status_code == 422
+
+
+def test_four_digit_code_is_now_allowed(client, employer_token):
+    """4자리는 자동 발급(6자리)보다 대입에 약하지만, 사업주가 원하면 쓸 수 있다(요청에 따라 완화)."""
+    r = _create_worker(client, employer_token, access_code="4321")
+    assert r.status_code == 201, r.text
+    w = r.json()
+    try:
+        assert w["access_code"] == "4321"
+        assert client.post("/api/auth/worker-login", json={"access_code": "4321"}).status_code == 200
+    finally:
+        _cleanup(client, employer_token, w["id"])
 
 
 def test_legacy_short_code_still_logs_in(client):

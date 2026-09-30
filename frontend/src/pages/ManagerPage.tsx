@@ -259,8 +259,8 @@ export default function ManagerPage() {
       setError("근로자 이름을 입력해 주세요.");
       return;
     }
-    if (newWorkerCode.trim() && !/^\d{6,12}$/.test(newWorkerCode.trim())) {
-      setError("접속 코드는 6~12자리 숫자로 정해 주세요. 비워 두면 자동으로 만들어요.");
+    if (newWorkerCode.trim() && !/^\d{4,12}$/.test(newWorkerCode.trim())) {
+      setError("접속 코드는 4~12자리 숫자로 정해 주세요. 비워 두면 자동으로 만들어요.");
       return;
     }
     setBusy(true);

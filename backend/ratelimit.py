@@ -66,7 +66,9 @@ employer_throttle = LoginThrottle(
     max_failures=int(os.getenv("LOGIN_MAX_FAILURES", "10")),
     window_sec=float(os.getenv("LOGIN_WINDOW_SEC", "900")),
 )
-# 근로자: IP 단위. 작업장 공용 IP를 고려해 넉넉하게(6자리 코드 기준 대입에 수년이 걸리는 수준).
+# 근로자: IP 단위. 작업장 공용 IP를 고려해 넉넉하게 잡았다. 자동 발급 기본값(6자리, 100만 개)
+# 기준으로는 대입에 수개월이 걸린다. 사업주가 직접 4자리(1만 개)로 짧게 정하면 이 창의 최대
+# 시도 속도로도 며칠이면 그 코드 하나를 찾아낼 수 있다 — 짧은 코드일수록 이 창이 유일한 방어선이 된다.
 worker_throttle = LoginThrottle(
     max_failures=int(os.getenv("WORKER_LOGIN_MAX_FAILURES", "30")),
     window_sec=float(os.getenv("WORKER_LOGIN_WINDOW_SEC", "600")),

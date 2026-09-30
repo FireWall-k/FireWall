@@ -77,9 +77,10 @@ class AssignRequest(BaseModel):
 class WorkerCreate(BaseModel):
     display_name: str = Field(min_length=1, max_length=50)
     # 접속 코드는 근로자 로그인 키. 비워 두면 서버가 6자리 무작위 코드를 만든다.
-    # 직접 정할 때도 6자리 이상 숫자만 받는다 — 4자리는 1만 번 대입이면 뚫린다.
+    # 직접 정할 때는 4자리 이상 숫자만 받는다. 4자리(1만 개)는 6자리보다 대입에 약하므로
+    # 로그인 시도 제한(ratelimit.py)이 실제 방어선이다 — 코드 자릿수만으로 안전하다고 보지 않는다.
     # (예전에 만든 짧은 코드는 WorkerLogin이 그대로 받아 주므로 기존 근로자는 계속 로그인된다.)
-    access_code: str | None = Field(default=None, pattern=r"^\d{6,12}$")
+    access_code: str | None = Field(default=None, pattern=r"^\d{4,12}$")
 
     @field_validator("access_code", mode="before")
     @classmethod

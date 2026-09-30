@@ -46,11 +46,24 @@ describe("WorkersPage — 접속 코드", () => {
     await screen.findByText("김근로");
 
     await user.type(screen.getByLabelText("근로자 이름"), "박알바");
+    await user.type(screen.getByLabelText("접속 코드"), "56");
+    await user.click(screen.getByRole("button", { name: /추가/ }));
+
+    expect(await screen.findByText(/4~12자리 숫자/, { selector: "[role=alert]" })).toBeInTheDocument();
+    expect(createWorker).not.toHaveBeenCalled();
+  });
+
+  it("4자리 코드는 그대로 받아 준다(요청에 따라 완화된 최소 길이)", async () => {
+    const user = userEvent.setup();
+    createWorker.mockResolvedValue({ id: "w3", display_name: "이근무", access_code: "5678" });
+    render(<WorkersPage />);
+    await screen.findByText("김근로");
+
+    await user.type(screen.getByLabelText("근로자 이름"), "이근무");
     await user.type(screen.getByLabelText("접속 코드"), "5678");
     await user.click(screen.getByRole("button", { name: /추가/ }));
 
-    expect(await screen.findByText(/6~12자리 숫자/, { selector: "[role=alert]" })).toBeInTheDocument();
-    expect(createWorker).not.toHaveBeenCalled();
+    await waitFor(() => expect(createWorker).toHaveBeenCalledWith("이근무", "5678"));
   });
 
   it("예전 짧은 코드는 경고하고, 새로 만들면 새 코드로 바뀐다", async () => {

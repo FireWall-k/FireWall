@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { KeyRound, Trash2, UserPlus, UserRound } from "lucide-react";
 import { api, AuthError, type Worker } from "../api";
 
-// 직접 정하는 코드는 6~12자리 숫자만 받는다(서버와 같은 규칙). 비우면 서버가 6자리를 만든다.
-const CODE_RE = /^\d{6,12}$/;
+// 직접 정하는 코드는 4~12자리 숫자만 받는다(서버와 같은 규칙). 비우면 서버가 6자리를 만든다.
+const CODE_RE = /^\d{4,12}$/;
 // 예전에 만든 짧은 코드. 로그인은 되지만 대입으로 뚫리기 쉬워 새로 만들기를 권한다.
 const isWeakCode = (code: string) => code.length < 6;
 
@@ -31,7 +31,7 @@ export default function WorkersPage() {
       return;
     }
     if (code.trim() && !CODE_RE.test(code.trim())) {
-      setError("접속 코드는 6~12자리 숫자로 정해 주세요. 비워 두면 자동으로 만들어요.");
+      setError("접속 코드는 4~12자리 숫자로 정해 주세요. 비워 두면 자동으로 만들어요.");
       return;
     }
     setBusy(true);
@@ -120,7 +120,7 @@ export default function WorkersPage() {
           </button>
         </div>
         <p className="mt-2 text-xs text-ink-500">
-          접속 코드를 비워 두면 겹치지 않는 6자리 숫자를 자동으로 만들어요. 직접 정할 때는 6~12자리 숫자로 입력해 주세요.
+          접속 코드를 비워 두면 겹치지 않는 6자리 숫자를 자동으로 만들어요. 직접 정할 때는 4~12자리 숫자로 입력해 주세요.
         </p>
       </section>
 
