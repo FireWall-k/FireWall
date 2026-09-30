@@ -61,16 +61,6 @@ function Shell({ auth, onLogout, children }: { auth: AuthState; onLogout: () => 
       <header className="sticky top-0 z-30 border-b border-paper-200 bg-paper-100/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-8">
           <div className="flex flex-wrap items-center gap-1">
-            {/* 2번째(원래 순서 기준 대시보드)를 맨 앞에 둔다 */}
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                `${tabItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
-              }
-            >
-              <BarChart3 size={16} />
-              사업주 · 대시보드
-            </NavLink>
             <NavLink
               to="/manager"
               className={({ isActive }) =>
@@ -79,6 +69,15 @@ function Shell({ auth, onLogout, children }: { auth: AuthState; onLogout: () => 
             >
               <Briefcase size={16} />
               사업주 · 직무 만들기
+            </NavLink>
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                `${tabItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
+              }
+            >
+              <BarChart3 size={16} />
+              사업주 · 대시보드
             </NavLink>
             <NavLink
               to="/workers"
