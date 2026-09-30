@@ -20,7 +20,7 @@ from auth import hash_password
 from database import Base, SessionLocal, apply_pending_columns, engine
 from models import Employer
 
-MIN_PASSWORD_LEN = 10
+MIN_PASSWORD_LEN = 8
 
 
 def _read_password(from_stdin: bool) -> str:
