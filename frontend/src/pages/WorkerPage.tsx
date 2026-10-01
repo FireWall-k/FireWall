@@ -104,6 +104,27 @@ function TodayView({ cards }: { cards: TodayCard[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step?.id]);
 
+  // 도움 요청은 누른 즉시 '막힘'으로 서버에 기록해 사업주 대시보드에 바로 보이게 한다.
+  // 완료 버튼을 눌러야만 반영되면, 근로자가 그 단계에 머무는 동안은 대시보드가 아무 일도
+  // 없는 것처럼 보인다 — 도움이 필요한 순간과 사업주가 아는 순간 사이에 지연이 생긴다.
+  // 단계는 넘기지 않는다(완료는 여전히 "완료" 버튼으로만 한다).
+  async function reportHelpNow() {
+    if (!card || !step || needHelp) return; // 이미 요청한 단계에서 다시 눌러도 중복 보고하지 않는다.
+    setNeedHelp(true);
+    const duration = (Date.now() - stepStartRef.current) / 1000;
+    try {
+      await api.logStep({
+        assignment_id: card.assignment_id,
+        step_id: step.id,
+        duration_sec: Math.round(duration * 10) / 10,
+        replay_count: replayCount,
+        stuck: true,
+      });
+    } catch {
+      // 오프라인이어도 화면 표시(요청했어요)는 유지한다. 완료 시 다시 한번 보고된다.
+    }
+  }
+
   async function completeStep() {
     if (!card || !step) return;
     const duration = (Date.now() - stepStartRef.current) / 1000;
@@ -217,8 +238,9 @@ function TodayView({ cards }: { cards: TodayCard[] }) {
         </button>
       </div>
 
-      {/* 도움 요청: 누르면 이 단계가 '막힘'으로 기록되어 사업주 대시보드에 표시된다 */}
-      <button onClick={() => setNeedHelp(true)} aria-pressed={needHelp}
+      {/* 도움 요청: 누르는 즉시 이 단계가 '막힘'으로 기록되어 사업주 대시보드에 바로 표시된다.
+          단계는 넘기지 않는다 — 다음 단계로 가려면 "완료"를 따로 눌러야 한다. */}
+      <button onClick={reportHelpNow} aria-pressed={needHelp}
         className={"mt-4 min-h-touch w-full rounded-2xl border-2 text-worker font-semibold " +
           (needHelp
             ? "border-amber-500 bg-amber-100 text-amber-900"
