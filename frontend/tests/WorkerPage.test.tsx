@@ -59,12 +59,20 @@ describe("WorkerPage stuck 수집", () => {
     nowSpy.mockRestore();
   });
 
-  it("'도움이 필요해요'를 누르면 별도 확인 없이 바로 stuck=true 로 보고하고 다음 단계로 넘어간다", async () => {
+  it("'도움이 필요해요'를 누르면 stuck=true 로 보고한다", async () => {
     await renderAndWait();
     fireEvent.click(screen.getByText("🙋 도움이 필요해요"));
-    await waitFor(() => expect(logStep).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByText("✓ 완료"));
+    await waitFor(() => expect(logStep).toHaveBeenCalled());
     expect(logStep.mock.calls[0][0]).toMatchObject({ step_id: "s1", stuck: true });
-    await screen.findByText("수량을 확인하세요");
+  });
+
+  it("'도움이 필요해요'만 눌러서는 다음 단계로 넘어가지 않는다(완료를 따로 눌러야 한다)", async () => {
+    await renderAndWait();
+    fireEvent.click(screen.getByText("🙋 도움이 필요해요"));
+    expect(logStep).not.toHaveBeenCalled();
+    expect(screen.getByText("상자를 옮기세요")).toBeInTheDocument();
+    expect(screen.getByText("🙋 도움을 요청했어요")).toBeInTheDocument();
   });
 
   it("다시듣기 3회 이상이면 자동으로 stuck=true 로 보고한다", async () => {
