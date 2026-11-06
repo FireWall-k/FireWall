@@ -82,7 +82,11 @@ def migrate() -> None:
     report = db_migrate.migrate()
     if report["adopted_legacy"]:
         added = ", ".join(report["repaired_columns"]) or "없음"
+        tightened = ", ".join(report["tightened_columns"]) or "없음"
         print(f"기존(Alembic 도입 전) DB를 baseline으로 등록했습니다. 추가한 컬럼: {added}")
+        # NOT NULL 조이기는 테이블을 다시 만들고 NULL을 ''로 채운다. logger.info만으로는 compose 출력에
+        # 안 보이므로(로깅 미설정) 여기서 직접 적어 운영자가 백업과 대조할 수 있게 한다.
+        print(f"NOT NULL로 바꾼 컬럼(기존 NULL은 빈 문자열로 채움): {tightened}")
     print(f"DB 스키마: {report['from_revision'] or '없음'} -> {report['to_revision']}")
 
 

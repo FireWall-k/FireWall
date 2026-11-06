@@ -177,6 +177,7 @@ def test_migrate_is_idempotent_on_legacy_db():
     second = db_migrate.migrate(engine)
     assert second["adopted_legacy"] is False
     assert second["repaired_columns"] == []
+    assert second["tightened_columns"] == []
     assert db_migrate.is_at_head(engine)
 
 
@@ -353,6 +354,9 @@ def test_columns_added_nullable_by_old_code_become_not_null():
 
     assert report["adopted_legacy"] is True
     assert report["repaired_columns"] == []
+    # NOT NULL로 조인 컬럼도 보고에 남아야 운영자가 migrate 출력에서 확인할 수 있다.
+    assert set(report["tightened_columns"]) == {
+        "tasks.business_type", "tasks.work_environment", "tasks.job", "steps.symbol_query"}
     assert db_migrate.is_at_head(engine)
     assert _diff_against_models(engine) == []
     with engine.connect() as conn:
@@ -497,6 +501,22 @@ def test_manage_migrate_command(monkeypatch, capsys):
     manage.main(["migrate"])
     assert db_migrate.is_at_head(engine)
     assert db_migrate.head_revision() in capsys.readouterr().out
+
+
+def test_manage_migrate_prints_tightened_columns(monkeypatch, capsys):
+    """레거시 보정 내용은 logger.info만으로는 운영자 화면(docker compose run 출력)에 안 보인다.
+    추가한 컬럼과 NOT NULL로 조인 컬럼을 표준출력에 적어야 한다."""
+    import manage
+
+    engine = _new_engine("manage_tighten")
+    _make_full_legacy_db(engine)
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE tasks ADD COLUMN job VARCHAR DEFAULT ''"))
+    monkeypatch.setattr(db_migrate, "default_engine", lambda: engine)
+    manage.main(["migrate"])
+    out = capsys.readouterr().out
+    assert "tasks.business_type" in out  # 추가한 컬럼
+    assert "NOT NULL" in out and "tasks.job" in out  # 조인 컬럼
 
 
 def test_alembic_ini_points_at_migrations():

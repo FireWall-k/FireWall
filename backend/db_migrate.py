@@ -164,11 +164,12 @@ def _has_app_tables(engine: Engine) -> bool:
     return bool(present & set(_baseline_metadata().tables))
 
 
-def adopt_legacy_db(engine: Engine) -> list[str]:
+def adopt_legacy_db(engine: Engine) -> tuple[list[str], list[str]]:
     """Alembic 도입 전 DB를 baseline 모양으로 맞추고 baseline으로 stamp한다.
 
     순서: 빠진 컬럼 추가 → NULL 허용 컬럼 조이기 → 빠진 테이블 생성(baseline 정의) → stamp.
-    데이터는 지우지 않는다. 보정한 컬럼 목록을 돌려준다.
+    데이터는 지우지 않는다. (추가한 컬럼, NOT NULL로 조인 컬럼) 목록을 돌려준다 — 둘 다 운영자가
+    migrate 출력에서 봐야 한다(조이기는 테이블 재생성이라 무엇이 바뀌었는지 알아야 백업과 대조할 수 있다).
     """
     repaired = repair_legacy_columns(engine)
     tightened = _tighten_legacy_nullability(engine)
@@ -177,7 +178,7 @@ def adopt_legacy_db(engine: Engine) -> list[str]:
     _stamp(engine, BASELINE_REVISION)
     if repaired or tightened:
         logger.info("레거시 DB 보정: 추가 %s / NOT NULL %s", repaired, tightened)
-    return repaired
+    return repaired, tightened
 
 
 def migrate(engine: Engine | None = None) -> dict:
@@ -186,8 +187,9 @@ def migrate(engine: Engine | None = None) -> dict:
     before = current_revision(engine)
     adopted = False
     repaired: list[str] = []
+    tightened: list[str] = []
     if before is None and _has_app_tables(engine):
-        repaired = adopt_legacy_db(engine)
+        repaired, tightened = adopt_legacy_db(engine)
         adopted = True
     upgrade_to_head(engine)
     return {
@@ -195,6 +197,7 @@ def migrate(engine: Engine | None = None) -> dict:
         "to_revision": current_revision(engine),
         "adopted_legacy": adopted,
         "repaired_columns": repaired,
+        "tightened_columns": tightened,
     }
 
 

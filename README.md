@@ -135,12 +135,17 @@ SQLite는 `ALTER TABLE`로 컬럼 변경·삭제를 못 하므로 `render_as_bat
 3. baseline 리비전(`0001_baseline`)으로 `stamp`하고, 이어서 `upgrade head` 합니다.
 
 데이터는 지우지 않으며 여러 번 실행해도 안전합니다. 업그레이드 전 백업을 권장합니다(아래 "백업").
+명령은 추가한 컬럼과 **NOT NULL로 바꾼 컬럼**(기존 NULL은 빈 문자열로 채움)을 출력하므로 백업과 대조할 수 있습니다.
 
 ```bash
-docker compose build
-docker compose run --rm migrate      # 출력 예: 기존(Alembic 도입 전) DB를 baseline으로 등록했습니다 ...
+docker compose build                 # backend 이미지(jobcard-backend)를 한 번만 빌드 — migrate·purge도 이 이미지를 쓴다
+docker compose run --rm migrate      # 출력 예: 기존(Alembic 도입 전) DB를 baseline으로 등록했습니다 ... / NOT NULL로 바꾼 컬럼: ...
 docker compose up -d
 ```
+
+`migrate`·`purge` 등은 `build` 없이 `image: jobcard-backend` + `pull_policy: never`로 backend가 빌드한
+이미지를 같이 씁니다(이중 빌드 방지). 그래서 `docker compose run --rm migrate`만 단독으로 처음 실행하면
+"이미지가 없다"는 오류가 나므로 먼저 `docker compose build`를 합니다(`up`은 알아서 먼저 빌드합니다).
 
 ## AAC: 자체 이미지 데이터셋
 

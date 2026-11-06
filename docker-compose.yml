@@ -50,10 +50,13 @@ services:
   # 겹치고, 실패하면 반쯤 바뀐 DB로 요청을 받게 된다. backend는 이 서비스가 성공해야 뜬다.
   # Alembic 도입 전 볼륨(alembic_version 없음)도 이 명령이 보정 후 baseline으로 stamp한다.
   migrate:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    # build는 backend 서비스에만 둔다. 여기에도 build를 적으면 compose가 같은 Dockerfile을 서비스마다
+    # 따로 빌드해(이중 빌드) 시간이 들고, 빌드 사이에 소스가 바뀌면 migrate와 backend가 다른 코드로 돈다.
+    # `docker compose up`/`build`는 컨테이너를 만들기 전에 backend의 build로 jobcard-backend를 먼저
+    # 만들므로 여기서는 그 이미지를 쓰기만 한다. pull_policy: never — 레지스트리에서 같은 이름의 엉뚱한
+    # 이미지를 받아 오지 않게 한다(이미지가 없으면 받지 말고 실패해서 `docker compose build`를 먼저 하게 한다).
     image: jobcard-backend
+    pull_policy: never
     command: ["python", "manage.py", "migrate"]
     restart: "no"
     environment:
@@ -82,10 +85,8 @@ services:
   #   15 3 * * * cd /srv/jobcard && docker compose --profile maintenance run --rm purge
   # 서버 프로세스 안에 스케줄러를 두지 않는 이유: backend를 여러 개 띄우면 같은 삭제가 겹친다.
   purge:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    image: jobcard-backend
+    image: jobcard-backend  # build는 backend에만(migrate 주석 참고)
+    pull_policy: never
     profiles: ["maintenance"]
     command: ["python", "manage.py", "purge"]
     restart: "no"
