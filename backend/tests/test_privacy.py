@@ -511,7 +511,9 @@ def test_viewing_worker_data_is_audited(client, capture):
 
     rows = _audits(emp)
     actions = {(a, w) for a, w, _ in rows}
-    assert ("worker.list", None) in actions
+    # 근로자 목록도 누구의 이름·메모가 보였는지 근로자마다 남긴다(3차 검증 지적).
+    assert ("worker.list", wid) in actions
+    assert ("worker.list", None) not in actions
     assert ("worker.history", wid) in actions
     assert ("dashboard.view", wid) in actions
     assert ("coaching.view", wid) in actions
@@ -606,9 +608,15 @@ def test_name_is_masked_only_at_word_boundaries():
     assert p.mask("홍길동이가 옮겨요") == "근로자 A이가 옮겨요"
     assert p.mask("홍길동에게서 받으세요.") == "근로자 A에게서 받으세요."
     assert p.mask("(김지우)") == "(근로자 B)"
-    # 이름 앞뒤에 글자가 붙어 다른 낱말이 된 경우는 그대로 둔다.
-    assert p.mask("홍길동동 상자") == "홍길동동 상자"
-    assert p.mask("대김지우 상자") == "대김지우 상자"
+    # 3음절 이상 이름은 앞뒤에 글자가 붙어도 바꾼다(fail-closed, 3차 검증 지적). 예전에는 이 꼴을 다른 낱말로
+    # 보고 그대로 뒀는데, 같은 규칙 때문에 "팀장김민지가"·"김민지와박지수"의 실명이 LLM으로 갔다.
+    assert p.mask("홍길동동 상자") == "근로자 A동 상자"
+    assert p.mask("대김지우 상자") == "대근로자 B 상자"
+    # 경계 규칙은 낱말과 헷갈릴 수 있는 2음절 이름에만 남는다 — 앞뒤에 글자가 붙어 다른 낱말이면 그대로 둔다.
+    q = Pseudonymizer(["민지"])
+    assert q.mask("민지에게서 받으세요.") == "근로자 A에게서 받으세요."
+    assert q.mask("민지동 상자") == "민지동 상자"
+    assert q.mask("대민지 상자") == "대민지 상자"
 
 
 def test_unmask_accepts_spacing_variants_and_drops_unknown_alias(client, monkeypatch):
@@ -745,9 +753,11 @@ def test_unmask_keeps_ordinary_uppercase_words():
     assert p.unmask("근로자 ID를 확인하고 근로자 OK 사인을 받고 근로자 TV를 끄세요.") == \
         "근로자 ID를 확인하고 근로자 OK 사인을 받고 근로자 TV를 끄세요."
     # 만든 별칭은 되돌리고, 지어낸 한 글자 별칭은 '근로자'로 바꾼다.
+    assert p.mask("홍길동") == "근로자 A"
     assert p.unmask("근로자 A와 근로자 C") == "홍길동와 근로자"
     # 두 글자 별칭은 실제로 만든 것만 되돌린다.
     many = Pseudonymizer([f"근로자이름{i:02d}" for i in range(28)])
+    assert many.mask("근로자이름27 님") == "근로자 AB 님"
     assert many.unmask("근로자 AB 님") == "근로자이름27 님"
     assert many.unmask("근로자 ZZ 님") == "근로자 ZZ 님"
 
@@ -876,3 +886,162 @@ def test_purge_does_not_delete_tts_reused_during_purge(client, capture, monkeypa
         report = retention.purge(db)
     assert path.exists()
     assert report["tts_files"] == 0
+
+
+# --- 9. 3차 검증 지적 보완(Phase 0.2 fix 3) -----------------------------------
+
+# 허용 목록(_TAIL_PIECES)에 없어 실명이 그대로 나가던 꼴(3차 검증에서 '김민지'로 확인됨).
+_LEAKING_FORMS = ["에겐", "한텐", "께선", "에선", "엔", "론", "으론", "이란", "란", "라서", "이라서", "면", "이면",
+                  "일", "잖아", "래", "라", "이라", "이니까", "니까", "이므로", "임", "꺼", "거", "것"]
+
+
+@pytest.mark.parametrize("tail", _LEAKING_FORMS)
+def test_three_syllable_name_is_masked_whatever_follows(tail):
+    """3음절 이상 이름은 뒤에 무엇이 붙든 가린다(fail-closed). 띄어 쓰지 않은 복합어 속 이름도 가린다."""
+    from privacy import Pseudonymizer
+    p = Pseudonymizer(["김민지", "박지수"])
+    assert p.mask(f"김민지{tail} 상자를 주세요.") == f"근로자 A{tail} 상자를 주세요."
+    assert p.mask("팀장김민지가 보세요.") == "팀장근로자 A가 보세요."
+    assert p.mask("김민지와박지수는 컵을") == "근로자 A와근로자 B는 컵을"
+
+
+@pytest.mark.parametrize("tail", _LEAKING_FORMS)
+def test_two_syllable_name_is_masked_with_colloquial_tails(tail):
+    """2음절 이름은 아직 경계 규칙(허용 목록)에 기대므로, 확인된 줄임꼴·구어체를 목록에 더했다."""
+    from privacy import Pseudonymizer
+    p = Pseudonymizer(["민지"])
+    assert p.mask(f"민지{tail} 상자를 주세요.") == f"근로자 A{tail} 상자를 주세요."
+
+
+def test_spaced_and_latin_names_are_masked_without_tail_list():
+    from privacy import Pseudonymizer
+    p = Pseudonymizer(["김 민지", "John"])
+    assert p.mask("팀장김 민지라서 천천히") == "팀장근로자 A라서 천천히"
+    assert p.mask("John에겐 컵, john이니까 천천히, 팀장John잖아") == "근로자 B에겐 컵, 근로자 B이니까 천천히, 팀장근로자 B잖아"
+    assert p.mask("Johnson 상자") == "Johnson 상자"
+
+
+@pytest.mark.parametrize("tail", _LEAKING_FORMS)
+def test_leaking_forms_never_reach_any_ai_payload(client, capture, monkeypatch, tail):
+    """분해·그림 검색(단계 추가)·AAC 검색·코칭 네 경로의 AI 페이로드 어디에도 실명이 없어야 한다.
+    3차 검증에서 '김민지에겐 …, 김민지라서 …'가 ai_client.decompose까지 그대로 갔다."""
+    searched = []
+    monkeypatch.setattr(ai_client, "search_aac", lambda query, context=None, limit=5: (
+        searched.append({"query": query, "context": context}) or {"query": query, "matches": []}))
+    token = _new_employer(client)
+    wid = _create_worker(client, token, "김민지")
+    _create_worker(client, token, "박지수")
+
+    raw = (f"김민지{tail} 상자를 옮기세요. 팀장김민지가 보세요. 김민지와박지수는 컵을 닦으세요. "
+           "김민지에겐 상자를 주고, 김민지한텐 컵을 맡기세요. 김민지라서 천천히.")
+    r = client.post("/api/tasks", json={"raw_input": raw, "work_environment": "팀장김민지네 창고"},
+                    headers=auth(token))
+    assert r.status_code == 201, r.text
+    task = r.json()
+    # 응답은 실명으로 되돌아와 저장된다.
+    assert task["steps"][0]["sentence"] == f"김민지{tail} 상자를 옮기세요."
+
+    r = client.post(f"/api/tasks/{task['id']}/steps",
+                    json={"sentence": f"팀장김민지{tail} 장갑을 주세요.", "action_type": "move"}, headers=auth(token))
+    assert r.status_code == 201, r.text
+    r = client.post("/api/aac/search", json={"query": f"김민지{tail} 컵"}, headers=auth(token))
+    assert r.status_code == 200, r.text
+
+    _publish_assign_log(client, token, task["id"], wid)
+    _grant(client, token, wid)
+    r = client.get(f"/api/dashboard/tasks/{task['id']}/coaching?worker_id={wid}", headers=auth(token))
+    assert r.status_code == 200, r.text
+
+    kinds = {k for k, _ in capture.calls}
+    assert {"decompose", "map_symbols", "coaching"} <= kinds
+    assert searched
+    sent = capture.dump() + json.dumps(searched, ensure_ascii=False)
+    assert "김민지" not in sent and "박지수" not in sent
+    assert f"근로자 A{tail}" in sent
+
+
+def test_unmask_leaves_alias_like_text_the_employer_wrote(client, capture):
+    """근로자가 한 명뿐인데 사업주가 원문에 '근로자 B'라고 쓴 경우, 그 글은 응답에서 그대로 남아야 한다.
+    예전에는 이 요청에서 만들지 않은 한 글자 별칭이라며 '근로자'로 바꿔 사업주 글을 몰래 고쳤다."""
+    token = _new_employer(client)
+    _create_worker(client, token, "홍길동")
+    r = client.post("/api/tasks", json={"raw_input": "근로자 B는 상자를 옮기세요. 홍길동 씨는 수량을 세세요."},
+                    headers=auth(token))
+    assert r.status_code == 201, r.text
+    assert capture.calls[0][1]["raw_input"] == "근로자 B는 상자를 옮기세요. 근로자 A 씨는 수량을 세세요."
+    task = r.json()
+    assert task["title"] == "근로자 B는 상자를 옮기세요 직무"
+    assert task["steps"][0]["sentence"] == "근로자 B는 상자를 옮기세요."
+
+
+def test_unmask_restores_only_aliases_this_request_produced():
+    """이번 요청 원문에 나오지 않은 근로자의 별칭을 LLM이 돌려주면 실명으로 되돌리지 않는다(엉뚱한 실명 노출 방지)."""
+    from privacy import Pseudonymizer
+    p = Pseudonymizer(["홍길동", "김영희"])
+    assert p.mask("홍길동 씨는 상자를") == "근로자 A 씨는 상자를"
+    assert p.unmask("근로자 A 씨와 근로자 B 씨") == "홍길동 씨와 근로자 씨"
+
+
+def test_worker_list_audits_each_listed_worker_with_polling_dedupe(client):
+    token = _new_employer(client)
+    emp = _employer_id(token)
+    a = _create_worker(client, token, "목록대상가")
+    b = _create_worker(client, token, "목록대상나")
+    for _ in range(3):
+        assert client.get("/api/workers", headers=auth(token)).status_code == 200
+    rows = [(act, w) for act, w, _ in _audits(emp) if act == "worker.list"]
+    assert sorted(rows) == sorted([("worker.list", a), ("worker.list", b)])
+
+
+def _race_delete_assignment_on_flush(assignment_id):
+    """create_log가 배정을 읽은 뒤 커밋하기 전에 다른 연결이 그 배정을 지운 상황(근로자 삭제)을 만든다."""
+    import sqlite3
+
+    from sqlalchemy import event
+    from sqlalchemy.orm import Session as OrmSession
+
+    fired = []
+
+    def _delete(session, flush_context, instances):
+        # 리스너 안에서 event.remove를 하면 SQLAlchemy가 순회 중 변경 오류를 낸다. 한 번만 돌게 표시로 막는다.
+        if fired:
+            return
+        fired.append(True)
+        other = sqlite3.connect(engine.url.database, isolation_level=None)
+        try:
+            other.execute("DELETE FROM performance_logs WHERE assignment_id = ?", (assignment_id,))
+            other.execute("DELETE FROM assignments WHERE id = ?", (assignment_id,))
+        finally:
+            other.close()
+
+    event.listen(OrmSession, "before_flush", _delete)
+    return _delete
+
+
+@pytest.mark.parametrize("last_step", [False, True])
+def test_log_upload_racing_worker_deletion_leaves_no_orphan(client, employer_token, worker_token, last_step):
+    """배정이 커밋 직전에 사라지면 404로 끝나고 고아 수행 로그가 남지 않는다(500·StaleDataError도 아님)."""
+    from sqlalchemy import event
+    from sqlalchemy.orm import Session as OrmSession
+
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기고 수량을 확인하세요"}, headers=auth(employer_token))
+    task = r.json()
+    client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token))
+    assignment = client.post(f"/api/tasks/{task['id']}/assignments", headers=auth(employer_token)).json()[0]
+    steps = [s["id"] for s in task["steps"]]
+    body = {"assignment_id": assignment["id"], "duration_sec": 3.0, "replay_count": 0, "stuck": False}
+    if last_step:
+        # 마지막 단계면 배정 상태도 갱신한다 — 지워진 배정의 UPDATE가 StaleDataError를 내던 경로.
+        assert client.post("/api/performance-logs", headers=auth(worker_token),
+                           json={**body, "step_id": steps[0]}).status_code == 201
+
+    hook = _race_delete_assignment_on_flush(assignment["id"])
+    try:
+        r = client.post("/api/performance-logs", headers=auth(worker_token), json={**body, "step_id": steps[-1]})
+    finally:
+        if event.contains(OrmSession, "before_flush", hook):
+            event.remove(OrmSession, "before_flush", hook)
+    assert r.status_code == 404, r.text
+    with SessionLocal() as db:
+        assert db.scalars(select(PerformanceLog).where(
+            PerformanceLog.assignment_id == assignment["id"])).all() == []

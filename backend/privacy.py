@@ -59,6 +59,11 @@ def _alias(i: int) -> str:
 # 이름 앞뒤 경계. 표시 이름을 단순 부분 문자열로 바꾸면 "하나" 같은 이름이 "하나씩"·"하나하나"의 낱말까지
 # 별칭으로 바꿔 LLM 분해 입력과 그림 검색 질의를 망가뜨린다("컵을 근로자 A씩 꺼내서…").
 # 그래서 이름 바로 앞에 글자가 붙어 있지 않고, 이름 뒤가 끝·공백·구두점이거나 호칭·조사·어미로 끝날 때만 바꾼다.
+# 단, 이 경계 규칙은 낱말과 헷갈릴 수 있는 이름(2음절 한글 이름, COMMON_WORD_NAMES)에만 쓴다.
+# 경계 규칙은 "목록에 있는 꼴만 이름으로 본다"는 허용 목록이라, 목록에 없는 꼴("김민지에겐", "김민지라서",
+# "팀장김민지가", "김민지와박지수")은 실명이 그대로 해외 LLM으로 갔다(3차 검증 지적: fail-open).
+# 3음절 이상 한글 이름이나 띄어쓰기가 든 이름은 일반 낱말과 겹칠 일이 거의 없으므로, 앞뒤를 보지 않고
+# 부분 문자열로 모두 바꾼다(fail-closed). 낱말을 잘못 가리는 손해(분해 품질)가 실명 유출보다 훨씬 작다.
 _WORD_CHAR = r"[가-힣A-Za-z0-9]"
 # 이름 뒤에 붙는 호칭과 애칭 접사("길동이가"의 '이'). 호칭은 "하나 씨"처럼 띄어 써도 이름이 분명하다.
 _HONORIFIC = r"(?:선생님|씨|님)"
@@ -66,7 +71,8 @@ _HONORIFIC = r"(?:선생님|씨|님)"
 # ("김민지에게는"="에게"+"는", "김민지님께서는"="님"+"께서"+"는", "김민지는요"="는"+"요").
 # 예전에는 접사 하나 + 조사 하나까지만 봐서 겹친 꼴의 실명이 그대로 해외 LLM으로 갔다(검증 지적).
 # 그래서 이 조각이 몇 개(_MAX_TAIL_PIECES까지) 이어진 뒤 낱말이 끝나면 이름으로 본다.
-# 목록에 없는 조각으로 이어지면("홍길동동") 다른 낱말로 보고 바꾸지 않는다 — 그래서 목록은 넉넉히 둔다.
+# 목록에 없는 조각으로 이어지면("민지동") 다른 낱말로 보고 바꾸지 않는다 — 그래서 목록은 넉넉히 둔다.
+# (이 허용 목록은 이제 2음절 한글 이름에만 쓴다. 3음절 이상 이름은 앞뒤와 상관없이 바꾼다 — _needs_boundary.)
 _TAIL_PIECES = sorted({
     # 호칭·접사·복수
     "씨", "님", "이", "선생님", "쌤", "양", "군", "들", "네",
@@ -80,11 +86,19 @@ _TAIL_PIECES = sorted({
     # 서술격 조사 '이다'의 활용("김민지예요", "김민지였어요", "김민지이고")
     "다", "이다", "입니다", "이에요", "예요", "에요", "이야", "이고", "고", "이며", "며", "이지", "지",
     "이죠", "죠", "지요", "인데", "인", "이니", "니", "였", "이었", "어", "어요", "었", "던", "습니다",
+    # 줄임꼴·구어체(3차 검증에서 2음절 이름의 누출 꼴로 확인됨: "민지에겐", "민지라서", "민지면" …).
+    # 3음절 이상 이름은 이 목록과 상관없이 가려지지만, 2음절 이름은 여전히 이 목록에 기댄다.
+    "에겐", "한텐", "께선", "에선", "엔", "론", "으론", "로는", "으로는", "이란", "란", "라서", "이라서",
+    "면", "이면", "일", "잖아", "이잖아", "잖아요", "이잖아요", "래", "이래", "래요", "이래요", "라", "이라",
+    "이니까", "니까", "이므로", "므로", "임", "꺼", "거", "것", "이신", "신", "이세요", "세요", "이시", "시",
+    "인지", "이랑은", "이지만", "지만", "이거나", "거나", "이니까요", "니까요", "께도", "에겐요",
 }, key=len, reverse=True)  # 긴 것부터 둬야 "에게서"가 "에게"+"서"로 잘려 경계 검사에 걸리지 않는다.
 _TAIL_PIECE = "(?:" + "|".join(_TAIL_PIECES) + ")"
 _MAX_TAIL_PIECES = 4
 _STRICT_TAIL = rf"(?:{_TAIL_PIECE}){{0,{_MAX_TAIL_PIECES}}}(?!{_WORD_CHAR})"
 _LATIN_RE = re.compile(r"[A-Za-z]")
+_HANGUL_RE = re.compile(r"[가-힣]")
+_HANGUL_SYLLABLES_FOR_SUBSTRING = 3
 # 일반 낱말·수사와 글자가 같은 이름. 이런 이름은 "컵 하나 꺼내세요"처럼 경계 규칙을 지켜도 낱말과
 # 구분할 수 없으므로 "하나 씨"·"하나님께"처럼 호칭이 붙은 경우만 바꾼다. 사업주 화면에도 경고한다
 # (WorkerOut.name_ambiguous). 목록에 없는 2음절 이름도 낱말과 겹칠 수 있어 문서에 한계로 적었다.
@@ -101,6 +115,22 @@ COMMON_WORD_NAMES = frozenset({
 _ALIAS_RE = re.compile(r"근로자\s*([A-Z]+)(?![A-Za-z])")
 
 
+def _needs_boundary(name: str) -> bool:
+    """경계 규칙(앞 글자·뒤 조각 허용 목록)으로만 가려야 하는 이름인지.
+
+    True: 2음절 이하 한글 이름, COMMON_WORD_NAMES — 부분 문자열로 바꾸면 일반 낱말이 망가진다.
+    False: 3음절 이상 한글 이름, 띄어쓰기가 든 이름 — 앞뒤와 상관없이 모두 바꾼다(fail-closed).
+    성(姓)으로 시작하는 2음절 이름은 일부러 경계 규칙에 남겼다. "정리"·"이상"·"조금"·"한번"처럼 성으로
+    시작하는 2음절 낱말이 많아, 부분 문자열로 바꾸면 분해 입력이 크게 망가진다.
+    라틴 문자 이름은 이 함수와 별개로 라틴 글자 경계만 본다(_pattern 참고).
+    """
+    if name in COMMON_WORD_NAMES:
+        return True
+    if re.search(r"\s", name):
+        return False
+    return len(_HANGUL_RE.findall(name)) < _HANGUL_SYLLABLES_FOR_SUBSTRING
+
+
 def is_ambiguous_name(name: str) -> bool:
     """일반 낱말과 같아 호칭이 붙은 경우만 가릴 수 있는 이름인지(사업주 화면 경고용)."""
     return (name or "").strip() in COMMON_WORD_NAMES
@@ -112,10 +142,15 @@ class Pseudonymizer:
     한계(문서화):
     - 등록된 표시 이름과 글자가 똑같을 때만 바꾼다. 성을 뺀 이름("길동 씨")이나 별명은 못 잡는다 —
       사업주 화면에 "AI에 보낼 문장에는 이름 대신 '근로자'라고 써 달라"고 안내한다.
-    - 반대로 이름이 아닌 낱말을 바꾸지 않으려고 경계(앞은 글자가 아니고, 뒤는 끝이거나 호칭·조사·어미
-      조각이 이어지다 끝남 — _TAIL_PIECES)를 둔다. 목록에 없는 조각이 붙은 꼴은 놓칠 수 있다.
+    - 3음절 이상 한글 이름·띄어쓰기가 든 이름은 앞뒤를 보지 않고 부분 문자열로 모두 바꾼다(fail-closed).
+      그래서 "홍길동동"처럼 이름을 품은 다른 낱말도 바뀐다 — 분해 품질이 조금 나빠질 수 있지만 실명은 나가지 않는다.
+    - 2음절 한글 이름은 이름이 아닌 낱말을 바꾸지 않으려고 경계(앞은 글자가 아니고, 뒤는 끝이거나 호칭·조사·어미
+      조각이 이어지다 끝남 — _TAIL_PIECES)를 둔다. 목록에 없는 조각이 붙은 꼴은 놓칠 수 있다(남은 위험).
       그래도 "하나가 남았다"처럼 낱말 + 조사 꼴은 바꿀 수 있어, 일반 낱말과 같은 이름은 호칭이
       붙은 경우만 바꾼다(COMMON_WORD_NAMES).
+    - 라틴 문자 이름은 앞뒤에 라틴 글자가 붙지 않았을 때 바꾼다("Johnson"은 그대로, "John에겐"은 바꾼다).
+    - 되돌리기(unmask)는 이 요청에서 mask()가 실제로 만든 별칭만 실명으로 되돌린다. 사업주가 원문에 직접 쓴
+      "근로자 B" 같은 글은 그대로 둔다(3차 검증 지적: 사업주 글이 몰래 바뀌었다).
     """
 
     def __init__(self, names: list[str]):
@@ -138,6 +173,10 @@ class Pseudonymizer:
         self._to_alias_ci = {n.lower(): a for n, a in self._to_alias.items() if _LATIN_RE.search(n)}
         # 긴 것부터 맞춰야 "김근로"와 "김근"이 함께 있을 때 짧은 쪽이 긴 이름의 일부를 먼저 먹지 않는다.
         self._mask_re = self._pattern(self._to_alias)
+        # 이 요청에서 mask()가 실제로 만든 별칭과, 가리기 전 원문에 사업주가 직접 쓴 별칭 모양의 글.
+        # unmask()는 앞의 것만 실명으로 되돌리고, 뒤의 것은 사업주 글이므로 손대지 않는다.
+        self._produced: set[str] = set()
+        self._written: set[str] = set()
 
     @staticmethod
     def _pattern(keys: dict[str, str]) -> re.Pattern | None:
@@ -145,14 +184,22 @@ class Pseudonymizer:
             return None
         alts = []
         for k in sorted(keys, key=len, reverse=True):
-            if k in COMMON_WORD_NAMES:
-                tail = rf"(?=\s?{_HONORIFIC})"
-            else:
-                tail = rf"(?={_STRICT_TAIL})"
             name = re.escape(k)
             if _LATIN_RE.search(k):
                 name = rf"(?i:{name})"
-            alts.append(rf"(?<!{_WORD_CHAR}){name}{tail}")
+            if k in COMMON_WORD_NAMES:
+                alts.append(rf"(?<!{_WORD_CHAR}){name}(?=\s?{_HONORIFIC})")
+            elif not _needs_boundary(k):
+                # 낱말과 헷갈릴 일이 없는 이름: 앞뒤를 보지 않는다. 다만 라틴 글자로 시작·끝나는 이름은
+                # 그 끝에서만 라틴 글자 경계를 본다("Kim 민수"가 "Kimchi"에 걸리지 않게).
+                pre = r"(?<![A-Za-z])" if _LATIN_RE.match(k) else ""
+                post = r"(?![A-Za-z])" if _LATIN_RE.search(k[-1]) else ""
+                alts.append(rf"{pre}{name}{post}")
+            elif _LATIN_RE.search(k) and not _HANGUL_RE.search(k):
+                # 라틴 문자 이름: 한국어 조사는 바로 붙어 쓰므로("John에겐") 라틴 글자 경계만 본다.
+                alts.append(rf"(?<![A-Za-z0-9]){name}(?![A-Za-z0-9])")
+            else:
+                alts.append(rf"(?<!{_WORD_CHAR}){name}(?={_STRICT_TAIL})")
         return re.compile("|".join(alts))
 
     def _alias_for(self, matched: str) -> str:
@@ -160,9 +207,19 @@ class Pseudonymizer:
         return alias if alias is not None else self._to_alias_ci[matched.lower()]
 
     def mask(self, text: str) -> str:
-        if not self._mask_re or not text:
+        if not text:
             return text
-        return self._mask_re.sub(lambda m: self._alias_for(m.group(0)), text)
+        if "근로자" in text:
+            self._written.update(_alias_key(m) for m in _ALIAS_RE.finditer(text))
+        if not self._mask_re:
+            return text
+
+        def _sub(m: re.Match) -> str:
+            alias = self._alias_for(m.group(0))
+            self._produced.add(alias)
+            return alias
+
+        return self._mask_re.sub(_sub, text)
 
     def unmask(self, text: str) -> str:
         if not text or "근로자" not in text:
@@ -170,11 +227,16 @@ class Pseudonymizer:
         leftovers: list[str] = []
 
         def _restore(m: re.Match) -> str:
-            name = self._to_name.get(f"근로자 {m.group(1)}")
-            if name is not None:
-                return name
-            # 이 요청에서 만든 적 없는 별칭(LLM이 지어낸 "근로자 C" 등). 그대로 두면 근로자 화면·TTS에
-            # 별칭이 나가므로 일반 낱말 "근로자"로 바꾸고 경고를 남긴다.
+            key = _alias_key(m)
+            if key in self._produced:
+                return self._to_name[key]
+            # 사업주가 원문에 직접 쓴 글("근로자 B")이 응답에 그대로 돌아온 것. 사업주 글이므로 바꾸지 않는다.
+            if key in self._written:
+                return m.group(0)
+            # 이 요청에서 만든 적 없는 별칭(LLM이 지어낸 "근로자 C", 이번 요청 원문에 없던 근로자의 별칭 등).
+            # 그대로 두면 근로자 화면·TTS에 별칭이 나가므로 일반 낱말 "근로자"로 바꾸고 경고를 남긴다.
+            # 원문에 없던 근로자의 별칭을 실명으로 되돌리지 않는 것은, LLM이 지어낸 글자가 우연히 다른 근로자의
+            # 별칭과 같을 때 엉뚱한 실명이 화면에 나가지 않게 하려는 것이다.
             # 단 알파벳 한 글자일 때만 그렇게 본다. "근로자 ID"·"근로자 OK"·"근로자 TV"처럼 두 글자 이상의
             # 대문자는 평범한 문장일 가능성이 훨씬 커서, 지우면 코칭·분해 결과가 망가진다(검증 지적).
             # 두 글자 별칭(근로자 AA…)은 이 요청에서 실제로 만든 것만 위에서 되돌린다.
@@ -193,6 +255,11 @@ class Pseudonymizer:
 
     def unmask_obj(self, obj: Any) -> Any:
         return _walk(obj, self.unmask)
+
+
+def _alias_key(m: re.Match) -> str:
+    # "근로자A"·"근로자  A"처럼 띄어쓰기만 다른 꼴도 같은 별칭으로 본다.
+    return f"근로자 {m.group(1)}"
 
 
 def _walk(obj: Any, fn) -> Any:

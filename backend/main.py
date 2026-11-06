@@ -32,6 +32,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import StaleDataError
 from aac_assets import get_aac_image_dir, public_aac_url
 
 import ai_client
@@ -306,7 +307,9 @@ def list_workers(request: Request, db: Session = Depends(get_db),
     ids = [w.id for w in workers]
     consented = workers_with_active_consent(db, ids)
     personal = workers_with_active_consent(db, ids, CONSENT_PERSONAL_INFO)
-    record_access(db, request, user, "worker.list")
+    # 목록에는 근로자마다 이름·메모가 실린다. worker_id=None 한 줄로는 누구의 정보가 보였는지 추적할 수 없어
+    # 실린 근로자마다 남긴다(3차 검증 지적). 3초 폴링 묶기는 근로자별로 적용된다.
+    record_access_for_workers(db, request, user, "worker.list", ids)
     return [_worker_out(w, w.id in consented, w.id in personal) for w in workers]
 
 
@@ -1250,6 +1253,20 @@ def create_log(payload: PerformanceLogCreate, db: Session = Depends(get_db),
     if total and len(logged_ids) >= total:
         a.status = "done"
 
+    # 근로자 삭제와 겹치는 경우를 막는다. 위의 배정 조회는 쓰기 트랜잭션 밖에서 읽은 것이라, 그 사이에
+    # delete_worker가 커밋하면 근로자와 이어지지 않는 고아 수행 로그가 들어가거나(SQLite는 외래 키를
+    # 강제하지 않는다), 지워진 배정의 상태 갱신이 StaleDataError로 500이 났다(3차 검증 지적).
+    # flush로 쓰기(= SQLite 쓰기 잠금)를 먼저 잡은 뒤 배정이 아직 있는지 다시 본다. 잠금을 잡은 뒤에는
+    # 다른 연결이 배정을 지울 수 없으므로, 여기서 있으면 커밋까지 있다.
+    gone = HTTPException(status_code=404, detail="배정을 찾을 수 없습니다.")
+    try:
+        db.flush()
+    except StaleDataError:
+        db.rollback()
+        raise gone from None
+    if db.scalar(select(Assignment.id).where(Assignment.id == a.id)) is None:
+        db.rollback()
+        raise gone
     db.commit()
     return {"ok": True, "assignment_status": a.status}
 
