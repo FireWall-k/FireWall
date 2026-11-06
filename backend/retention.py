@@ -102,7 +102,9 @@ def purge(db: Session, *, dry_run: bool = False, now: datetime | None = None) ->
     db.execute(delete(AccessAuditLog).where(audit_filter))
     db.commit()
     # 지운 기록이 WAL 파일에 남아 있지 않게 바로 체크포인트한다(database.checkpoint_wal 참고).
-    checkpoint_wal(db)
+    # 지울 것이 없어도 매번 한다 — 근로자 삭제 직후 다른 연결의 읽기 때문에 끝나지 못한 체크포인트를
+    # 여기서 다시 해, 삭제된 이름·메모가 -wal 파일에 남아 있는 기간을 하루 안으로 줄인다.
+    report["wal_checkpointed"] = checkpoint_wal(db)
     for path in orphans:
         path.unlink(missing_ok=True)
     return report

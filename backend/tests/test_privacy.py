@@ -572,3 +572,142 @@ def test_task_context_is_masked_for_ai_but_stored_as_written(client, capture):
     assert capture.calls[0][1]["context"]["work_environment"] == "근로자 A 자리 옆 창고"
     with SessionLocal() as db:
         assert db.get(Task, r.json()["id"]).work_environment == "오세훈 자리 옆 창고"
+
+
+# --- 7. 검증 지적 보완(Phase 0.2 fix) ------------------------------------------
+
+def test_common_word_name_does_not_mask_ordinary_words(client, capture):
+    """근로자 이름이 '하나'여도 '하나씩'·'하나하나'·'컵 하나' 같은 낱말은 바뀌면 안 된다.
+    예전에는 '컵을 근로자 A씩 꺼내서 근로자 A근로자 A 닦으세요.'가 LLM으로 갔다."""
+    token = _new_employer(client)
+    wid = _create_worker(client, token, "하나")
+    r = client.post("/api/tasks", json={"raw_input": "컵을 하나씩 꺼내서 하나하나 닦으세요. 컵 하나를 두세요."},
+                    headers=auth(token))
+    assert r.status_code == 201, r.text
+    assert capture.calls[0][1]["raw_input"] == "컵을 하나씩 꺼내서 하나하나 닦으세요. 컵 하나를 두세요."
+
+    # 호칭이 붙어 이름이 분명할 때는 가린다.
+    capture.calls.clear()
+    client.post("/api/tasks", json={"raw_input": "하나 씨는 컵을 닦으세요."}, headers=auth(token))
+    assert capture.calls[0][1]["raw_input"] == "근로자 A 씨는 컵을 닦으세요."
+
+    # 사업주 화면 경고용 표시.
+    workers = {w["id"]: w for w in client.get("/api/workers", headers=auth(token)).json()}
+    assert workers[wid]["name_ambiguous"] is True
+    other = _create_worker(client, token, "홍길동")
+    workers = {w["id"]: w for w in client.get("/api/workers", headers=auth(token)).json()}
+    assert workers[other]["name_ambiguous"] is False
+
+
+def test_name_is_masked_only_at_word_boundaries():
+    from privacy import Pseudonymizer
+    p = Pseudonymizer(["홍길동", "김지우"])
+    assert p.mask("홍길동 씨는 상자를") == "근로자 A 씨는 상자를"
+    assert p.mask("홍길동이가 옮겨요") == "근로자 A이가 옮겨요"
+    assert p.mask("홍길동에게서 받으세요.") == "근로자 A에게서 받으세요."
+    assert p.mask("(김지우)") == "(근로자 B)"
+    # 이름 앞뒤에 글자가 붙어 다른 낱말이 된 경우는 그대로 둔다.
+    assert p.mask("홍길동동 상자") == "홍길동동 상자"
+    assert p.mask("대김지우 상자") == "대김지우 상자"
+
+
+def test_unmask_accepts_spacing_variants_and_drops_unknown_alias(client, monkeypatch):
+    """LLM이 '근로자A'처럼 띄어쓰기만 바꿔 돌려줘도 실명으로 되돌린다. 모르는 별칭은 화면·TTS에 나가지 않게
+    '근로자'로 바꾼다."""
+    token = _new_employer(client)
+    _create_worker(client, token, "홍길동")
+
+    def fake_decompose(raw_input, context=None):
+        return {"task_title": "근로자A 직무", "steps": [
+            {"order": 1, "sentence": "근로자A 님은 상자를 옮기세요.", "action_type": "move",
+             "symbol_query": ["상자"], "keywords": [{"term": "상자", "pos": "noun"}]},
+            {"order": 2, "sentence": "근로자   A와 근로자 Q는 수량을 세세요.", "action_type": "observe",
+             "symbol_query": ["수량"], "keywords": [{"term": "수량", "pos": "noun"}]},
+        ]}
+
+    monkeypatch.setattr(ai_client, "decompose", fake_decompose)
+    r = client.post("/api/tasks", json={"raw_input": "홍길동 님은 상자를 옮기세요."}, headers=auth(token))
+    assert r.status_code == 201, r.text
+    task = r.json()
+    assert task["title"] == "홍길동 직무"
+    assert task["steps"][0]["sentence"] == "홍길동 님은 상자를 옮기세요."
+    assert task["steps"][1]["sentence"] == "홍길동와 근로자는 수량을 세세요."
+
+
+def test_one_off_actions_are_always_audited(client, capture):
+    """폴링성 조회만 60초 안에서 묶는다. 내보내기를 두 번 했으면 두 줄이 남아야 한다."""
+    token = _new_employer(client)
+    emp = _employer_id(token)
+    wid, _ = _coaching_setup(client, token, capture, name="내보내기대상")
+    for _ in range(2):
+        assert client.get(f"/api/workers/{wid}/export", headers=auth(token)).status_code == 200
+    _grant(client, token, wid)
+    _grant(client, token, wid, consent_type="personal_info")
+    rows = _audits(emp)
+    assert len([r for r in rows if r[0] == "worker.export"]) == 2
+    assert len([r for r in rows if r[0] == "worker.consent.grant"]) == 2
+
+
+def test_dashboard_and_coaching_reject_foreign_worker_id(client, capture):
+    token = _new_employer(client)
+    _, task = _coaching_setup(client, token, capture, name="우리근로자")
+    other_token = _new_employer(client)
+    foreign = _create_worker(client, other_token, "남의근로자")
+
+    for path in (f"/api/dashboard/tasks/{task['id']}?worker_id={foreign}",
+                 f"/api/dashboard/tasks/{task['id']}/coaching?worker_id={foreign}"):
+        assert client.get(path, headers=auth(token)).status_code == 404
+    with SessionLocal() as db:
+        # 남의 사업장 근로자 id가 이 사업주의 감사 로그에 섞이지 않는다.
+        assert db.scalars(select(AccessAuditLog).where(
+            AccessAuditLog.actor_id == _employer_id(token),
+            AccessAuditLog.worker_id == foreign)).all() == []
+    assert capture.calls == []
+
+
+def test_delete_reports_tasks_that_still_mention_the_name(client, capture):
+    """직무는 사업주 데이터라 근로자 삭제로 지우지 않는다. 이름이 남은 직무를 알려 줘 고치게 한다."""
+    token = _new_employer(client)
+    wid, task = _coaching_setup(client, token, capture, name="이름남는근로자")
+    plain = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요."}, headers=auth(token)).json()
+    r = client.delete(f"/api/workers/{wid}", headers=auth(token))
+    assert r.status_code == 200, r.text
+    mentions = [m["task_id"] for m in r.json()["name_mentions"]]
+    assert task["id"] in mentions
+    assert plain["id"] not in mentions
+
+
+def test_delete_with_open_reader_retries_and_purge_finishes_checkpoint(client, capture, monkeypatch, tmp_path,
+                                                                        caplog):
+    """다른 연결(예: 3초 폴링)이 읽기 트랜잭션을 잡고 있으면 삭제 직후 체크포인트가 끝나지 않는다.
+    그 사실을 응답·로그로 알리고, purge가 다시 TRUNCATE 체크포인트를 해서 -wal의 옛 프레임을 없앤다."""
+    import sqlite3
+
+    import database
+    monkeypatch.setattr(database, "_CHECKPOINT_ATTEMPTS", 2)
+    monkeypatch.setattr(database, "_CHECKPOINT_RETRY_SLEEP", 0.01)
+    monkeypatch.setenv("TTS_CACHE_DIR", str(tmp_path))
+
+    token = _new_employer(client)
+    name = "열린읽기중삭제대상"
+    wid, task = _coaching_setup(client, token, capture, name=name)
+    client.delete(f"/api/tasks/{task['id']}", headers=auth(token))
+
+    reader = sqlite3.connect(engine.url.database, isolation_level=None)
+    try:
+        reader.execute("BEGIN")
+        reader.execute("SELECT count(*) FROM workers").fetchone()
+        with caplog.at_level("WARNING", logger="jobcard.database"):
+            r = client.delete(f"/api/workers/{wid}", headers=auth(token))
+        assert r.status_code == 200, r.text
+        assert r.json()["wal_checkpointed"] is False
+        assert "WAL 체크포인트" in caplog.text
+        assert name.encode("utf-8") in _db_files_bytes()  # 재현: 아직 -wal에 남아 있다
+    finally:
+        reader.execute("COMMIT")
+        reader.close()
+
+    with SessionLocal() as db:
+        report = retention.purge(db)
+    assert report["wal_checkpointed"] is True
+    assert name.encode("utf-8") not in _db_files_bytes()

@@ -164,6 +164,29 @@ describe("WorkersPage — 개인정보(동의·메모·내보내기·삭제)", (
     await waitFor(() => expect(screen.queryByText("김근로")).not.toBeInTheDocument());
   });
 
+  it("삭제 확인 문구는 직무 문장 속 이름이 남는다고 알리고, 삭제 뒤 이름이 남은 직무를 보여 준다", async () => {
+    const user = userEvent.setup();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    deleteWorker.mockResolvedValue({
+      ok: true, wal_checkpointed: true, name_mentions: [{ task_id: "t1", title: "김근로 포장 직무" }],
+    });
+    render(<WorkersPage />);
+    await user.click(await screen.findByRole("button", { name: "근로자 김근로 삭제" }));
+
+    expect(confirm.mock.calls[0][0]).toMatch(/직무 문장에 적은 이름은 지워지지 않아요/);
+    const notice = await screen.findByRole("status");
+    expect(notice).toHaveTextContent("직무 1개에 남아 있어요");
+    expect(notice).toHaveTextContent("김근로 포장 직무");
+  });
+
+  it("일반 낱말과 같은 이름이면 경고를 보여 준다", async () => {
+    listWorkers.mockResolvedValue([
+      { id: "w9", display_name: "하나", access_code_hint: "34", access_code_length: 6, name_ambiguous: true },
+    ]);
+    render(<WorkersPage />);
+    expect(await screen.findByText(/이름이 일반 낱말과 같아요/)).toBeInTheDocument();
+  });
+
   it("보호자 동의를 기록하면 AI 처리 동의가 '기록됨'으로 바뀐다", async () => {
     const user = userEvent.setup();
     grantConsent.mockResolvedValue({ id: "c1" });

@@ -53,6 +53,7 @@ from models import Assignment, Employer, PerformanceLog, Step, Task, Worker, Wor
 from privacy import (
     employer_pseudonymizer,
     has_active_consent,
+    is_ambiguous_name,
     policy_version,
     record_access,
     workers_with_active_consent,
@@ -308,7 +309,8 @@ def list_workers(request: Request, db: Session = Depends(get_db),
 def _worker_out(w: Worker, ai_consent: bool = False) -> WorkerOut:
     return WorkerOut(id=w.id, display_name=w.display_name,
                      access_code_hint=w.access_code_hint, access_code_length=w.access_code_length,
-                     note=w.note or "", ai_note_allowed=bool(w.ai_note_allowed), ai_consent=ai_consent)
+                     note=w.note or "", ai_note_allowed=bool(w.ai_note_allowed), ai_consent=ai_consent,
+                     name_ambiguous=is_ambiguous_name(w.display_name))
 
 
 def _owned_worker(worker_id: str, employer_id: str, db: Session) -> Worker:
@@ -595,8 +597,14 @@ def delete_worker(worker_id: str, request: Request, db: Session = Depends(get_db
     secure_delete(database.py)로 지운 페이지를 0으로 덮고, 커밋 뒤 WAL을 체크포인트해 옛 프레임도 비운다.
     근로자 단위로 저장하는 파일은 아직 없다(사진·TTS는 직무 단계 단위 — docs/privacy/data-map.md 참고).
     접근 감사 로그는 보존기간 동안 남기되 근로자 id만 담고 이름은 담지 않는다.
+
+    직무 원문·제목·단계 문장(과 그 문장으로 만든 TTS mp3)에 이름을 적었다면 그건 사업주 데이터라 여기서
+    지우지 않는다. 대신 이름이 들어 있는 직무 목록(name_mentions)을 돌려줘, 사업주가 고치거나 지우게 한다
+    (직무를 고치면 옛 TTS 파일은 미참조가 되어 purge가 지운다).
+    WAL 체크포인트가 다른 연결의 읽기 때문에 끝나지 않으면 wal_checkpointed=false로 알린다(purge가 다시 한다).
     """
     worker = _owned_worker(worker_id, user["sub"], db)
+    name_mentions = _tasks_mentioning(db, user["sub"], worker.display_name)
     assignment_ids = [a.id for a in db.scalars(
         select(Assignment).where(Assignment.worker_id == worker_id)
     ).all()]
@@ -607,8 +615,23 @@ def delete_worker(worker_id: str, request: Request, db: Session = Depends(get_db
     db.delete(worker)
     record_access(db, request, user, "worker.delete", worker_id, commit=False)
     db.commit()
-    checkpoint_wal(db)
-    return {"ok": True}
+    checkpointed = checkpoint_wal(db)
+    return {"ok": True, "wal_checkpointed": checkpointed, "name_mentions": name_mentions}
+
+
+def _tasks_mentioning(db: Session, employer_id: str, name: str) -> list[dict]:
+    """이 사업장 직무 중 원문·제목·단계 문장에 이름이 그대로 들어 있는 것. 근로자 삭제 뒤 사업주 안내용."""
+    name = (name or "").strip()
+    if len(name) < 2:
+        # 한 글자 이름은 거의 모든 문장에 걸려 목록이 의미가 없다.
+        return []
+    pattern = f"%{name}%"
+    in_steps = select(Step.task_id).where(Step.sentence.like(pattern))
+    tasks = db.scalars(select(Task).where(
+        Task.employer_id == employer_id,
+        (Task.title.like(pattern)) | (Task.raw_input.like(pattern)) | (Task.id.in_(in_steps)),
+    ).order_by(Task.created_at)).all()
+    return [{"task_id": t.id, "title": t.title} for t in tasks]
 
 
 def _step_search_terms(step: "Step") -> list[str]:
@@ -1272,6 +1295,9 @@ def dashboard(task_id: str, request: Request, worker_id: str | None = None,
               db: Session = Depends(get_db),
               user: dict = Depends(require_employer)) -> DashboardOut:
     task = _owned_task(task_id, user["sub"], db)
+    if worker_id:
+        # 다른 사업장 근로자 id로 감사 행이 남지 않게, 기록 전에 소유를 확인한다(404 규칙 통일).
+        _owned_worker(worker_id, user["sub"], db)
     logs_by_step = _logs_by_step(task_id, worker_id, db)
     # 근로자별 수행 기록 열람. 3초 폴링은 privacy.record_access가 짧은 창 안에서 한 줄로 합친다.
     record_access(db, request, user, "dashboard.view", worker_id)
@@ -1315,6 +1341,8 @@ def task_coaching(task_id: str, request: Request, worker_id: str | None = None,
     - 근로자 특성 메모는 그 근로자를 골랐고, 메모 사용 허용 + 동의가 있을 때만 넣는다.
     """
     task = _owned_task(task_id, user["sub"], db)
+    # 다른 사업장 근로자 id면 404. 감사 기록(coaching.view)은 이 확인 뒤에만 남는다.
+    target = _owned_worker(worker_id, user["sub"], db) if worker_id else None
     logs_by_step = _logs_by_step(task_id, worker_id, db)
 
     included_query = select(Assignment.worker_id).where(Assignment.task_id == task_id)
@@ -1345,12 +1373,10 @@ def task_coaching(task_id: str, request: Request, worker_id: str | None = None,
         "work_environment": masker.mask(task.work_environment or ""),
         "job": task.job or "",
     }
-    if worker_id and allow_llm:
-        target = db.get(Worker, worker_id)
-        if target is not None and target.employer_id == user["sub"]:
-            note = _sendable_note(db, target, None)
-            if note:
-                coaching_context["worker_note"] = masker.mask(note)
+    if target is not None and allow_llm:
+        note = _sendable_note(db, target, None)
+        if note:
+            coaching_context["worker_note"] = masker.mask(note)
     record_access(db, request, user, "coaching.view", worker_id)
     raw = masker.unmask_obj(ai_client.coaching(masker.mask(task.title), steps_payload,
                                                coaching_context, allow_llm=allow_llm))

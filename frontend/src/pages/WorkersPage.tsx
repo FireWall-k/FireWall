@@ -180,6 +180,7 @@ export default function WorkersPage() {
   async function removeWorker(id: string, displayName: string) {
     if (!window.confirm(
       `근로자 '${displayName}'을(를) 삭제할까요?\n이 근로자의 배정·수행 기록·동의 기록도 함께 지워지고 되돌릴 수 없어요.\n`
+      + "직무 문장에 적은 이름은 지워지지 않아요 — 직무를 고치거나 지워야 사라져요.\n"
       + "필요하면 먼저 '내보내기'로 데이터를 받아 두세요.",
     )) {
       return;
@@ -187,9 +188,19 @@ export default function WorkersPage() {
     setError(null);
     setNotice(null);
     try {
-      await api.deleteWorker(id);
+      const result = await api.deleteWorker(id);
       setWorkers((prev) => prev.filter((w) => w.id !== id));
-      setNotice(`근로자 '${displayName}'을(를) 삭제했습니다.`);
+      // 직무 원문·문장·음성은 사업주 데이터라 근로자 삭제로 지우지 않는다. 이름이 남은 직무를 알려 고치게 한다.
+      const mentions = result.name_mentions ?? [];
+      let message = `근로자 '${displayName}'을(를) 삭제했습니다.`;
+      if (mentions.length > 0) {
+        const titles = mentions.map((m) => `'${m.title}'`).join(", ");
+        message += ` 이 이름이 아직 직무 ${mentions.length}개에 남아 있어요: ${titles}. 직무를 고치거나 지워 주세요.`;
+      }
+      if (result.wal_checkpointed === false) {
+        message += " 다른 화면이 데이터를 읽는 중이라 디스크 정리는 다음 정리 작업 때 끝나요.";
+      }
+      setNotice(message);
     } catch (e) {
       setError(e instanceof Error ? e.message : "근로자 삭제에 실패했습니다.");
     }
@@ -274,6 +285,12 @@ export default function WorkersPage() {
                         <span className="ml-1.5 font-semibold text-signal-red">짧은 코드예요 — 새로 만들어 주세요</span>
                       )}
                     </p>
+                    {w.name_ambiguous && (
+                      // 일반 낱말과 같은 이름은 "컵 하나"의 '하나'까지 바꾸지 않으려고 호칭이 붙은 경우만 가린다.
+                      <p className="text-xs text-signal-red">
+                        이름이 일반 낱말과 같아요. AI에 보낼 직무 문장에는 이름 대신 '근로자'라고 쓰거나 '{w.display_name} 씨'처럼 호칭을 붙여 주세요.
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

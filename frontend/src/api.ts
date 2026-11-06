@@ -185,6 +185,16 @@ export interface Worker {
   ai_note_allowed?: boolean;
   /** AI 처리(국외 이전) 동의가 살아 있는지. 없으면 AI 코칭은 규칙 기반 제안만 나온다. */
   ai_consent?: boolean;
+  /** 이름이 일반 낱말("하나"·"보람" 등)과 같아 AI에 보낼 때 호칭이 붙은 경우("하나 씨")만 가릴 수 있다. */
+  name_ambiguous?: boolean;
+}
+
+/** 근로자 삭제 응답. 직무 문장 속 이름은 사업주 데이터라 지우지 않으므로, 남은 직무를 알려 준다. */
+export interface DeleteWorkerResult {
+  ok: boolean;
+  /** false면 다른 화면이 DB를 읽는 중이라 디스크(WAL) 정리를 끝내지 못했다. 다음 정리 작업이 다시 한다. */
+  wal_checkpointed?: boolean;
+  name_mentions?: { task_id: string; title: string }[];
 }
 
 export type ConsentType = "personal_info" | "ai_processing";
@@ -305,7 +315,7 @@ export const api = {
     req<WorkerWithCode>(`/api/workers/${id}/access-code`, { method: "POST" }),
   /** 내 사업장 코드(근로자 기기의 로그인 화면에 한 번 입력해 둔다). */
   workplace: () => req<Workplace>("/api/workplace"),
-  deleteWorker: (id: string) => req<{ ok: boolean }>(`/api/workers/${id}`, { method: "DELETE" }),
+  deleteWorker: (id: string) => req<DeleteWorkerResult>(`/api/workers/${id}`, { method: "DELETE" }),
   /** 이름·메모·"AI 코칭에 메모 사용"을 바꾼다. 보낸 필드만 바뀐다. */
   updateWorker: (id: string, patch: { display_name?: string; note?: string; ai_note_allowed?: boolean }) =>
     req<Worker>(`/api/workers/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),

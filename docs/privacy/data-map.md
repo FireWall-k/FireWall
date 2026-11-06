@@ -22,7 +22,7 @@
 
 | 데이터 | 위치 | 비고 |
 |---|---|---|
-| DB 전체 | SQLite `jobcard.db` (Docker named volume `jobcard-data`, `/app/data`) | WAL 모드. `secure_delete=ON`으로 지운 행을 0으로 덮는다 |
+| DB 전체 | SQLite `jobcard.db` (Docker named volume `jobcard-data`, `/app/data`) | WAL 모드. `secure_delete=ON`으로 지운 행을 0으로 덮는다. `journal_size_limit=0`으로 WAL 재시작 때 -wal 파일을 잘라 옛 프레임이 파일 뒤쪽에 남지 않게 한다 |
 | TTS mp3 | `/app/data/tts/<sha256>.mp3` | 단계 문장 음성. 파일명은 문장 해시 |
 | 단계 사진 | `/app/data/photos/<uuid>.<ext>` | |
 | 브라우저 | `localStorage`: 토큰, 역할, 표시 이름, 사업장 코드 | 공용 기기는 로그아웃 필요 |
@@ -38,7 +38,12 @@
 | Google Cloud Text-to-Speech | 미국 등 | 단계 음성 합성 | 단계 문장 **원문**(실명이 들어 있으면 그대로) | 근로자 정보 |
 
 - 별칭 매핑은 `backend/privacy.py: Pseudonymizer`. 사업장 근로자 전원의 표시 이름을 등록 순서대로 "근로자 A, B, …"로 바꾸고 응답에서 되돌린다. 매핑은 요청 하나 안에서만 쓰고 저장하지 않는다.
-- 한계: 등록된 표시 이름과 **글자가 똑같을 때만** 바꾼다. 성을 뺀 이름·별명은 못 잡는다. 기본 이름 "근로자" 같은 일반 명사는 바꾸지 않는다.
+- 한계 1(놓침): 등록된 표시 이름과 **글자가 똑같을 때만** 바꾼다. 성을 뺀 이름·별명은 못 잡는다. 기본 이름 "근로자" 같은 일반 명사는 바꾸지 않는다.
+- 한계 2(잘못 바꿈) 대응: 이름이 아닌 낱말을 별칭으로 바꾸면 분해 입력·그림 검색 질의가 망가진다("하나씩" → "근로자 A씩"). 그래서
+  - 이름 바로 앞에 글자가 붙어 있으면 바꾸지 않고, 이름 뒤는 끝·공백·구두점이거나 호칭(씨·님)·조사(이/가/은/는/을/를/에게/의 …)일 때만 바꾼다.
+  - 일반 낱말·수사와 같은 이름(`privacy.COMMON_WORD_NAMES`: 하나·보람·나라·슬기·한결 등)은 "하나 씨"·"하나님께"처럼 **호칭이 붙은 경우만** 바꾼다. 그 밖의 "하나가"는 이름이어도 그대로 나간다(놓침 쪽으로 기운 선택). 근로자 관리 화면이 이런 이름에 경고를 띄운다(`WorkerOut.name_ambiguous`).
+  - 목록에 없는 이름도 "낱말 + 조사" 꼴과 겹치면 바뀔 수 있다. 매칭 평가(`eval.run_match_eval`)는 백엔드 마스킹을 거치지 않으므로 이 회귀는 `backend/tests/test_privacy.py`가 잡는다.
+- 되돌리기: LLM이 "근로자A"처럼 띄어쓰기를 바꿔도 되돌린다. 이 요청에서 만들지 않은 별칭("근로자 Q")은 화면·TTS에 나가지 않게 "근로자"로 바꾸고 경고 로그를 남긴다.
 - ai_service는 스키마(`DecomposeContext`, `CoachingContext`)로 허용한 필드만 받고 나머지(예: `worker_name`)는 버린다. 분해 로그에는 원문 대신 길이만 남긴다.
 - **남은 위험**: Google TTS는 사람이 듣는 문장이 그대로 필요해 별칭을 쓸 수 없다. 사업주에게 "단계 문장에 이름을 넣지 말 것"을 안내한다. TTS 위탁에 대한 동의 범위는 법무 검토가 필요하다.
 
@@ -59,10 +64,21 @@
 | 수행 로그 | `PERFORMANCE_LOG_RETENTION_DAYS` (기본 365일, `completed_at` 기준) | `manage.py purge` |
 | 접근 감사 로그 | `ACCESS_AUDIT_RETENTION_DAYS` (기본 730일) — 「개인정보의 안전성 확보조치 기준」 제8조: 민감정보 처리 시 접속기록 2년 이상 | `manage.py purge` (앱 코드에 다른 삭제·수정 경로 없음) |
 | TTS mp3 | 어느 단계도 참조하지 않으면 `TTS_ORPHAN_GRACE_HOURS`(기본 24시간) 뒤 | `manage.py purge` |
-| 근로자 프로필·메모·배정·수행 로그·동의 | 사업주가 삭제할 때까지 | `DELETE /api/workers/{id}` — DB 행 삭제 + `secure_delete` + WAL 체크포인트 |
+| 근로자 프로필·메모·배정·수행 로그·동의 | 사업주가 삭제할 때까지 | `DELETE /api/workers/{id}` — DB 행 삭제 + `secure_delete` + WAL 체크포인트(아래 "WAL 체크포인트") |
+| 직무 원문·제목·단계 문장 속 근로자 이름, 그 문장의 TTS mp3 | **근로자를 삭제해도 남는다**(직무는 사업주 데이터) | 직무를 고치거나 지워야 사라진다. 삭제 응답의 `name_mentions`와 삭제 확인 대화상자가 이를 알린다. 문장을 고치면 옛 mp3는 미참조가 되어 purge가 지운다 |
 | 직무·단계·사진 | 사업주가 직무를 삭제할 때까지 | `DELETE /api/tasks/{id}` (사진 파일 정리는 Phase 0.3 고아 파일 GC) |
 | 배정(`assignments`) | 근로자·직무 삭제 때까지 | 보존기간 자동 삭제 없음 — 후속 과제 |
 | 백업 | 운영자가 정함 | 백업 사본에는 삭제가 반영되지 않는다 — 백업 보존기간을 별도로 정해야 한다 |
+
+### WAL 체크포인트
+
+지운 행의 옛 내용은 WAL(-wal 파일) 프레임에 남는다. 삭제 직후 `PRAGMA wal_checkpoint(TRUNCATE)`로 DB 파일에 옮기고 -wal을 0바이트로 자른다.
+다른 연결이 읽기 트랜잭션을 잡고 있으면(예: 대시보드 3초 폴링) 체크포인트가 끝나지 않는다. 이때 옛 프레임은 **저절로 덮이지 않는다** —
+WAL을 재시작해도 파일을 자르지 않으면 새로 쓴 지점 뒤의 옛 프레임은 물리적으로 남는다. 그래서
+- `database.checkpoint_wal`이 결과 `(busy, log, checkpointed)`를 확인해 짧게 다시 하고, 그래도 안 되면 경고 로그를 남긴다.
+- 삭제 응답에 `wal_checkpointed: false`를 실어 화면이 알린다.
+- 매일 도는 `manage.py purge`가 지울 것이 없어도 TRUNCATE 체크포인트를 다시 한다(실패하면 출력에 경고).
+- `journal_size_limit=0`으로 WAL이 재시작될 때마다 파일을 자른다.
 
 ### 삭제 스케줄
 
@@ -89,7 +105,8 @@
 | `dashboard.workers` / `dashboard.view` | 대시보드 근로자 목록·근로자별 수행 기록 |
 | `coaching.view` | AI 코칭 조회 |
 
-- 같은 사업주·행위·근로자·IP가 `ACCESS_AUDIT_DEDUPE_SECONDS`(기본 60초) 안에 반복되면 한 줄로 합친다(대시보드 3초 폴링).
+- 화면이 저절로 되풀이하는 조회(`dashboard.view`, `dashboard.workers`, `worker.list`, `worker.history`, `worker.consents`, `coaching.view`)만 같은 사업주·행위·근로자·IP가 `ACCESS_AUDIT_DEDUPE_SECONDS`(기본 60초) 안에 반복되면 한 줄로 합친다(대시보드 3초 폴링). 내보내기·삭제·동의 기록·수정은 매번 남긴다.
+- 다른 사업장 근로자 id로 대시보드·코칭을 열면 404이고 감사 행을 남기지 않는다.
 - ORM으로 수정·삭제하면 예외가 난다(`models.py` 매퍼 이벤트). 지우는 코드는 `retention.py`뿐이다(테스트가 확인).
 
 ## 7. 정보주체 권리 대응
