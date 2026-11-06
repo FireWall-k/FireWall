@@ -16,13 +16,17 @@ import getpass
 import sys
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from auth import hash_password
+from codes import new_workplace_code
 import db_migrate
 from database import SessionLocal
 from models import Employer
 
 MIN_PASSWORD_LEN = 8
+# 사업장 코드(약 10억 가지)가 기존 사업장과 겹칠 때 다시 뽑는 횟수. 실제로는 거의 한 번에 끝난다.
+_WORKPLACE_CODE_ATTEMPTS = 5
 
 
 def _read_password(from_stdin: bool) -> str:
@@ -40,15 +44,24 @@ def _read_password(from_stdin: bool) -> str:
 def create_employer(login: str, name: str, org: str, password: str) -> tuple[str, str]:
     # 운영에서는 migrate 서비스가 먼저 돌았어야 한다(아니면 이유를 적고 멈춘다). 개발이면 여기서 올린다.
     db_migrate.ensure_schema_ready()
+    password_hash = hash_password(password)
     with SessionLocal() as db:
-        if db.scalar(select(Employer).where(Employer.login_id == login)) is not None:
-            raise SystemExit(f"이미 있는 아이디입니다: {login}")
-        emp = Employer(login_id=login, name=name or login, org_name=org,
-                       password_hash=hash_password(password))
-        db.add(emp)
-        db.commit()
-        # 사업장 코드는 서버가 만든다(models.Employer 기본값). 근로자 기기에 입력해야 하므로 바로 보여 준다.
-        return emp.id, emp.workplace_code
+        for _ in range(_WORKPLACE_CODE_ATTEMPTS):
+            if db.scalar(select(Employer).where(Employer.login_id == login)) is not None:
+                raise SystemExit(f"이미 있는 아이디입니다: {login}")
+            # 사업장 코드는 서버가 만든다(codes.py). 근로자 기기에 입력해야 하므로 바로 보여 준다.
+            emp = Employer(login_id=login, name=name or login, org_name=org,
+                           password_hash=password_hash, workplace_code=new_workplace_code())
+            db.add(emp)
+            try:
+                db.commit()
+            except IntegrityError:
+                # 사업장 코드가 기존 사업장과 우연히 겹쳤거나(전역 unique), 같은 아이디가 동시에
+                # 만들어졌다. 롤백 후 아이디부터 다시 확인하고, 아이디 문제가 아니면 새 코드로 재시도한다.
+                db.rollback()
+                continue
+            return emp.id, emp.workplace_code
+    raise SystemExit("사업장 코드를 만들지 못했습니다. 다시 시도해 주세요.")
 
 
 def set_password(login: str, password: str) -> None:

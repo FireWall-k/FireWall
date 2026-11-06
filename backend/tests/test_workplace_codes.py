@@ -199,3 +199,64 @@ def test_reissue_invalidates_old_token_with_workplace_login(client, employer_tok
         assert _login(client, DEMO_WP, w["access_code"]).status_code == 401
     finally:
         client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+
+
+# --- 동시 요청으로 확인과 저장 사이에 코드가 겹친 경우 ----------------------------------------
+# 앞의 "이미 있나" 확인은 commit 전에 한다. 동시 요청이 그 사이에 같은 코드를 저장하면 DB의
+# (employer_id, access_code_hash) unique가 막는다. 그 IntegrityError가 500으로 새면 안 된다.
+# 확인 함수/코드 생성기를 바꿔 끼워 "확인은 통과했는데 저장에서 겹친" 상황을 재현한다.
+def _codes(*seq):
+    it = iter(seq)
+    return lambda db, employer_id: next(it)
+
+
+def test_custom_code_race_is_409_not_500(client, employer_token, monkeypatch):
+    import main
+
+    monkeypatch.setattr(main, "_access_code_taken", lambda db, employer_id, code: False)
+    r = _create(client, employer_token, "경합", "1234")  # 데모 근로자가 이미 1234
+    assert r.status_code == 409, r.text
+    assert r.json()["detail"] == "이미 사용 중인 접속 코드입니다. 다른 코드를 입력해 주세요."
+
+
+def test_generated_code_race_retries_with_new_code(client, employer_token, monkeypatch):
+    import main
+
+    monkeypatch.setattr(main, "_new_access_code", _codes("1234", "864213"))
+    r = _create(client, employer_token, "자동경합")
+    assert r.status_code == 201, r.text
+    try:
+        assert r.json()["access_code"] == "864213"
+        assert _login(client, DEMO_WP, "864213").status_code == 200
+    finally:
+        client.delete(f"/api/workers/{r.json()['id']}", headers=auth(employer_token))
+
+
+def test_reissue_race_retries_with_new_code(client, employer_token, monkeypatch):
+    import main
+
+    w = _create(client, employer_token, "재발급경합").json()
+    try:
+        monkeypatch.setattr(main, "_new_access_code", _codes("1234", "531864"))
+        r = client.post(f"/api/workers/{w['id']}/access-code", headers=auth(employer_token))
+        assert r.status_code == 200, r.text
+        assert r.json()["access_code"] == "531864"
+        assert _login(client, DEMO_WP, "531864").status_code == 200
+        # 겹친 코드의 원래 주인(데모 근로자)은 그대로다.
+        assert _login(client, DEMO_WP, "1234").status_code == 200
+    finally:
+        client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+
+
+def test_unknown_workplace_does_same_work_as_wrong_code(client, monkeypatch):
+    """사업장 코드가 없을 때 해시·조회를 건너뛰면 응답 시간으로 사업장 존재를 알 수 있다.
+    두 경우 모두 해시 계산을 한 번씩 하는지 확인한다(조회도 같은 자리에서 한다)."""
+    import main
+
+    calls = []
+    real = main.hash_access_code
+    monkeypatch.setattr(main, "hash_access_code",
+                        lambda employer_id, code: calls.append(employer_id) or real(employer_id, code))
+    assert _login(client, "ZZZZZZ", "1234").status_code == 401
+    assert _login(client, DEMO_WP, "000000").status_code == 401
+    assert len(calls) == 2

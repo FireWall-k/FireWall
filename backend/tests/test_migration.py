@@ -234,6 +234,93 @@ def test_legacy_plaintext_codes_still_log_in_after_migration():
         main.app.dependency_overrides.pop(get_db, None)
 
 
+def _worker_login_status(engine, workplace_code: str, access_code: str) -> int:
+    """마이그레이션한 엔진을 앱에 물려 근로자 로그인 응답 코드를 돌려준다."""
+    from fastapi.testclient import TestClient
+    from sqlalchemy.orm import sessionmaker
+
+    import main
+    from database import get_db
+
+    Session = sessionmaker(bind=engine)
+
+    def _db():
+        db = Session()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    main.app.dependency_overrides[get_db] = _db
+    try:
+        main.worker_throttle.clear()  # 다른 테스트의 실패 횟수가 남아 429가 나지 않게
+        res = TestClient(main.app).post(
+            "/api/auth/worker-login",
+            json={"workplace_code": workplace_code, "access_code": access_code})
+        return res.status_code
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_0002_weak_prod_secret_stops_before_ddl_and_retry_succeeds(monkeypatch):
+    """운영자가 JOBCARD_ENV=prod로 migrate를 돌렸는데 시크릿을 안 넘긴 경우.
+    첫 실행은 멈춰야 하지만 DB를 반쯤 바꾼 채로 멈추면 안 된다(SQLite ALTER는 롤백되지 않는다).
+    시크릿을 고치고 다시 돌리면 head에 도달하고 기존 코드로 로그인돼야 한다."""
+    engine = _new_engine("weak_prod_secret")
+    _make_full_legacy_db(engine)
+    monkeypatch.setenv("JOBCARD_ENV", "production")
+    monkeypatch.setenv("JOBCARD_SECRET", "too-short")
+
+    with pytest.raises(RuntimeError, match="JOBCARD_SECRET"):
+        db_migrate.migrate(engine)
+
+    assert _current_revision(engine) == db_migrate.BASELINE_REVISION
+    # 시크릿 확인이 DDL보다 먼저다 → 0002가 아무 컬럼도 남기지 않았다.
+    assert "workplace_code" not in {c["name"] for c in inspect(engine).get_columns("employers")}
+    assert "access_code" in {c["name"] for c in inspect(engine).get_columns("workers")}
+
+    monkeypatch.setenv("JOBCARD_SECRET", "s" * 64)
+    db_migrate.migrate(engine)
+
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []
+    with engine.connect() as conn:
+        wp = conn.execute(text("SELECT workplace_code FROM employers WHERE id='e1'")).scalar()
+    assert _worker_login_status(engine, wp, "5678") == 200
+
+
+def test_0002_resumes_from_half_applied_state():
+    """시크릿 확인 뒤에도 프로세스가 죽는 등으로 중간에 멈출 수 있다. 예전 버전의 0002가 남긴
+    상태(사업장 코드 컬럼은 추가·일부 채움, 해시 컬럼은 다른 키로 일부 채움, 평문 컬럼 남음)에서
+    다시 돌려도 duplicate column 없이 head에 도달하고, 해시는 지금 시크릿으로 다시 계산돼야 한다."""
+    engine = _new_engine("half_applied")
+    _make_full_legacy_db(engine)
+    db_migrate.migrate(engine)
+    db_migrate.downgrade(engine, db_migrate.BASELINE_REVISION)
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE workers SET access_code = '5678' WHERE id='w1'"))
+        conn.execute(text(
+            "INSERT INTO employers (id, name, org_name, login_id, password_hash, created_at) "
+            "VALUES ('e2', '다른', '다른 작업장', 'other', 'x', '2026-01-01 00:00:00')"))
+        conn.execute(text("ALTER TABLE employers ADD COLUMN workplace_code VARCHAR"))
+        conn.execute(text("UPDATE employers SET workplace_code = 'KEEP22' WHERE id='e1'"))
+        conn.execute(text("ALTER TABLE workers ADD COLUMN access_code_hash VARCHAR"))
+        conn.execute(text("UPDATE workers SET access_code_hash = 'stale-hash-from-other-key'"))
+    assert _current_revision(engine) == db_migrate.BASELINE_REVISION
+
+    db_migrate.upgrade_to_head(engine)
+
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []
+    with engine.connect() as conn:
+        codes = dict(conn.execute(text("SELECT id, workplace_code FROM employers")).all())
+        stored = conn.execute(text("SELECT access_code_hash FROM workers WHERE id='w1'")).scalar()
+    assert codes["e1"] == "KEEP22"  # 이미 발급된 사업장 코드는 바꾸지 않는다
+    assert codes["e2"] and codes["e2"] != "KEEP22"
+    assert stored == hash_access_code("e1", "5678")
+    assert _worker_login_status(engine, "KEEP22", "5678") == 200
+
+
 def test_downgrade_0002_restores_baseline_shape_without_plaintext():
     """0002 downgrade는 평문을 되살릴 수 없으므로 추측 불가능한 값(근로자 id)으로 채운다."""
     engine = _new_engine("down_0002")

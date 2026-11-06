@@ -43,3 +43,13 @@ def test_create_employer_prints_workplace_code(client, monkeypatch, capsys):
     tok = client.post("/api/auth/login", json={"login_id": "wp-admin", "password": "correct-horse-1"})
     wp = client.get("/api/workplace", headers={"Authorization": f"Bearer {tok.json()['token']}"})
     assert f"사업장 코드: {wp.json()['workplace_code']}" in out
+
+
+def test_workplace_code_collision_retries(client, monkeypatch, capsys):
+    """사업장 코드는 전역 unique다. 무작위 코드가 기존 사업장(데모 DEMO01)과 겹치면 500 대신 다시 뽑는다."""
+    codes = iter(["DEMO01", "ZZZZZ9"])
+    monkeypatch.setattr(manage, "new_workplace_code", lambda: next(codes))
+    _run(monkeypatch, ["create-employer", "--login", "wp-collide"], "correct-horse-1")
+    assert "사업장 코드: ZZZZZ9" in capsys.readouterr().out
+    tok = client.post("/api/auth/login", json={"login_id": "wp-collide", "password": "correct-horse-1"})
+    assert tok.status_code == 200

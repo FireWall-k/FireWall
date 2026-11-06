@@ -27,6 +27,7 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from aac_assets import get_aac_image_dir, public_aac_url
 
@@ -243,12 +244,16 @@ def worker_login(payload: WorkerLogin, request: Request,
     # 해시로만 찾는다 — 다른 사업장 근로자의 코드는 여기서 절대 맞지 않는다.
     employer = db.scalar(select(Employer).where(
         Employer.workplace_code == normalize_workplace_code(payload.workplace_code)))
-    worker = None
-    if employer is not None:
-        worker = db.scalar(select(Worker).where(
-            Worker.employer_id == employer.id,
-            Worker.access_code_hash == hash_access_code(employer.id, payload.access_code.strip()),
-        ))
+    # 사업장 코드가 없어도 해시 계산과 근로자 조회를 똑같이 한 번 한다. 건너뛰면 응답이 쿼리 하나만큼
+    # 빨라져, 메시지가 같아도 응답 시간으로 "이 사업장 코드가 존재한다"를 알 수 있다(타이밍 오라클).
+    # 빈 employer_id로는 어떤 근로자도 맞지 않는다(Worker.employer_id는 FK라 비어 있을 수 없다).
+    employer_id = employer.id if employer is not None else ""
+    worker = db.scalar(select(Worker).where(
+        Worker.employer_id == employer_id,
+        Worker.access_code_hash == hash_access_code(employer_id, payload.access_code.strip()),
+    ))
+    if employer is None:
+        worker = None
     if worker is None:
         worker_throttle.fail(key)
         # 사업장 코드가 틀린 경우와 접속 코드가 틀린 경우를 같은 응답으로 돌려준다.
@@ -308,9 +313,7 @@ def my_workplace(db: Session = Depends(get_db),
 @app.post("/api/workers", response_model=WorkerWithCodeOut, status_code=201)
 def create_worker(payload: WorkerCreate, db: Session = Depends(get_db),
                   user: dict = Depends(require_employer)) -> WorkerWithCodeOut:
-    if payload.access_code is None:
-        code = _new_access_code(db, user["sub"])
-    else:
+    if payload.access_code is not None:
         # 코드를 직접 정하는 요청은 "이 코드를 쓰는 동료가 있나"를 시험하는 통로가 될 수 있다
         # (409 응답). 근로자 로그인과 같은 제한을 사업주 id 단위로 건다.
         key = f"employer:{user['sub']}"
@@ -320,16 +323,32 @@ def create_worker(payload: WorkerCreate, db: Session = Depends(get_db),
         if _access_code_taken(db, user["sub"], payload.access_code):
             worker_throttle.fail(key)
             raise HTTPException(status_code=409, detail="이미 사용 중인 접속 코드입니다. 다른 코드를 입력해 주세요.")
-        code = payload.access_code
-    worker = Worker(employer_id=user["sub"], display_name=payload.display_name)
-    worker.set_access_code(code)
-    db.add(worker)
-    db.commit()
-    db.refresh(worker)
-    return _worker_with_code(worker, code)
+    for _ in range(_CODE_COMMIT_ATTEMPTS):
+        code = (payload.access_code if payload.access_code is not None
+                else _new_access_code(db, user["sub"]))
+        worker = Worker(employer_id=user["sub"], display_name=payload.display_name)
+        worker.set_access_code(code)
+        db.add(worker)
+        try:
+            db.commit()
+        except IntegrityError:
+            # 위의 중복 확인과 commit 사이에 같은 사업장에서 같은 코드가 먼저 저장된 경우
+            # (동시 요청). DB의 (employer_id, access_code_hash) unique가 막아 준 것을 500이 아니라
+            # 직접 지정이면 409, 서버 생성이면 다른 코드로 다시 시도한다.
+            db.rollback()
+            if payload.access_code is not None:
+                worker_throttle.fail(f"employer:{user['sub']}")
+                raise HTTPException(status_code=409,
+                                    detail="이미 사용 중인 접속 코드입니다. 다른 코드를 입력해 주세요.")
+            continue
+        db.refresh(worker)
+        return _worker_with_code(worker, code)
+    raise HTTPException(status_code=503, detail="접속 코드를 만들지 못했습니다. 다시 시도해 주세요.")
 
 
 ACCESS_CODE_DIGITS = 6
+# 서버가 만든 코드가 확인과 저장 사이에 동시 요청과 겹쳤을 때 다시 뽑는 횟수. 6자리라 거의 일어나지 않는다.
+_CODE_COMMIT_ATTEMPTS = 5
 
 
 def _access_code_taken(db: Session, employer_id: str, code: str) -> bool:
@@ -353,16 +372,24 @@ def reissue_access_code(worker_id: str, db: Session = Depends(get_db),
                         user: dict = Depends(require_employer)) -> WorkerWithCodeOut:
     """접속 코드를 새 6자리 무작위 코드로 바꾼다(예전 짧은 코드 교체·코드 유출 시).
 
-    이미 발급된 로그인 토큰은 만료(JOBCARD_TOKEN_TTL)까지 유효하다 — 코드만 바뀐다.
+    이미 발급된 로그인 토큰도 함께 무효가 된다. 토큰의 cf 지문은 저장된 코드 해시에서 만들므로,
+    코드가 바뀌면 지문이 맞지 않아 current_worker에서 401이 된다(새 코드로 다시 로그인해야 한다).
     """
     worker = db.get(Worker, worker_id)
     if worker is None or worker.employer_id != user["sub"]:
         raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
-    code = _new_access_code(db, user["sub"])
-    # 해시가 바뀌면 cf 지문도 바뀌어 예전 토큰은 current_worker에서 401이 된다.
-    worker.set_access_code(code)
-    db.commit()
-    return _worker_with_code(worker, code)
+    for _ in range(_CODE_COMMIT_ATTEMPTS):
+        code = _new_access_code(db, user["sub"])
+        # 해시가 바뀌면 cf 지문도 바뀌어 예전 토큰은 current_worker에서 401이 된다.
+        worker.set_access_code(code)
+        try:
+            db.commit()
+        except IntegrityError:
+            # 확인과 저장 사이에 동시 요청이 같은 코드를 먼저 가져간 경우. 다른 코드로 다시 뽑는다.
+            db.rollback()
+            continue
+        return _worker_with_code(worker, code)
+    raise HTTPException(status_code=503, detail="접속 코드를 만들지 못했습니다. 다시 시도해 주세요.")
 
 
 @app.get("/api/workers/{worker_id}/tasks", response_model=list[TaskSummaryOut])

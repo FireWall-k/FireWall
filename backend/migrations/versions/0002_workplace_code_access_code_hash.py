@@ -19,6 +19,9 @@ Create Date: 2026-11-07
 - downgrade는 평문을 되살릴 수 없다(해시는 되돌릴 수 없다). 접속 코드를 근로자 id로 채우므로
   되돌린 뒤에는 코드를 모두 재발급해야 한다.
 
+upgrade()는 시크릿을 DDL보다 먼저 확인하고, 각 단계를 "이미 돼 있으면 건너뛰기"로 써서
+중간에 실패한 뒤 다시 돌려도 head에 도달한다(SQLite의 ALTER TABLE은 롤백되지 않기 때문).
+
 이 파일은 배포 후 고치지 않는다. 해시 공식은 이 시점의 auth.hash_access_code와 같아야 하며,
 test_migration.py가 둘이 같은지 확인한다(공식이 바뀌면 새 리비전으로 재해시가 필요하다는 뜻).
 """
@@ -58,33 +61,77 @@ def _hash(secret: str, employer_id: str, code: str) -> str:
                     hashlib.sha256).hexdigest()
 
 
+def _column_info(bind, table: str) -> dict[str, dict]:
+    # 매번 새 Inspector를 만든다. Inspector는 결과를 캐시하므로 DDL 뒤에 재사용하면 옛 모양을 본다.
+    return {c["name"]: c for c in sa.inspect(bind).get_columns(table)}
+
+
+def _index_names(bind, table: str) -> set[str]:
+    return {i["name"] for i in sa.inspect(bind).get_indexes(table)}
+
+
+def _unique_names(bind, table: str) -> set[str]:
+    return {u["name"] for u in sa.inspect(bind).get_unique_constraints(table)}
+
+
 def upgrade() -> None:
     bind = op.get_bind()
 
+    # --- 0. DDL 전에 시크릿부터 확인 ------------------------------------------------------
+    # 왜 맨 앞인가: SQLite의 ALTER TABLE은 트랜잭션으로 되돌려지지 않는다. 예전에는 1단계(컬럼 추가)를
+    # 한 뒤에 시크릿을 읽어서, 운영에서 약한 시크릿으로 한 번 실패하면 컬럼만 남고 alembic_version은
+    # 0001에 머물렀다 → 시크릿을 고쳐 재시도해도 "duplicate column"으로 영원히 실패했다.
+    # 근로자가 있을 때만 읽는다. 운영에서 약한/빈 시크릿이면 여기서 RuntimeError로 멈춘다
+    # (개발용 기본 키로 해시해 두면 backend가 진짜 키로 기동하는 순간 전원이 로그인하지 못한다).
+    secret: str | None = None
+    if "access_code" in _column_info(bind, "workers"):
+        if bind.execute(sa.text("SELECT COUNT(*) FROM workers")).scalar():
+            from auth import _secret
+
+            secret = _secret()
+
+    # 아래 단계는 모두 "이미 돼 있으면 건너뛰기"로 쓴다. 시크릿 확인 뒤에도 디스크 부족·프로세스
+    # 종료 등으로 중간에 멈출 수 있고, 그때 SQLite에는 앞 단계 DDL이 남는다. 그 상태에서 다시
+    # 돌려도 head에 도달해야 한다(test_migration.py의 재시도 테스트가 확인한다).
+
     # --- 1. 사업장 코드 --------------------------------------------------------------
-    with op.batch_alter_table("employers") as batch:
-        batch.add_column(sa.Column("workplace_code", sa.String(), nullable=True))
-    used: set[str] = set()
-    for (employer_id,) in bind.execute(sa.text("SELECT id FROM employers")).fetchall():
+    if "workplace_code" not in _column_info(bind, "employers"):
+        with op.batch_alter_table("employers") as batch:
+            batch.add_column(sa.Column("workplace_code", sa.String(), nullable=True))
+    used: set[str] = {c for (c,) in bind.execute(sa.text(
+        "SELECT workplace_code FROM employers WHERE workplace_code IS NOT NULL")).fetchall()}
+    for (employer_id,) in bind.execute(sa.text(
+            "SELECT id FROM employers WHERE workplace_code IS NULL")).fetchall():
         bind.execute(sa.text("UPDATE employers SET workplace_code = :c WHERE id = :i"),
                      {"c": _new_code(used), "i": employer_id})
-    with op.batch_alter_table("employers") as batch:
-        batch.alter_column("workplace_code", existing_type=sa.String(), nullable=False)
-        batch.create_index("ix_employers_workplace_code", ["workplace_code"], unique=True)
+    emp_nullable = _column_info(bind, "employers")["workplace_code"]["nullable"]
+    emp_has_index = "ix_employers_workplace_code" in _index_names(bind, "employers")
+    if emp_nullable or not emp_has_index:
+        with op.batch_alter_table("employers") as batch:
+            if emp_nullable:
+                batch.alter_column("workplace_code", existing_type=sa.String(), nullable=False)
+            if not emp_has_index:
+                batch.create_index("ix_employers_workplace_code", ["workplace_code"], unique=True)
 
     # --- 2. 접속 코드 평문 → 해시 ---------------------------------------------------------
-    with op.batch_alter_table("workers") as batch:
-        batch.add_column(sa.Column("access_code_hash", sa.String(), nullable=True))
-        batch.add_column(sa.Column("access_code_hint", sa.String(), nullable=True))
-        batch.add_column(sa.Column("access_code_length", sa.Integer(), nullable=True))
+    new_cols = [("access_code_hash", sa.String()), ("access_code_hint", sa.String()),
+                ("access_code_length", sa.Integer())]
+    cols = _column_info(bind, "workers")
+    missing = [(n, t) for n, t in new_cols if n not in cols]
+    if missing:
+        with op.batch_alter_table("workers") as batch:
+            for name, type_ in missing:
+                batch.add_column(sa.Column(name, type_, nullable=True))
 
-    rows = bind.execute(sa.text("SELECT id, employer_id, access_code FROM workers")).fetchall()
-    if rows:
-        # 근로자가 있을 때만 시크릿을 읽는다. 운영에서 약한/빈 시크릿이면 여기서 RuntimeError로 멈춘다
-        # (개발용 기본 키로 해시해 두면 backend가 진짜 키로 기동하는 순간 전원이 로그인하지 못한다).
-        from auth import _secret
+    if "access_code" in cols:
+        # 평문 컬럼이 남아 있는 동안은 항상 전원을 다시 해시한다. 앞선 실패한 실행이 다른 시크릿으로
+        # 일부를 채웠을 수 있으므로 "비어 있는 것만" 채우면 안 된다.
+        rows = bind.execute(sa.text("SELECT id, employer_id, access_code FROM workers")).fetchall()
+        if rows and secret is None:
+            # 0단계 이후에 근로자가 생긴 경우(동시 실행 등). 시크릿 검사를 건너뛰지 않는다.
+            from auth import _secret
 
-        secret = _secret()
+            secret = _secret()
         for worker_id, employer_id, code in rows:
             code = code or ""
             bind.execute(
@@ -94,14 +141,21 @@ def upgrade() -> None:
                  "i": worker_id},
             )
 
-    with op.batch_alter_table("workers") as batch:
-        batch.drop_index("ix_workers_access_code")
-        batch.drop_column("access_code")
-        batch.alter_column("access_code_hash", existing_type=sa.String(), nullable=False)
-        batch.alter_column("access_code_hint", existing_type=sa.String(), nullable=False)
-        batch.alter_column("access_code_length", existing_type=sa.Integer(), nullable=False)
-        batch.create_unique_constraint("uq_worker_employer_code",
-                                       ["employer_id", "access_code_hash"])
+    cols = _column_info(bind, "workers")
+    has_plain_index = "ix_workers_access_code" in _index_names(bind, "workers")
+    has_unique = "uq_worker_employer_code" in _unique_names(bind, "workers")
+    nullable_cols = [(n, t) for n, t in new_cols if cols[n]["nullable"]]
+    if "access_code" in cols or has_plain_index or nullable_cols or not has_unique:
+        with op.batch_alter_table("workers") as batch:
+            if has_plain_index:
+                batch.drop_index("ix_workers_access_code")
+            if "access_code" in cols:
+                batch.drop_column("access_code")
+            for name, type_ in nullable_cols:
+                batch.alter_column(name, existing_type=type_, nullable=False)
+            if not has_unique:
+                batch.create_unique_constraint("uq_worker_employer_code",
+                                               ["employer_id", "access_code_hash"])
 
 
 def downgrade() -> None:
