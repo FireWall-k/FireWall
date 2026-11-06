@@ -59,6 +59,32 @@ services:
     volumes:
       - jobcard-data:/app/data
 
+  # 보존기간이 지난 데이터 삭제(docs/privacy/data-map.md). 평소에는 뜨지 않는다(profiles).
+  # 호스트 cron이 하루 한 번 부른다:
+  #   15 3 * * * cd /srv/jobcard && docker compose --profile maintenance run --rm purge
+  # 서버 프로세스 안에 스케줄러를 두지 않는 이유: backend를 여러 개 띄우면 같은 삭제가 겹친다.
+  purge:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: jobcard-backend
+    profiles: ["maintenance"]
+    command: ["python", "manage.py", "purge"]
+    restart: "no"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      DATABASE_URL: "sqlite:////app/data/jobcard.db"
+      JOBCARD_ENV: "${JOBCARD_ENV:-dev}"
+      JOBCARD_SECRET: "${JOBCARD_SECRET:-}"
+      TTS_CACHE_DIR: "/app/data/tts"
+      # 수행 로그 보존(일). 기본 1년.
+      PERFORMANCE_LOG_RETENTION_DAYS: "${PERFORMANCE_LOG_RETENTION_DAYS:-365}"
+      # 접근 감사 로그 보존(일). 민감정보 처리 시스템의 접속기록은 2년 이상 보관(안전성 확보조치 기준 제8조).
+      ACCESS_AUDIT_RETENTION_DAYS: "${ACCESS_AUDIT_RETENTION_DAYS:-730}"
+      TTS_ORPHAN_GRACE_HOURS: "${TTS_ORPHAN_GRACE_HOURS:-24}"
+    volumes:
+      - jobcard-data:/app/data
+
   backend:
     build:
       context: ./backend
@@ -98,6 +124,8 @@ services:
       TTS_CACHE_DIR: "/app/data/tts"
       PHOTO_DIR: "/app/data/photos"
       MAX_PHOTO_BYTES: "5242880"
+      # 개인정보 처리방침 버전(동의 기록에 함께 남는다). 방침을 고치면 올린다.
+      PRIVACY_POLICY_VERSION: "${PRIVACY_POLICY_VERSION:-2026-11-07-draft}"
     volumes:
       - ./data/aac:/app/aac:ro
       # SQLite는 macOS 바인드 마운트(VirtioFS)에서 'disk I/O error'를 내므로

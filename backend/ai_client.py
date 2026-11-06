@@ -82,15 +82,19 @@ def search_aac(
             "matches": [],
         }
     
-def coaching(task_title: str, steps: list[dict], context: dict | None = None) -> dict:
+def coaching(task_title: str, steps: list[dict], context: dict | None = None,
+             allow_llm: bool = True) -> dict:
     """단계별 수행 데이터 -> {summary, suggestions[]}.
 
+    allow_llm=False면 AI 하네스가 LLM(해외 전송)을 쓰지 않고 규칙 기반 제안만 만든다 — AI 처리 동의가
+    없는 근로자의 기록이 들어 있을 때 백엔드가 끈다. 하네스 자체는 같은 내부망의 자체 서비스다.
     AI 하네스가 죽어 있거나 실패하면 빈 제안으로 안전하게 떨어진다.
     """
     try:
         resp = _http.post(
             f"{AI_BASE_URL}/ai/coaching",
-            json={"task_title": task_title, "steps": steps, "context": context or {}},
+            json={"task_title": task_title, "steps": steps, "context": context or {},
+                  "allow_llm": allow_llm},
         )
         resp.raise_for_status()
         return resp.json()

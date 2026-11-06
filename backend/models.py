@@ -8,6 +8,8 @@
 - 미사용 SymbolAsset 테이블 제거(死 코드 정리). 자체 상징 DB는 도입 시점에 재설계한다.
 - (0002) Employer.workplace_code 추가, Worker.access_code 평문 → access_code_hash(+힌트·길이).
   접속 코드는 사업장 안에서만 unique다(교차 테넌트 코드 오라클 제거).
+- (0003) Worker.note/ai_note_allowed, WorkerConsent(동의 기록), AccessAuditLog(접근 감사, append-only).
+  개인정보 보호(Phase 0.2) — docs/privacy/data-map.md 참고.
 """
 from __future__ import annotations
 
@@ -23,6 +25,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    event,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -73,6 +76,11 @@ class Worker(Base):
     # 사업주 화면에서 "어느 코드였는지" 알아보는 용도의 뒤 2자리와, 짧은(4~5자리) 예전 코드 경고용 길이.
     access_code_hint: Mapped[str] = mapped_column(String, default="")
     access_code_length: Mapped[int] = mapped_column(Integer, default=0)
+    # 사업주가 적어 두는 근로자 특성 메모(예: "그림을 선호함"). 장애 특성 같은 민감한 내용이 들어가기 쉬워
+    # 기본으로는 AI(해외 LLM)에 보내지 않는다. ai_note_allowed를 사업주가 켜고, 근로자(또는 보호자)의
+    # AI 처리 동의(WorkerConsent)가 살아 있을 때만 보낸다(main._sendable_note).
+    note: Mapped[str] = mapped_column(Text, default="", server_default="")
+    ai_note_allowed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
     employer: Mapped["Employer"] = relationship(back_populates="workers")
@@ -153,3 +161,50 @@ class PerformanceLog(Base):
     duration_sec: Mapped[float] = mapped_column(Float, default=0.0)
     replay_count: Mapped[int] = mapped_column(Integer, default=0)
     stuck: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class WorkerConsent(Base):
+    """근로자(또는 보호자)에게서 받은 동의 기록.
+
+    동의서 원본은 종이로 받는 경우가 많아, 서버에는 "누가(사업주) 언제 어떤 방침 버전으로 받았는지"만 남긴다.
+    철회는 행을 지우지 않고 revoked_at을 채운다 — 언제까지 동의가 유효했는지가 나중에 근거가 된다.
+    근로자를 삭제하면 이 기록도 함께 지운다(근로자를 식별하는 정보와 같이 묶여 있으므로).
+    """
+    __tablename__ = "worker_consents"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    worker_id: Mapped[str] = mapped_column(ForeignKey("workers.id"), index=True)
+    # privacy.CONSENT_TYPES 중 하나. ai_processing이 있어야 AI 코칭(해외 LLM 전송) 대상이 된다.
+    consent_type: Mapped[str] = mapped_column(String)
+    # 동의한 사람: self(당사자) / guardian(보호자·법정대리인).
+    subject: Mapped[str] = mapped_column(String, default="self")
+    policy_version: Mapped[str] = mapped_column(String)
+    granted_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # 동의 수령을 기록한 사업주 id.
+    recorded_by: Mapped[str] = mapped_column(ForeignKey("employers.id"), index=True)
+
+
+class AccessAuditLog(Base):
+    """사업주가 근로자 개인 데이터를 열람·내보내기·삭제한 기록(append-only).
+
+    - 앱 코드에는 수정·삭제 경로가 없다. 아래 매퍼 이벤트가 ORM 수정·삭제를 막고, 행을 지우는 곳은
+      보존기간 purge(retention.py) 하나뿐이다(Core delete는 매퍼 이벤트를 거치지 않는다).
+    - worker_id에 FK를 걸지 않는다. 근로자를 삭제해도 "누가 언제 그 근로자 데이터를 봤는지"는
+      보존기간 동안 남아야 하기 때문이다. 대신 이름 등 식별 정보는 담지 않는다(id만).
+    """
+    __tablename__ = "access_audit_logs"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    actor_id: Mapped[str] = mapped_column(String, index=True)
+    actor_role: Mapped[str] = mapped_column(String, default="employer")
+    action: Mapped[str] = mapped_column(String)
+    worker_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    at: Mapped[datetime] = mapped_column(DateTime, default=_now, index=True)
+    request_ip: Mapped[str] = mapped_column(String, default="")
+
+
+def _reject_audit_mutation(_mapper, _connection, _target) -> None:
+    raise PermissionError("접근 감사 로그는 고치거나 지울 수 없습니다(보존기간 purge만 허용).")
+
+
+event.listen(AccessAuditLog, "before_update", _reject_audit_mutation)
+event.listen(AccessAuditLog, "before_delete", _reject_audit_mutation)

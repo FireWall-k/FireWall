@@ -291,7 +291,16 @@ _COACHING_SYSTEM = (
 )
 
 
+# 코칭 프롬프트에 넣는 맥락 필드. 스키마(CoachingContext)가 이미 거르지만, 이 함수를 직접 부르는 코드가
+# 생겨도 이름 같은 필드가 프롬프트로 새지 않게 여기서 한 번 더 고른다. 빈 값은 넣지 않는다.
+_COACHING_CONTEXT_KEYS = ("business_type", "work_environment", "job", "worker_note")
+_COACHING_STEP_KEYS = ("order", "sentence", "completed", "stuck", "replay_count", "duration_sec",
+                       "action_type")
+
+
 def llm_coaching(task_title: str, steps: list[dict], context: dict | None = None) -> dict:
-    payload = {"task_title": task_title, "context": context or {}, "steps": steps}
+    ctx = {k: (context or {})[k] for k in _COACHING_CONTEXT_KEYS if (context or {}).get(k)}
+    steps = [{k: s[k] for k in _COACHING_STEP_KEYS if k in s} for s in steps]
+    payload = {"task_title": task_title, "context": ctx, "steps": steps}
     user = "다음 수행 데이터를 분석해 제안하세요:\n" + json.dumps(payload, ensure_ascii=False)
     return chat_json(_COACHING_SYSTEM, user, max_tokens=1200)

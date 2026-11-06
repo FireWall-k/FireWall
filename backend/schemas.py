@@ -36,6 +36,9 @@ class TaskCreate(BaseModel):
     business_type: str | None = Field(default=None, max_length=100)
     work_environment: str | None = Field(default=None, max_length=300)
     worker_note: str | None = Field(default=None, max_length=300)
+    # 맞춤 대상 근로자(선택). 근로자 특성 메모는 이 근로자가 "AI에 메모 사용"을 허용했고 AI 처리 동의가
+    # 살아 있을 때만 AI로 보낸다. 근로자를 지정하지 않으면 누구의 허용인지 알 수 없어 메모를 보내지 않는다.
+    worker_id: str | None = Field(default=None, max_length=64)
 
     @field_validator("raw_input")
     @classmethod
@@ -89,6 +92,24 @@ class WorkerCreate(BaseModel):
     @classmethod
     def _blank_is_none(cls, v):
         return None if isinstance(v, str) and not v.strip() else v
+
+
+class WorkerUpdate(BaseModel):
+    """근로자 정보 수정. 보낸 필드만 바꾼다."""
+    display_name: str | None = Field(default=None, min_length=1, max_length=50)
+    # 사업주 메모(근로자 특성). 기본으로는 AI에 보내지 않는다(ai_note_allowed 참고).
+    note: str | None = Field(default=None, max_length=300)
+    # "AI 코칭에 메모 사용" — 사업주가 명시적으로 켜야 한다(기본 false).
+    ai_note_allowed: bool | None = None
+
+
+ConsentType = Literal["personal_info", "ai_processing"]
+
+
+class ConsentCreate(BaseModel):
+    """보호자·당사자에게서 받은 동의를 기록한다(동의서 원본은 사업장이 보관)."""
+    consent_type: ConsentType
+    subject: Literal["self", "guardian"] = "self"
 
 
 class PerformanceLogCreate(BaseModel):
@@ -145,11 +166,25 @@ class WorkerOut(BaseModel):
     access_code_hint: str
     # 4~5자리 예전 코드를 "짧은 코드" 경고로 보여 주는 데 쓴다.
     access_code_length: int
+    note: str = ""
+    ai_note_allowed: bool = False
+    # AI 처리(국외 이전) 동의가 살아 있는지. 없으면 AI 코칭은 규칙 기반 제안만 쓴다.
+    ai_consent: bool = False
 
 
 class WorkerWithCodeOut(WorkerOut):
     """근로자 생성·코드 재발급 응답 전용. 평문 코드를 사업주에게 보여 줄 수 있는 유일한 순간이다."""
     access_code: str
+
+
+class ConsentOut(BaseModel):
+    id: str
+    consent_type: str
+    subject: str
+    policy_version: str
+    granted_at: datetime
+    revoked_at: datetime | None
+    recorded_by: str
 
 
 class WorkplaceOut(BaseModel):
@@ -244,3 +279,6 @@ class CoachingSuggestionOut(BaseModel):
 class CoachingOut(BaseModel):
     summary: str
     suggestions: list[CoachingSuggestionOut] = []
+    # AI 처리 동의가 없는 근로자 기록이 섞여 LLM을 쓰지 않고 규칙 기반 제안만 만든 경우 true.
+    # 화면에서 "동의를 기록하면 더 자세한 제안을 받을 수 있다"고 안내하는 데 쓴다.
+    ai_excluded: bool = False

@@ -27,6 +27,10 @@ if DATABASE_URL.startswith("sqlite"):
         if ":memory:" not in DATABASE_URL:
             cur.execute("PRAGMA journal_mode=WAL")
         cur.execute("PRAGMA busy_timeout=5000")
+        # 지운 행의 내용을 0으로 덮어쓴다. 기본값(off)이면 근로자를 삭제해도 이름·메모가 DB 파일의 빈
+        # 페이지에 그대로 남아, 파일 사본(백업·유출)에서 되살릴 수 있다(개인정보 파기 요건).
+        # 연결마다 걸어야 하는 설정이라 여기서 켠다. WAL에 남은 옛 프레임은 삭제 직후 체크포인트로 비운다.
+        cur.execute("PRAGMA secure_delete=ON")
         cur.close()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -46,3 +50,17 @@ def get_db():
 # 스키마는 Alembic 리비전(migrations/)으로만 바꾼다. 실행 입구는 db_migrate.py.
 # 예전의 _ADDED_COLUMNS/apply_pending_columns()는 컬럼 '추가'만 할 수 있었고 서버 기동마다 돌았다.
 # 레거시 DB 보정용으로만 db_migrate._LEGACY_COLUMNS에 고정해 남겼다.
+
+
+def checkpoint_wal(db_session) -> None:
+    """WAL에 남은 프레임을 DB 파일로 옮기고 WAL을 비운다(SQLite 전용, 그 밖에는 아무것도 안 한다).
+
+    secure_delete는 지운 페이지를 0으로 덮어쓰지만, WAL 모드에서는 지우기 전 내용을 담은 프레임이
+    -wal 파일에 체크포인트 때까지 남는다. 근로자 삭제처럼 "디스크에서도 사라져야 하는" 작업 직후에 부른다.
+    다른 연결이 읽는 중이면 일부만 옮겨질 수 있다(그래도 다음 자동 체크포인트 때 덮인다).
+    """
+    if not DATABASE_URL.startswith("sqlite"):
+        return
+    from sqlalchemy import text
+
+    db_session.execute(text("PRAGMA wal_checkpoint(TRUNCATE)"))

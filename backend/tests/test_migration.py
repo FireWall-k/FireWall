@@ -505,3 +505,33 @@ def test_alembic_ini_points_at_migrations():
 
     script = ScriptDirectory.from_config(db_migrate.alembic_config())
     assert script.get_current_head() == db_migrate.head_revision()
+
+
+# --- 0003 개인정보(동의·감사·메모) ----------------------------------------------
+
+def test_0003_existing_workers_start_with_ai_note_disallowed():
+    """기존 근로자는 메모가 비어 있고 "AI에 메모 사용"이 꺼진 상태로 올라와야 한다(동의 없이 나가던 상태를 끝낸다)."""
+    engine = _new_engine("privacy_0003")
+    _make_full_legacy_db(engine)
+    db_migrate.migrate(engine)
+    db_migrate.downgrade(engine, "0002_workplace_code")
+    assert "ai_note_allowed" not in {c["name"] for c in inspect(engine).get_columns("workers")}
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []
+    with engine.connect() as conn:
+        row = conn.execute(text("SELECT note, ai_note_allowed FROM workers WHERE id='w1'")).one()
+    assert row == ("", 0)
+    assert {"worker_consents", "access_audit_logs"} <= set(inspect(engine).get_table_names())
+
+
+def test_0003_resumes_when_column_already_added():
+    """SQLite ALTER TABLE은 롤백되지 않는다. 컬럼 하나만 붙은 채 멈춘 상태에서 다시 돌려도 head에 도달한다."""
+    engine = _new_engine("privacy_0003_half")
+    db_migrate.upgrade_to_head(engine)
+    db_migrate.downgrade(engine, "0002_workplace_code")
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE workers ADD COLUMN note TEXT NOT NULL DEFAULT ''"))
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []

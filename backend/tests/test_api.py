@@ -240,7 +240,7 @@ def test_coaching_sends_business_context_and_action_type(client, employer_token,
     import ai_client
     captured = {}
 
-    def fake_coaching(title, steps, context=None):
+    def fake_coaching(title, steps, context=None, allow_llm=True):
         captured["context"] = context
         captured["steps"] = steps
         return {"summary": "", "suggestions": []}

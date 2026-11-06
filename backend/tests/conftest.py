@@ -100,7 +100,7 @@ def _patch_ai(monkeypatch):
         },
     )
     monkeypatch.setattr(ai_client, "coaching",
-                        lambda title, steps, context=None: {
+                        lambda title, steps, context=None, allow_llm=True: {
                             "summary": "1개 단계에서 개선이 필요해 보입니다.",
                             "suggestions": [{"order": 2, "issue": "다시듣기 과다",
                                              "suggestion": "사진으로 교체하세요.", "action": "photo"}],

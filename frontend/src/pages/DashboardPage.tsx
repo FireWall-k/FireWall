@@ -565,6 +565,12 @@ function DashboardPage() {
             {coaching ? (
               <div>
                 <p className="rounded-xl bg-paper-100 px-4 py-3 text-sm text-ink-700">{coaching.summary || "아직 충분한 로그가 없습니다."}</p>
+                {coaching.ai_excluded && (
+                  // 동의 없는 근로자의 기록은 해외 AI로 보내지 않는다. 왜 제안이 단순한지 사업주가 알 수 있게 알린다.
+                  <p className="mt-2 text-xs text-ink-500">
+                    AI 처리 동의가 기록되지 않은 근로자가 있어 기본 규칙으로 만든 제안만 보여 드려요. 근로자 관리에서 동의를 기록할 수 있어요.
+                  </p>
+                )}
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
                   {coaching.suggestions.map((s) => (
                     <div key={`${s.order}-${s.action}`} className="rounded-xl border border-paper-200 p-3">

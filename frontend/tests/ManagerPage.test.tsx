@@ -212,3 +212,24 @@ describe("ManagerPage — 단계로 나누기 전/후 레이아웃", () => {
     expect(container.innerHTML).toContain("lg:grid-cols-[380px_1fr]");
   });
 });
+
+describe("ManagerPage — 근로자 특성 메모 대상", () => {
+  it("맞춤 대상 근로자를 고르면 worker_id를 함께 보내고, 고르지 않으면 보내지 않는다", async () => {
+    const user = userEvent.setup();
+    listWorkers.mockResolvedValue([
+      { id: "w1", display_name: "김근로", access_code_hint: "34", access_code_length: 6 },
+    ]);
+    render(<ManagerPage />);
+    const select = await screen.findByLabelText("맞춤 대상 근로자");
+
+    await typeAndDecompose(user);
+    await waitFor(() => expect(createTask).toHaveBeenCalledTimes(1));
+    expect(createTask.mock.calls[0][1]).toMatchObject({ worker_id: undefined });
+
+    await user.selectOptions(select, "w1");
+    await user.type(screen.getByLabelText("근로자 특성"), "그림 선호");
+    await user.click(screen.getByRole("button", { name: "단계로 나누기" }));
+    await waitFor(() => expect(createTask).toHaveBeenCalledTimes(2));
+    expect(createTask.mock.calls[1][1]).toMatchObject({ worker_id: "w1", worker_note: "그림 선호" });
+  });
+});

@@ -8,6 +8,7 @@
     docker compose exec backend python manage.py create-employer --login itda --org "잇다 보호작업장"
     docker compose exec backend python manage.py set-password --login itda
     echo "$PW" | docker compose exec -T backend python manage.py create-employer --login itda --password-stdin
+    docker compose exec backend python manage.py purge [--dry-run]   # 보존기간 지난 데이터 삭제(매일 cron)
 """
 from __future__ import annotations
 
@@ -23,6 +24,7 @@ from codes import new_workplace_code
 import db_migrate
 from database import SessionLocal
 from models import Employer
+import retention
 
 MIN_PASSWORD_LEN = 8
 # 사업장 코드(약 10억 가지)가 기존 사업장과 겹칠 때 다시 뽑는 횟수. 실제로는 거의 한 번에 끝난다.
@@ -82,6 +84,23 @@ def migrate() -> None:
     print(f"DB 스키마: {report['from_revision'] or '없음'} -> {report['to_revision']}")
 
 
+def purge(dry_run: bool) -> None:
+    """보존기간이 지난 수행 로그·접근 감사 로그와 어느 단계도 쓰지 않는 TTS 파일을 지운다(retention.py).
+
+    서버 안에 스케줄러를 두지 않는다 — 백엔드 프로세스가 여러 개가 되면 같은 삭제가 겹친다. 호스트 cron이나
+    스케줄러가 하루 한 번 이 명령을 부른다(docs/privacy/data-map.md "삭제 스케줄").
+    """
+    db_migrate.ensure_schema_ready()
+    with SessionLocal() as db:
+        report = retention.purge(db, dry_run=dry_run)
+    verb = "지울 대상" if dry_run else "지움"
+    print(f"수행 로그 {report['performance_logs']}건 {verb} "
+          f"(보존 {retention.performance_log_retention_days()}일)")
+    print(f"접근 감사 로그 {report['access_audit_logs']}건 {verb} "
+          f"(보존 {retention.access_audit_retention_days()}일)")
+    print(f"미참조 TTS 파일 {report['tts_files']}개 {verb}")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="manage.py", description="JOB CARD 운영 관리")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -98,9 +117,15 @@ def main(argv: list[str] | None = None) -> None:
 
     sub.add_parser("migrate", help="DB 스키마를 최신(head)으로 올리기 — 배포 때 migrate 서비스가 실행")
 
+    g = sub.add_parser("purge", help="보존기간 지난 수행 로그·접근 감사 로그·미참조 TTS 파일 삭제")
+    g.add_argument("--dry-run", action="store_true", help="지우지 않고 개수만 보여 주기")
+
     args = parser.parse_args(argv)
     if args.cmd == "migrate":
         migrate()
+        return
+    if args.cmd == "purge":
+        purge(args.dry_run)
         return
     pw = _read_password(args.password_stdin)
     if args.cmd == "create-employer":

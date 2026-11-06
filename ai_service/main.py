@@ -54,14 +54,15 @@ def ai_decompose(req: DecomposeRequest) -> DecomposeResult:
     last_error: Exception | None = None
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            result = decompose(req.raw_input, req.context)
+            result = decompose(req.raw_input, req.context.model_dump())
             # 가드레일: 빈 단계는 거부
             if not result.steps:
                 raise ValueError("분해 결과 단계가 0개입니다.")
-            # 관측가능성: 한 건당 입력/시도/단계 수 기록
+            # 관측가능성: 한 건당 입력 길이/시도/단계 수 기록. 원문은 남기지 않는다 — 직무 지시문에
+            # 근로자 이름·특성이 들어갈 수 있고, 로그는 보존·삭제 관리 밖에 있다.
             logger.info(
-                "decompose ok attempt=%s steps=%s input=%r",
-                attempt, len(result.steps), req.raw_input[:40],
+                "decompose ok attempt=%s steps=%s input_len=%s",
+                attempt, len(result.steps), len(req.raw_input),
             )
             return result
         except Exception as e:  # noqa: BLE001 - 스켈레톤에서는 광범위 캐치 후 재시도
@@ -165,12 +166,13 @@ def _ensure_stuck_steps_covered(req: CoachingRequest, result: CoachingResult) ->
 
 @app.post("/ai/coaching", response_model=CoachingResult)
 def ai_coaching(req: CoachingRequest) -> CoachingResult:
-    if llm.llm_available():
+    # allow_llm=False: AI 처리 동의가 없는 근로자 기록이 들어 있다 → 해외 LLM으로 보내지 않고 규칙 기반만 쓴다.
+    if req.allow_llm and llm.llm_available():
         try:
             raw = llm.llm_coaching(
                 req.task_title,
                 [s.model_dump() for s in req.steps],
-                req.context,
+                req.context.model_dump(),
             )
             result = CoachingResult(**raw)  # 가드레일: 스키마 검증
             result = _ensure_stuck_steps_covered(req, result)

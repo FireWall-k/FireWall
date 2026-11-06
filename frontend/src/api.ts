@@ -179,6 +179,26 @@ export interface Worker {
   /** 서버는 접속 코드를 해시로만 저장한다. 목록에는 뒤 2자리와 길이(짧은 코드 경고용)만 온다. */
   access_code_hint: string;
   access_code_length: number;
+  /** 사업주 메모(근로자 특성). 기본으로는 AI에 보내지 않는다. */
+  note?: string;
+  /** "AI 코칭에 메모 사용" — 사업주가 켜야 하고, AI 처리 동의도 있어야 실제로 보낸다. */
+  ai_note_allowed?: boolean;
+  /** AI 처리(국외 이전) 동의가 살아 있는지. 없으면 AI 코칭은 규칙 기반 제안만 나온다. */
+  ai_consent?: boolean;
+}
+
+export type ConsentType = "personal_info" | "ai_processing";
+export type ConsentSubject = "self" | "guardian";
+
+/** 보호자·당사자에게서 받은 동의 기록. 철회해도 지우지 않고 revoked_at이 채워진다. */
+export interface Consent {
+  id: string;
+  consent_type: ConsentType;
+  subject: ConsentSubject;
+  policy_version: string;
+  granted_at: string;
+  revoked_at: string | null;
+  recorded_by: string;
 }
 
 /** 근로자 추가·코드 재발급 응답. 평문 코드를 볼 수 있는 유일한 순간이다. */
@@ -195,6 +215,8 @@ export interface TaskContext {
   business_type?: string;
   work_environment?: string;
   worker_note?: string;
+  /** 맞춤 대상 근로자. 메모는 이 근로자가 허용·동의한 경우에만 AI로 간다. */
+  worker_id?: string;
 }
 
 export interface CoachingSuggestion {
@@ -207,6 +229,8 @@ export interface CoachingSuggestion {
 export interface Coaching {
   summary: string;
   suggestions: CoachingSuggestion[];
+  /** AI 처리 동의가 없는 근로자 기록이 있어 규칙 기반 제안만 만든 경우 true. */
+  ai_excluded?: boolean;
 }
 
 export const api = {
@@ -282,6 +306,19 @@ export const api = {
   /** 내 사업장 코드(근로자 기기의 로그인 화면에 한 번 입력해 둔다). */
   workplace: () => req<Workplace>("/api/workplace"),
   deleteWorker: (id: string) => req<{ ok: boolean }>(`/api/workers/${id}`, { method: "DELETE" }),
+  /** 이름·메모·"AI 코칭에 메모 사용"을 바꾼다. 보낸 필드만 바뀐다. */
+  updateWorker: (id: string, patch: { display_name?: string; note?: string; ai_note_allowed?: boolean }) =>
+    req<Worker>(`/api/workers/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  listConsents: (id: string) => req<Consent[]>(`/api/workers/${id}/consents`),
+  grantConsent: (id: string, consent_type: ConsentType, subject: ConsentSubject) =>
+    req<Consent>(`/api/workers/${id}/consents`, {
+      method: "POST",
+      body: JSON.stringify({ consent_type, subject }),
+    }),
+  revokeConsent: (workerId: string, consentId: string) =>
+    req<Consent>(`/api/workers/${workerId}/consents/${consentId}/revoke`, { method: "POST" }),
+  /** 근로자 한 명의 데이터(프로필·동의·배정·수행 로그) JSON. 열람 요구에 응할 때 쓴다. */
+  exportWorker: (id: string) => req<Record<string, unknown>>(`/api/workers/${id}/export`),
   today: () => req<TodayCard[]>("/api/worker/me/today"),
   /** 근로자 본인이 받았던 일 전체(완료 포함, 최신순) — '오늘 할 일'은 완료되면 빠지므로 복습용. */
   history: () => req<HistoryCard[]>("/api/worker/me/history"),

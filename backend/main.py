@@ -10,6 +10,8 @@
 - 단일 사용자 하드코딩(limit(1)) 제거 → 토큰의 sub 사용
 - /api/worker/me/today: 소유자 + '오늘' 날짜 기준 필터
 - /api/performance-logs: (assignment, step) 업서트 + 완료 집계
+- (Phase 0.2) AI 하네스로 보내는 요청의 근로자 실명은 별칭으로 바꾸고(privacy.Pseudonymizer), 메모는 허용·동의가
+  있을 때만 보낸다. 근로자 개인 데이터 열람은 접근 감사 로그에 남긴다. 동의 기록·내보내기·삭제 API.
 """
 from __future__ import annotations
 
@@ -25,6 +27,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
@@ -45,8 +48,15 @@ from auth import (
 )
 import db_migrate
 from codes import normalize_workplace_code
-from database import get_db
-from models import Assignment, Employer, PerformanceLog, Step, Task, Worker
+from database import checkpoint_wal, get_db
+from models import Assignment, Employer, PerformanceLog, Step, Task, Worker, WorkerConsent
+from privacy import (
+    employer_pseudonymizer,
+    has_active_consent,
+    policy_version,
+    record_access,
+    workers_with_active_consent,
+)
 from schemas import (
     AacMatch,
     AacSearchRequest,
@@ -55,6 +65,8 @@ from schemas import (
     AssignRequest,
     CoachingOut,
     CoachingSuggestionOut,
+    ConsentCreate,
+    ConsentOut,
     DashboardOut,
     DashboardWorkerOut,
     EmployerLogin,
@@ -75,6 +87,7 @@ from schemas import (
     WorkerCreate,
     WorkerLogin,
     WorkerOut,
+    WorkerUpdate,
     WorkerWithCodeOut,
     WorkplaceOut,
 )
@@ -282,22 +295,33 @@ def current_worker(user: dict = Depends(require_worker), db: Session = Depends(g
 
 # --- 사업주: 근로자 관리 ---
 @app.get("/api/workers", response_model=list[WorkerOut])
-def list_workers(db: Session = Depends(get_db),
+def list_workers(request: Request, db: Session = Depends(get_db),
                  user: dict = Depends(require_employer)) -> list[WorkerOut]:
     workers = db.scalars(
         select(Worker).where(Worker.employer_id == user["sub"]).order_by(Worker.created_at)
     ).all()
-    return [_worker_out(w) for w in workers]
+    consented = workers_with_active_consent(db, [w.id for w in workers])
+    record_access(db, request, user, "worker.list")
+    return [_worker_out(w, w.id in consented) for w in workers]
 
 
-def _worker_out(w: Worker) -> WorkerOut:
+def _worker_out(w: Worker, ai_consent: bool = False) -> WorkerOut:
     return WorkerOut(id=w.id, display_name=w.display_name,
-                     access_code_hint=w.access_code_hint, access_code_length=w.access_code_length)
+                     access_code_hint=w.access_code_hint, access_code_length=w.access_code_length,
+                     note=w.note or "", ai_note_allowed=bool(w.ai_note_allowed), ai_consent=ai_consent)
 
 
-def _worker_with_code(w: Worker, code: str) -> WorkerWithCodeOut:
+def _owned_worker(worker_id: str, employer_id: str, db: Session) -> Worker:
+    worker = db.get(Worker, worker_id)
+    if worker is None or worker.employer_id != employer_id:
+        # 존재 여부를 노출하지 않도록 소유자 불일치도 404로 통일한다(_owned_task와 같은 규칙).
+        raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
+    return worker
+
+
+def _worker_with_code(w: Worker, code: str, ai_consent: bool = False) -> WorkerWithCodeOut:
     # 평문 코드는 DB에 없으므로, 방금 만든(또는 받은) 코드를 응답에 한 번만 실어 보낸다.
-    return WorkerWithCodeOut(**_worker_out(w).model_dump(), access_code=code)
+    return WorkerWithCodeOut(**_worker_out(w, ai_consent).model_dump(), access_code=code)
 
 
 @app.get("/api/workplace", response_model=WorkplaceOut)
@@ -388,12 +412,140 @@ def reissue_access_code(worker_id: str, db: Session = Depends(get_db),
             # 확인과 저장 사이에 동시 요청이 같은 코드를 먼저 가져간 경우. 다른 코드로 다시 뽑는다.
             db.rollback()
             continue
-        return _worker_with_code(worker, code)
+        return _worker_with_code(worker, code, has_active_consent(db, worker.id))
     raise HTTPException(status_code=503, detail="접속 코드를 만들지 못했습니다. 다시 시도해 주세요.")
 
 
+@app.patch("/api/workers/{worker_id}", response_model=WorkerOut)
+def update_worker(worker_id: str, payload: WorkerUpdate, request: Request,
+                  db: Session = Depends(get_db),
+                  user: dict = Depends(require_employer)) -> WorkerOut:
+    """근로자 이름·메모·"AI 코칭에 메모 사용" 허용을 바꾼다. 보낸 필드만 바꾼다."""
+    worker = _owned_worker(worker_id, user["sub"], db)
+    if payload.display_name is not None and payload.display_name.strip():
+        worker.display_name = payload.display_name.strip()
+    if payload.note is not None:
+        worker.note = payload.note.strip()
+    if payload.ai_note_allowed is not None:
+        worker.ai_note_allowed = payload.ai_note_allowed
+    record_access(db, request, user, "worker.update", worker.id, commit=False)
+    db.commit()
+    db.refresh(worker)
+    return _worker_out(worker, has_active_consent(db, worker.id))
+
+
+# --- 사업주: 동의 기록 ---
+def _consent_out(c: WorkerConsent) -> ConsentOut:
+    return ConsentOut(id=c.id, consent_type=c.consent_type, subject=c.subject,
+                      policy_version=c.policy_version, granted_at=c.granted_at,
+                      revoked_at=c.revoked_at, recorded_by=c.recorded_by)
+
+
+@app.get("/api/workers/{worker_id}/consents", response_model=list[ConsentOut])
+def list_consents(worker_id: str, request: Request, db: Session = Depends(get_db),
+                  user: dict = Depends(require_employer)) -> list[ConsentOut]:
+    _owned_worker(worker_id, user["sub"], db)
+    rows = db.scalars(select(WorkerConsent).where(WorkerConsent.worker_id == worker_id)
+                      .order_by(WorkerConsent.granted_at)).all()
+    record_access(db, request, user, "worker.consents", worker_id)
+    return [_consent_out(c) for c in rows]
+
+
+@app.post("/api/workers/{worker_id}/consents", response_model=ConsentOut, status_code=201)
+def grant_consent(worker_id: str, payload: ConsentCreate, request: Request,
+                  db: Session = Depends(get_db),
+                  user: dict = Depends(require_employer)) -> ConsentOut:
+    """보호자·당사자에게서 받은 동의를 기록한다. 지금 개인정보 처리방침 버전이 함께 남는다.
+
+    같은 종류의 동의를 다시 받으면(예: 방침 개정 후 재동의) 새 행을 쌓는다 — 예전 동의가 언제 어떤 버전이었는지가
+    근거로 남아야 하므로 덮어쓰지 않는다.
+    """
+    _owned_worker(worker_id, user["sub"], db)
+    consent = WorkerConsent(worker_id=worker_id, consent_type=payload.consent_type,
+                            subject=payload.subject, policy_version=policy_version(),
+                            recorded_by=user["sub"])
+    db.add(consent)
+    record_access(db, request, user, "worker.consent.grant", worker_id, commit=False)
+    db.commit()
+    db.refresh(consent)
+    return _consent_out(consent)
+
+
+@app.post("/api/workers/{worker_id}/consents/{consent_id}/revoke", response_model=ConsentOut)
+def revoke_consent(worker_id: str, consent_id: str, request: Request,
+                   db: Session = Depends(get_db),
+                   user: dict = Depends(require_employer)) -> ConsentOut:
+    """동의 철회. 행을 지우지 않고 철회 시각을 남긴다(언제까지 유효했는지가 근거가 된다)."""
+    _owned_worker(worker_id, user["sub"], db)
+    consent = db.get(WorkerConsent, consent_id)
+    if consent is None or consent.worker_id != worker_id:
+        raise HTTPException(status_code=404, detail="동의 기록을 찾을 수 없습니다.")
+    if consent.revoked_at is None:
+        consent.revoked_at = datetime.now(timezone.utc)
+    record_access(db, request, user, "worker.consent.revoke", worker_id, commit=False)
+    db.commit()
+    db.refresh(consent)
+    return _consent_out(consent)
+
+
+# --- 사업주: 근로자 데이터 내보내기(근로자·보호자의 열람 요구에 바로 응하기 위한 셀프서비스) ---
+def _iso(dt: datetime | None) -> str | None:
+    return dt.isoformat() if dt else None
+
+
+@app.get("/api/workers/{worker_id}/export")
+def export_worker(worker_id: str, request: Request, db: Session = Depends(get_db),
+                  user: dict = Depends(require_employer)) -> JSONResponse:
+    """근로자 한 명의 데이터(프로필·동의·배정·수행 로그)를 JSON 파일로 내려준다.
+
+    접속 코드 해시는 인증 비밀이라 넣지 않는다. 서버에 사본을 만들지 않고 응답으로만 보낸다
+    (내보낸 파일이 서버 디스크에 남으면 그것도 파기 대상이 된다).
+    """
+    worker = _owned_worker(worker_id, user["sub"], db)
+    consents = db.scalars(select(WorkerConsent).where(WorkerConsent.worker_id == worker_id)
+                          .order_by(WorkerConsent.granted_at)).all()
+    assignments = db.scalars(select(Assignment).where(Assignment.worker_id == worker_id)
+                             .order_by(Assignment.assigned_date)).all()
+    task_ids = {a.task_id for a in assignments}
+    tasks = {t.id: t for t in db.scalars(select(Task).where(Task.id.in_(task_ids))).all()}
+    logs = db.scalars(select(PerformanceLog).where(
+        PerformanceLog.assignment_id.in_([a.id for a in assignments]))
+        .order_by(PerformanceLog.completed_at)).all()
+    steps = {s.id: s for s in db.scalars(
+        select(Step).where(Step.id.in_({log.step_id for log in logs}))).all()}
+
+    data = {
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "policy_version": policy_version(),
+        "worker": {
+            "id": worker.id, "display_name": worker.display_name, "note": worker.note or "",
+            "ai_note_allowed": bool(worker.ai_note_allowed), "created_at": _iso(worker.created_at),
+            "access_code_hint": worker.access_code_hint,
+        },
+        "consents": [_consent_out(c).model_dump(mode="json") for c in consents],
+        "assignments": [{
+            "id": a.id, "task_id": a.task_id,
+            "task_title": tasks[a.task_id].title if a.task_id in tasks else "",
+            "assigned_date": _iso(a.assigned_date), "status": a.status,
+        } for a in assignments],
+        "performance_logs": [{
+            "assignment_id": log.assignment_id, "step_id": log.step_id,
+            "step_order": steps[log.step_id].order_index if log.step_id in steps else None,
+            "sentence": steps[log.step_id].sentence if log.step_id in steps else "",
+            "completed_at": _iso(log.completed_at), "duration_sec": log.duration_sec,
+            "replay_count": log.replay_count, "stuck": bool(log.stuck),
+        } for log in logs],
+    }
+    record_access(db, request, user, "worker.export", worker_id)
+    # 파일명에 이름을 넣지 않는다(다운로드 폴더·브라우저 기록에 남는다). id 앞부분으로 구분한다.
+    return JSONResponse(content=data, headers={
+        "Content-Disposition": f'attachment; filename="worker-{worker.id[:8]}.json"',
+        "Cache-Control": "no-store",
+    })
+
+
 @app.get("/api/workers/{worker_id}/tasks", response_model=list[TaskSummaryOut])
-def worker_tasks(worker_id: str, date: str | None = None,
+def worker_tasks(worker_id: str, request: Request, date: str | None = None,
                  db: Session = Depends(get_db),
                  user: dict = Depends(require_employer)) -> list[TaskSummaryOut]:
     """특정 근로자에게 배정된 직무 목록(중복 제거, 최신순).
@@ -401,9 +553,8 @@ def worker_tasks(worker_id: str, date: str | None = None,
     date(YYYY-MM-DD)를 주면 그 날짜에 배정된 직무만 반환한다(달력 보기용).
     날짜는 현지(APP_UTC_OFFSET_HOURS) 기준이다 — 브라우저의 "오늘"·worker_today와 같은 기준.
     """
-    worker = db.get(Worker, worker_id)
-    if worker is None or worker.employer_id != user["sub"]:
-        raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
+    _owned_worker(worker_id, user["sub"], db)
+    record_access(db, request, user, "worker.history", worker_id)
     assignment_query = select(Assignment).where(Assignment.worker_id == worker_id)
     if date:
         assignment_query = assignment_query.where(
@@ -422,12 +573,11 @@ def worker_tasks(worker_id: str, date: str | None = None,
 
 
 @app.get("/api/workers/{worker_id}/active-dates", response_model=list[str])
-def worker_active_dates(worker_id: str, db: Session = Depends(get_db),
+def worker_active_dates(worker_id: str, request: Request, db: Session = Depends(get_db),
                         user: dict = Depends(require_employer)) -> list[str]:
     """근로자에게 배정이 있는 날짜(YYYY-MM-DD) 목록. 달력에서 활동일 표시용."""
-    worker = db.get(Worker, worker_id)
-    if worker is None or worker.employer_id != user["sub"]:
-        raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
+    _owned_worker(worker_id, user["sub"], db)
+    record_access(db, request, user, "worker.history", worker_id)
     rows = db.scalars(
         select(func.date(Assignment.assigned_date, _SQL_LOCAL_DATE_MODIFIER))
         .where(Assignment.worker_id == worker_id)
@@ -437,20 +587,27 @@ def worker_active_dates(worker_id: str, db: Session = Depends(get_db),
 
 
 @app.delete("/api/workers/{worker_id}")
-def delete_worker(worker_id: str, db: Session = Depends(get_db),
+def delete_worker(worker_id: str, request: Request, db: Session = Depends(get_db),
                   user: dict = Depends(require_employer)) -> dict:
-    """근로자를 삭제한다. 그 근로자의 배정과 수행 로그도 함께 정리한다(직무는 유지)."""
-    worker = db.get(Worker, worker_id)
-    if worker is None or worker.employer_id != user["sub"]:
-        raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
+    """근로자를 삭제한다. 그 근로자의 배정·수행 로그·동의 기록도 함께 지운다(직무는 사업주 데이터라 유지).
+
+    개인정보 파기 요건: DB 행만 지우면 SQLite 파일의 빈 페이지와 WAL에 이름·메모가 남는다.
+    secure_delete(database.py)로 지운 페이지를 0으로 덮고, 커밋 뒤 WAL을 체크포인트해 옛 프레임도 비운다.
+    근로자 단위로 저장하는 파일은 아직 없다(사진·TTS는 직무 단계 단위 — docs/privacy/data-map.md 참고).
+    접근 감사 로그는 보존기간 동안 남기되 근로자 id만 담고 이름은 담지 않는다.
+    """
+    worker = _owned_worker(worker_id, user["sub"], db)
     assignment_ids = [a.id for a in db.scalars(
         select(Assignment).where(Assignment.worker_id == worker_id)
     ).all()]
     if assignment_ids:
         db.execute(delete(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids)))
         db.execute(delete(Assignment).where(Assignment.worker_id == worker_id))
+    db.execute(delete(WorkerConsent).where(WorkerConsent.worker_id == worker_id))
     db.delete(worker)
+    record_access(db, request, user, "worker.delete", worker_id, commit=False)
     db.commit()
+    checkpoint_wal(db)
     return {"ok": True}
 
 
@@ -531,18 +688,41 @@ def _pick_symbol(
 _STEP_WORKERS = int(os.getenv("STEP_PREP_WORKERS", "8"))
 
 
+def _sendable_note(db: Session, worker: Worker | None, note: str | None) -> str:
+    """AI로 보내도 되는 근로자 특성 메모. 조건이 하나라도 빠지면 빈 문자열이다.
+
+    - 어느 근로자의 메모인지 정해져 있어야 한다(근로자 미지정이면 누구의 허용인지 알 수 없다).
+    - 사업주가 그 근로자에 대해 "AI 코칭에 메모 사용"을 켰어야 한다(기본 꺼짐).
+    - 근로자(또는 보호자)의 AI 처리(국외 이전) 동의가 살아 있어야 한다.
+    메모에는 장애 특성처럼 민감한 내용이 들어가기 쉬워, 기본값을 "안 보냄"으로 둔다.
+    """
+    if worker is None or not worker.ai_note_allowed:
+        return ""
+    if not has_active_consent(db, worker.id):
+        return ""
+    return (note if note is not None and note.strip() else worker.note or "").strip()
+
+
 @app.post("/api/tasks", response_model=TaskOut, status_code=201)
 def create_task(payload: TaskCreate, db: Session = Depends(get_db),
                 user: dict = Depends(require_employer)) -> TaskOut:
+    target = _owned_worker(payload.worker_id, user["sub"], db) if payload.worker_id else None
+    # AI 하네스로 보내는 글(원문·맥락)에서 근로자 실명을 별칭으로 바꾼다. 하네스는 이 글을 해외 LLM과
+    # 임베딩 API로 보낸다. 응답(제목·문장)은 아래에서 실명으로 되돌려 저장한다 — 근로자 화면과 음성은
+    # 사업주가 쓴 그대로여야 한다.
+    masker = employer_pseudonymizer(db, user["sub"])
+    raw_masked = masker.mask(payload.raw_input)
     context = {
-        "business_type": payload.business_type or "",
-        "work_environment": payload.work_environment or "",
-        "worker_note": payload.worker_note or "",
+        "business_type": masker.mask(payload.business_type or ""),
+        "work_environment": masker.mask(payload.work_environment or ""),
+        "worker_note": masker.mask(_sendable_note(db, target, payload.worker_note)),
         # _task_context()와 같은 이유로 넣는다 — 업종 미입력 시 직무 추론의 보조 신호.
-        "raw_input": payload.raw_input,
+        "raw_input": raw_masked,
     }
+    # 그림 검색에는 메모가 필요 없다. 검색 질의도 임베딩 API로 나갈 수 있으므로 빼고 보낸다.
+    symbol_context = {k: v for k, v in context.items() if k != "worker_note"}
     try:
-        decomposed = ai_client.decompose(payload.raw_input, context)
+        decomposed = ai_client.decompose(raw_masked, context)
     except Exception:  # noqa: BLE001 - AI 하네스 장애는 502로 전달한다
         # 예외 원문(내부 호스트명·연결 오류 등)은 사용자 화면에 나가면 안 된다. 로그에만 남긴다.
         logger.exception("직무 분해 호출 실패")
@@ -556,20 +736,24 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
     steps = decomposed.get("steps", [])
 
     def prepare(step: dict) -> dict:
-        """단계 하나의 그림·음성을 준비한다(네트워크 호출만 하고 DB는 건드리지 않는다)."""
-        sentence = step["sentence"]
+        """단계 하나의 그림·음성을 준비한다(네트워크 호출만 하고 DB는 건드리지 않는다).
+
+        그림 검색(AI 하네스)에는 별칭이 든 문장을 그대로 쓰고, 저장·음성 합성에는 실명으로 되돌린 문장을 쓴다.
+        """
+        masked_sentence = step["sentence"]
+        sentence = masker.unmask(masked_sentence)
         action_type = step.get("action_type", "other")
 
         symbol_terms = (
             step.get("symbol_query")
             or [k["term"] for k in step.get("keywords", [])]
         )
-        symbol_terms = symbol_terms[:4] or [sentence[:12]]
+        symbol_terms = symbol_terms[:4] or [masked_sentence[:12]]
 
         sym = _pick_symbol(
             symbol_terms,
             context={
-                **context,
+                **symbol_context,
 
                 # 사용자가 직접 입력한 업종만 hard gate로 사용
                 "job": (
@@ -581,14 +765,14 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
                 # LLM이 추론한 직무는 약한 힌트로만 사용
                 "job_hint": job,
 
-                "sentence": sentence,
+                "sentence": masked_sentence,
                 "action_type": action_type,
             },
         )
         return {
             "sentence": sentence,
             "action_type": action_type,
-            "symbol_terms": symbol_terms,
+            "symbol_terms": masker.unmask_obj(symbol_terms),
             "sym": sym,
             "tts": synthesize_tts_url(sentence),
         }
@@ -603,10 +787,11 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
         prepared = []
 
     # 맥락을 저장해 둔다. 나중에 후보 재검색/단계 추가가 같은 조건으로 돌아야 한다.
-    task = Task(employer_id=user["sub"], title=decomposed.get("task_title", "직무"),
+    task = Task(employer_id=user["sub"], title=masker.unmask(decomposed.get("task_title", "직무")),
+                # 저장은 사업주가 쓴 원문 그대로(context는 AI로 보낼 별칭 적용본이다).
                 raw_input=payload.raw_input, status="draft",
-                business_type=context["business_type"],
-                work_environment=context["work_environment"],
+                business_type=payload.business_type or "",
+                work_environment=payload.work_environment or "",
                 job=job,
                 )
     db.add(task)
@@ -684,7 +869,10 @@ def add_step(task_id: str, payload: StepCreate, db: Session = Depends(get_db),
     action_type = payload.action_type or "other"
     terms = re.findall(r"[가-힣A-Za-z]+", sentence) or [sentence[:12]]
     # 직무 생성 때와 같은 맥락으로 검색해야 나중에 추가한 단계만 다른 그림이 붙지 않는다.
-    sym = _pick_symbol(terms, context=_task_context(task, sentence, action_type))
+    # 검색어·맥락은 AI 하네스(→ 임베딩 API)로 가므로 근로자 실명을 별칭으로 바꿔 보낸다.
+    masker = employer_pseudonymizer(db, user["sub"])
+    sym = _pick_symbol(masker.mask_obj(terms),
+                       context=masker.mask_obj(_task_context(task, sentence, action_type)))
     next_order = max((s.order_index for s in task.steps), default=0) + 1
     db.add(Step(
         task_id=task.id, order_index=next_order, sentence=sentence,
@@ -780,9 +968,10 @@ def step_symbol_candidates(task_id: str, step_id: str, db: Session = Depends(get
     if step is None or step.task_id != task_id:
         raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
 
+    masker = employer_pseudonymizer(db, user["sub"])
     symbols = ai_client.map_symbols(
-        _step_search_terms(step),
-        context=_task_context(task, step.sentence, step.action_type),
+        masker.mask_obj(_step_search_terms(step)),
+        context=masker.mask_obj(_task_context(task, step.sentence, step.action_type)),
     ).get("symbols", [])
     sym = symbols[0] if symbols else {}
     reason = sym.get("reason", "no_candidate")
@@ -847,6 +1036,7 @@ def publish_task(task_id: str, db: Session = Depends(get_db),
 @app.post("/api/aac/search", response_model=AacSearchResult)
 def search_aac(
     payload: AacSearchRequest,
+    db: Session = Depends(get_db),
     user: dict = Depends(require_employer),
 ) -> AacSearchResult:
 
@@ -854,11 +1044,13 @@ def search_aac(
         "job": payload.job or ""
     }
 
-    result = ai_client.search_aac(
-        payload.query.strip(),
+    # 검색어도 AI 하네스(→ 임베딩 API)로 간다. 근로자 이름을 넣어 검색하는 경우를 대비해 별칭으로 바꾼다.
+    masker = employer_pseudonymizer(db, user["sub"])
+    result = masker.unmask_obj(ai_client.search_aac(
+        masker.mask(payload.query.strip()),
         context=context,
         limit=payload.limit,
-    )
+    ))
 
     matches = []
 
@@ -1051,10 +1243,11 @@ def _logs_by_step(task_id: str, worker_id: str | None, db: Session) -> dict[str,
 
 
 @app.get("/api/dashboard/tasks/{task_id}/workers", response_model=list[DashboardWorkerOut])
-def dashboard_workers(task_id: str, db: Session = Depends(get_db),
+def dashboard_workers(task_id: str, request: Request, db: Session = Depends(get_db),
                       user: dict = Depends(require_employer)) -> list[DashboardWorkerOut]:
     """이 직무를 배정받은 근로자 목록(중복 제거). 대시보드 근로자 선택용."""
     _owned_task(task_id, user["sub"], db)
+    record_access(db, request, user, "dashboard.workers")
     assignments = db.scalars(
         select(Assignment).where(Assignment.task_id == task_id).order_by(Assignment.assigned_date)
     ).all()
@@ -1075,11 +1268,13 @@ def dashboard_workers(task_id: str, db: Session = Depends(get_db),
 
 
 @app.get("/api/dashboard/tasks/{task_id}", response_model=DashboardOut)
-def dashboard(task_id: str, worker_id: str | None = None,
+def dashboard(task_id: str, request: Request, worker_id: str | None = None,
               db: Session = Depends(get_db),
               user: dict = Depends(require_employer)) -> DashboardOut:
     task = _owned_task(task_id, user["sub"], db)
     logs_by_step = _logs_by_step(task_id, worker_id, db)
+    # 근로자별 수행 기록 열람. 3초 폴링은 privacy.record_access가 짧은 창 안에서 한 줄로 합친다.
+    record_access(db, request, user, "dashboard.view", worker_id)
 
     step_stats: list[StepStat] = []
     stuck_steps: list[int] = []
@@ -1107,19 +1302,35 @@ def dashboard(task_id: str, worker_id: str | None = None,
 
 
 @app.get("/api/dashboard/tasks/{task_id}/coaching", response_model=CoachingOut)
-def task_coaching(task_id: str, worker_id: str | None = None,
+def task_coaching(task_id: str, request: Request, worker_id: str | None = None,
                   db: Session = Depends(get_db),
                   user: dict = Depends(require_employer)) -> CoachingOut:
-    """근로자 수행 데이터를 바탕으로 사업주용 AI 개선 제안을 돌려준다(기능 2)."""
+    """근로자 수행 데이터를 바탕으로 사업주용 AI 개선 제안을 돌려준다(기능 2).
+
+    개인정보(Phase 0.2):
+    - 이 코칭에 기록이 들어가는 근로자 중 한 명이라도 AI 처리 동의가 없거나 철회했으면 LLM을 쓰지 않는다
+      (allow_llm=False → AI 하네스가 규칙 기반 제안만 만든다). 근로자를 고르지 않은 집계 코칭은 여러 명의
+      기록이 섞이므로 전원의 동의가 필요하다.
+    - 직무 제목·문장 속 근로자 실명은 별칭으로 바꿔 보내고, 응답의 별칭은 실명으로 되돌린다.
+    - 근로자 특성 메모는 그 근로자를 골랐고, 메모 사용 허용 + 동의가 있을 때만 넣는다.
+    """
     task = _owned_task(task_id, user["sub"], db)
     logs_by_step = _logs_by_step(task_id, worker_id, db)
 
+    included_query = select(Assignment.worker_id).where(Assignment.task_id == task_id)
+    if worker_id:
+        included_query = included_query.where(Assignment.worker_id == worker_id)
+    included = sorted(set(db.scalars(included_query).all()))
+    consented = workers_with_active_consent(db, included)
+    allow_llm = all(w in consented for w in included)
+
+    masker = employer_pseudonymizer(db, user["sub"])
     steps_payload = []
     for s in task.steps:
         log = logs_by_step.get(s.id)
         steps_payload.append({
             "order": s.order_index,
-            "sentence": s.sentence,
+            "sentence": masker.mask(s.sentence),
             "action_type": s.action_type,
             "completed": log is not None,
             "stuck": bool(log.stuck) if log else False,
@@ -1130,11 +1341,19 @@ def task_coaching(task_id: str, worker_id: str | None = None,
     # 업종·환경을 안 넘기면 LLM이 이 직무가 카페인지 조립인지도 모른 채 제안을 짠다
     # (예전엔 빈 dict를 그대로 넘겨 항상 그런 상태였다).
     coaching_context = {
-        "business_type": task.business_type or "",
-        "work_environment": task.work_environment or "",
+        "business_type": masker.mask(task.business_type or ""),
+        "work_environment": masker.mask(task.work_environment or ""),
         "job": task.job or "",
     }
-    raw = ai_client.coaching(task.title, steps_payload, coaching_context)
+    if worker_id and allow_llm:
+        target = db.get(Worker, worker_id)
+        if target is not None and target.employer_id == user["sub"]:
+            note = _sendable_note(db, target, None)
+            if note:
+                coaching_context["worker_note"] = masker.mask(note)
+    record_access(db, request, user, "coaching.view", worker_id)
+    raw = masker.unmask_obj(ai_client.coaching(masker.mask(task.title), steps_payload,
+                                               coaching_context, allow_llm=allow_llm))
     suggestions = []
     for s in raw.get("suggestions", []):
         suggestions.append(CoachingSuggestionOut(
@@ -1143,7 +1362,8 @@ def task_coaching(task_id: str, worker_id: str | None = None,
             suggestion=str(s.get("suggestion", "")),
             action=str(s.get("action", "ok")),
         ))
-    return CoachingOut(summary=str(raw.get("summary", "")), suggestions=suggestions)
+    return CoachingOut(summary=str(raw.get("summary", "")), suggestions=suggestions,
+                       ai_excluded=not allow_llm)
 
 
 def _photo_public_url(filename: str) -> str:

@@ -93,5 +93,17 @@ describe("DashboardPage", () => {
     await screen.findByText(/사진으로 교체하세요/);
     expect(coaching).toHaveBeenCalledWith("task-1", "w1");
     expect(screen.getByText(/2단계 · photo/)).toBeInTheDocument();
+    expect(screen.queryByText(/AI 처리 동의가 기록되지 않은/)).not.toBeInTheDocument();
+  });
+
+  it("동의 없는 근로자 기록이라 AI를 쓰지 않았으면 그 이유를 알려 준다", async () => {
+    listWorkers.mockResolvedValue([worker]);
+    workerTasks.mockResolvedValue([task]);
+    dashboard.mockResolvedValue(dashboardData);
+    coaching.mockResolvedValue({ summary: "1개 단계에서 개선이 필요해 보입니다.", suggestions: [], ai_excluded: true });
+
+    render(<DashboardPage />);
+
+    expect(await screen.findByText(/AI 처리 동의가 기록되지 않은 근로자가 있어/)).toBeInTheDocument();
   });
 });

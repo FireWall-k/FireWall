@@ -12,6 +12,9 @@ export default function ManagerPage() {
   const [businessType, setBusinessType] = useState("");
   const [workEnvironment, setWorkEnvironment] = useState("");
   const [workerNote, setWorkerNote] = useState("");
+  // 맞춤 대상 근로자. 근로자 특성 메모는 이 근로자가 "AI 코칭에 메모 사용"을 허용하고 AI 처리 동의가
+  // 기록된 경우에만 서버가 AI로 보낸다(그 밖에는 서버가 메모를 버린다).
+  const [noteWorkerId, setNoteWorkerId] = useState("");
   const [task, setTask] = useState<Task | null>(null);
   const [aacQuery, setAacQuery] = useState("");
 
@@ -106,6 +109,7 @@ export default function ManagerPage() {
         business_type: businessType.trim() || undefined,
         work_environment: workEnvironment.trim() || undefined,
         worker_note: workerNote.trim() || undefined,
+        worker_id: noteWorkerId || undefined,
       }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "분해에 실패했습니다.");
@@ -413,8 +417,23 @@ export default function ManagerPage() {
             placeholder="근로자 특성 (예: 그림 선호)" aria-label="근로자 특성"
           />
         </div>
+        {workers.length > 0 && (
+          <select
+            className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            value={noteWorkerId}
+            onChange={(e) => setNoteWorkerId(e.target.value)}
+            aria-label="맞춤 대상 근로자"
+          >
+            <option value="">맞춤 대상 근로자 (선택)</option>
+            {workers.map((w) => (
+              <option key={w.id} value={w.id}>{w.display_name}</option>
+            ))}
+          </select>
+        )}
         <p className="mt-1 text-xs text-slate-400">
           업종·환경·근로자 특성을 적으면 AI가 더 맞춤형으로 단계를 나눕니다(선택).
+          근로자 특성은 맞춤 대상 근로자가 'AI 코칭에 메모 사용'을 허용하고 AI 처리 동의가 기록된 경우에만 AI에 전달돼요.
+          근로자 이름은 AI에 보내기 전에 '근로자 A'처럼 바꿔 보냅니다.
         </p>
         <button
           onClick={handleDecompose}

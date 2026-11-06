@@ -9,7 +9,7 @@ from typing import Literal
 
 from taxonomy import ActionType, JobType
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # --- /ai/decompose ---------------------------------------------------------
 
@@ -28,9 +28,26 @@ class Step(BaseModel):
     safety_flags: list[str] = []
 
 
+class DecomposeContext(BaseModel):
+    """분해 요청 맥락. LLM 프롬프트에 들어갈 수 있는 필드만 받는다.
+
+    예전에는 아무 dict나 받아 그대로 넘겼다. 그러면 호출하는 쪽이 실수로 근로자 이름(worker_name,
+    display_name 등)을 넣어도 해외 LLM까지 간다. 모르는 필드는 여기서 버린다(extra="ignore") —
+    거절(422)하지 않는 이유는 백엔드가 맥락 필드를 늘려도 분해 자체가 멈추지 않게 하려는 것이다.
+    worker_note는 백엔드가 사업주 허용 + 근로자 동의를 확인한 뒤에만 채운다(backend/main._sendable_note).
+    """
+    model_config = ConfigDict(extra="ignore")
+
+    business_type: str = ""
+    work_environment: str = ""
+    worker_note: str = ""
+    raw_input: str = ""
+    job: str = ""
+
+
 class DecomposeRequest(BaseModel):
     raw_input: str
-    context: dict = {}
+    context: DecomposeContext = DecomposeContext()
 
 
 class DecomposeResult(BaseModel):
@@ -108,10 +125,23 @@ class CoachingStepInput(BaseModel):
     action_type: ActionType = "other"
 
 
+class CoachingContext(BaseModel):
+    """코칭 요청 맥락. DecomposeContext와 같은 이유로 프롬프트에 넣을 필드만 받고 나머지는 버린다."""
+    model_config = ConfigDict(extra="ignore")
+
+    business_type: str = ""
+    work_environment: str = ""
+    job: str = ""
+    worker_note: str = ""
+
+
 class CoachingRequest(BaseModel):
     task_title: str
     steps: list[CoachingStepInput]
-    context: dict = {}
+    context: CoachingContext = CoachingContext()
+    # 백엔드가 근로자의 AI 처리(국외 이전) 동의를 확인하지 못하면 false로 보낸다. 그러면 LLM을 부르지 않고
+    # 규칙 기반 제안만 만든다. 기본 true는 이 필드가 없던 예전 백엔드와의 호환용이다.
+    allow_llm: bool = True
 
 
 class CoachingSuggestion(BaseModel):
