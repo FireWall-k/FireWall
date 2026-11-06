@@ -92,8 +92,8 @@ describe("ManagerPage 사진 업로드 (기능 5)", () => {
 // ---------- 근로자 여러 명에게 보내기(이번 세션에 추가된 기능) ----------
 
 const workers = [
-  { id: "w1", display_name: "김근로", access_code: "1111" },
-  { id: "w2", display_name: "박알바", access_code: "2222" },
+  { id: "w1", display_name: "김근로", access_code_hint: "11", access_code_length: 4 },
+  { id: "w2", display_name: "박알바", access_code_hint: "22", access_code_length: 4 },
 ];
 
 describe("ManagerPage — 근로자 여러 명에게 보내기", () => {

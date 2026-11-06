@@ -17,6 +17,7 @@ os.environ["TTS_CACHE_DIR"] = f"{_tmp}/tts"
 os.environ["DEMO_EMPLOYER_LOGIN"] = "demo"
 os.environ["DEMO_EMPLOYER_PASSWORD"] = "demo1234"
 os.environ["DEMO_WORKER_CODE"] = "1234"
+os.environ["DEMO_WORKPLACE_CODE"] = "DEMO01"
 # 그림 URL 검증·공개 URL 생성이 이 값에 기대므로 실행 환경과 상관없이 고정한다.
 os.environ["PUBLIC_BACKEND_URL"] = "http://localhost:8000"
 os.environ.pop("JOBCARD_ENV", None)
@@ -121,7 +122,7 @@ def employer_token(client):
 
 @pytest.fixture()
 def worker_token(client):
-    r = client.post("/api/auth/worker-login", json={"access_code": "1234"})
+    r = client.post("/api/auth/worker-login", json={"workplace_code": "DEMO01", "access_code": "1234"})
     assert r.status_code == 200, r.text
     return r.json()["token"]
 

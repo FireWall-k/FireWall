@@ -34,6 +34,7 @@ import ai_client
 from auth import (
     check_production_config,
     code_fingerprint,
+    hash_access_code,
     hash_password,
     is_production,
     make_token,
@@ -42,6 +43,7 @@ from auth import (
     verify_password,
 )
 import db_migrate
+from codes import normalize_workplace_code
 from database import get_db
 from models import Assignment, Employer, PerformanceLog, Step, Task, Worker
 from schemas import (
@@ -72,6 +74,8 @@ from schemas import (
     WorkerCreate,
     WorkerLogin,
     WorkerOut,
+    WorkerWithCodeOut,
+    WorkplaceOut,
 )
 from ratelimit import client_ip, employer_throttle, ensure_not_blocked, worker_throttle
 from photos import MAX_PHOTO_BYTES, get_photo_dir, save_photo, sniff_image
@@ -169,13 +173,15 @@ def _ensure_seed() -> None:
             org_name="잇다 보호작업장",
             login_id=os.getenv("DEMO_EMPLOYER_LOGIN", "demo"),
             password_hash=hash_password(os.getenv("DEMO_EMPLOYER_PASSWORD", "demo1234")),
+            # 실제 사업장 코드는 서버가 무작위로 만들지만, 데모는 안내문(README)에 적을 수 있게 고정한다.
+            workplace_code=normalize_workplace_code(os.getenv("DEMO_WORKPLACE_CODE", "DEMO01")),
         )
         worker = Worker(
             id="wrk-demo",
             employer_id="emp-demo",
             display_name="김근로",
-            access_code=os.getenv("DEMO_WORKER_CODE", "1234"),
         )
+        worker.set_access_code(os.getenv("DEMO_WORKER_CODE", "1234"))
         db.add_all([employer, worker])
         db.commit()
     finally:
@@ -233,12 +239,23 @@ def worker_login(payload: WorkerLogin, request: Request,
     # 카운터를 계속 초기화하며 대입할 수 있다. 창(window)이 지나면 저절로 풀린다.
     key = f"ip:{client_ip(request)}"
     ensure_not_blocked(worker_throttle, key)
-    worker = db.scalar(select(Worker).where(Worker.access_code == payload.access_code.strip()))
+    # 접속 코드는 사업장 안에서만 unique다. 사업장 코드로 사업장을 먼저 정하고, 그 사업장 기준
+    # 해시로만 찾는다 — 다른 사업장 근로자의 코드는 여기서 절대 맞지 않는다.
+    employer = db.scalar(select(Employer).where(
+        Employer.workplace_code == normalize_workplace_code(payload.workplace_code)))
+    worker = None
+    if employer is not None:
+        worker = db.scalar(select(Worker).where(
+            Worker.employer_id == employer.id,
+            Worker.access_code_hash == hash_access_code(employer.id, payload.access_code.strip()),
+        ))
     if worker is None:
         worker_throttle.fail(key)
-        raise HTTPException(status_code=401, detail="접속 코드가 올바르지 않습니다.")
+        # 사업장 코드가 틀린 경우와 접속 코드가 틀린 경우를 같은 응답으로 돌려준다.
+        # 다르게 답하면 사업장 코드가 존재하는지를 이 엔드포인트로 탐지할 수 있다.
+        raise HTTPException(status_code=401, detail="사업장 코드 또는 접속 코드가 올바르지 않습니다.")
     return TokenOut(token=make_token(worker.id, "worker",
-                                     extra={"cf": code_fingerprint(worker.access_code)}),
+                                     extra={"cf": code_fingerprint(worker.access_code_hash)}),
                     role="worker",
                     display_name=worker.display_name)
 
@@ -253,7 +270,7 @@ def current_worker(user: dict = Depends(require_worker), db: Session = Depends(g
     worker = db.get(Worker, user["sub"])
     if worker is None:
         raise HTTPException(status_code=401, detail="근로자 정보를 찾을 수 없습니다. 다시 로그인해 주세요.")
-    if "cf" in user and user["cf"] != code_fingerprint(worker.access_code):
+    if "cf" in user and user["cf"] != code_fingerprint(worker.access_code_hash):
         raise HTTPException(status_code=401, detail="접속 코드가 바뀌었습니다. 새 코드로 다시 로그인해 주세요.")
     return user
 
@@ -265,50 +282,75 @@ def list_workers(db: Session = Depends(get_db),
     workers = db.scalars(
         select(Worker).where(Worker.employer_id == user["sub"]).order_by(Worker.created_at)
     ).all()
-    return [WorkerOut(id=w.id, display_name=w.display_name, access_code=w.access_code)
-            for w in workers]
+    return [_worker_out(w) for w in workers]
 
 
-@app.post("/api/workers", response_model=WorkerOut, status_code=201)
+def _worker_out(w: Worker) -> WorkerOut:
+    return WorkerOut(id=w.id, display_name=w.display_name,
+                     access_code_hint=w.access_code_hint, access_code_length=w.access_code_length)
+
+
+def _worker_with_code(w: Worker, code: str) -> WorkerWithCodeOut:
+    # 평문 코드는 DB에 없으므로, 방금 만든(또는 받은) 코드를 응답에 한 번만 실어 보낸다.
+    return WorkerWithCodeOut(**_worker_out(w).model_dump(), access_code=code)
+
+
+@app.get("/api/workplace", response_model=WorkplaceOut)
+def my_workplace(db: Session = Depends(get_db),
+                 user: dict = Depends(require_employer)) -> WorkplaceOut:
+    """근로자 기기에 입력해 둘 사업장 코드. 근로자 관리 화면에 보여 준다."""
+    employer = db.get(Employer, user["sub"])
+    if employer is None:
+        raise HTTPException(status_code=401, detail="사업주 정보를 찾을 수 없습니다. 다시 로그인해 주세요.")
+    return WorkplaceOut(workplace_code=employer.workplace_code, org_name=employer.org_name)
+
+
+@app.post("/api/workers", response_model=WorkerWithCodeOut, status_code=201)
 def create_worker(payload: WorkerCreate, db: Session = Depends(get_db),
-                  user: dict = Depends(require_employer)) -> WorkerOut:
+                  user: dict = Depends(require_employer)) -> WorkerWithCodeOut:
     if payload.access_code is None:
-        code = _new_access_code(db)
+        code = _new_access_code(db, user["sub"])
     else:
-        # 접속 코드는 로그인 키라 전역 unique. 중복이면 다른 코드를 받도록 409로 막는다.
-        if _access_code_taken(db, payload.access_code):
+        # 코드를 직접 정하는 요청은 "이 코드를 쓰는 동료가 있나"를 시험하는 통로가 될 수 있다
+        # (409 응답). 근로자 로그인과 같은 제한을 사업주 id 단위로 건다.
+        key = f"employer:{user['sub']}"
+        ensure_not_blocked(worker_throttle, key)
+        # 접속 코드는 사업장 안에서만 unique다. 다른 사업장의 코드와는 충돌 자체가 없으므로
+        # 이 409는 자기 사업장 정보만 드러낸다(예전에는 전역 unique라 남의 사업장 코드를 알려 줬다).
+        if _access_code_taken(db, user["sub"], payload.access_code):
+            worker_throttle.fail(key)
             raise HTTPException(status_code=409, detail="이미 사용 중인 접속 코드입니다. 다른 코드를 입력해 주세요.")
         code = payload.access_code
-    worker = Worker(
-        employer_id=user["sub"],
-        display_name=payload.display_name,
-        access_code=code,
-    )
+    worker = Worker(employer_id=user["sub"], display_name=payload.display_name)
+    worker.set_access_code(code)
     db.add(worker)
     db.commit()
     db.refresh(worker)
-    return WorkerOut(id=worker.id, display_name=worker.display_name, access_code=worker.access_code)
+    return _worker_with_code(worker, code)
 
 
 ACCESS_CODE_DIGITS = 6
 
 
-def _access_code_taken(db: Session, code: str) -> bool:
-    return db.scalar(select(Worker.id).where(Worker.access_code == code)) is not None
+def _access_code_taken(db: Session, employer_id: str, code: str) -> bool:
+    return db.scalar(select(Worker.id).where(
+        Worker.employer_id == employer_id,
+        Worker.access_code_hash == hash_access_code(employer_id, code),
+    )) is not None
 
 
-def _new_access_code(db: Session) -> str:
-    """겹치지 않는 6자리 무작위 숫자 코드. 근로자가 누르기 쉽게 숫자만 쓴다."""
+def _new_access_code(db: Session, employer_id: str) -> str:
+    """사업장 안에서 겹치지 않는 6자리 무작위 숫자 코드. 근로자가 누르기 쉽게 숫자만 쓴다."""
     for _ in range(50):
         code = "".join(secrets.choice("0123456789") for _ in range(ACCESS_CODE_DIGITS))
-        if not _access_code_taken(db, code):
+        if not _access_code_taken(db, employer_id, code):
             return code
     raise HTTPException(status_code=503, detail="접속 코드를 만들지 못했습니다. 다시 시도해 주세요.")
 
 
-@app.post("/api/workers/{worker_id}/access-code", response_model=WorkerOut)
+@app.post("/api/workers/{worker_id}/access-code", response_model=WorkerWithCodeOut)
 def reissue_access_code(worker_id: str, db: Session = Depends(get_db),
-                        user: dict = Depends(require_employer)) -> WorkerOut:
+                        user: dict = Depends(require_employer)) -> WorkerWithCodeOut:
     """접속 코드를 새 6자리 무작위 코드로 바꾼다(예전 짧은 코드 교체·코드 유출 시).
 
     이미 발급된 로그인 토큰은 만료(JOBCARD_TOKEN_TTL)까지 유효하다 — 코드만 바뀐다.
@@ -316,9 +358,11 @@ def reissue_access_code(worker_id: str, db: Session = Depends(get_db),
     worker = db.get(Worker, worker_id)
     if worker is None or worker.employer_id != user["sub"]:
         raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
-    worker.access_code = _new_access_code(db)
+    code = _new_access_code(db, user["sub"])
+    # 해시가 바뀌면 cf 지문도 바뀌어 예전 토큰은 current_worker에서 401이 된다.
+    worker.set_access_code(code)
     db.commit()
-    return WorkerOut(id=worker.id, display_name=worker.display_name, access_code=worker.access_code)
+    return _worker_with_code(worker, code)
 
 
 @app.get("/api/workers/{worker_id}/tasks", response_model=list[TaskSummaryOut])
@@ -998,7 +1042,7 @@ def dashboard_workers(task_id: str, db: Session = Depends(get_db),
             continue
         out.append(DashboardWorkerOut(
             worker_id=worker.id, display_name=worker.display_name,
-            access_code=worker.access_code, status=a.status,
+            access_code_hint=worker.access_code_hint, status=a.status,
         ))
     return out
 

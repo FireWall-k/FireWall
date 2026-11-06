@@ -34,3 +34,12 @@ def test_set_password(client, monkeypatch):
     _run(monkeypatch, ["set-password", "--login", "pw-admin"], "battery-staple-2")
     ok = client.post("/api/auth/login", json={"login_id": "pw-admin", "password": "battery-staple-2"})
     assert ok.status_code == 200
+
+
+def test_create_employer_prints_workplace_code(client, monkeypatch, capsys):
+    """근로자 로그인에 사업장 코드가 필요하므로, 계정을 만들면서 바로 알려 줘야 한다."""
+    _run(monkeypatch, ["create-employer", "--login", "wp-admin"], "correct-horse-1")
+    out = capsys.readouterr().out
+    tok = client.post("/api/auth/login", json={"login_id": "wp-admin", "password": "correct-horse-1"})
+    wp = client.get("/api/workplace", headers={"Authorization": f"Bearer {tok.json()['token']}"})
+    assert f"사업장 코드: {wp.json()['workplace_code']}" in out

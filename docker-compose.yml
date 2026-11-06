@@ -53,6 +53,9 @@ services:
       PYTHONUNBUFFERED: "1"
       DATABASE_URL: "sqlite:////app/data/jobcard.db"
       JOBCARD_ENV: "${JOBCARD_ENV:-dev}"
+      # 0002 리비전이 기존 근로자 접속 코드를 HMAC(JOBCARD_SECRET) 해시로 바꾼다. backend와 같은 키여야
+      # 한다 — 다르면(예: 여기만 비어 개발용 기본 키로 해시) 기존 근로자 전원이 로그인하지 못한다.
+      JOBCARD_SECRET: "${JOBCARD_SECRET:-}"
     volumes:
       - jobcard-data:/app/data
 
@@ -79,6 +82,8 @@ services:
       # (누구나 사업주 토큰을 위조할 수 있었다). 생성: python -c "import secrets; print(secrets.token_urlsafe(48))"
       JOBCARD_SECRET: "${JOBCARD_SECRET:-}"
       DEMO_SEED: "${DEMO_SEED:-}"
+      # 데모 사업장 코드(근로자 로그인 화면에서 처음 한 번 입력). 데모 계정이 처음 만들어질 때만 쓴다.
+      DEMO_WORKPLACE_CODE: "${DEMO_WORKPLACE_CODE:-DEMO01}"
       # 리버스 프록시(HTTPS 종단) 뒤에 둘 때만 1. 로그인 시도 제한이 실제 접속자 IP를 보게 한다.
       TRUST_FORWARDED_FOR: "${TRUST_FORWARDED_FOR:-0}"
       CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}"

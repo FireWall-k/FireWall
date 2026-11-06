@@ -121,7 +121,8 @@ export interface Dashboard {
 export interface DashboardWorker {
   worker_id: string;
   display_name: string;
-  access_code: string;
+  /** 접속 코드 뒤 2자리. 평문 코드는 생성·재발급 응답에서만 온다. */
+  access_code_hint: string;
   status: string;
 }
 
@@ -153,10 +154,11 @@ export const auth = {
     setAuth(state);
     return state;
   },
-  async loginWorker(access_code: string): Promise<AuthState> {
+  /** 접속 코드는 사업장 안에서만 unique라 사업장 코드가 함께 있어야 근로자를 찾을 수 있다. */
+  async loginWorker(workplace_code: string, access_code: string): Promise<AuthState> {
     const r = await req<{ token: string; role: Role; display_name: string }>(
       "/api/auth/worker-login",
-      { method: "POST", body: JSON.stringify({ access_code }) }
+      { method: "POST", body: JSON.stringify({ workplace_code, access_code }) }
     );
     const state: AuthState = { token: r.token, role: r.role, displayName: r.display_name };
     setAuth(state);
@@ -174,7 +176,19 @@ export interface TaskSummary {
 export interface Worker {
   id: string;
   display_name: string;
+  /** 서버는 접속 코드를 해시로만 저장한다. 목록에는 뒤 2자리와 길이(짧은 코드 경고용)만 온다. */
+  access_code_hint: string;
+  access_code_length: number;
+}
+
+/** 근로자 추가·코드 재발급 응답. 평문 코드를 볼 수 있는 유일한 순간이다. */
+export interface WorkerWithCode extends Worker {
   access_code: string;
+}
+
+export interface Workplace {
+  workplace_code: string;
+  org_name: string;
 }
 
 export interface TaskContext {
@@ -258,13 +272,15 @@ export const api = {
   workerActiveDates: (workerId: string) => req<string[]>(`/api/workers/${workerId}/active-dates`),
   /** access_code를 비우면 서버가 겹치지 않는 6자리 무작위 코드를 만든다. */
   createWorker: (display_name: string, access_code?: string) =>
-    req<Worker>("/api/workers", {
+    req<WorkerWithCode>("/api/workers", {
       method: "POST",
       body: JSON.stringify(access_code ? { display_name, access_code } : { display_name }),
     }),
   /** 접속 코드를 새 6자리 무작위 코드로 바꾼다(예전 짧은 코드 교체·유출 시). */
   reissueAccessCode: (id: string) =>
-    req<Worker>(`/api/workers/${id}/access-code`, { method: "POST" }),
+    req<WorkerWithCode>(`/api/workers/${id}/access-code`, { method: "POST" }),
+  /** 내 사업장 코드(근로자 기기의 로그인 화면에 한 번 입력해 둔다). */
+  workplace: () => req<Workplace>("/api/workplace"),
   deleteWorker: (id: string) => req<{ ok: boolean }>(`/api/workers/${id}`, { method: "DELETE" }),
   today: () => req<TodayCard[]>("/api/worker/me/today"),
   /** 근로자 본인이 받았던 일 전체(완료 포함, 최신순) — '오늘 할 일'은 완료되면 빠지므로 복습용. */

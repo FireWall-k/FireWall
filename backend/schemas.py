@@ -16,6 +16,9 @@ class EmployerLogin(BaseModel):
 
 
 class WorkerLogin(BaseModel):
+    # 접속 코드는 사업장 안에서만 unique다. 사업장 코드로 사업장을 먼저 정해야 근로자를 찾을 수 있다.
+    # 프론트는 사업장 코드를 기기에 한 번 저장해 두고 근로자는 자기 접속 코드만 누른다.
+    workplace_code: str = Field(min_length=1, max_length=32)
     access_code: str = Field(min_length=1, max_length=32)
 
 
@@ -136,16 +139,30 @@ class AssignmentOut(BaseModel):
 
 
 class WorkerOut(BaseModel):
+    """목록용. 평문 접속 코드는 없다(서버도 해시만 갖고 있다) — 뒤 2자리 힌트와 길이만 준다."""
     id: str
     display_name: str
+    access_code_hint: str
+    # 4~5자리 예전 코드를 "짧은 코드" 경고로 보여 주는 데 쓴다.
+    access_code_length: int
+
+
+class WorkerWithCodeOut(WorkerOut):
+    """근로자 생성·코드 재발급 응답 전용. 평문 코드를 사업주에게 보여 줄 수 있는 유일한 순간이다."""
     access_code: str
+
+
+class WorkplaceOut(BaseModel):
+    """사업주 화면에 보여 줄 사업장 코드(근로자 기기에 한 번 입력해 둔다)."""
+    workplace_code: str
+    org_name: str
 
 
 class DashboardWorkerOut(BaseModel):
     """대시보드에서 직무별로 어떤 근로자를 볼지 고르기 위한 목록 항목."""
     worker_id: str
     display_name: str
-    access_code: str
+    access_code_hint: str
     status: str
 
 

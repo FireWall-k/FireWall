@@ -37,7 +37,7 @@ def _read_password(from_stdin: bool) -> str:
     return pw
 
 
-def create_employer(login: str, name: str, org: str, password: str) -> str:
+def create_employer(login: str, name: str, org: str, password: str) -> tuple[str, str]:
     # 운영에서는 migrate 서비스가 먼저 돌았어야 한다(아니면 이유를 적고 멈춘다). 개발이면 여기서 올린다.
     db_migrate.ensure_schema_ready()
     with SessionLocal() as db:
@@ -47,7 +47,8 @@ def create_employer(login: str, name: str, org: str, password: str) -> str:
                        password_hash=hash_password(password))
         db.add(emp)
         db.commit()
-        return emp.id
+        # 사업장 코드는 서버가 만든다(models.Employer 기본값). 근로자 기기에 입력해야 하므로 바로 보여 준다.
+        return emp.id, emp.workplace_code
 
 
 def set_password(login: str, password: str) -> None:
@@ -90,8 +91,9 @@ def main(argv: list[str] | None = None) -> None:
         return
     pw = _read_password(args.password_stdin)
     if args.cmd == "create-employer":
-        emp_id = create_employer(args.login, args.name, args.org, pw)
+        emp_id, workplace_code = create_employer(args.login, args.name, args.org, pw)
         print(f"사업주 계정을 만들었습니다: {args.login} ({emp_id})")
+        print(f"사업장 코드: {workplace_code} (근로자 기기의 로그인 화면에 한 번 입력해 두세요)")
     else:
         set_password(args.login, pw)
         print(f"비밀번호를 바꿨습니다: {args.login}")

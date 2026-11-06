@@ -112,7 +112,7 @@ def test_assign_task_to_multiple_workers_at_once(client, employer_token):
 
         # 두 근로자 모두 자기 화면에서 오늘 할 일로 받는다.
         for code in ("567701", "567802"):
-            tok = client.post("/api/auth/worker-login", json={"access_code": code}).json()["token"]
+            tok = client.post("/api/auth/worker-login", json={"workplace_code": "DEMO01", "access_code": code}).json()["token"]
             today = client.get("/api/worker/me/today", headers=auth(tok))
             assert len(today.json()) == 1
             assert today.json()[0]["task_id"] == task["id"]
@@ -179,7 +179,9 @@ def test_cross_employer_isolation(client, employer_token):
     other = Employer(id="emp-2", name="다른 사업주", org_name="타 작업장",
                      login_id="other", password_hash=hash_password("pw"))
     db.add(other)
-    db.add(Worker(id="wrk-2", employer_id="emp-2", display_name="이근로", access_code="9999"))
+    other_worker = Worker(id="wrk-2", employer_id="emp-2", display_name="이근로")
+    other_worker.set_access_code("9999")
+    db.add(other_worker)
     db.commit()
     db.close()
     other_token = make_token("emp-2", "employer")

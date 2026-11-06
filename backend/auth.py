@@ -84,13 +84,30 @@ def make_token(sub: str, role: str, ttl: int = TOKEN_TTL_SEC, extra: dict | None
     return f"{body}.{_sign(body)}"
 
 
-def code_fingerprint(access_code: str) -> str:
+def hash_access_code(employer_id: str, access_code: str) -> str:
+    """근로자 접속 코드의 저장용 해시(hex 64자). 평문 코드는 DB에 남기지 않는다.
+
+    - 접속 코드는 4~12자리 숫자라 경우의 수가 작다. 솔트 없는 sha256이면 DB가 새는 순간 전부
+      복원되므로 서버 시크릿(JOBCARD_SECRET)으로 HMAC한다. 시크릿 없이 DB만으로는 복원할 수 없다.
+    - employer_id를 섞는 이유: 같은 코드라도 사업장마다 해시가 달라져, 해시 값만 보고 "두 사업장이
+      같은 코드를 쓴다"를 알 수 없다. unique 제약도 (employer_id, 해시)로 건다.
+    - 로그인 때마다 같은 값을 다시 계산해 조회하므로 pbkdf2 같은 느린 해시를 쓰지 않는다
+      (조회 키여야 한다). 대입 방어는 로그인 시도 제한(ratelimit)이 맡는다.
+    - JOBCARD_SECRET를 바꾸면 모든 해시가 맞지 않게 된다 → 근로자 접속 코드를 모두 재발급해야 한다.
+    """
+    return hmac.new(_secret().encode("utf-8"), f"{employer_id}:{access_code}".encode("utf-8"),
+                    hashlib.sha256).hexdigest()
+
+
+def code_fingerprint(access_code_hash: str) -> str:
     """근로자 토큰에 넣는 접속 코드 지문. 코드를 재발급하면 지문이 바뀌어 예전 토큰이 무효가 된다.
 
     토큰 본문은 서명만 될 뿐 누구나 읽을 수 있다. 평문 해시(sha256(code))를 넣으면 6자리 코드는
     100만 번 대입으로 바로 복원되므로, 서버 시크릿으로 HMAC한 값을 넣는다.
+    평문 코드를 더 이상 저장하지 않으므로 저장된 해시(hash_access_code)에서 지문을 만든다.
+    DB 해시를 그대로 토큰에 싣지 않고 한 번 더 HMAC해 잘라 쓴다(토큰 = 저장 값 노출이 되지 않게).
     """
-    digest = hmac.new(_secret().encode("utf-8"), f"worker-code:{access_code}".encode("utf-8"),
+    digest = hmac.new(_secret().encode("utf-8"), f"worker-code:{access_code_hash}".encode("utf-8"),
                       hashlib.sha256).digest()
     return _b64e(digest[:12])
 

@@ -1,11 +1,20 @@
 import { useEffect, useState } from "react";
 import { KeyRound, Trash2, UserPlus, UserRound } from "lucide-react";
-import { api, AuthError, type Worker } from "../api";
+import { api, AuthError, type Worker, type WorkerWithCode } from "../api";
+import { maskedAccessCode } from "../workerCodes";
 
 // 직접 정하는 코드는 4~12자리 숫자만 받는다(서버와 같은 규칙). 비우면 서버가 6자리를 만든다.
 const CODE_RE = /^\d{4,12}$/;
 // 예전에 만든 짧은 코드. 로그인은 되지만 대입으로 뚫리기 쉬워 새로 만들기를 권한다.
-const isWeakCode = (code: string) => code.length < 6;
+// 서버는 평문 코드를 주지 않으므로(해시 저장) 길이 필드로 판단한다.
+const isWeakCode = (w: Worker) => w.access_code_length < 6;
+
+// 생성·재발급 응답의 평문 코드는 알림에만 쓰고 목록 상태에는 넣지 않는다.
+// 목록에 남기면 화면을 다시 그릴 때마다 평문이 보이고, 서버 목록 응답과도 모양이 달라진다.
+const withoutPlainCode = ({ access_code: _plain, ...rest }: WorkerWithCode): Worker => {
+  void _plain;
+  return rest;
+};
 
 export default function WorkersPage() {
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -15,6 +24,15 @@ export default function WorkersPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [workplaceCode, setWorkplaceCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    // 사업장 코드는 근로자 기기에 한 번 입력해 두는 값이다. 못 불러와도 근로자 관리는 계속 쓸 수 있게
+    // 목록 오류와 분리해 조용히 넘긴다.
+    api.workplace()
+      .then((wp) => setWorkplaceCode(wp.workplace_code))
+      .catch(() => setWorkplaceCode(null));
+  }, []);
 
   useEffect(() => {
     api.listWorkers()
@@ -39,10 +57,10 @@ export default function WorkersPage() {
     setNotice(null);
     try {
       const w = await api.createWorker(name.trim(), code.trim() || undefined);
-      setWorkers((prev) => [...prev, w]);
+      setWorkers((prev) => [...prev, withoutPlainCode(w)]);
       setName("");
       setCode("");
-      setNotice(`근로자 '${w.display_name}'을(를) 추가했습니다. 접속 코드: ${w.access_code}`);
+      setNotice(`근로자 '${w.display_name}'을(를) 추가했습니다. 접속 코드: ${w.access_code} (지금만 보여요. 근로자에게 알려 주세요)`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "근로자 추가에 실패했습니다.");
     } finally {
@@ -58,8 +76,8 @@ export default function WorkersPage() {
     setNotice(null);
     try {
       const w = await api.reissueAccessCode(id);
-      setWorkers((prev) => prev.map((x) => (x.id === id ? w : x)));
-      setNotice(`'${w.display_name}'의 새 접속 코드: ${w.access_code}`);
+      setWorkers((prev) => prev.map((x) => (x.id === id ? withoutPlainCode(w) : x)));
+      setNotice(`'${w.display_name}'의 새 접속 코드: ${w.access_code} (지금만 보여요. 근로자에게 알려 주세요)`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "접속 코드를 바꾸지 못했습니다.");
     }
@@ -88,6 +106,16 @@ export default function WorkersPage() {
           근로자를 추가·삭제하고 접속 코드를 확인합니다. 근로자는 이 코드로 로그인해요.
         </p>
       </header>
+
+      {workplaceCode && (
+        <section className="mb-6 rounded-2xl border border-paper-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-bold text-ink-900">사업장 코드</h2>
+          <p className="mt-2 font-display text-3xl font-semibold tracking-[0.3em] text-ink-900">{workplaceCode}</p>
+          <p className="mt-2 text-xs text-ink-500">
+            근로자 기기의 로그인 화면(근로자 탭)에 이 코드를 한 번 입력해 두세요. 그다음부터 근로자는 자기 접속 코드만 누르면 돼요.
+          </p>
+        </section>
+      )}
 
       {error && <div role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</div>}
       {notice && <div role="status" className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-800">{notice}</div>}
@@ -143,8 +171,8 @@ export default function WorkersPage() {
                   <div>
                     <p className="text-sm font-semibold text-ink-900">{w.display_name}</p>
                     <p className="text-xs text-ink-500">
-                      접속 코드 {w.access_code}
-                      {isWeakCode(w.access_code) && (
+                      접속 코드 {maskedAccessCode(w.access_code_hint)}
+                      {isWeakCode(w) && (
                         <span className="ml-1.5 font-semibold text-signal-red">짧은 코드예요 — 새로 만들어 주세요</span>
                       )}
                     </p>

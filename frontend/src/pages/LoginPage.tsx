@@ -1,16 +1,23 @@
 import { useState } from "react";
 import { auth, type AuthState } from "../api";
+import { getSavedWorkplaceCode, normalizeWorkplaceCode, saveWorkplaceCode } from "../workerCodes";
 
 export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void }) {
   const [tab, setTab] = useState<"employer" | "worker">("employer");
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
+  // 이 기기에 저장된 사업장 코드. 있으면 근로자는 자기 접속 코드만 누른다.
+  const [savedWorkplace, setSavedWorkplace] = useState<string | null>(() => getSavedWorkplaceCode());
+  const [editingWorkplace, setEditingWorkplace] = useState(() => !getSavedWorkplaceCode());
+  const [workplaceInput, setWorkplaceInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const workplace = editingWorkplace ? normalizeWorkplaceCode(workplaceInput) : savedWorkplace ?? "";
+
   // 비어 있으면 서버 검증(422) 응답을 받게 되는데, 그 메시지는 사용자용 문장이 아니다.
-  const ready = tab === "employer" ? !!loginId.trim() && !!password : !!code.trim();
+  const ready = tab === "employer" ? !!loginId.trim() && !!password : !!code.trim() && !!workplace;
 
   async function submit() {
     if (!ready) return;
@@ -20,13 +27,28 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
       const state =
         tab === "employer"
           ? await auth.loginEmployer(loginId, password)
-          : await auth.loginWorker(code);
+          : await auth.loginWorker(workplace, code);
+      if (tab === "worker") {
+        // 로그인에 성공한 사업장 코드만 저장한다. 실패한 값을 저장하면 오타가 기기에 남아
+        // 근로자가 맞는 접속 코드를 눌러도 계속 실패하게 된다.
+        saveWorkplaceCode(workplace);
+        setSavedWorkplace(workplace);
+        setEditingWorkplace(false);
+      }
       onLogin(state);
     } catch (e) {
       setError(e instanceof Error ? e.message : "로그인 실패");
     } finally {
       setBusy(false);
     }
+  }
+
+  function changeWorkplace() {
+    // 저장된 값은 새 사업장으로 로그인에 성공할 때 바뀐다. 그 전까지는 지우지 않는다
+    // (변경을 눌렀다가 그만둬도 원래 사업장으로 돌아갈 수 있게).
+    setWorkplaceInput("");
+    setEditingWorkplace(true);
+    setError(null);
   }
 
   return (
@@ -53,7 +75,32 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
             value={password} onChange={(e) => setPassword(e.target.value)} aria-label="비밀번호" placeholder="비밀번호" />
         </div>
       ) : (
-        <div className="mt-4">
+        <div className="mt-4 space-y-3">
+          {editingWorkplace ? (
+            <div>
+              <input className="w-full rounded-lg border border-slate-300 px-3 py-2 text-center text-lg uppercase tracking-widest"
+                value={workplaceInput} onChange={(e) => setWorkplaceInput(e.target.value)}
+                aria-label="사업장 코드" placeholder="사업장 코드" autoCapitalize="characters" autoComplete="off" />
+              <p className="mt-1 text-xs text-slate-500">
+                사업주에게 받은 사업장 코드를 넣어 주세요. 한 번 로그인하면 이 기기에 저장돼요.
+              </p>
+              {savedWorkplace && (
+                <button type="button" onClick={() => { setEditingWorkplace(false); setError(null); }}
+                  className="mt-1 text-xs text-slate-500 underline">
+                  취소 (사업장 {savedWorkplace} 그대로 쓰기)
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              <span>
+                사업장 <strong className="tracking-widest text-slate-900">{savedWorkplace}</strong>
+              </span>
+              <button type="button" onClick={changeWorkplace} className="text-xs text-slate-500 underline">
+                이 기기 사업장 변경
+              </button>
+            </div>
+          )}
           <input className="w-full rounded-lg border border-slate-300 px-3 py-3 text-center text-2xl tracking-widest"
             value={code} onChange={(e) => setCode(e.target.value)} aria-label="접속 코드" placeholder="접속 코드" inputMode="numeric" />
         </div>

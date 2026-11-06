@@ -6,6 +6,8 @@
 - 모든 FK에 index=True (조회 성능)
 - PerformanceLog(assignment_id, step_id) UNIQUE → 단계당 1로그 보장(업서트)
 - 미사용 SymbolAsset 테이블 제거(死 코드 정리). 자체 상징 DB는 도입 시점에 재설계한다.
+- (0002) Employer.workplace_code 추가, Worker.access_code 평문 → access_code_hash(+힌트·길이).
+  접속 코드는 사업장 안에서만 unique다(교차 테넌트 코드 오라클 제거).
 """
 from __future__ import annotations
 
@@ -24,6 +26,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from auth import hash_access_code
+from codes import new_workplace_code
 from database import Base
 
 
@@ -42,6 +46,10 @@ class Employer(Base):
     org_name: Mapped[str] = mapped_column(String, default="")
     login_id: Mapped[str] = mapped_column(String, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String, default="")
+    # 근로자 로그인용 사업장 식별자(codes.py). 서버가 만들고 사업주 화면에 보여 준다.
+    # 근로자 접속 코드는 사업장 안에서만 unique이므로, 로그인은 이 코드로 사업장을 먼저 정한다.
+    workplace_code: Mapped[str] = mapped_column(String, unique=True, index=True,
+                                                default=new_workplace_code)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
     tasks: Mapped[list["Task"]] = relationship(back_populates="employer")
@@ -50,14 +58,33 @@ class Employer(Base):
 
 class Worker(Base):
     __tablename__ = "workers"
+    __table_args__ = (
+        # 접속 코드는 사업장 안에서만 겹치지 않으면 된다. 예전처럼 전역 unique면 다른 사업장이
+        # 같은 코드를 못 쓰고, 그 "못 씀"(409)이 남의 사업장 코드를 알려 주는 오라클이 됐다.
+        UniqueConstraint("employer_id", "access_code_hash", name="uq_worker_employer_code"),
+    )
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
     employer_id: Mapped[str] = mapped_column(ForeignKey("employers.id"), index=True)
     display_name: Mapped[str] = mapped_column(String, default="근로자")
     # 발달장애인 근로자는 비밀번호 대신 짧은 접속 코드로 로그인한다(현장 디바이스 공유 가정).
-    access_code: Mapped[str] = mapped_column(String, unique=True, index=True)
+    # 평문은 저장하지 않는다 — HMAC(JOBCARD_SECRET, "employer_id:code")만 둔다(auth.hash_access_code).
+    # 평문은 생성·재발급 응답에서 딱 한 번만 사업주에게 보여 준다.
+    access_code_hash: Mapped[str] = mapped_column(String)
+    # 사업주 화면에서 "어느 코드였는지" 알아보는 용도의 뒤 2자리와, 짧은(4~5자리) 예전 코드 경고용 길이.
+    access_code_hint: Mapped[str] = mapped_column(String, default="")
+    access_code_length: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
     employer: Mapped["Employer"] = relationship(back_populates="workers")
+
+    def set_access_code(self, code: str) -> None:
+        """평문 코드를 받아 해시·힌트·길이를 채운다. employer_id가 먼저 정해져 있어야 한다
+        (해시에 사업장 id가 섞이므로, 없으면 엉뚱한 사업장 기준 해시가 된다)."""
+        if not self.employer_id:
+            raise ValueError("employer_id를 먼저 정해야 접속 코드를 해시할 수 있습니다.")
+        self.access_code_hash = hash_access_code(self.employer_id, code)
+        self.access_code_hint = code[-2:]
+        self.access_code_length = len(code)
 
 
 class Task(Base):

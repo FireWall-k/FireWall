@@ -26,7 +26,7 @@ vi.mock("../src/api", async (importOriginal) => {
   };
 });
 
-const worker = { id: "w1", display_name: "김근로", access_code: "1111" };
+const worker = { id: "w1", display_name: "김근로", access_code_hint: "11", access_code_length: 4 };
 const task = { id: "task-1", title: "분류 작업", status: "published", created_at: "2026-09-20T00:00:00Z" };
 
 const dashboardData = {

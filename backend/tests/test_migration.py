@@ -20,6 +20,7 @@ from alembic.migration import MigrationContext  # noqa: E402
 from sqlalchemy import create_engine, inspect, text  # noqa: E402
 
 import db_migrate  # noqa: E402
+from auth import hash_access_code  # noqa: E402
 import models  # noqa: E402,F401  (Base.metadata에 테이블을 등록한다)
 from database import Base  # noqa: E402
 
@@ -161,7 +162,10 @@ def test_migrate_adopts_legacy_db_and_keeps_data():
         assert conn.execute(text("SELECT title FROM tasks WHERE id='t1'")).scalar() == "예전 직무"
         assert conn.execute(text("SELECT business_type FROM tasks WHERE id='t1'")).scalar() == ""
         assert conn.execute(text("SELECT symbol_query FROM steps WHERE id='s1'")).scalar() == ""
-        assert conn.execute(text("SELECT access_code FROM workers WHERE id='w1'")).scalar() == "5678"
+        # 0002부터 평문 코드는 해시로 바뀐다. 데이터를 잃지 않았다 = 같은 코드로 계산한 해시가 남아 있다.
+        row = conn.execute(text("SELECT access_code_hash, access_code_hint, access_code_length "
+                                "FROM workers WHERE id='w1'")).one()
+        assert tuple(row) == (hash_access_code("e1", "5678"), "78", 4)
     diff = _diff_against_models(engine)
     assert diff == [], f"레거시 보정 후에도 모델과 어긋남: {diff}"
 
@@ -174,6 +178,74 @@ def test_migrate_is_idempotent_on_legacy_db():
     assert second["adopted_legacy"] is False
     assert second["repaired_columns"] == []
     assert db_migrate.is_at_head(engine)
+
+
+def test_legacy_plaintext_codes_still_log_in_after_migration():
+    """Phase 0.1 완료 기준: 평문 코드를 쓰던 설치본을 migrate한 뒤에도 근로자는 원래 코드로 들어간다
+    (사업장 코드는 마이그레이션이 새로 발급한 것). 평문 컬럼은 남지 않는다."""
+    from fastapi.testclient import TestClient
+    from sqlalchemy.orm import sessionmaker
+
+    import main
+    from database import get_db
+
+    engine = _new_engine("legacy_login")
+    _make_full_legacy_db(engine)
+    with engine.begin() as conn:
+        conn.execute(text(
+            "INSERT INTO employers (id, name, org_name, login_id, password_hash, created_at) "
+            "VALUES ('e2', '다른', '다른 작업장', 'other', 'x', '2026-01-01 00:00:00')"))
+        conn.execute(text(
+            "INSERT INTO workers (id, employer_id, display_name, access_code, created_at) "
+            "VALUES ('w2', 'e2', '박근로', '246802', '2026-01-01 00:00:00')"))
+
+    db_migrate.migrate(engine)
+
+    assert "access_code" not in {c["name"] for c in inspect(engine).get_columns("workers")}
+    with engine.connect() as conn:
+        codes = dict(conn.execute(text("SELECT id, workplace_code FROM employers")).all())
+    assert set(codes) == {"e1", "e2"} and codes["e1"] != codes["e2"]
+    for wp in codes.values():
+        assert len(wp) == 6 and wp.isalnum() and not set(wp) & set("0O1I")
+
+    Session = sessionmaker(bind=engine)
+
+    def _db():
+        db = Session()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    main.app.dependency_overrides[get_db] = _db
+    try:
+        # lifespan(시드·스키마 확인)은 테스트 공용 DB를 보므로 여기서는 띄우지 않는다.
+        c = TestClient(main.app)
+        ok = c.post("/api/auth/worker-login", json={"workplace_code": codes["e1"], "access_code": "5678"})
+        assert ok.status_code == 200, ok.text
+        assert ok.json()["display_name"] == "김근로"
+        # 다른 사업장 코드로는 같은 근로자 코드가 통하지 않는다.
+        cross = c.post("/api/auth/worker-login",
+                       json={"workplace_code": codes["e2"], "access_code": "5678"})
+        assert cross.status_code == 401
+        assert c.post("/api/auth/worker-login",
+                      json={"workplace_code": codes["e2"], "access_code": "246802"}).status_code == 200
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_downgrade_0002_restores_baseline_shape_without_plaintext():
+    """0002 downgrade는 평문을 되살릴 수 없으므로 추측 불가능한 값(근로자 id)으로 채운다."""
+    engine = _new_engine("down_0002")
+    _make_full_legacy_db(engine)
+    db_migrate.migrate(engine)
+    db_migrate.downgrade(engine, db_migrate.BASELINE_REVISION)
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT access_code FROM workers WHERE id='w1'")).scalar() == "w1"
+    assert "workplace_code" not in {c["name"] for c in inspect(engine).get_columns("employers")}
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []
 
 
 def test_columns_added_nullable_by_old_code_become_not_null():

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { api, type AacMatch, type Step, type StepSymbolCandidates, type Task, type Worker } from "../api";
 import { ActionChip } from "../actions";
+import { maskedAccessCode } from "../workerCodes";
 
 const SAMPLE =
   "예: 택배 상자를 크기별로 분류하고, 큰 상자는 A구역으로 옮겨주세요. 그리고 5개씩 쌓아주세요. 마지막에 수량을 확인하세요.";
@@ -272,7 +273,8 @@ export default function ManagerPage() {
       setSelectedWorkerIds((prev) => new Set(prev).add(w.id));
       setNewWorkerName("");
       setNewWorkerCode("");
-      setNotice(`근로자 '${w.display_name}'을(를) 추가했습니다. 접속 코드: ${w.access_code}`);
+      // 평문 코드는 이 응답에서만 받을 수 있다(서버는 해시만 저장). 목록에는 힌트만 남는다.
+      setNotice(`근로자 '${w.display_name}'을(를) 추가했습니다. 접속 코드: ${w.access_code} (지금만 보여요. 근로자에게 알려 주세요)`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "근로자 추가에 실패했습니다.");
     } finally {
@@ -717,7 +719,7 @@ export default function ManagerPage() {
                             : "border-slate-300 bg-white text-slate-700")}>
                         <input type="checkbox" className="h-4 w-4" checked={checked}
                           onChange={() => toggleWorkerSelected(w.id)} />
-                        {w.display_name} (코드 {w.access_code})
+                        {w.display_name} (코드 {maskedAccessCode(w.access_code_hint)})
                       </label>
                     );
                   })}
@@ -784,7 +786,7 @@ export default function ManagerPage() {
                       className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white py-1 pl-3 pr-1.5 text-sm text-slate-700"
                     >
                       <span>
-                        {w.display_name} <span className="text-slate-400">({w.access_code})</span>
+                        {w.display_name} <span className="text-slate-400">({maskedAccessCode(w.access_code_hint)})</span>
                       </span>
                       <button
                         onClick={() => handleDeleteWorker(w.id, w.display_name)}

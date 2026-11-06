@@ -12,6 +12,7 @@ import {
 import { AlertCircle, BarChart3, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, RefreshCw, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { api, AuthError, type Coaching, type Dashboard, type TaskSummary, type Worker } from "../api";
 import { BAR_COLOR, STUCK_BAR_COLOR, stuckIndices } from "../dashboardChart";
+import { maskedAccessCode } from "../workerCodes";
 
 const DASHBOARD_POLL_MS = 3_000;
 
@@ -392,7 +393,7 @@ function DashboardPage() {
             >
               {allWorkers.map((w) => (
                 <option key={w.id} value={w.id}>
-                  {w.display_name} (코드 {w.access_code})
+                  {w.display_name} (코드 {maskedAccessCode(w.access_code_hint)})
                 </option>
               ))}
             </select>
