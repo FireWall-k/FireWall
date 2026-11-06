@@ -20,6 +20,7 @@ from sqlalchemy import select
 
 import ai_client
 import manage
+import media
 import retention
 from auth import verify_token
 from conftest import auth
@@ -431,11 +432,13 @@ def test_purge_removes_only_expired_rows_and_orphan_tts(client, capture, monkeyp
     tts_dir.mkdir()
     monkeypatch.setenv("TTS_CACHE_DIR", str(tts_dir))
     referenced = "a" * 32 + ".mp3"
-    with SessionLocal() as db:
-        step = db.get(Step, step_ids[0])
-        step.tts_audio_url = f"http://localhost:8000/api/tts/{referenced}"
-        db.commit()
     (tts_dir / referenced).write_bytes(b"x")
+    with SessionLocal() as db:
+        # (Phase 0.3) 참조는 URL이 아니라 소유 레코드(MediaFile) + 단계의 tts_media_id다.
+        step = db.get(Step, step_ids[0])
+        rec = media.create_record(db, step.task.employer_id, media.KIND_TTS, referenced)
+        step.tts_media_id = rec.id
+        db.commit()
     old_orphan = tts_dir / ("b" * 32 + ".mp3")
     old_orphan.write_bytes(b"x")
     two_days_ago = time.time() - 2 * 86400
@@ -850,11 +853,11 @@ def test_personal_info_consent_is_listed(client):
 def test_tts_cache_hit_refreshes_mtime(monkeypatch, tmp_path):
     import tts
     monkeypatch.setenv("TTS_CACHE_DIR", str(tmp_path))
-    path = tmp_path / f"{tts._google_voice_key('상자를 옮기세요.')}.mp3"
+    path = tmp_path / f"{tts._google_voice_key('상자를 옮기세요.', 'emp-x')}.mp3"
     path.write_bytes(b"x")
     old = time.time() - 3 * 86400
     os.utime(path, (old, old))
-    assert tts.synthesize_tts_url("상자를 옮기세요.")
+    assert tts.synthesize_tts("상자를 옮기세요.", "emp-x")
     assert path.stat().st_mtime > time.time() - 60
 
 
@@ -865,7 +868,9 @@ def test_purge_does_not_delete_tts_reused_during_purge(client, capture, monkeypa
     token = _new_employer(client)
     task = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요."}, headers=auth(token)).json()
     sentence = "오래된 캐시 문장입니다."
-    path = tmp_path / f"{tts._google_voice_key(sentence)}.mp3"
+    with SessionLocal() as db:
+        employer_id = db.scalars(select(Step).where(Step.task_id == task["id"])).first().task.employer_id
+    path = tmp_path / f"{tts._google_voice_key(sentence, employer_id)}.mp3"
     path.write_bytes(b"x")
     old = time.time() - 3 * 86400
     os.utime(path, (old, old))
@@ -873,11 +878,11 @@ def test_purge_does_not_delete_tts_reused_during_purge(client, capture, monkeypa
     real_checkpoint = retention.checkpoint_wal
 
     def reuse_then_checkpoint(db):
-        # 고른 뒤·지우기 전 사이에 직무 수정이 같은 문장을 다시 쓴 상황.
-        url = tts.synthesize_tts_url(sentence)
+        # 고른 뒤·지우기 전 사이에 직무 수정이 같은 문장을 다시 쓴 상황(캐시 재사용 + 소유 레코드 생성).
+        key = tts.synthesize_tts(sentence, employer_id)
         with SessionLocal() as other:
             step = other.scalars(select(Step).where(Step.task_id == task["id"])).first()
-            step.tts_audio_url = url
+            step.tts_media_id = media.create_record(other, employer_id, media.KIND_TTS, key).id
             other.commit()
         return real_checkpoint(db)
 

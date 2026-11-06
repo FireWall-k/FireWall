@@ -27,7 +27,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
@@ -50,7 +50,7 @@ from auth import (
 import db_migrate
 from codes import normalize_workplace_code
 from database import checkpoint_wal, get_db
-from models import Assignment, Employer, PerformanceLog, Step, Task, Worker, WorkerConsent
+from models import Assignment, Employer, MediaFile, PerformanceLog, Step, Task, Worker, WorkerConsent
 from privacy import (
     employer_pseudonymizer,
     has_active_consent,
@@ -96,8 +96,9 @@ from schemas import (
     WorkplaceOut,
 )
 from ratelimit import client_ip, employer_throttle, ensure_not_blocked, worker_throttle
-from photos import MAX_PHOTO_BYTES, get_photo_dir, save_photo, sniff_image
-from tts import get_tts_cache_dir, synthesize_tts_url
+import media
+from photos import MAX_PHOTO_BYTES, ImageRejected, sanitize_image, save_photo, sniff_image
+from tts import synthesize_tts
 
 
 logger = logging.getLogger("jobcard.backend")
@@ -122,13 +123,11 @@ app = FastAPI(title="JOB CARD - Backend", version="0.3.0", lifespan=lifespan)
 mimetypes.add_type("image/webp", ".webp")
 mimetypes.add_type("audio/mpeg", ".mp3")
 
-# 서버 생성 TTS mp3 캐시 제공. URL 예: http://localhost:8000/api/tts/<hash>.mp3
-app.mount("/api/tts", StaticFiles(directory=str(get_tts_cache_dir())), name="tts")
+# (Phase 0.3) 서버 생성 TTS mp3(/api/tts)와 사업주가 올린 사진(/api/photos)은 더 이상 정적 경로로 열지 않는다.
+# 무인증 StaticFiles라 파일명만 알면 누구나 받을 수 있었다(사진에는 사람이, 음성 문장에는 이름이 담길 수 있다).
+# 이제 응답에 실린 단기 서명 URL(GET /api/media/{id}?exp=&sig=, media.py)로만 나간다.
 
-# 사업주가 올린 단계별 실제 사진 제공. URL 예: http://localhost:8000/api/photos/<uuid>.png
-app.mount("/api/photos", StaticFiles(directory=str(get_photo_dir())), name="photos")
-
-# 프로젝트 자체 제작 AAC 이미지 제공
+# 프로젝트 자체 제작 AAC 이미지 제공(공개 자산이라 서명 없이 그대로 연다)
 app.mount(
     "/api/aac/images",
     StaticFiles(
@@ -207,12 +206,32 @@ def _ensure_seed() -> None:
 
 
 def _step_to_out(s: Step) -> StepOut:
+    # 사진·음성 URL은 저장하지 않고 응답 때마다 서명해 만든다(media.py). 만료되면 화면이 다시 조회해 새 URL을 받는다.
+    # 레코드가 지워졌으면(GC) None — 그림 없음 / 브라우저 음성합성으로 대신한다.
+    symbol_url = media.signed_url(s.symbol_media.id) if s.symbol_media is not None else s.symbol_url
+    tts_url = media.signed_url(s.tts_media.id) if s.tts_media is not None else None
     return StepOut(
         id=s.id, order=s.order_index, sentence=s.sentence,
-        action_type=s.action_type, symbol_url=s.symbol_url,
+        action_type=s.action_type, symbol_url=symbol_url,
         symbol_source=s.symbol_source, needs_fallback=s.needs_fallback,
-        tts_audio_url=s.tts_audio_url,
+        tts_audio_url=tts_url,
     )
+
+
+def _tts_media_id(db: Session, employer_id: str, key: str | None) -> str | None:
+    """합성된 TTS 파일(상대 키)의 소유 레코드를 만들고 id를 돌려준다. 합성 실패(None)면 None.
+
+    단계마다 새 레코드를 만든다(같은 문장이면 파일은 공유). 레코드를 단계끼리 나눠 쓰지 않아야, 단계를 지우거나
+    문장을 고칠 때 그 단계의 레코드를 다른 단계 걱정 없이 바로 지울 수 있다.
+    """
+    if not key:
+        return None
+    rec = media.create_record(db, employer_id, media.KIND_TTS, key)
+    return rec.id if rec is not None else None
+
+
+def _step_media_ids(steps) -> list[str]:
+    return [i for s in steps for i in (s.symbol_media_id, s.tts_media_id) if i]
 
 
 def _task_out(task: Task) -> TaskOut:
@@ -809,7 +828,8 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
             "action_type": action_type,
             "symbol_terms": masker.unmask_obj(symbol_terms),
             "sym": sym,
-            "tts": synthesize_tts_url(sentence),
+            # 파일만 만든다(상대 키). 소유 레코드는 아래 DB 단계에서 단계와 같은 트랜잭션으로 만든다.
+            "tts": synthesize_tts(sentence, user["sub"]),
         }
 
     # 단계마다 그림 검색·음성 합성을 순서대로 하면 5~7단계 직무가 20~30초 걸렸다.
@@ -848,7 +868,7 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
                 symbol_url=sym.get("image_url"),
                 symbol_source=sym.get("source", "fallback"),
                 needs_fallback=sym.get("needs_fallback", True),
-                tts_audio_url=p["tts"],
+                tts_media_id=_tts_media_id(db, user["sub"], p["tts"]),
             )
         )
 
@@ -886,8 +906,11 @@ def delete_task(task_id: str, db: Session = Depends(get_db),
     if assignment_ids:
         db.execute(delete(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids)))
         db.execute(delete(Assignment).where(Assignment.task_id == task_id))
+    media_ids = _step_media_ids(task.steps)
     db.delete(task)  # Step은 Task.steps의 cascade="all, delete-orphan"으로 함께 삭제됨
     db.commit()
+    # 직무의 사진은 바로, TTS 레코드는 바로(파일은 GC 유예 뒤) 지운다. 다른 직무가 같은 사진을 쓰면 남는다.
+    media.release(db, media_ids)
     return {"ok": True}
 
 
@@ -915,7 +938,7 @@ def add_step(task_id: str, payload: StepCreate, db: Session = Depends(get_db),
         symbol_url=sym.get("image_url"),
         symbol_source=sym.get("source", "fallback"),
         needs_fallback=sym.get("needs_fallback", True),
-        tts_audio_url=synthesize_tts_url(sentence),
+        tts_media_id=_tts_media_id(db, user["sub"], synthesize_tts(sentence, user["sub"])),
     ))
     db.commit()
     db.refresh(task)
@@ -942,11 +965,13 @@ def reorder_steps(task_id: str, payload: StepReorder, db: Session = Depends(get_
     return _task_out(task)
 
 
-_OWN_IMAGE_PATHS = ("/api/aac/images/", "/api/photos/")
+# (Phase 0.3) 업로드 사진은 더 이상 경로 prefix로 받지 않는다. "/api/photos/"만 맞으면 다른 사업장의 사진 URL도
+# 붙일 수 있었다. 사진은 아래 update_step에서 소유 레코드(MediaFile.employer_id)를 조회해 받는다.
+_OWN_IMAGE_PATHS = ("/api/aac/images/",)
 
 
 def _is_own_image_url(url: str) -> bool:
-    """근로자 화면에 뜨는 그림은 이 서버가 내주는 AAC 이미지나 업로드 사진이어야 한다.
+    """근로자 화면에 뜨는 그림은 이 서버가 내주는 AAC 이미지여야 한다(업로드 사진은 update_step이 따로 본다).
 
     아무 URL이나 받으면 외부 이미지(부적절한 그림, 접속 추적용 픽셀)가 근로자 화면에 뜬다.
     """
@@ -963,21 +988,41 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
     step = db.get(Step, step_id)
     if step is None or step.task_id != task_id:
         raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
+    released: list[str] = []
+    if payload.symbol_url is not None:
+        media_id = media.parse_media_url(payload.symbol_url)
+        if media_id is not None:
+            # 업로드 사진: 서명 대신 소유 레코드를 본다. 다른 사업장 media id·없는 id는 똑같이 거부한다
+            # (어느 쪽인지 구분해 알려 주면 남의 media id가 있는지 확인하는 통로가 된다).
+            rec = media.owned(db, user["sub"], media_id, media.KIND_PHOTO)
+            if rec is None:
+                raise HTTPException(status_code=400, detail="이 서비스의 그림이나 사진만 단계에 붙일 수 있습니다.")
+            if step.symbol_media_id and step.symbol_media_id != rec.id:
+                released.append(step.symbol_media_id)
+            step.symbol_media_id = rec.id
+            step.symbol_url = None
+            step.symbol_source = "photo"
+        else:
+            if not _is_own_image_url(payload.symbol_url):
+                raise HTTPException(status_code=400, detail="이 서비스의 그림이나 사진만 단계에 붙일 수 있습니다.")
+            if step.symbol_media_id:
+                released.append(step.symbol_media_id)
+            step.symbol_media_id = None
+            step.symbol_url = payload.symbol_url
+            # 검토 화면에서 AAC 후보를 고른 경우 출처를 LOCAL_AAC로 남긴다.
+            # (예전에는 무조건 fallback으로 적어 어디서 온 그림인지 알 수 없었다.)
+            step.symbol_source = payload.symbol_source or "fallback"
+        step.needs_fallback = False
     if payload.sentence is not None:
         step.sentence = payload.sentence
-        step.tts_audio_url = synthesize_tts_url(payload.sentence)
+        if step.tts_media_id:
+            released.append(step.tts_media_id)
+        step.tts_media_id = _tts_media_id(db, user["sub"], synthesize_tts(payload.sentence, user["sub"]))
         # 저장된 symbol_query는 옛 문장에 묶여 있다. 비우면 후보 조회가 새 문장에서
         # 검색어를 다시 뽑는다.
         step.symbol_query = ""
-    if payload.symbol_url is not None:
-        if not _is_own_image_url(payload.symbol_url):
-            raise HTTPException(status_code=400, detail="이 서비스의 그림이나 사진만 단계에 붙일 수 있습니다.")
-        step.symbol_url = payload.symbol_url
-        # 검토 화면에서 AAC 후보를 고른 경우 출처를 LOCAL_AAC로 남긴다.
-        # (예전에는 무조건 fallback으로 적어 어디서 온 그림인지 알 수 없었다.)
-        step.symbol_source = payload.symbol_source or "fallback"
-        step.needs_fallback = False
     db.commit()
+    media.release(db, released)
     db.refresh(step)
     return _step_to_out(step)
 
@@ -1045,6 +1090,7 @@ def delete_step(task_id: str, step_id: str, db: Session = Depends(get_db),
         )
     # 이 단계를 참조하는 수행 로그를 먼저 정리한다(게시 후 삭제 대비).
     db.execute(delete(PerformanceLog).where(PerformanceLog.step_id == step_id))
+    media_ids = _step_media_ids([step])
     db.delete(step)
     db.flush()
     # 남은 단계 순서 재정렬(1,2,3…).
@@ -1054,6 +1100,7 @@ def delete_step(task_id: str, step_id: str, db: Session = Depends(get_db),
     for i, s in enumerate(remaining, start=1):
         s.order_index = i
     db.commit()
+    media.release(db, media_ids)
     db.refresh(task)
     return _task_out(task)
 
@@ -1439,9 +1486,27 @@ def task_coaching(task_id: str, request: Request, worker_id: str | None = None,
                        ai_excluded=not allow_llm)
 
 
-def _photo_public_url(filename: str) -> str:
-    base = os.getenv("PUBLIC_BACKEND_URL", "http://localhost:8000").rstrip("/")
-    return f"{base}/api/photos/{filename}"
+@app.get("/api/media/{media_id}")
+def get_media(media_id: str, exp: str = "", sig: str = "", db: Session = Depends(get_db)) -> FileResponse:
+    """사진·TTS 파일을 서명 URL로 내준다(media.py).
+
+    <img>/<audio>는 Authorization 헤더를 못 보내므로 토큰 대신 서명을 본다. 서명은 인증·소유권 검사를 통과한
+    응답에서만 만들어지고 media id에 묶여 있어, 다른 사업장은 id를 알아도 받을 수 없다(서명 없음·위조·만료 → 403).
+    """
+    if not media.verify(media_id, exp, sig):
+        raise HTTPException(status_code=403, detail="링크가 만료됐거나 올바르지 않습니다. 화면을 새로 고쳐 주세요.")
+    rec = db.get(MediaFile, media_id)
+    path = media.media_path(rec.kind, rec.storage_key) if rec is not None else None
+    if path is None or not path.is_file():
+        raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다.")
+    remaining = max(int(exp) - int(datetime.now(timezone.utc).timestamp()), 0)
+    return FileResponse(path, media_type=media.content_type(rec.storage_key), headers={
+        # private: 공유 캐시(프록시)에 남기지 않는다. 브라우저 캐시는 서명이 유효한 동안만 쓴다.
+        "Cache-Control": f"private, max-age={remaining}",
+        "X-Content-Type-Options": "nosniff",
+        # 서명 URL이 다른 사이트의 Referer로 새지 않게 한다(이 응답에서 이동할 일은 없지만 기본값을 막아 둔다).
+        "Referrer-Policy": "no-referrer",
+    })
 
 
 @app.post("/api/tasks/{task_id}/steps/{step_id}/photo", response_model=StepOut)
@@ -1463,12 +1528,24 @@ async def upload_step_photo(task_id: str, step_id: str,
         raise HTTPException(status_code=413, detail="사진은 5MB 이하만 업로드할 수 있습니다.")
     if sniff_image(data) is None:
         raise HTTPException(status_code=400, detail="이미지 파일(jpg/png/webp/gif)만 업로드할 수 있습니다.")
+    try:
+        # EXIF(GPS)·메타데이터를 버리고 긴 변 1600px WebP로 다시 만든다(photos.sanitize_image).
+        clean = sanitize_image(data)
+    except ImageRejected as exc:
+        raise HTTPException(status_code=exc.status, detail=str(exc)) from None
 
-    filename = save_photo(data)
-    step.symbol_url = _photo_public_url(filename)
+    key = save_photo(clean)
+    rec = media.create_record(db, user["sub"], media.KIND_PHOTO, key)
+    if rec is None:  # 방금 쓴 파일이 없다 = 디스크 문제. 단계는 바꾸지 않는다.
+        raise HTTPException(status_code=500, detail="사진을 저장하지 못했습니다. 다시 시도해 주세요.")
+    previous = step.symbol_media_id
+    step.symbol_media_id = rec.id
+    step.symbol_url = None
     step.symbol_source = "photo"
     step.needs_fallback = False
     db.commit()
+    # 교체된 옛 사진은 다른 단계가 쓰지 않으면 바로 지운다(커밋 실패로 남은 새 파일은 gc-media가 지운다).
+    media.release(db, [previous])
     db.refresh(step)
     return _step_to_out(step)
 
@@ -1482,9 +1559,12 @@ def remove_step_photo(task_id: str, step_id: str,
     step = db.get(Step, step_id)
     if step is None or step.task_id != task_id:
         raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
+    previous = step.symbol_media_id
+    step.symbol_media_id = None
     step.symbol_url = None
     step.symbol_source = "fallback"
     step.needs_fallback = True
     db.commit()
+    media.release(db, [previous])
     db.refresh(step)
     return _step_to_out(step)

@@ -56,6 +56,12 @@ services:
       # 0002 리비전이 기존 근로자 접속 코드를 HMAC(JOBCARD_SECRET) 해시로 바꾼다. backend와 같은 키여야
       # 한다 — 다르면(예: 여기만 비어 개발용 기본 키로 해시) 기존 근로자 전원이 로그인하지 못한다.
       JOBCARD_SECRET: "${JOBCARD_SECRET:-}"
+      # 0004 리비전이 기존 사진·TTS URL을 소유 레코드로 옮기면서 파일을 읽고(사진은 EXIF를 지워 다시 저장) 쓴다.
+      # backend와 같은 경로여야 한다 — 다르면 파일이 없는 것으로 보고 URL을 비운다.
+      TTS_CACHE_DIR: "/app/data/tts"
+      PHOTO_DIR: "/app/data/photos"
+      # 되돌릴 때(downgrade) 옛 정적 URL을 다시 만드는 기준 주소.
+      PUBLIC_BACKEND_URL: "${PUBLIC_BACKEND_URL:-http://localhost:8000}"
     volumes:
       - jobcard-data:/app/data
 
@@ -77,11 +83,15 @@ services:
       JOBCARD_ENV: "${JOBCARD_ENV:-dev}"
       JOBCARD_SECRET: "${JOBCARD_SECRET:-}"
       TTS_CACHE_DIR: "/app/data/tts"
+      # 고아 사진·TTS 정리(media.gc)도 purge가 함께 한다.
+      PHOTO_DIR: "/app/data/photos"
       # 수행 로그 보존(일). 기본 1년.
       PERFORMANCE_LOG_RETENTION_DAYS: "${PERFORMANCE_LOG_RETENTION_DAYS:-365}"
       # 접근 감사 로그 보존(일). 민감정보 처리 시스템의 접속기록은 2년 이상 보관(안전성 확보조치 기준 제8조).
       ACCESS_AUDIT_RETENTION_DAYS: "${ACCESS_AUDIT_RETENTION_DAYS:-730}"
       TTS_ORPHAN_GRACE_HOURS: "${TTS_ORPHAN_GRACE_HOURS:-24}"
+      # 사진·TTS 공통 유예시간. 비우면 예전 TTS_ORPHAN_GRACE_HOURS 값을 그대로 쓴다.
+      MEDIA_ORPHAN_GRACE_HOURS: "${MEDIA_ORPHAN_GRACE_HOURS:-${TTS_ORPHAN_GRACE_HOURS:-24}}"
     volumes:
       - jobcard-data:/app/data
 
@@ -124,6 +134,8 @@ services:
       TTS_CACHE_DIR: "/app/data/tts"
       PHOTO_DIR: "/app/data/photos"
       MAX_PHOTO_BYTES: "5242880"
+      # 사진·TTS 서명 URL 수명(초). 정적 공개 경로 대신 이 URL로만 나간다(backend/media.py).
+      MEDIA_URL_TTL_SECONDS: "${MEDIA_URL_TTL_SECONDS:-3600}"
       # 개인정보 처리방침 버전(동의 기록에 함께 남는다). 방침을 고치면 올린다.
       PRIVACY_POLICY_VERSION: "${PRIVACY_POLICY_VERSION:-2026-11-07-draft}"
     volumes:

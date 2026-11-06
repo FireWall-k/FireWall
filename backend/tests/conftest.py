@@ -14,6 +14,8 @@ _tmp = tempfile.mkdtemp()
 os.environ["DATABASE_URL"] = f"sqlite:///{_tmp}/test.db"
 os.environ["JOBCARD_SECRET"] = "test-secret"
 os.environ["TTS_CACHE_DIR"] = f"{_tmp}/tts"
+# 사진도 임시 경로에 둔다(기본 ./data/photos에 테스트 사진이 쌓이지 않게).
+os.environ["PHOTO_DIR"] = f"{_tmp}/photos"
 os.environ["DEMO_EMPLOYER_LOGIN"] = "demo"
 os.environ["DEMO_EMPLOYER_PASSWORD"] = "demo1234"
 os.environ["DEMO_WORKER_CODE"] = "1234"
@@ -88,7 +90,7 @@ def _reset_login_throttle():
 def _patch_ai(monkeypatch):
     # 테스트가 실제 Google TTS를 부르지 않게 한다(느리고 과금되며, CI에는 자격 증명이 없다).
     # TTS 모듈 자체는 test_tts.py가 가짜 google 모듈로 따로 검증한다.
-    monkeypatch.setattr(main, "synthesize_tts_url", lambda text: None)
+    monkeypatch.setattr(main, "synthesize_tts", lambda text, scope: None)
     monkeypatch.setattr(ai_client, "decompose", _fake_decompose)
     monkeypatch.setattr(ai_client, "map_symbols", _fake_map_symbols)
     monkeypatch.setattr(

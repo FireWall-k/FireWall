@@ -10,6 +10,8 @@
   접속 코드는 사업장 안에서만 unique다(교차 테넌트 코드 오라클 제거).
 - (0003) Worker.note/ai_note_allowed, WorkerConsent(동의 기록), AccessAuditLog(접근 감사, append-only).
   개인정보 보호(Phase 0.2) — docs/privacy/data-map.md 참고.
+- (0004) MediaFile(사진·TTS 소유 레코드), Step.symbol_media_id/tts_media_id, Step.tts_audio_url 제거.
+  파일은 단기 서명 URL로만 나간다(media.py). DB에는 URL이 아니라 media id와 상대 키만 둔다.
 """
 from __future__ import annotations
 
@@ -132,12 +134,41 @@ class Step(Base):
     # 어긋나지 않는다(안 그러면 "생성 땐 그림 없음, 후보 조회 땐 매칭 있음"이 된다).
     # 문장을 수정하면 이 값은 무의미해지므로 update_step 에서 비운다.
     symbol_query: Mapped[str] = mapped_column(Text, default="")  # "," 로 이은 문자열
+    # 자체 AAC 그림(공개 자산)의 URL. 사업주가 올린 사진은 여기 두지 않고 symbol_media_id로 가리킨다.
     symbol_url: Mapped[str | None] = mapped_column(String, nullable=True)
     symbol_source: Mapped[str] = mapped_column(String, default="fallback")
     needs_fallback: Mapped[bool] = mapped_column(Boolean, default=False)
-    tts_audio_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    # (0004) 사진·TTS는 소유 레코드(MediaFile)로 가리킨다. 응답 시점에 단기 서명 URL로 바꾼다(main._step_to_out).
+    # 예전처럼 절대 URL을 저장하면 서버 주소가 바뀔 때 깨지고, URL만 알면 누구나 받을 수 있었다.
+    symbol_media_id: Mapped[str | None] = mapped_column(ForeignKey("media_files.id"), nullable=True,
+                                                        index=True)
+    tts_media_id: Mapped[str | None] = mapped_column(ForeignKey("media_files.id"), nullable=True,
+                                                     index=True)
 
     task: Mapped["Task"] = relationship(back_populates="steps")
+    # 레코드가 GC로 지워졌으면 None이 된다 — 응답은 그림/음성 없음으로 나가고,
+    # 근로자 화면은 브라우저 음성합성으로 대신한다.
+    symbol_media: Mapped["MediaFile | None"] = relationship(foreign_keys=[symbol_media_id], lazy="selectin")
+    tts_media: Mapped["MediaFile | None"] = relationship(foreign_keys=[tts_media_id], lazy="selectin")
+
+
+class MediaFile(Base):
+    """사업주 소유 파일(업로드 사진·서버 합성 TTS mp3)의 레코드 (Phase 0.3).
+
+    - 파일은 kind별 디렉터리(PHOTO_DIR / TTS_CACHE_DIR) 아래 storage_key(상대 키, "<32hex>.<ext>")에 있다.
+      절대 경로·URL은 저장하지 않는다 — 디렉터리나 서버 주소가 바뀌어도 레코드는 그대로 쓸 수 있다.
+    - 이 레코드가 있어야 서명 URL을 만들 수 있고(media.signed_url), 단계에 붙일 수 있다(employer_id 일치).
+    - 같은 storage_key를 여러 레코드가 가리킬 수 있다(같은 사업장의 같은 문장 TTS, 0004 이전부터 공유되던 파일).
+      파일은 그 키를 가리키는 레코드가 하나도 없을 때만 지운다(media.release / media.gc).
+    """
+    __tablename__ = "media_files"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    employer_id: Mapped[str] = mapped_column(ForeignKey("employers.id"), index=True)
+    kind: Mapped[str] = mapped_column(String)  # "photo" | "tts"
+    storage_key: Mapped[str] = mapped_column(String, index=True)
+    sha256: Mapped[str] = mapped_column(String, default="")
+    bytes: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
 
 class Assignment(Base):

@@ -7,6 +7,11 @@ None을 반환하고, 프론트엔드는 브라우저 SpeechSynthesis를 fallbac
 운영 의도:
 - MVP/PoC: GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/google-tts.json 설정
 - 음성 캐시: 같은 문장/음성 옵션은 mp3를 재생성하지 않고 캐시 재사용
+- (Phase 0.3) 캐시는 사업장(scope)별로 나눈다. 단계 문장에는 근로자 이름이 들어갈 수 있다. 예전처럼 문장 해시만으로
+  전역 공유하면 ① 공개 URL(/api/tts/<hash>.mp3)을 아는 누구나 음성을 받을 수 있었고 ② 다른 사업장이 같은 문장을
+  만들어 보면 즉시 캐시가 맞는지(= 그 문장을 누가 이미 썼는지)를 알 수 있었다. 사업장마다 따로 합성하면 비용이
+  조금 늘지만 테넌트 사이에 아무것도 공유하지 않는다. 이 모듈은 파일만 만들고, 소유 레코드와 서명 URL은
+  media.py/main.py가 맡는다.
 """
 from __future__ import annotations
 
@@ -54,14 +59,11 @@ def get_tts_cache_dir() -> Path:
     return cache_dir
 
 
-def _public_url(filename: str) -> str:
-    base = _env("PUBLIC_BACKEND_URL", "http://localhost:8000").rstrip("/")
-    return f"{base}/api/tts/{filename}"
-
-
-def _google_voice_key(text: str) -> str:
+def _google_voice_key(text: str, scope: str) -> str:
     voice_key = "|".join([
         "google",
+        # 사업장 id. 캐시 키에 넣어 사업장끼리 같은 파일을 쓰지 않게 한다(모듈 docstring 참고).
+        scope,
         _env("GOOGLE_TTS_LANGUAGE", "ko-KR"),
         _env("GOOGLE_TTS_VOICE", "ko-KR-Standard-A"),
         _env("GOOGLE_TTS_SPEAKING_RATE", "0.9"),
@@ -71,27 +73,30 @@ def _google_voice_key(text: str) -> str:
     return hashlib.sha256(voice_key.encode("utf-8")).hexdigest()[:32]
 
 
-def synthesize_tts_url(text: str) -> str | None:
-    """Google Cloud TTS로 문장을 mp3로 합성하고 접근 URL을 반환한다.
+def synthesize_tts(text: str, scope: str) -> str | None:
+    """Google Cloud TTS로 문장을 mp3로 합성하고 캐시 디렉터리 안의 파일명(상대 키)을 반환한다.
 
-    실패 시 None을 반환한다. 프론트엔드에서는 None이면 브라우저 TTS fallback을 사용한다.
+    scope는 사업장 id다(비우면 ValueError — 사업장 구분 없는 공유 캐시로 되돌아가지 않게 막는다).
+    실패 시 None을 반환한다. 프론트엔드에서는 음성 URL이 없으면 브라우저 TTS fallback을 사용한다.
     이렇게 해야 Google 인증 파일이 없는 개발 환경에서도 직무 생성 흐름이 깨지지 않는다.
     """
+    if not scope:
+        raise ValueError("TTS 캐시는 사업장(scope)별로 나눠야 합니다.")
     text = text.strip()
     if not text:
         return None
 
-    filename = f"{_google_voice_key(text)}.mp3"
+    filename = f"{_google_voice_key(text, scope)}.mp3"
     out_path = get_tts_cache_dir() / filename
     if out_path.exists() and out_path.stat().st_size > 0:
-        # 캐시를 다시 쓸 때 수정 시각을 지금으로 당긴다. purge(retention.orphan_tts_files)는 "어느 단계도
-        # 참조하지 않고 유예시간보다 오래된" 파일을 지우는데, 하루 넘게 안 쓰이던 파일을 새 단계가 막 다시
+        # 캐시를 다시 쓸 때 수정 시각을 지금으로 당긴다. gc(media.gc, purge가 부른다)는 "어느 레코드도
+        # 가리키지 않고 유예시간보다 오래된" 파일을 지우는데, 하루 넘게 안 쓰이던 파일을 새 단계가 막 다시
         # 쓰는 순간 지우면 커밋된 단계가 없는 mp3를 가리키게 된다. 갱신된 시각이 유예시간 동안 지켜 준다.
         try:
             os.utime(out_path)
         except OSError:
-            pass  # 읽기 전용 볼륨 등. 시각을 못 바꿔도 purge가 지우기 직전에 참조를 다시 확인한다.
-        return _public_url(filename)
+            pass  # 읽기 전용 볼륨 등. 시각을 못 바꿔도 gc가 지우기 직전에 참조를 다시 확인한다.
+        return filename
 
     global _cooldown_until
     if time.monotonic() < _cooldown_until:
@@ -108,7 +113,7 @@ def synthesize_tts_url(text: str) -> str | None:
         return None
 
     if out_path.exists() and out_path.stat().st_size > 0:
-        return _public_url(filename)
+        return filename
     return None
 
 

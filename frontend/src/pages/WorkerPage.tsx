@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, AuthError, type HistoryCard, type TodayCard } from "../api";
 import { ActionChip } from "../actions";
+import { mergeStepMedia, useMediaRefresh } from "../media";
 
 // 자동 '막힘' 감지 임계값. 이 신호가 대시보드 stuck_steps로 전달된다.
 const STUCK_REPLAY_THRESHOLD = 3; // 다시듣기 3회 이상
@@ -28,6 +29,12 @@ export default function WorkerPage() {
       .catch((e) => setError(e instanceof AuthError ? "다시 로그인해 주세요." : (e instanceof Error ? e.message : "불러오지 못했습니다.")));
   }, []);
 
+  // 사진·음성 서명 URL이 만료되면(화면을 오래 켜 둔 경우) 오늘 카드를 다시 받아 URL만 바꿔 끼운다.
+  const onMediaError = useMediaRefresh(async () => {
+    const fresh = await api.today();
+    setCards((cur) => (cur ? mergeStepMedia(cur, fresh) : cur));
+  });
+
   if (error)
     return <div role="alert" className="rounded-lg bg-red-50 p-4 text-red-800">{error}</div>;
   if (!cards) return <p className="text-slate-500">불러오는 중…</p>;
@@ -47,14 +54,17 @@ export default function WorkerPage() {
         </button>
       </div>
 
-      {mode === "today" ? <TodayView cards={cards} /> : <HistoryView />}
+      {mode === "today" ? <TodayView cards={cards} onMediaError={onMediaError} /> : <HistoryView />}
     </div>
   );
 }
 
 // ---------- 오늘 할 일 ----------
 
-function TodayView({ cards }: { cards: TodayCard[] }) {
+function TodayView({ cards, onMediaError }: {
+  cards: TodayCard[];
+  onMediaError: (url: string | null | undefined) => void;
+}) {
   const [cardIdx, setCardIdx] = useState(0); // 오늘 받은 여러 직무 중 현재 보는 직무
   const [stepIdx, setStepIdx] = useState(0);
   const [replayCount, setReplayCount] = useState(0);
@@ -83,9 +93,14 @@ function TodayView({ cards }: { cards: TodayCard[] }) {
     if (step.tts_audio_url) {
       window.speechSynthesis?.cancel();
       audioRef.current?.pause();
-      const audio = new Audio(step.tts_audio_url);
+      const url = step.tts_audio_url;
+      const audio = new Audio(url);
       audioRef.current = audio;
-      audio.play().catch(() => playBrowserTts(step.sentence));
+      audio.play().catch(() => {
+        playBrowserTts(step.sentence);
+        // 서명 URL이 만료됐을 수 있다. 다음 재생은 새로 받은 URL로 한다.
+        onMediaError(url);
+      });
       return;
     }
     playBrowserTts(step.sentence);
@@ -219,6 +234,7 @@ function TodayView({ cards }: { cards: TodayCard[] }) {
       <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
         {step?.symbol_url ? (
           <img src={step.symbol_url} alt={step.sentence}
+            onError={() => onMediaError(step.symbol_url)}
             className="mx-auto h-48 w-48 rounded-xl border border-slate-200 object-contain" />
         ) : (
           <div className="mx-auto flex h-48 w-48 items-center justify-center rounded-xl border-2 border-dashed border-slate-300 text-slate-400">
@@ -261,7 +277,8 @@ function TodayView({ cards }: { cards: TodayCard[] }) {
 function HistoryView() {
   const [items, setItems] = useState<HistoryCard[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<HistoryCard | null>(null);
+  // 고른 카드를 객체가 아니라 id로 기억한다. 서명 URL을 다시 받아 items를 바꿔 끼우면 상세 화면도 새 URL을 본다.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     api.history()
@@ -269,10 +286,17 @@ function HistoryView() {
       .catch((e) => setError(e instanceof Error ? e.message : "불러오지 못했습니다."));
   }, []);
 
+  const onMediaError = useMediaRefresh(async () => {
+    const fresh = await api.history();
+    setItems((cur) => (cur ? mergeStepMedia(cur, fresh) : cur));
+  });
+
   if (error) return <div role="alert" className="rounded-lg bg-red-50 p-4 text-red-800">{error}</div>;
   if (!items) return <p className="text-slate-500">불러오는 중…</p>;
 
-  if (selected) return <HistoryDetail card={selected} onBack={() => setSelected(null)} />;
+  const selected = items.find((c) => c.assignment_id === selectedId) ?? null;
+  if (selected)
+    return <HistoryDetail card={selected} onBack={() => setSelectedId(null)} onMediaError={onMediaError} />;
 
   if (items.length === 0)
     return (
@@ -286,7 +310,7 @@ function HistoryView() {
       {items.map((c) => {
         const doneCount = c.steps.filter((s) => s.completed).length;
         return (
-          <button key={c.assignment_id} onClick={() => setSelected(c)}
+          <button key={c.assignment_id} onClick={() => setSelectedId(c.assignment_id)}
             className="flex min-h-touch w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left">
             <div>
               <p className="text-worker font-bold text-slate-900">{c.task_title}</p>
@@ -306,7 +330,11 @@ function HistoryView() {
   );
 }
 
-function HistoryDetail({ card, onBack }: { card: HistoryCard; onBack: () => void }) {
+function HistoryDetail({ card, onBack, onMediaError }: {
+  card: HistoryCard;
+  onBack: () => void;
+  onMediaError: (url: string | null | undefined) => void;
+}) {
   const [stepIdx, setStepIdx] = useState(0);
   const step = card.steps[stepIdx];
   const total = card.steps.length;
@@ -314,8 +342,12 @@ function HistoryDetail({ card, onBack }: { card: HistoryCard; onBack: () => void
   useEffect(() => {
     if (!step) return;
     if (step.tts_audio_url) {
-      const audio = new Audio(step.tts_audio_url);
-      audio.play().catch(() => playBrowserTts(step.sentence));
+      const url = step.tts_audio_url;
+      const audio = new Audio(url);
+      audio.play().catch(() => {
+        playBrowserTts(step.sentence);
+        onMediaError(url);
+      });
       return;
     }
     playBrowserTts(step.sentence);
@@ -339,6 +371,7 @@ function HistoryDetail({ card, onBack }: { card: HistoryCard; onBack: () => void
       <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
         {step?.symbol_url ? (
           <img src={step.symbol_url} alt={step.sentence}
+            onError={() => onMediaError(step.symbol_url)}
             className="mx-auto h-48 w-48 rounded-xl border border-slate-200 object-contain" />
         ) : (
           <div className="mx-auto flex h-48 w-48 items-center justify-center rounded-xl border-2 border-dashed border-slate-300 text-slate-400">
@@ -357,7 +390,11 @@ function HistoryDetail({ card, onBack }: { card: HistoryCard; onBack: () => void
 
         <button onClick={() => {
           if (!step) return;
-          if (step.tts_audio_url) new Audio(step.tts_audio_url).play().catch(() => playBrowserTts(step.sentence));
+          const url = step.tts_audio_url;
+          if (url) new Audio(url).play().catch(() => {
+            playBrowserTts(step.sentence);
+            onMediaError(url);
+          });
           else playBrowserTts(step.sentence);
         }}
           className="mt-6 inline-flex min-h-touch items-center justify-center gap-2 rounded-xl border-2 border-blue-200 bg-blue-50 px-6 text-worker font-semibold text-blue-800">

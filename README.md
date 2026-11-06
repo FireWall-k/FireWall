@@ -35,11 +35,12 @@ FireWall/
 │   ├── main.py            직무 생성·배정·로그·대시보드·인증
 │   ├── tts.py              Google Cloud TTS 연동 및 mp3 캐싱
 │   ├── aac_assets.py       자체 AAC 이미지 정적 서빙 경로 헬퍼
-│   ├── photos.py           단계별 현장 사진 업로드(자동 상징 대체)
+│   ├── photos.py           단계별 현장 사진 업로드(EXIF 제거·리사이즈·WebP 재인코딩)
+│   ├── media.py            사진·TTS 소유 레코드·서명 URL·고아 파일 정리(gc-media)
 │   ├── models.py           SQLAlchemy ORM
 │   ├── db_migrate.py       Alembic 실행기(레거시 DB 보정·stamp·기동 시 head 확인)
 │   ├── migrations/         Alembic 리비전(스키마 변경은 여기로만)
-│   ├── manage.py           운영 명령(migrate, create-employer, set-password)
+│   ├── manage.py           운영 명령(migrate, create-employer, set-password, purge, gc-media)
 │   ├── ai_client.py        백엔드↔AI 하네스 경계
 │   └── schemas.py          프론트 대면 입출력 스키마
 ├── frontend/          React + TS + Vite (5173)
@@ -218,7 +219,8 @@ Docker Compose에는 이미 다음 볼륨이 설정되어 있습니다.
 사업주가 직무 입력
 → AI가 단계 문장 생성
 → 백엔드가 각 단계 문장을 Google TTS로 mp3 생성
-→ /api/tts/<hash>.mp3 URL 저장
+→ 사업장별 캐시(data/tts/<hash>.mp3)에 저장하고 소유 레코드(media_files)를 만든다
+→ 응답에는 단기 서명 URL(/api/media/<id>?exp=&sig=)을 싣는다(정적 공개 경로 없음)
 → 근로자 화면에서 mp3 우선 재생
 → mp3가 없거나 재생 실패하면 브라우저 TTS fallback
 ```

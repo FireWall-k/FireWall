@@ -112,6 +112,17 @@ def code_fingerprint(access_code_hash: str) -> str:
     return _b64e(digest[:12])
 
 
+def media_signature(media_id: str, exp: int) -> str:
+    """사진·TTS 서명 URL의 서명(media.py). HMAC(JOBCARD_SECRET, "media:<id>:<exp>").
+
+    "media:" 접두로 용도를 나눈다 — 같은 키로 만드는 토큰 서명·접속 코드 해시와 입력 모양이 겹쳐
+    한쪽 값을 다른 쪽 서명으로 재사용하는 일이 없게 한다. JOBCARD_SECRET를 바꾸면 발급된 URL은
+    모두 무효가 되지만, 화면이 다시 조회하면 새 URL을 받으므로 문제가 없다.
+    """
+    return _b64e(hmac.new(_secret().encode("utf-8"), f"media:{media_id}:{exp}".encode("utf-8"),
+                          hashlib.sha256).digest())
+
+
 def verify_token(token: str) -> dict | None:
     try:
         body, sig = token.split(".", 1)

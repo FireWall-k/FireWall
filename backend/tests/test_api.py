@@ -656,7 +656,18 @@ def test_parallel_step_preparation_keeps_order_and_pairing(client, employer_toke
                              "image_url": f"/api/aac/images/x/STEP_{n}.webp"}]}
 
     monkeypatch.setattr(ai_client, "map_symbols", slow_map)
-    monkeypatch.setattr(main, "synthesize_tts_url", lambda text: f"tts:{text}")
+    # (Phase 0.3) 합성기는 캐시 파일의 상대 키를 돌려주고, main이 소유 레코드 + 서명 URL을 만든다.
+    # 파일 내용에 문장을 적어 두고, 서명 URL로 받은 내용이 그 단계의 문장인지로 짝을 확인한다.
+    import hashlib
+
+    import tts as tts_mod
+
+    def fake_tts(text, scope):
+        key = hashlib.md5(f"{scope}|{text}".encode("utf-8")).hexdigest() + ".mp3"
+        (tts_mod.get_tts_cache_dir() / key).write_bytes(text.encode("utf-8"))
+        return key
+
+    monkeypatch.setattr(main, "synthesize_tts", fake_tts)
 
     started = _time.perf_counter()
     r = client.post("/api/tasks", json={"raw_input": "순서 확인"}, headers=auth(employer_token))
@@ -667,7 +678,8 @@ def test_parallel_step_preparation_keeps_order_and_pairing(client, employer_toke
     for s in steps:
         n = s["sentence"][0]
         assert s["symbol_url"].endswith(f"STEP_{n}.webp")
-        assert s["tts_audio_url"] == f"tts:{s['sentence']}"
+        audio_path = s["tts_audio_url"].split("://", 1)[1].split("/", 1)[1]
+        assert client.get("/" + audio_path).content.decode("utf-8") == s["sentence"]
     # 순서대로 했다면 0.05*(6+5+...+1)=1.05초. 동시에 돌면 가장 느린 한 단계(0.3초) 수준이다.
     assert elapsed < 0.9, elapsed
 

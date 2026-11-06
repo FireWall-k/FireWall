@@ -10,6 +10,8 @@
   이보다 짧게 설정하면 기동은 되지만 법적 최소치를 어길 수 있다(법무 검토 필요).
 - TTS 캐시: 어느 단계도 참조하지 않는 mp3는 TTS_ORPHAN_GRACE_HOURS(기본 24) 지나면 지운다. 막 합성돼
   아직 단계 행이 커밋되기 전인 파일(직무 생성 중)을 지우지 않으려고 유예를 둔다.
+  (Phase 0.3) 사진·TTS 모두 소유 레코드(MediaFile) 기준으로 media.gc가 정리한다. 유예시간 이름은
+  MEDIA_ORPHAN_GRACE_HOURS(없으면 TTS_ORPHAN_GRACE_HOURS).
 
 감사 로그를 지우는 코드는 이 파일에만 있어야 한다(tests/test_privacy.py가 확인한다). Core delete는
 models.AccessAuditLog의 ORM 수정·삭제 차단 이벤트를 거치지 않는다 — 그래서 purge만 지울 수 있다.
@@ -17,16 +19,14 @@ models.AccessAuditLog의 ORM 수정·삭제 차단 이벤트를 거치지 않는
 from __future__ import annotations
 
 import os
-import time
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
+import media
 from database import checkpoint_wal
-from models import AccessAuditLog, PerformanceLog, Step
-from tts import get_tts_cache_dir
+from models import AccessAuditLog, PerformanceLog
 
 
 def _positive_days(name: str, default: int) -> int:
@@ -50,38 +50,16 @@ def access_audit_retention_days() -> int:
 
 
 def tts_orphan_grace_hours() -> float:
-    return float(os.getenv("TTS_ORPHAN_GRACE_HOURS", "24"))
+    # (Phase 0.3) 사진·TTS 공통 유예시간(media.orphan_grace_hours)으로 옮겼다. 예전 이름도 그대로 받는다.
+    return media.orphan_grace_hours()
 
 
 def _utcnow_naive() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-def _referenced_tts_files(db: Session) -> set[str]:
-    # tts_audio_url은 "<PUBLIC_BACKEND_URL>/api/tts/<hash>.mp3". 서버 주소가 바뀌었어도 파일명으로 비교한다.
-    urls = db.scalars(select(Step.tts_audio_url).where(Step.tts_audio_url.is_not(None))).all()
-    return {u.rsplit("/", 1)[-1] for u in urls if u}
-
-
-def orphan_tts_files(db: Session, grace_hours: float | None = None) -> list[Path]:
-    grace = tts_orphan_grace_hours() if grace_hours is None else grace_hours
-    cutoff = time.time() - grace * 3600
-    referenced = _referenced_tts_files(db)
-    out = []
-    for path in get_tts_cache_dir().glob("*.mp3"):
-        if path.name in referenced:
-            continue
-        try:
-            if path.stat().st_mtime > cutoff:
-                continue
-        except FileNotFoundError:
-            continue
-        out.append(path)
-    return out
-
-
 def purge(db: Session, *, dry_run: bool = False, now: datetime | None = None) -> dict:
-    """보존기간이 지난 수행 로그·접근 감사 로그와 미참조 TTS 파일을 지운다. 지운(지울) 개수를 돌려준다."""
+    """보존기간이 지난 수행 로그·접근 감사 로그와 고아 사진·TTS(media.gc)를 지운다. 지운(지울) 개수를 돌려준다."""
     now = now or _utcnow_naive()
     log_cutoff = now - timedelta(days=performance_log_retention_days())
     audit_cutoff = now - timedelta(days=access_audit_retention_days())
@@ -92,28 +70,24 @@ def purge(db: Session, *, dry_run: bool = False, now: datetime | None = None) ->
         "performance_logs": db.scalar(select(func.count()).select_from(PerformanceLog).where(log_filter)) or 0,
         "access_audit_logs": db.scalar(select(func.count()).select_from(AccessAuditLog).where(audit_filter)) or 0,
     }
-    orphans = orphan_tts_files(db)
-    report["tts_files"] = len(orphans)
     report["dry_run"] = dry_run
     if dry_run:
+        report.update({k: v for k, v in media.gc(db, dry_run=True).items() if k != "dry_run"})
         return report
 
     db.execute(delete(PerformanceLog).where(log_filter))
     db.execute(delete(AccessAuditLog).where(audit_filter))
     db.commit()
-    # 지운 기록이 WAL 파일에 남아 있지 않게 바로 체크포인트한다(database.checkpoint_wal 참고).
-    # 지울 것이 없어도 매번 한다 — 근로자 삭제 직후 다른 연결의 읽기 때문에 끝나지 못한 체크포인트를
-    # 여기서 다시 해, 삭제된 이름·메모가 -wal 파일에 남아 있는 기간을 하루 안으로 줄인다.
-    report["wal_checkpointed"] = checkpoint_wal(db)
-    # 위에서 고른 뒤 시간이 흘렀다. 그사이 직무 생성·단계 수정이 같은 문장의 캐시를 다시 썼으면
-    # (tts.synthesize_tts_url이 수정 시각을 갱신하고, 단계가 그 파일을 참조하게 된다) 지우면 안 된다.
-    # 지우기 직전에 참조와 수정 시각을 한 번 더 확인하고, 실제로 지운 개수를 보고한다.
-    still_orphan = {p.name for p in orphan_tts_files(db)}
-    deleted = 0
-    for path in orphans:
-        if path.name not in still_orphan:
-            continue
-        path.unlink(missing_ok=True)
-        deleted += 1
-    report["tts_files"] = deleted
+
+    def _checkpoint() -> None:
+        # 지운 기록이 WAL 파일에 남아 있지 않게 바로 체크포인트한다(database.checkpoint_wal 참고).
+        # 지울 것이 없어도 매번 한다 — 근로자 삭제 직후 다른 연결의 읽기 때문에 끝나지 못한 체크포인트를
+        # 여기서 다시 해, 삭제된 이름·메모가 -wal 파일에 남아 있는 기간을 하루 안으로 줄인다.
+        report["wal_checkpointed"] = checkpoint_wal(db)
+
+    # 고아 사진·TTS 정리(manage.py gc-media와 같은 일). 지울 파일을 고른 뒤·지우기 직전 사이에 체크포인트를 한다.
+    # 그 사이 직무 생성·단계 수정이 같은 문장의 캐시를 다시 썼으면(tts.synthesize_tts가 수정 시각을 갱신하고
+    # 레코드가 그 파일을 가리키게 된다) media.gc가 지우기 직전에 다시 확인해 남긴다.
+    gc_report = media.gc(db, before_unlink=_checkpoint)
+    report.update({k: v for k, v in gc_report.items() if k != "dry_run"})
     return report

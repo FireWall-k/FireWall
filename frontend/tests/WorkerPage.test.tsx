@@ -114,6 +114,32 @@ describe("WorkerPage stuck 수집", () => {
     expect(logStep).toHaveBeenCalledTimes(2);
   });
 
+  it("사진 서명 URL이 만료되면 오늘 카드를 다시 받아 새 URL로 바꾼다(한 URL당 한 번)", async () => {
+    const signed = (n: number) => `http://localhost:8000/api/media/m1?exp=${n}&sig=s${n}`;
+    const withPhoto = (url: string) => ({
+      ...card, steps: [{ ...card.steps[0], symbol_url: url, symbol_source: "photo" }, card.steps[1]],
+    });
+    today.mockResolvedValueOnce([withPhoto(signed(1))]).mockResolvedValue([withPhoto(signed(2))]);
+    await renderAndWait();
+    const img = screen.getByAltText("상자를 옮기세요");
+    expect(img).toHaveAttribute("src", signed(1));
+
+    fireEvent.error(img);  // 만료(403)로 그림을 못 불러온 상황
+    await waitFor(() => expect(screen.getByAltText("상자를 옮기세요")).toHaveAttribute("src", signed(2)));
+    expect(today).toHaveBeenCalledTimes(2);
+    // 보던 단계는 그대로다(처음 단계로 되돌아가지 않는다).
+    expect(screen.getByText("상자를 옮기세요")).toBeInTheDocument();
+
+    // 같은 URL로 또 실패해도 다시 조회하지 않는다(무한 재조회 방지).
+    fireEvent.error(screen.getByAltText("상자를 옮기세요"));
+    fireEvent.error(screen.getByAltText("상자를 옮기세요"));
+    await act(async () => {});
+    expect(today).toHaveBeenCalledTimes(3);
+    fireEvent.error(screen.getByAltText("상자를 옮기세요"));
+    await act(async () => {});
+    expect(today).toHaveBeenCalledTimes(3);
+  });
+
   it("배정이 없으면 안내 문구를 보여준다", async () => {
     today.mockResolvedValue([]);
     render(<WorkerPage />);

@@ -535,3 +535,85 @@ def test_0003_resumes_when_column_already_added():
     db_migrate.upgrade_to_head(engine)
     assert db_migrate.is_at_head(engine)
     assert _diff_against_models(engine) == []
+
+
+# --- 0004 사진·TTS 소유 레코드 -------------------------------------------------
+
+def test_0004_moves_legacy_urls_to_owned_records(monkeypatch, tmp_path):
+    """옛 절대 URL(/api/photos, /api/tts)은 소유 레코드로 옮겨지고(소유자 = 직무의 사업주), 사진은 EXIF가 지워진다.
+    파일이 없는 URL(이미 깨진 링크)은 비운다."""
+    from io import BytesIO
+
+    from PIL import Image
+
+    photo_dir, tts_dir = tmp_path / "photos", tmp_path / "tts"
+    photo_dir.mkdir()
+    tts_dir.mkdir()
+    monkeypatch.setenv("PHOTO_DIR", str(photo_dir))
+    monkeypatch.setenv("TTS_CACHE_DIR", str(tts_dir))
+
+    exif = Image.Exif()
+    exif.get_ifd(0x8825)[1] = "N"
+    exif.get_ifd(0x8825)[2] = (37.0, 33.0, 59.0)
+    buf = BytesIO()
+    Image.new("RGB", (2000, 1000), (1, 2, 3)).save(buf, "JPEG", exif=exif)
+    photo_name, tts_name = "a" * 32 + ".jpg", "b" * 32 + ".mp3"
+    (photo_dir / photo_name).write_bytes(buf.getvalue())
+    (tts_dir / tts_name).write_bytes(b"ID3legacy")
+
+    engine = _new_engine("media_0004")
+    _make_full_legacy_db(engine)
+    db_migrate.migrate(engine)
+    db_migrate.downgrade(engine, "0003_privacy")
+    base = "http://localhost:8000"
+    with engine.begin() as conn:
+        conn.execute(text(
+            "UPDATE steps SET symbol_url = :p, symbol_source = 'photo', tts_audio_url = :t WHERE id = 's1'"),
+            {"p": f"{base}/api/photos/{photo_name}", "t": f"{base}/api/tts/{tts_name}"})
+        conn.execute(text(
+            "INSERT INTO steps (id, task_id, order_index, sentence, action_type, symbol_query, symbol_url, "
+            "symbol_source, needs_fallback, tts_audio_url) VALUES ('s2', 't1', 2, '깨진 링크', 'move', '', "
+            ":p, 'photo', 0, :t)"),
+            {"p": f"{base}/api/photos/{'c' * 32}.png", "t": f"{base}/api/tts/{'d' * 32}.mp3"})
+
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []
+    assert "tts_audio_url" not in {c["name"] for c in inspect(engine).get_columns("steps")}
+    with engine.connect() as conn:
+        s1 = conn.execute(text("SELECT symbol_url, symbol_media_id, tts_media_id, symbol_source "
+                               "FROM steps WHERE id='s1'")).one()
+        s2 = conn.execute(text("SELECT symbol_url, symbol_media_id, tts_media_id, symbol_source, needs_fallback "
+                               "FROM steps WHERE id='s2'")).one()
+        records = {r.id: r for r in conn.execute(text(
+            "SELECT id, employer_id, kind, storage_key, bytes FROM media_files")).all()}
+    assert s1.symbol_url is None and s1.symbol_source == "photo"
+    photo, audio = records[s1.symbol_media_id], records[s1.tts_media_id]
+    assert (photo.employer_id, photo.kind, audio.employer_id, audio.kind) == ("e1", "photo", "e1", "tts")
+    assert audio.storage_key == tts_name
+    # 옛 사진은 메타데이터를 지운 WebP로 다시 저장된다(원본은 레코드가 없어 gc-media가 나중에 지운다).
+    assert photo.storage_key.endswith(".webp")
+    clean = Image.open(photo_dir / photo.storage_key)
+    assert not dict(clean.getexif()) and max(clean.size) <= 1600
+    # 파일이 없던 URL은 비우고 사진은 폴백 상태로 되돌린다.
+    assert tuple(s2) == (None, None, None, "fallback", 1)
+
+
+def test_0004_downgrade_restores_static_urls(monkeypatch, tmp_path):
+    monkeypatch.setenv("TTS_CACHE_DIR", str(tmp_path))
+    (tmp_path / ("e" * 32 + ".mp3")).write_bytes(b"ID3")
+    engine = _new_engine("media_0004_down")
+    _make_full_legacy_db(engine)
+    db_migrate.migrate(engine)
+    with engine.begin() as conn:
+        conn.execute(text(
+            "INSERT INTO media_files (id, employer_id, kind, storage_key, sha256, bytes, created_at) "
+            "VALUES ('m1', 'e1', 'tts', :k, '', 3, '2026-01-01 00:00:00')"), {"k": "e" * 32 + ".mp3"})
+        conn.execute(text("UPDATE steps SET tts_media_id = 'm1' WHERE id = 's1'"))
+    db_migrate.downgrade(engine, "0003_privacy")
+    assert "media_files" not in inspect(engine).get_table_names()
+    with engine.connect() as conn:
+        url = conn.execute(text("SELECT tts_audio_url FROM steps WHERE id='s1'")).scalar()
+    assert url.endswith(f"/api/tts/{'e' * 32}.mp3")
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)

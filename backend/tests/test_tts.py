@@ -60,10 +60,11 @@ def test_real_path_writes_mp3_and_returns_url(monkeypatch, tmp_path):
     counter = {"calls": 0}
     _install_fake_google(monkeypatch, audio=b"ID3FAKEAUDIO", counter=counter)
 
-    url = tts.synthesize_tts_url("상자를 옮기세요")
-    assert url is not None
-    assert url.startswith("http://localhost:8000/api/tts/")
-    assert url.endswith(".mp3")
+    key = tts.synthesize_tts("상자를 옮기세요", "emp-test")
+    assert key is not None
+    # (Phase 0.3) URL이 아니라 캐시 디렉터리 안의 상대 키를 돌려준다. URL은 main이 서명해 만든다.
+    assert "/" not in key and "\\" not in key
+    assert key.endswith(".mp3")
 
     # 실제로 mp3 파일이 캐시 디렉터리에 기록됐는지
     files = list(tmp_path.glob("*.mp3"))
@@ -77,8 +78,8 @@ def test_cache_is_reused_no_second_call(monkeypatch, tmp_path):
     counter = {"calls": 0}
     _install_fake_google(monkeypatch, counter=counter)
 
-    first = tts.synthesize_tts_url("같은 문장")
-    second = tts.synthesize_tts_url("같은 문장")
+    first = tts.synthesize_tts("같은 문장", "emp-test")
+    second = tts.synthesize_tts("같은 문장", "emp-test")
     assert first == second
     # 같은 문장/음성 옵션 → 두 번째는 캐시 히트, 클라이언트 호출 1회뿐
     assert counter["calls"] == 1
@@ -87,7 +88,7 @@ def test_cache_is_reused_no_second_call(monkeypatch, tmp_path):
 def test_empty_text_returns_none(monkeypatch, tmp_path):
     monkeypatch.setenv("TTS_CACHE_DIR", str(tmp_path))
     _install_fake_google(monkeypatch)
-    assert tts.synthesize_tts_url("   ") is None
+    assert tts.synthesize_tts("   ", "emp-test") is None
 
 
 def test_client_failure_falls_back_to_none(monkeypatch, tmp_path):
@@ -113,7 +114,7 @@ def test_client_failure_falls_back_to_none(monkeypatch, tmp_path):
     monkeypatch.setitem(sys.modules, "google.cloud", google_cloud)
     monkeypatch.setitem(sys.modules, "google.cloud.texttospeech", m)
 
-    assert tts.synthesize_tts_url("문장") is None
+    assert tts.synthesize_tts("문장", "emp-test") is None
     assert list(tmp_path.glob("*.mp3")) == []
 
 
@@ -127,14 +128,14 @@ def test_failure_starts_cooldown_so_later_steps_skip_the_call(monkeypatch, tmp_p
         raise RuntimeError("403 billing disabled")
 
     monkeypatch.setattr(tts, "_synthesize_google", boom)
-    assert tts.synthesize_tts_url("첫 문장") is None
-    assert tts.synthesize_tts_url("둘째 문장") is None
-    assert tts.synthesize_tts_url("셋째 문장") is None
+    assert tts.synthesize_tts("첫 문장", "emp-test") is None
+    assert tts.synthesize_tts("둘째 문장", "emp-test") is None
+    assert tts.synthesize_tts("셋째 문장", "emp-test") is None
     assert calls["n"] == 1
 
     # 쿨다운이 지나면 다시 시도한다.
     monkeypatch.setattr(tts, "_cooldown_until", 0.0)
-    assert tts.synthesize_tts_url("넷째 문장") is None
+    assert tts.synthesize_tts("넷째 문장", "emp-test") is None
     assert calls["n"] == 2
 
 
@@ -150,5 +151,5 @@ def test_client_is_reused_across_calls(monkeypatch, tmp_path):
         return original()
 
     monkeypatch.setattr(m, "TextToSpeechClient", counting_client)
-    assert tts.synthesize_tts_url("하나") and tts.synthesize_tts_url("둘")
+    assert tts.synthesize_tts("하나", "emp-test") and tts.synthesize_tts("둘", "emp-test")
     assert made["n"] == 1

@@ -3,6 +3,7 @@ import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { api, type AacMatch, type Step, type StepSymbolCandidates, type Task, type Worker } from "../api";
 import { ActionChip } from "../actions";
 import { maskedAccessCode } from "../workerCodes";
+import { mergeStepMedia, useMediaRefresh } from "../media";
 
 const SAMPLE =
   "예: 택배 상자를 크기별로 분류하고, 큰 상자는 A구역으로 옮겨주세요. 그리고 5개씩 쌓아주세요. 마지막에 수량을 확인하세요.";
@@ -16,6 +17,12 @@ export default function ManagerPage() {
   // 기록된 경우에만 서버가 AI로 보낸다(그 밖에는 서버가 메모를 버린다).
   const [noteWorkerId, setNoteWorkerId] = useState("");
   const [task, setTask] = useState<Task | null>(null);
+  // 업로드 사진의 서명 URL은 만료된다(검토 화면을 오래 열어 둔 경우). 못 불러오면 직무를 다시 받아 URL만 바꾼다.
+  const onMediaError = useMediaRefresh(async () => {
+    if (!task) return;
+    const fresh = await api.getTask(task.id);
+    setTask((cur) => (cur && cur.id === fresh.id ? mergeStepMedia([cur], [fresh])[0] : cur));
+  });
   const [aacQuery, setAacQuery] = useState("");
 
   const [aacResult, setAacResult] = useState<{
@@ -553,6 +560,7 @@ export default function ManagerPage() {
                 <div className="flex w-16 shrink-0 flex-col items-center gap-1">
                   {s.symbol_url ? (
                     <img src={s.symbol_url} alt={s.sentence}
+                         onError={() => onMediaError(s.symbol_url)}
                          className="h-16 w-16 rounded border border-slate-200 object-contain" />
                   ) : (
                     // 아래 후보 영역이 "그림 고르기"를 안내하는 동안에는 "사진 권장"을

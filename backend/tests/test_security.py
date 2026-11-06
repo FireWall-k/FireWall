@@ -160,7 +160,9 @@ def test_demo_seed_is_off_in_production(monkeypatch):
 # --- 단계 그림 URL --------------------------------------------------------------
 @pytest.mark.parametrize("url,ok", [
     ("http://localhost:8000/api/aac/images/cafe/CAFE_013.webp", True),
-    ("http://localhost:8000/api/photos/abc.png", True),
+    # (Phase 0.3) 옛 공개 사진 경로는 prefix만으로 받지 않는다(소유 레코드 조회로 바뀜 — test_media.py).
+    ("http://localhost:8000/api/photos/abc.png", False),
+    ("http://localhost:8000/api/media/00000000-0000-4000-8000-000000000000", False),
     ("/api/aac/images/cafe/CAFE_013.webp", True),
     ("http://evil.example/api/aac/images/cafe/CAFE_013.webp", False),
     ("https://evil.example/pixel.gif", False),

@@ -1,6 +1,6 @@
 # 개인정보 데이터 맵 (잡카드)
 
-> 기준: Phase 0.2 (2026-11-07). 코드가 바뀌면 이 문서도 같이 고친다 — 특히 `backend/privacy.py`, `backend/retention.py`, `backend/main.py`의 AI 호출부, `ai_service/schemas.py`.
+> 기준: Phase 0.3 (2026-11-07). 코드가 바뀌면 이 문서도 같이 고친다 — 특히 `backend/privacy.py`, `backend/retention.py`, `backend/main.py`의 AI 호출부, `ai_service/schemas.py`.
 > 법무 검토 전 초안이다. 보존기간의 법적 근거는 법무 검토로 확정해야 한다.
 
 ## 1. 정보 주체와 데이터 항목
@@ -16,15 +16,21 @@
 | 사업주 | 아이디, 비밀번호 해시(PBKDF2), 사업장명 | 개인정보 | |
 | 사업주 | 접근 감사 로그(`access_audit_logs`) | 접속기록 | actor id, 행위, 근로자 id, 시각, IP. 이름은 담지 않는다 |
 | 사업주 | 직무 원문·단계 문장(`tasks`, `steps`) | 업무 정보 | 사업주가 근로자 이름을 적을 수 있다 → 아래 "별칭" 참고 |
-| 사업주 | 단계 사진(`data/photos`) | 업무 정보 | 현장 사진. 사람이 찍힐 수 있다(EXIF 제거는 Phase 0.3) |
+| 사업주 | 단계 사진(`data/photos`) | 업무 정보 | 현장 사진. 사람이 찍힐 수 있다. 업로드 때 EXIF(GPS·기기·시각)·XMP·ICC를 지우고 긴 변 1600px WebP로 다시 저장한다(Phase 0.3, `photos.sanitize_image`) |
+| 사업주 | 사진·TTS 소유 레코드(`media_files`) | 업무 정보 | 사업주 id, 종류, 상대 키, sha256, 크기. 단계는 `symbol_media_id`/`tts_media_id`로 가리킨다 |
 
 ## 2. 저장 위치
 
 | 데이터 | 위치 | 비고 |
 |---|---|---|
 | DB 전체 | SQLite `jobcard.db` (Docker named volume `jobcard-data`, `/app/data`) | WAL 모드. `secure_delete=ON`으로 지운 행을 0으로 덮는다. `journal_size_limit=0`으로 WAL 재시작 때 -wal 파일을 잘라 옛 프레임이 파일 뒤쪽에 남지 않게 한다 |
-| TTS mp3 | `/app/data/tts/<sha256>.mp3` | 단계 문장 음성. 파일명은 문장 해시 |
-| 단계 사진 | `/app/data/photos/<uuid>.<ext>` | |
+| TTS mp3 | `/app/data/tts/<hash>.mp3` | 단계 문장 음성. 파일명은 (사업장 id + 음성 옵션 + 문장) 해시 — 사업장끼리 캐시를 공유하지 않는다(Phase 0.3) |
+| 단계 사진 | `/app/data/photos/<uuid>.webp` | 0004 이전 사진은 마이그레이션 때 메타데이터를 지운 WebP로 다시 저장. 옛 원본은 `gc-media`가 지운다 |
+
+**사진·TTS 접근(Phase 0.3)**: 예전에는 `/api/photos`, `/api/tts`가 인증 없는 정적 경로라 파일명만 알면 누구나 받을 수 있었다. 이제 정적 경로는 없고,
+인증·소유권 검사를 통과한 API 응답에만 단기 서명 URL(`/api/media/{id}?exp=&sig=`, HMAC(JOBCARD_SECRET), 기본 수명
+`MEDIA_URL_TTL_SECONDS`=3600초)이 실린다. 서명은 media id에 묶여 다른 파일에 쓸 수 없고, 만료·위조는 403이다. URL이 새면(화면 공유·브라우저 기록)
+만료 전까지는 누구나 받을 수 있다 — 수명을 짧게 두는 이유다. 자체 AAC 그림(`/api/aac/images`)은 공개 자산이라 그대로 연다.
 | 브라우저 | `localStorage`: 토큰, 역할, 표시 이름, 사업장 코드 | 공용 기기는 로그아웃 필요 |
 | 내보내기 파일 | 사업주 PC(다운로드) | 서버에는 사본을 남기지 않는다 |
 
@@ -64,10 +70,11 @@
 |---|---|---|
 | 수행 로그 | `PERFORMANCE_LOG_RETENTION_DAYS` (기본 365일, `completed_at` 기준) | `manage.py purge` |
 | 접근 감사 로그 | `ACCESS_AUDIT_RETENTION_DAYS` (기본 730일) — 「개인정보의 안전성 확보조치 기준」 제8조: 민감정보 처리 시 접속기록 2년 이상 | `manage.py purge` (앱 코드에 다른 삭제·수정 경로 없음) |
-| TTS mp3 | 어느 단계도 참조하지 않으면 `TTS_ORPHAN_GRACE_HOURS`(기본 24시간) 뒤. 캐시를 다시 쓰면 수정 시각을 갱신하고, purge는 지우기 직전에 참조·시각을 다시 확인한다(재사용과의 경합 방지) | `manage.py purge` |
+| TTS mp3 | 단계를 지우거나 문장을 고치면 그 단계의 소유 레코드는 바로 지운다. 파일은 어느 레코드도 가리키지 않게 된 뒤 `MEDIA_ORPHAN_GRACE_HOURS`(없으면 `TTS_ORPHAN_GRACE_HOURS`, 기본 24시간) 뒤. 캐시를 다시 쓰면 수정 시각을 갱신하고, 정리는 지우기 직전에 레코드·시각을 다시 확인한다(재사용과의 경합 방지) | `manage.py purge` 또는 `manage.py gc-media` |
+| 단계 사진 | 사진을 교체·되돌리거나 단계·직무를 지우면, 다른 단계가 쓰지 않는 한 레코드와 파일을 **바로** 지운다. 레코드 없는 파일(업로드 중 실패, 0004 이전 원본)은 유예시간 뒤 | 즉시(API) + `manage.py purge`/`gc-media` |
 | 근로자 프로필·메모·배정·수행 로그·동의 | 사업주가 삭제할 때까지 | `DELETE /api/workers/{id}` — DB 행 삭제 + `secure_delete` + WAL 체크포인트(아래 "WAL 체크포인트") |
 | 직무 원문·제목·단계 문장 속 근로자 이름, 그 문장의 TTS mp3 | **근로자를 삭제해도 남는다**(직무는 사업주 데이터) | 직무를 고치거나 지워야 사라진다. 삭제 응답의 `name_mentions`와 삭제 확인 대화상자가 이를 알린다. 문장을 고치면 옛 mp3는 미참조가 되어 purge가 지운다 |
-| 직무·단계·사진 | 사업주가 직무를 삭제할 때까지 | `DELETE /api/tasks/{id}` (**사진 파일 보존·삭제는 아직 없음 — Phase 0.3 과제**: 고아 사진 GC, EXIF 제거) |
+| 직무·단계·사진 | 사업주가 직무를 삭제할 때까지 | `DELETE /api/tasks/{id}` — 단계 행과 그 사진(다른 직무가 쓰지 않으면)·TTS 레코드를 함께 지운다 |
 | 배정(`assignments`) | 근로자·직무 삭제 때까지 | 보존기간 자동 삭제 없음 — 후속 과제 |
 | 백업 | 운영자가 정함 | 백업 사본에는 삭제가 반영되지 않는다 — 백업 보존기간을 별도로 정해야 한다 |
 

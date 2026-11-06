@@ -9,6 +9,7 @@
     docker compose exec backend python manage.py set-password --login itda
     echo "$PW" | docker compose exec -T backend python manage.py create-employer --login itda --password-stdin
     docker compose exec backend python manage.py purge [--dry-run]   # 보존기간 지난 데이터 삭제(매일 cron)
+    docker compose exec backend python manage.py gc-media [--dry-run]  # 고아 사진·TTS만 정리(purge도 함께 한다)
 """
 from __future__ import annotations
 
@@ -23,6 +24,7 @@ from auth import hash_password
 from codes import new_workplace_code
 import db_migrate
 from database import SessionLocal
+import media
 from models import Employer
 import retention
 
@@ -98,10 +100,29 @@ def purge(dry_run: bool) -> None:
           f"(보존 {retention.performance_log_retention_days()}일)")
     print(f"접근 감사 로그 {report['access_audit_logs']}건 {verb} "
           f"(보존 {retention.access_audit_retention_days()}일)")
-    print(f"미참조 TTS 파일 {report['tts_files']}개 {verb}")
+    _print_media_report(report, verb)
     if report.get("wal_checkpointed") is False:
         # 다른 연결이 읽는 중이라 WAL을 비우지 못했다. 지운 데이터가 -wal 파일에 남아 있을 수 있다.
         print("경고: WAL 체크포인트를 끝내지 못했습니다. 잠시 뒤 purge를 다시 실행해 주세요.")
+
+
+def _print_media_report(report: dict, verb: str) -> None:
+    print(f"참조 없는 사진·TTS 레코드 {report['media_records']}건 {verb}")
+    print(f"레코드 없는 사진 파일 {report['photo_files']}개 {verb}")
+    print(f"레코드 없는 TTS 파일 {report['tts_files']}개 {verb} "
+          f"(유예 {media.orphan_grace_hours():g}시간)")
+
+
+def gc_media(dry_run: bool) -> None:
+    """고아 사진·TTS 정리(media.gc)만 따로 돌린다. purge도 매번 같은 정리를 하므로, 보통은 purge cron으로 충분하다.
+
+    디스크가 갑자기 찼거나 마이그레이션(0004) 직후 옛 파일을 바로 확인하고 싶을 때 쓴다. --dry-run으로 먼저 본다.
+    """
+    db_migrate.ensure_schema_ready()
+    with SessionLocal() as db:
+        report = media.gc(db, dry_run=dry_run)
+    verb = "지울 대상(dry-run)" if dry_run else "지움"
+    _print_media_report(report, verb)
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -123,12 +144,18 @@ def main(argv: list[str] | None = None) -> None:
     g = sub.add_parser("purge", help="보존기간 지난 수행 로그·접근 감사 로그·미참조 TTS 파일 삭제")
     g.add_argument("--dry-run", action="store_true", help="지우지 않고 개수만 보여 주기")
 
+    m = sub.add_parser("gc-media", help="레코드 없는 사진·TTS 파일과 어느 단계도 쓰지 않는 레코드 삭제")
+    m.add_argument("--dry-run", action="store_true", help="지우지 않고 개수만 보여 주기")
+
     args = parser.parse_args(argv)
     if args.cmd == "migrate":
         migrate()
         return
     if args.cmd == "purge":
         purge(args.dry_run)
+        return
+    if args.cmd == "gc-media":
+        gc_media(args.dry_run)
         return
     pw = _read_password(args.password_stdin)
     if args.cmd == "create-employer":
