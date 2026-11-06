@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright e2e 산출물(실행마다 새로 생기는 보고서·트레이스)
+playwright-report
+test-results
+blob-report

@@ -68,3 +68,31 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  # 근로자 화면 접근성 e2e(Phase 0.4): 실제 Chromium에서 버튼 높이 80px 이상·axe serious 위반 0을 확인한다.
+  # jsdom 단위 테스트는 CSS를 계산하지 않아 "클래스는 붙어 있는데 스타일이 없는" 결함을 못 잡기 때문이다.
+  # 백엔드는 띄우지 않는다 — API는 테스트가 page.route로 목킹하므로 비밀값이 필요 없다.
+  frontend-e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      # 실패 시 원인(트레이스·스크린샷)을 내려받아 볼 수 있게 남긴다.
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          retention-days: 7

@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "lucide-react": "^1.20.0",
@@ -18,7 +19,9 @@
     "recharts": "^3.8.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.65.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
@@ -30,6 +33,7 @@
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "eslint-plugin-tailwindcss": "3.18.3",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
     "postcss": "^8.5.15",

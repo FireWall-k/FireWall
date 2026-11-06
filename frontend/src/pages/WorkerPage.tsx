@@ -237,7 +237,8 @@ function TodayView({ cards, onMediaError }: {
             onError={() => onMediaError(step.symbol_url)}
             className="mx-auto h-48 w-48 rounded-xl border border-slate-200 object-contain" />
         ) : (
-          <div className="mx-auto flex h-48 w-48 items-center justify-center rounded-xl border-2 border-dashed border-slate-300 text-slate-400">
+          // 대체 박스·보조 글씨는 slate-600(대비 7.6:1)으로 둔다. 예전 slate-400은 2.6:1이라 저시력 근로자가 읽기 어렵고 axe가 serious로 잡았다(Phase 0.4 e2e).
+          <div className="mx-auto flex h-48 w-48 items-center justify-center rounded-xl border-2 border-dashed border-slate-300 text-slate-600">
             그림 없음
           </div>
         )}
@@ -321,7 +322,7 @@ function HistoryView() {
                 (c.status === "done" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800")}>
                 {c.status === "done" ? "완료" : "진행 중"}
               </span>
-              <p className="mt-1 text-xs text-slate-400">{doneCount} / {c.steps.length}단계</p>
+              <p className="mt-1 text-xs text-slate-600">{doneCount} / {c.steps.length}단계</p>
             </div>
           </button>
         );
@@ -374,7 +375,7 @@ function HistoryDetail({ card, onBack, onMediaError }: {
             onError={() => onMediaError(step.symbol_url)}
             className="mx-auto h-48 w-48 rounded-xl border border-slate-200 object-contain" />
         ) : (
-          <div className="mx-auto flex h-48 w-48 items-center justify-center rounded-xl border-2 border-dashed border-slate-300 text-slate-400">
+          <div className="mx-auto flex h-48 w-48 items-center justify-center rounded-xl border-2 border-dashed border-slate-300 text-slate-600">
             그림 없음
           </div>
         )}

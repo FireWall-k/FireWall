@@ -576,7 +576,7 @@ function DashboardPage() {
                     <div key={`${s.order}-${s.action}`} className="rounded-xl border border-paper-200 p-3">
                       <p className="text-xs font-bold text-clay-600">{s.order}단계 · {s.action}</p>
                       <p className="mt-1 text-sm font-semibold text-ink-900">{s.issue}</p>
-                      <p className="mt-1 text-sm text-ink-600">{s.suggestion}</p>
+                      <p className="mt-1 text-sm text-ink-700">{s.suggestion}</p>
                     </div>
                   ))}
                   {!coaching.suggestions.length && (
