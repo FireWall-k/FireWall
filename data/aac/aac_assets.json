@@ -5,11 +5,11 @@
     768,
     768
   ],
-  "asset_count": 1058,
+  "asset_count": 1049,
   "jobs": {
-    "ASSEMBLY": 243,
+    "ASSEMBLY": 235,
     "CAFE": 101,
-    "CLEANING": 214,
+    "CLEANING": 213,
     "PACKAGING": 164,
     "RETAIL": 76,
     "DELIVERY": 55,
@@ -68,21 +68,22 @@
       "id": "ASSEMBLY_AUX_003",
       "group_id": "ASSEMBLY_AUX_003",
       "job": "assembly",
-      "asset_type": "support",
-      "variant": null,
-      "label": "깨끗한 작업대를 확인하는 작업자",
+      "asset_type": "action",
+      "variant": 1,
+      "label": "작업대가 깨끗한지 확인한다",
       "keywords": [
         "작업대",
-        "깨끗한",
-        "작업대를",
-        "확인하는",
-        "작업자",
+        "작업대가",
+        "깨끗한지",
+        "확인한다",
         "점검",
         "검사",
         "확인"
       ],
-      "aliases": [],
-      "search_text": "assembly 깨끗한 작업대를 확인하는 작업자 check 작업대 깨끗한 작업대를 확인하는 작업자 점검 검사 확인",
+      "aliases": [
+        "작업대가 깨끗한지 점검한다"
+      ],
+      "search_text": "assembly 작업대가 깨끗한지 확인한다 check 작업대 작업대가 깨끗한지 확인한다 점검 검사 확인 작업대가 깨끗한지 점검한다",
       "image": "assembly/ASSEMBLY_AUX_003.webp",
       "source_file": "01_#Uae68#Ub057#Ud55c_#Uc791#Uc5c5#Ub300#Ub97c_#Ud655#Uc778#Ud558#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "check",
@@ -118,16 +119,15 @@
       "group_id": "ASSEMBLY_AUX_005",
       "job": "assembly",
       "asset_type": "support",
-      "variant": null,
-      "label": "명찰을 착용하는 모습",
+      "variant": 1,
+      "label": "명찰 착용 완료",
       "keywords": [
         "명찰",
-        "명찰을",
-        "착용하는",
-        "모습"
+        "착용",
+        "완료"
       ],
       "aliases": [],
-      "search_text": "assembly 명찰을 착용하는 모습 other 명찰 명찰을 착용하는 모습",
+      "search_text": "assembly 명찰 착용 완료 other 명찰 착용 완료",
       "image": "assembly/ASSEMBLY_AUX_005.webp",
       "source_file": "01_#Uba85#Ucc30#Uc744_#Ucc29#Uc6a9#Ud558#Ub294_#Ubaa8#Uc2b5.png",
       "action": "other",
@@ -139,20 +139,22 @@
       "id": "ASSEMBLY_AUX_006",
       "group_id": "ASSEMBLY_AUX_006",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "보안경을 착용하는 모습",
+      "label": "보안경을 착용한다",
       "keywords": [
         "보안경",
         "보안경을",
-        "착용하는",
-        "모습"
+        "착용한다",
+        "착용",
+        "입기",
+        "신기"
       ],
       "aliases": [],
-      "search_text": "assembly 보안경을 착용하는 모습 other 보안경 보안경을 착용하는 모습",
+      "search_text": "assembly 보안경을 착용한다 wear 보안경 보안경을 착용한다 착용 입기 신기",
       "image": "assembly/ASSEMBLY_AUX_006.webp",
       "source_file": "01_#Ubcf4#Uc548#Uacbd#Uc744_#Ucc29#Uc6a9#Ud558#Ub294_#Ubaa8#Uc2b5.png",
-      "action": "other",
+      "action": "wear",
       "objects": [
         "보안경"
       ]
@@ -161,20 +163,22 @@
       "id": "ASSEMBLY_AUX_007",
       "group_id": "ASSEMBLY_AUX_007",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "보호장갑을 착용하는 모습",
+      "label": "보호장갑을 착용한다",
       "keywords": [
         "보호장갑",
         "보호장갑을",
-        "착용하는",
-        "모습"
+        "착용한다",
+        "착용",
+        "입기",
+        "신기"
       ],
       "aliases": [],
-      "search_text": "assembly 보호장갑을 착용하는 모습 other 보호장갑 보호장갑을 착용하는 모습",
+      "search_text": "assembly 보호장갑을 착용한다 wear 보호장갑 보호장갑을 착용한다 착용 입기 신기",
       "image": "assembly/ASSEMBLY_AUX_007.webp",
       "source_file": "01_#Ubcf4#Ud638#Uc7a5#Uac11#Uc744_#Ucc29#Uc6a9#Ud558#Ub294_#Ubaa8#Uc2b5.png",
-      "action": "other",
+      "action": "wear",
       "objects": [
         "보호장갑"
       ]
@@ -210,23 +214,30 @@
       "id": "ASSEMBLY_AUX_009",
       "group_id": "ASSEMBLY_AUX_009",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "불량품 상자를 놓는 작업자",
+      "label": "불량품 상자를 정해진 위치에 놓는다",
       "keywords": [
         "불량품 상자",
         "불량 제품",
         "상자",
         "불량품",
         "상자를",
-        "놓는",
-        "작업자"
+        "정해진",
+        "위치에",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
       ],
-      "aliases": [],
-      "search_text": "assembly 불량품 상자를 놓는 작업자 other 불량품 상자 불량 제품 상자 불량품 상자를 놓는 작업자",
+      "aliases": [
+        "불량품 상자를 정해진 위치에 올린다"
+      ],
+      "search_text": "assembly 불량품 상자를 정해진 위치에 놓는다 place 불량품 상자 불량 제품 상자 불량품 상자를 정해진 위치에 놓는다 놓기 올리기 진열 배치 불량품 상자를 정해진 위치에 올린다",
       "image": "assembly/ASSEMBLY_AUX_009.webp",
       "source_file": "01_#Ubd88#Ub7c9#Ud488_#Uc0c1#Uc790#Ub97c_#Ub193#Ub294_#Uc791#Uc5c5#Uc790.png",
-      "action": "other",
+      "action": "place",
       "objects": [
         "불량품 상자",
         "불량 제품",
@@ -254,17 +265,15 @@
       "id": "ASSEMBLY_AUX_011",
       "group_id": "ASSEMBLY_AUX_011",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "안전화를 신는 전체 상황",
+      "label": "안전화를 신는다",
       "keywords": [
         "안전화를",
-        "신는",
-        "전체",
-        "상황"
+        "신는다"
       ],
       "aliases": [],
-      "search_text": "assembly 안전화를 신는 전체 상황 other 안전화를 신는 전체 상황",
+      "search_text": "assembly 안전화를 신는다 other 안전화를 신는다",
       "image": "assembly/ASSEMBLY_AUX_011.webp",
       "source_file": "01_#Uc548#Uc804#Ud654#Ub97c_#Uc2e0#Ub294_#Uc804#Uccb4_#Uc0c1#Ud669.png",
       "action": "other",
@@ -274,22 +283,29 @@
       "id": "ASSEMBLY_AUX_012",
       "group_id": "ASSEMBLY_AUX_012",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "완성품 상자를 놓는 작업자",
+      "label": "완성품 상자를 정해진 위치에 놓는다",
       "keywords": [
         "완성품 상자",
         "완성품",
         "상자",
         "상자를",
-        "놓는",
-        "작업자"
+        "정해진",
+        "위치에",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
       ],
-      "aliases": [],
-      "search_text": "assembly 완성품 상자를 놓는 작업자 other 완성품 상자 완성품 상자 상자를 놓는 작업자",
+      "aliases": [
+        "완성품 상자를 정해진 위치에 올린다"
+      ],
+      "search_text": "assembly 완성품 상자를 정해진 위치에 놓는다 place 완성품 상자 완성품 상자 상자를 정해진 위치에 놓는다 놓기 올리기 진열 배치 완성품 상자를 정해진 위치에 올린다",
       "image": "assembly/ASSEMBLY_AUX_012.webp",
       "source_file": "01_#Uc644#Uc131#Ud488_#Uc0c1#Uc790#Ub97c_#Ub193#Ub294_#Uc791#Uc5c5#Uc790.png",
-      "action": "other",
+      "action": "place",
       "objects": [
         "완성품 상자",
         "완성품",
@@ -300,22 +316,25 @@
       "id": "ASSEMBLY_AUX_013",
       "group_id": "ASSEMBLY_AUX_013",
       "job": "assembly",
-      "asset_type": "support",
-      "variant": null,
-      "label": "작업대를 천으로 닦는 작업자",
+      "asset_type": "action",
+      "variant": 1,
+      "label": "작업대를 천으로 닦는다",
       "keywords": [
+        "마른 천",
         "작업대",
         "작업대를",
         "천으로",
-        "닦는",
-        "작업자"
+        "닦는다",
+        "청소",
+        "닦기"
       ],
       "aliases": [],
-      "search_text": "assembly 작업대를 천으로 닦는 작업자 other 작업대 작업대를 천으로 닦는 작업자",
+      "search_text": "assembly 작업대를 천으로 닦는다 clean 마른 천 작업대 작업대를 천으로 닦는다 청소 닦기",
       "image": "assembly/ASSEMBLY_AUX_013.webp",
       "source_file": "01_#Uc791#Uc5c5#Ub300#Ub97c_#Ucc9c#Uc73c#Ub85c_#Ub2e6#Ub294_#Uc791#Uc5c5#Uc790.png",
-      "action": "other",
+      "action": "clean",
       "objects": [
+        "마른 천",
         "작업대"
       ]
     },
@@ -323,22 +342,27 @@
       "id": "ASSEMBLY_AUX_014",
       "group_id": "ASSEMBLY_AUX_014",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "작업대에 트레이를 놓는 작업자",
+      "label": "트레이를 작업대 위에 놓는다",
       "keywords": [
         "작업대",
         "트레이",
-        "작업대에",
         "트레이를",
-        "놓는",
-        "작업자"
+        "위에",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
       ],
-      "aliases": [],
-      "search_text": "assembly 작업대에 트레이를 놓는 작업자 other 작업대 트레이 작업대에 트레이를 놓는 작업자",
+      "aliases": [
+        "트레이를 작업대 위에 올린다"
+      ],
+      "search_text": "assembly 트레이를 작업대 위에 놓는다 place 작업대 트레이 트레이를 위에 놓는다 놓기 올리기 진열 배치 트레이를 작업대 위에 올린다",
       "image": "assembly/ASSEMBLY_AUX_014.webp",
       "source_file": "01_#Uc791#Uc5c5#Ub300#Uc5d0_#Ud2b8#Ub808#Uc774#Ub97c_#Ub193#Ub294_#Uc791#Uc5c5#Uc790.png",
-      "action": "other",
+      "action": "place",
       "objects": [
         "작업대",
         "트레이"
@@ -350,14 +374,15 @@
       "job": "assembly",
       "asset_type": "support",
       "variant": null,
-      "label": "작업대 위 작은 쓰레기",
+      "label": "쓰레기가 있는 작업대",
       "keywords": [
         "쓰레기",
         "작업대",
-        "작은"
+        "쓰레기가",
+        "있는"
       ],
       "aliases": [],
-      "search_text": "assembly 작업대 위 작은 쓰레기 other 쓰레기 작업대 작은",
+      "search_text": "assembly 쓰레기가 있는 작업대 other 쓰레기 작업대 쓰레기가 있는",
       "image": "assembly/ASSEMBLY_AUX_015.webp",
       "source_file": "01_#Uc791#Uc5c5#Ub300_#Uc704_#Uc791#Uc740_#Uc4f0#Ub808#Uae30.png",
       "action": "other",
@@ -391,14 +416,14 @@
       "job": "assembly",
       "asset_type": "support",
       "variant": null,
-      "label": "작업복을 입은 근로자",
+      "label": "작업복 착용 완료",
       "keywords": [
-        "작업복을",
-        "입은",
-        "근로자"
+        "작업복",
+        "착용",
+        "완료"
       ],
       "aliases": [],
-      "search_text": "assembly 작업복을 입은 근로자 other 작업복을 입은 근로자",
+      "search_text": "assembly 작업복 착용 완료 other 작업복 착용 완료",
       "image": "assembly/ASSEMBLY_AUX_017.webp",
       "source_file": "01_#Uc791#Uc5c5#Ubcf5#Uc744_#Uc785#Uc740_#Uadfc#Ub85c#Uc790.png",
       "action": "other",
@@ -429,22 +454,20 @@
       "job": "assembly",
       "asset_type": "support",
       "variant": null,
-      "label": "조립 제품 사진",
+      "label": "조립 부품 그림 카드",
       "keywords": [
-        "상품",
-        "제품",
-        "물건",
+        "부품",
         "조립",
-        "사진"
+        "그림",
+        "카드"
       ],
       "aliases": [],
-      "search_text": "assembly 조립 제품 사진 other 상품 제품 물건 조립 사진",
+      "search_text": "assembly 조립 부품 그림 카드 other 부품 조립 그림 카드",
       "image": "assembly/ASSEMBLY_AUX_019.webp",
       "source_file": "01_#Uc870#Ub9bd_#Uc81c#Ud488_#Uc0ac#Uc9c4.png",
       "action": "other",
       "objects": [
-        "상품",
-        "제품"
+        "부품"
       ]
     },
     {
@@ -553,19 +576,19 @@
       "id": "ASSEMBLY_AUX_025",
       "group_id": "ASSEMBLY_AUX_025",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "부품 상자 위치를 가리키는 작업자",
+      "label": "부품 상자 놓을 자리를 가리킨다",
       "keywords": [
         "박스",
         "부품",
         "상자",
-        "위치를",
-        "가리키는",
-        "작업자"
+        "놓을",
+        "자리를",
+        "가리킨다"
       ],
       "aliases": [],
-      "search_text": "assembly 부품 상자 위치를 가리키는 작업자 other 박스 부품 상자 위치를 가리키는 작업자",
+      "search_text": "assembly 부품 상자 놓을 자리를 가리킨다 other 박스 부품 상자 놓을 자리를 가리킨다",
       "image": "assembly/ASSEMBLY_AUX_025.webp",
       "source_file": "02_#Ubd80#Ud488_#Uc0c1#Uc790_#Uc704#Uce58#Ub97c_#Uac00#Ub9ac#Ud0a4#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "other",
@@ -618,18 +641,17 @@
       "id": "ASSEMBLY_AUX_028",
       "group_id": "ASSEMBLY_AUX_028",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "의자 높이를 조절하는 작업자",
+      "label": "의자 높이를 조절한다",
       "keywords": [
         "의자",
         "작업 의자",
         "높이를",
-        "조절하는",
-        "작업자"
+        "조절한다"
       ],
       "aliases": [],
-      "search_text": "assembly 의자 높이를 조절하는 작업자 other 의자 작업 의자 높이를 조절하는 작업자",
+      "search_text": "assembly 의자 높이를 조절한다 other 의자 작업 의자 높이를 조절한다",
       "image": "assembly/ASSEMBLY_AUX_028.webp",
       "source_file": "02_#Uc758#Uc790_#Ub192#Uc774#Ub97c_#Uc870#Uc808#Ud558#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "other",
@@ -642,22 +664,22 @@
       "id": "ASSEMBLY_AUX_029",
       "group_id": "ASSEMBLY_AUX_029",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "작업등 스위치를 누르는 손",
+      "label": "작업등 스위치를 누른다",
       "keywords": [
-        "손",
         "작업등",
         "스위치를",
-        "누르는"
+        "누른다",
+        "누르기",
+        "압착"
       ],
       "aliases": [],
-      "search_text": "assembly 작업등 스위치를 누르는 손 other 손 작업등 스위치를 누르는",
+      "search_text": "assembly 작업등 스위치를 누른다 press 작업등 스위치를 누른다 누르기 압착",
       "image": "assembly/ASSEMBLY_AUX_029.webp",
       "source_file": "02_#Uc791#Uc5c5#Ub4f1_#Uc2a4#Uc704#Uce58#Ub97c_#Ub204#Ub974#Ub294_#Uc190.png",
-      "action": "other",
+      "action": "press",
       "objects": [
-        "손",
         "작업등"
       ]
     },
@@ -665,17 +687,16 @@
       "id": "ASSEMBLY_AUX_030",
       "group_id": "ASSEMBLY_AUX_030",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "작업모를 쓰는 모습",
+      "label": "작업모를 쓴다",
       "keywords": [
         "작업모",
         "작업모를",
-        "쓰는",
-        "모습"
+        "쓴다"
       ],
       "aliases": [],
-      "search_text": "assembly 작업모를 쓰는 모습 other 작업모 작업모를 쓰는 모습",
+      "search_text": "assembly 작업모를 쓴다 other 작업모 작업모를 쓴다",
       "image": "assembly/ASSEMBLY_AUX_030.webp",
       "source_file": "02_#Uc791#Uc5c5#Ubaa8#Ub97c_#Uc4f0#Ub294_#Ubaa8#Uc2b5.png",
       "action": "other",
@@ -687,16 +708,15 @@
       "id": "ASSEMBLY_AUX_031",
       "group_id": "ASSEMBLY_AUX_031",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "작업복을 입는 모습",
+      "label": "작업복을 입는다",
       "keywords": [
         "작업복을",
-        "입는",
-        "모습"
+        "입는다"
       ],
       "aliases": [],
-      "search_text": "assembly 작업복을 입는 모습 other 작업복을 입는 모습",
+      "search_text": "assembly 작업복을 입는다 other 작업복을 입는다",
       "image": "assembly/ASSEMBLY_AUX_031.webp",
       "source_file": "02_#Uc791#Uc5c5#Ubcf5#Uc744_#Uc785#Ub294_#Ubaa8#Uc2b5.png",
       "action": "other",
@@ -724,63 +744,50 @@
       "id": "ASSEMBLY_AUX_033",
       "group_id": "ASSEMBLY_AUX_033",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "작업 순서를 가리키는 작업자",
+      "label": "작업 순서를 확인한다",
       "keywords": [
         "작업 순서",
         "작업",
         "순서를",
-        "가리키는",
-        "작업자"
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
       ],
-      "aliases": [],
-      "search_text": "assembly 작업 순서를 가리키는 작업자 other 작업 순서 작업 순서를 가리키는 작업자",
+      "aliases": [
+        "작업 순서를 점검한다"
+      ],
+      "search_text": "assembly 작업 순서를 확인한다 check 작업 순서 작업 순서를 확인한다 점검 검사 확인 작업 순서를 점검한다",
       "image": "assembly/ASSEMBLY_AUX_033.webp",
       "source_file": "02_#Uc791#Uc5c5_#Uc21c#Uc11c#Ub97c_#Uac00#Ub9ac#Ud0a4#Ub294_#Uc791#Uc5c5#Uc790.png",
-      "action": "other",
+      "action": "check",
       "objects": [
         "작업 순서"
       ]
     },
     {
-      "id": "ASSEMBLY_AUX_034",
-      "group_id": "ASSEMBLY_AUX_034",
-      "job": "assembly",
-      "asset_type": "support",
-      "variant": null,
-      "label": "작업 지시서",
-      "keywords": [
-        "작업",
-        "지시서"
-      ],
-      "aliases": [],
-      "search_text": "assembly 작업 지시서 other 작업 지시서",
-      "image": "assembly/ASSEMBLY_AUX_034.webp",
-      "source_file": "02_#Uc791#Uc5c5_#Uc9c0#Uc2dc#Uc11c.png",
-      "action": "other",
-      "objects": []
-    },
-    {
       "id": "ASSEMBLY_AUX_035",
       "group_id": "ASSEMBLY_AUX_035",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "제품 사진을 확인하는 작업자",
+      "label": "제품 사진을 확인한다",
       "keywords": [
         "상품",
         "제품",
         "물건",
         "사진을",
-        "확인하는",
-        "작업자",
+        "확인한다",
         "점검",
         "검사",
         "확인"
       ],
-      "aliases": [],
-      "search_text": "assembly 제품 사진을 확인하는 작업자 check 상품 제품 물건 사진을 확인하는 작업자 점검 검사 확인",
+      "aliases": [
+        "제품 사진을 점검한다"
+      ],
+      "search_text": "assembly 제품 사진을 확인한다 check 상품 제품 물건 사진을 확인한다 점검 검사 확인 제품 사진을 점검한다",
       "image": "assembly/ASSEMBLY_AUX_035.webp",
       "source_file": "02_#Uc81c#Ud488_#Uc0ac#Uc9c4#Uc744_#Ud655#Uc778#Ud558#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "check",
@@ -797,16 +804,19 @@
       "variant": null,
       "label": "출퇴근 기록 단말기",
       "keywords": [
+        "결제 단말기",
         "출퇴근",
         "기록",
         "단말기"
       ],
       "aliases": [],
-      "search_text": "assembly 출퇴근 기록 단말기 other 출퇴근 기록 단말기",
+      "search_text": "assembly 출퇴근 기록 단말기 other 결제 단말기 출퇴근 기록 단말기",
       "image": "assembly/ASSEMBLY_AUX_036.webp",
       "source_file": "02_#Ucd9c#Ud1f4#Uadfc_#Uae30#Ub85d_#Ub2e8#Ub9d0#Uae30.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "결제 단말기"
+      ]
     },
     {
       "id": "ASSEMBLY_AUX_037",
@@ -814,15 +824,13 @@
       "job": "assembly",
       "asset_type": "support",
       "variant": null,
-      "label": "테두리가 있는 부품 트레이",
+      "label": "빈 부품 트레이",
       "keywords": [
         "트레이",
-        "부품",
-        "테두리가",
-        "있는"
+        "부품"
       ],
       "aliases": [],
-      "search_text": "assembly 테두리가 있는 부품 트레이 other 트레이 부품 테두리가 있는",
+      "search_text": "assembly 빈 부품 트레이 other 트레이 부품",
       "image": "assembly/ASSEMBLY_AUX_037.webp",
       "source_file": "02_#Ud14c#Ub450#Ub9ac#Uac00_#Uc788#Ub294_#Ubd80#Ud488_#Ud2b8#Ub808#Uc774.png",
       "action": "other",
@@ -904,22 +912,28 @@
       "id": "ASSEMBLY_AUX_041",
       "group_id": "ASSEMBLY_AUX_041",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "쓰레기를 치우는 작업자",
+      "label": "작업대 위 쓰레기를 쓰레기통에 버린다",
       "keywords": [
+        "쓰레기통",
         "쓰레기",
+        "작업대",
         "쓰레기를",
-        "치우는",
-        "작업자"
+        "쓰레기통에",
+        "버린다",
+        "버리기",
+        "폐기"
       ],
       "aliases": [],
-      "search_text": "assembly 쓰레기를 치우는 작업자 other 쓰레기 쓰레기를 치우는 작업자",
+      "search_text": "assembly 작업대 위 쓰레기를 쓰레기통에 버린다 discard 쓰레기통 쓰레기 작업대 쓰레기를 쓰레기통에 버린다 버리기 폐기",
       "image": "assembly/ASSEMBLY_AUX_041.webp",
       "source_file": "03_#Uc4f0#Ub808#Uae30#Ub97c_#Uce58#Uc6b0#Ub294_#Uc791#Uc5c5#Uc790.png",
-      "action": "other",
+      "action": "discard",
       "objects": [
-        "쓰레기"
+        "쓰레기통",
+        "쓰레기",
+        "작업대"
       ]
     },
     {
@@ -945,20 +959,23 @@
       "id": "ASSEMBLY_AUX_043",
       "group_id": "ASSEMBLY_AUX_043",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "작업등을 켜는 작업자",
+      "label": "작업등 스위치를 눌러 불을 켠다",
       "keywords": [
         "작업등",
-        "작업등을",
-        "켜는",
-        "작업자"
+        "스위치를",
+        "눌러",
+        "불을",
+        "켠다",
+        "누르기",
+        "압착"
       ],
       "aliases": [],
-      "search_text": "assembly 작업등을 켜는 작업자 other 작업등 작업등을 켜는 작업자",
+      "search_text": "assembly 작업등 스위치를 눌러 불을 켠다 press 작업등 스위치를 눌러 불을 켠다 누르기 압착",
       "image": "assembly/ASSEMBLY_AUX_043.webp",
       "source_file": "03_#Uc791#Uc5c5#Ub4f1#Uc744_#Ucf1c#Ub294_#Uc791#Uc5c5#Uc790.png",
-      "action": "other",
+      "action": "press",
       "objects": [
         "작업등"
       ]
@@ -1073,32 +1090,38 @@
       "id": "ASSEMBLY_AUX_048",
       "group_id": "ASSEMBLY_AUX_048",
       "job": "assembly",
-      "asset_type": "support",
+      "asset_type": "action",
       "variant": null,
-      "label": "트레이를 내려놓는 손동작",
+      "label": "트레이를 작업대 위에 내려놓는다",
       "keywords": [
+        "작업대",
         "트레이",
-        "손",
         "트레이를",
-        "내려놓는",
-        "손동작"
+        "위에",
+        "내려놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
       ],
-      "aliases": [],
-      "search_text": "assembly 트레이를 내려놓는 손동작 other 트레이 손 트레이를 내려놓는 손동작",
+      "aliases": [
+        "트레이를 작업대 위에 내려올린다"
+      ],
+      "search_text": "assembly 트레이를 작업대 위에 내려놓는다 place 작업대 트레이 트레이를 위에 내려놓는다 놓기 올리기 진열 배치 트레이를 작업대 위에 내려올린다",
       "image": "assembly/ASSEMBLY_AUX_048.webp",
       "source_file": "03_#Ud2b8#Ub808#Uc774#Ub97c_#Ub0b4#Ub824#Ub193#Ub294_#Uc190#Ub3d9#Uc791.png",
-      "action": "other",
+      "action": "place",
       "objects": [
-        "트레이",
-        "손"
+        "작업대",
+        "트레이"
       ]
     },
     {
       "id": "ASSEMBLY_AUX_049",
-      "group_id": "ASSEMBLY_AUX_049",
+      "group_id": "ASSEMBLY_AUX_005",
       "job": "assembly",
       "asset_type": "support",
-      "variant": null,
+      "variant": 2,
       "label": "명찰 착용 완료",
       "keywords": [
         "명찰",
@@ -1141,24 +1164,22 @@
       "job": "assembly",
       "asset_type": "support",
       "variant": null,
-      "label": "손에 든 제품 사진",
+      "label": "손에 든 부품 그림 종이",
       "keywords": [
-        "상품",
-        "제품",
-        "물건",
         "손",
+        "부품",
         "손에",
-        "사진"
+        "그림",
+        "종이"
       ],
       "aliases": [],
-      "search_text": "assembly 손에 든 제품 사진 other 상품 손 제품 물건 손에 사진",
+      "search_text": "assembly 손에 든 부품 그림 종이 other 손 부품 손에 그림 종이",
       "image": "assembly/ASSEMBLY_AUX_051.webp",
       "source_file": "04_#Uc190#Uc5d0_#Ub4e0_#Uc81c#Ud488_#Uc0ac#Uc9c4.png",
       "action": "other",
       "objects": [
-        "상품",
         "손",
-        "제품"
+        "부품"
       ]
     },
     {
@@ -1215,53 +1236,24 @@
       ]
     },
     {
-      "id": "ASSEMBLY_AUX_054",
-      "group_id": "ASSEMBLY_AUX_054",
-      "job": "assembly",
-      "asset_type": "action",
-      "variant": null,
-      "label": "작업 지시서를 확인한다",
-      "keywords": [
-        "작업 지시서",
-        "작업",
-        "지시서를",
-        "확인한다",
-        "점검",
-        "검사",
-        "확인"
-      ],
-      "aliases": [
-        "작업 지시서를 점검한다"
-      ],
-      "search_text": "assembly 작업 지시서를 확인한다 check 작업 지시서 작업 지시서를 확인한다 점검 검사 확인 작업 지시서를 점검한다",
-      "image": "assembly/ASSEMBLY_AUX_054.webp",
-      "source_file": "04_#Uc791#Uc5c5_#Uc9c0#Uc2dc#Uc11c#Ub97c_#Ud655#Uc778#Ud55c#Ub2e4.png",
-      "action": "check",
-      "objects": [
-        "작업 지시서"
-      ]
-    },
-    {
       "id": "ASSEMBLY_023_01",
       "group_id": "ASSEMBLY_023",
       "job": "assembly",
       "asset_type": "action",
       "variant": 1,
-      "label": "작업대를 향해 부품 상자를 나르는 작업자",
+      "label": "부품 상자를 작업대로 옮긴다",
       "keywords": [
         "부품 상자",
         "작업대",
-        "작업대를",
-        "향해",
         "부품",
         "상자를",
-        "나르는",
-        "작업자",
+        "작업대로",
+        "옮긴다",
         "운반",
         "가져가기"
       ],
       "aliases": [],
-      "search_text": "assembly 작업대를 향해 부품 상자를 나르는 작업자 carry 부품 상자 작업대 작업대를 향해 부품 상자를 나르는 작업자 운반 가져가기",
+      "search_text": "assembly 부품 상자를 작업대로 옮긴다 carry 부품 상자 작업대 부품 상자를 작업대로 옮긴다 운반 가져가기",
       "image": "assembly/ASSEMBLY_023_01.webp",
       "source_file": "ASSEMBLY_023_01_#Uc791#Uc5c5#Ub300#Ub97c_#Ud5a5#Ud574_#Ubd80#Ud488_#Uc0c1#Uc790#Ub97c_#Ub098#Ub974#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "carry",
@@ -1276,19 +1268,19 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 2,
-      "label": "부품 상자를 운반하는 작업자와 작업대",
+      "label": "부품 상자를 작업대로 옮긴다",
       "keywords": [
         "부품 상자",
         "작업대",
         "부품",
         "상자를",
-        "운반하는",
-        "작업자와",
+        "작업대로",
+        "옮긴다",
         "운반",
         "가져가기"
       ],
       "aliases": [],
-      "search_text": "assembly 부품 상자를 운반하는 작업자와 작업대 carry 부품 상자 작업대 부품 상자를 운반하는 작업자와 운반 가져가기",
+      "search_text": "assembly 부품 상자를 작업대로 옮긴다 carry 부품 상자 작업대 부품 상자를 작업대로 옮긴다 운반 가져가기",
       "image": "assembly/ASSEMBLY_023_02.webp",
       "source_file": "ASSEMBLY_023_02_#Ubd80#Ud488_#Uc0c1#Uc790#Ub97c_#Uc6b4#Ubc18#Ud558#Ub294_#Uc791#Uc5c5#Uc790#Uc640_#Uc791#Uc5c5#Ub300.png",
       "action": "carry",
@@ -1301,7 +1293,7 @@
       "id": "ASSEMBLY_023_03",
       "group_id": "ASSEMBLY_023",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 3,
       "label": "작업대 위에 놓인 부품 상자",
       "keywords": [
@@ -1328,21 +1320,20 @@
       "id": "ASSEMBLY_023_04",
       "group_id": "ASSEMBLY_023",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 4,
-      "label": "부품이 담긴 회색 상자",
+      "label": "부품이 담긴 상자",
       "keywords": [
         "부품 상자",
         "작업대",
         "부품이",
         "담긴",
-        "회색",
         "상자",
         "운반",
         "가져가기"
       ],
       "aliases": [],
-      "search_text": "assembly 부품이 담긴 회색 상자 carry 부품 상자 작업대 부품이 담긴 회색 상자 운반 가져가기",
+      "search_text": "assembly 부품이 담긴 상자 carry 부품 상자 작업대 부품이 담긴 상자 운반 가져가기",
       "image": "assembly/ASSEMBLY_023_04.webp",
       "source_file": "ASSEMBLY_023_04_#Ubd80#Ud488#Uc774_#Ub2f4#Uae34_#Ud68c#Uc0c9_#Uc0c1#Uc790.png",
       "action": "carry",
@@ -1357,24 +1348,23 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 1,
-      "label": "카트를 밀어 부품 상자를 옮기는 작업자",
+      "label": "카트를 밀어 상자를 작업대로 옮긴다",
       "keywords": [
         "카트",
         "부품 상자",
         "작업대",
         "카트를",
         "밀어",
-        "부품",
         "상자를",
-        "옮기는",
-        "작업자",
+        "작업대로",
+        "옮긴다",
         "이동",
         "옮기기"
       ],
       "aliases": [
-        "운반 카트를 밀어 부품 상자를 옮기는 작업자"
+        "운반 카트를 밀어 상자를 작업대로 옮긴다"
       ],
-      "search_text": "assembly 카트를 밀어 부품 상자를 옮기는 작업자 move 카트 부품 상자 작업대 카트를 밀어 부품 상자를 옮기는 작업자 이동 옮기기 운반 카트를 밀어 부품 상자를 옮기는 작업자",
+      "search_text": "assembly 카트를 밀어 상자를 작업대로 옮긴다 move 카트 부품 상자 작업대 카트를 밀어 상자를 작업대로 옮긴다 이동 옮기기 운반 카트를 밀어 상자를 작업대로 옮긴다",
       "image": "assembly/ASSEMBLY_024_01.webp",
       "source_file": "ASSEMBLY_024_01_#Uce74#Ud2b8#Ub97c_#Ubc00#Uc5b4_#Ubd80#Ud488_#Uc0c1#Uc790#Ub97c_#Uc62e#Uae30#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "move",
@@ -1388,22 +1378,21 @@
       "id": "ASSEMBLY_024_02",
       "group_id": "ASSEMBLY_024",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 2,
-      "label": "부품 상자가 올라간 운반 카트",
+      "label": "상자가 실린 운반 카트",
       "keywords": [
         "카트",
         "부품 상자",
         "작업대",
-        "부품",
         "상자가",
-        "올라간",
+        "실린",
         "운반",
         "이동",
         "옮기기"
       ],
       "aliases": [],
-      "search_text": "assembly 부품 상자가 올라간 운반 카트 move 카트 부품 상자 작업대 부품 상자가 올라간 운반 이동 옮기기",
+      "search_text": "assembly 상자가 실린 운반 카트 move 카트 부품 상자 작업대 상자가 실린 운반 이동 옮기기",
       "image": "assembly/ASSEMBLY_024_02.webp",
       "source_file": "ASSEMBLY_024_02_#Ubd80#Ud488_#Uc0c1#Uc790#Uac00_#Uc62c#Ub77c#Uac04_#Uc6b4#Ubc18_#Uce74#Ud2b8.png",
       "action": "move",
@@ -1419,22 +1408,21 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 3,
-      "label": "카트 손잡이를 잡고 미는 동작",
+      "label": "카트 손잡이를 잡고 민다",
       "keywords": [
         "카트",
         "부품 상자",
         "작업대",
         "손잡이를",
         "잡고",
-        "미는",
-        "동작",
+        "민다",
         "이동",
         "옮기기"
       ],
       "aliases": [
-        "운반 카트 손잡이를 잡고 미는 동작"
+        "운반 카트 손잡이를 잡고 민다"
       ],
-      "search_text": "assembly 카트 손잡이를 잡고 미는 동작 move 카트 부품 상자 작업대 손잡이를 잡고 미는 동작 이동 옮기기 운반 카트 손잡이를 잡고 미는 동작",
+      "search_text": "assembly 카트 손잡이를 잡고 민다 move 카트 부품 상자 작업대 손잡이를 잡고 민다 이동 옮기기 운반 카트 손잡이를 잡고 민다",
       "image": "assembly/ASSEMBLY_024_03.webp",
       "source_file": "ASSEMBLY_024_03_#Uce74#Ud2b8_#Uc190#Uc7a1#Uc774#Ub97c_#Uc7a1#Uace0_#Ubbf8#Ub294_#Ub3d9#Uc791.png",
       "action": "move",
@@ -1448,25 +1436,22 @@
       "id": "ASSEMBLY_024_04",
       "group_id": "ASSEMBLY_024",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 4,
-      "label": "작업대 옆에 도착한 카트와 부품 상자",
+      "label": "작업대 옆에 세워진 카트",
       "keywords": [
         "카트",
         "부품 상자",
         "작업대",
         "옆에",
-        "도착한",
-        "카트와",
-        "부품",
-        "상자",
+        "세워진",
         "이동",
         "옮기기"
       ],
       "aliases": [
-        "작업대 옆에 도착한 운반 카트와 부품 상자"
+        "작업대 옆에 세워진 운반 카트"
       ],
-      "search_text": "assembly 작업대 옆에 도착한 카트와 부품 상자 move 카트 부품 상자 작업대 옆에 도착한 카트와 부품 상자 이동 옮기기 작업대 옆에 도착한 운반 카트와 부품 상자",
+      "search_text": "assembly 작업대 옆에 세워진 카트 move 카트 부품 상자 작업대 옆에 세워진 이동 옮기기 작업대 옆에 세워진 운반 카트",
       "image": "assembly/ASSEMBLY_024_04.webp",
       "source_file": "ASSEMBLY_024_04_#Uc791#Uc5c5#Ub300_#Uc606#Uc5d0_#Ub3c4#Ucc29#Ud55c_#Uce74#Ud2b8#Uc640_#Ubd80#Ud488_#Uc0c1#Uc790.png",
       "action": "move",
@@ -1482,21 +1467,22 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 1,
-      "label": "상자의 부품 표시를 확인하는 작업자",
+      "label": "상자의 표시 라벨을 확인한다",
       "keywords": [
         "부품 상자",
         "부품 표시",
         "상자의",
-        "부품",
-        "표시를",
-        "확인하는",
-        "작업자",
+        "표시",
+        "라벨을",
+        "확인한다",
         "점검",
         "검사",
         "확인"
       ],
-      "aliases": [],
-      "search_text": "assembly 상자의 부품 표시를 확인하는 작업자 check 부품 상자 부품 표시 상자의 부품 표시를 확인하는 작업자 점검 검사 확인",
+      "aliases": [
+        "상자의 표시 라벨을 점검한다"
+      ],
+      "search_text": "assembly 상자의 표시 라벨을 확인한다 check 부품 상자 부품 표시 상자의 표시 라벨을 확인한다 점검 검사 확인 상자의 표시 라벨을 점검한다",
       "image": "assembly/ASSEMBLY_025_01.webp",
       "source_file": "ASSEMBLY_025_01_#Uc0c1#Uc790#Uc758_#Ubd80#Ud488_#Ud45c#Uc2dc#Ub97c_#Ud655#Uc778#Ud558#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "check",
@@ -1509,21 +1495,18 @@
       "id": "ASSEMBLY_025_02",
       "group_id": "ASSEMBLY_025",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 2,
-      "label": "부품 이름표가 붙는 부품 상자",
+      "label": "빈 부품함",
       "keywords": [
         "부품 상자",
         "부품 표시",
-        "부품",
-        "이름표가",
-        "붙는",
-        "상자",
+        "부품함",
         "확인",
         "점검"
       ],
       "aliases": [],
-      "search_text": "assembly 부품 이름표가 붙는 부품 상자 check 부품 상자 부품 표시 부품 이름표가 붙는 상자 확인 점검",
+      "search_text": "assembly 빈 부품함 check 부품 상자 부품 표시 부품함 확인 점검",
       "image": "assembly/ASSEMBLY_025_02.webp",
       "source_file": "ASSEMBLY_025_02_#Ubd80#Ud488_#Uc774#Ub984#Ud45c#Uac00_#Ubd99#Ub294_#Ubd80#Ud488_#Uc0c1#Uc790.png",
       "action": "check",
@@ -1536,24 +1519,21 @@
       "id": "ASSEMBLY_025_03",
       "group_id": "ASSEMBLY_025",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 3,
-      "label": "확인할 표시가 있는 회색 부품 상자",
+      "label": "빈 라벨이 붙은 부품 상자",
       "keywords": [
         "부품 상자",
         "부품 표시",
-        "확인할",
-        "표시가",
-        "있는",
-        "회색",
+        "라벨이",
+        "붙은",
         "부품",
         "상자",
-        "점검",
-        "검사",
-        "확인"
+        "확인",
+        "점검"
       ],
       "aliases": [],
-      "search_text": "assembly 확인할 표시가 있는 회색 부품 상자 check 부품 상자 부품 표시 확인할 표시가 있는 회색 부품 상자 점검 검사 확인",
+      "search_text": "assembly 빈 라벨이 붙은 부품 상자 check 부품 상자 부품 표시 라벨이 붙은 부품 상자 확인 점검",
       "image": "assembly/ASSEMBLY_025_03.webp",
       "source_file": "ASSEMBLY_025_03_#Ud655#Uc778#Ud560_#Ud45c#Uc2dc#Uac00_#Uc788#Ub294_#Ud68c#Uc0c9_#Ubd80#Ud488_#Uc0c1#Uc790.png",
       "action": "check",
@@ -1563,119 +1543,26 @@
       ]
     },
     {
-      "id": "ASSEMBLY_026_01",
-      "group_id": "ASSEMBLY_026",
-      "job": "assembly",
-      "asset_type": "action",
-      "variant": 1,
-      "label": "상자의 제품 번호를 확인하는 작업자",
-      "keywords": [
-        "부품 상자",
-        "제품 번호",
-        "상자의",
-        "제품",
-        "번호를",
-        "확인하는",
-        "작업자",
-        "상품",
-        "물건",
-        "점검",
-        "검사",
-        "확인"
-      ],
-      "aliases": [],
-      "search_text": "assembly 상자의 제품 번호를 확인하는 작업자 check 부품 상자 제품 번호 상자의 제품 번호를 확인하는 작업자 상품 물건 점검 검사 확인",
-      "image": "assembly/ASSEMBLY_026_01.webp",
-      "source_file": "ASSEMBLY_026_01_#Uc0c1#Uc790#Uc758_#Uc81c#Ud488_#Ubc88#Ud638#Ub97c_#Ud655#Uc778#Ud558#Ub294_#Uc791#Uc5c5#Uc790.png",
-      "action": "check",
-      "objects": [
-        "부품 상자",
-        "제품 번호"
-      ]
-    },
-    {
-      "id": "ASSEMBLY_026_02",
-      "group_id": "ASSEMBLY_026",
-      "job": "assembly",
-      "asset_type": "action",
-      "variant": 2,
-      "label": "제품 번호 표시가 있는 부품 상자",
-      "keywords": [
-        "부품 상자",
-        "제품 번호",
-        "제품",
-        "번호",
-        "표시가",
-        "있는",
-        "부품",
-        "상자",
-        "상품",
-        "물건",
-        "확인",
-        "점검"
-      ],
-      "aliases": [],
-      "search_text": "assembly 제품 번호 표시가 있는 부품 상자 check 부품 상자 제품 번호 제품 번호 표시가 있는 부품 상자 상품 물건 확인 점검",
-      "image": "assembly/ASSEMBLY_026_02.webp",
-      "source_file": "ASSEMBLY_026_02_#Uc81c#Ud488_#Ubc88#Ud638_#Ud45c#Uc2dc#Uac00_#Uc788#Ub294_#Ubd80#Ud488_#Uc0c1#Uc790.png",
-      "action": "check",
-      "objects": [
-        "부품 상자",
-        "제품 번호"
-      ]
-    },
-    {
-      "id": "ASSEMBLY_026_03",
-      "group_id": "ASSEMBLY_026",
-      "job": "assembly",
-      "asset_type": "action",
-      "variant": 3,
-      "label": "제품 번호를 손가락으로 확인하는 동작",
-      "keywords": [
-        "부품 상자",
-        "제품 번호",
-        "제품",
-        "번호를",
-        "손가락으로",
-        "확인하는",
-        "동작",
-        "상품",
-        "물건",
-        "점검",
-        "검사",
-        "확인"
-      ],
-      "aliases": [],
-      "search_text": "assembly 제품 번호를 손가락으로 확인하는 동작 check 부품 상자 제품 번호 제품 번호를 손가락으로 확인하는 동작 상품 물건 점검 검사 확인",
-      "image": "assembly/ASSEMBLY_026_03.webp",
-      "source_file": "ASSEMBLY_026_03_#Uc81c#Ud488_#Ubc88#Ud638#Ub97c_#Uc190#Uac00#Ub77d#Uc73c#Ub85c_#Ud655#Uc778#Ud558#Ub294_#Ub3d9#Uc791.png",
-      "action": "check",
-      "objects": [
-        "부품 상자",
-        "제품 번호"
-      ]
-    },
-    {
       "id": "ASSEMBLY_027_01",
       "group_id": "ASSEMBLY_027",
       "job": "assembly",
       "asset_type": "action",
       "variant": 1,
-      "label": "작업 지시서와 상자의 부품 번호 비교",
+      "label": "지시서와 상자의 부품 번호를 비교한다",
       "keywords": [
         "작업 지시서",
         "부품 번호",
         "부품 상자",
-        "작업",
         "지시서와",
         "상자의",
         "부품",
-        "번호",
+        "번호를",
+        "비교한다",
         "비교",
         "대조"
       ],
       "aliases": [],
-      "search_text": "assembly 작업 지시서와 상자의 부품 번호 비교 compare 작업 지시서 부품 번호 부품 상자 작업 지시서와 상자의 부품 번호 비교 대조",
+      "search_text": "assembly 지시서와 상자의 부품 번호를 비교한다 compare 작업 지시서 부품 번호 부품 상자 지시서와 상자의 부품 번호를 비교한다 비교 대조",
       "image": "assembly/ASSEMBLY_027_01.webp",
       "source_file": "ASSEMBLY_027_01_#Uc791#Uc5c5_#Uc9c0#Uc2dc#Uc11c#Uc640_#Uc0c1#Uc790#Uc758_#Ubd80#Ud488_#Ubc88#Ud638_#Ube44#Uad50.png",
       "action": "compare",
@@ -1691,21 +1578,20 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 1,
-      "label": "잘못된 부품 상자를 발견한 작업자",
+      "label": "잘못된 부품 상자를 발견한다",
       "keywords": [
         "잘못된 부품",
         "부품 상자",
         "잘못된",
         "부품",
         "상자를",
-        "발견한",
-        "작업자",
+        "발견한다",
         "고르기",
         "선별",
         "골라내기"
       ],
       "aliases": [],
-      "search_text": "assembly 잘못된 부품 상자를 발견한 작업자 select 잘못된 부품 부품 상자 잘못된 부품 상자를 발견한 작업자 고르기 선별 골라내기",
+      "search_text": "assembly 잘못된 부품 상자를 발견한다 select 잘못된 부품 부품 상자 잘못된 부품 상자를 발견한다 고르기 선별 골라내기",
       "image": "assembly/ASSEMBLY_028_01.webp",
       "source_file": "ASSEMBLY_028_01_#Uc798#Ubabb#Ub41c_#Ubd80#Ud488_#Uc0c1#Uc790#Ub97c_#Ubc1c#Uacac#Ud55c_#Uc791#Uc5c5#Uc790.png",
       "action": "select",
@@ -1720,21 +1606,20 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 2,
-      "label": "상자 표시와 내용물이 다른 상태",
+      "label": "상자 라벨과 내용물을 비교한다",
       "keywords": [
         "잘못된 부품",
         "부품 상자",
         "상자",
-        "표시와",
-        "내용물이",
-        "다른",
-        "상태",
+        "라벨과",
+        "내용물을",
+        "비교한다",
         "고르기",
         "선별",
         "골라내기"
       ],
       "aliases": [],
-      "search_text": "assembly 상자 표시와 내용물이 다른 상태 select 잘못된 부품 부품 상자 상자 표시와 내용물이 다른 상태 고르기 선별 골라내기",
+      "search_text": "assembly 상자 라벨과 내용물을 비교한다 select 잘못된 부품 부품 상자 상자 라벨과 내용물을 비교한다 고르기 선별 골라내기",
       "image": "assembly/ASSEMBLY_028_02.webp",
       "source_file": "ASSEMBLY_028_02_#Uc0c1#Uc790_#Ud45c#Uc2dc#Uc640_#Ub0b4#Uc6a9#Ubb3c#Uc774_#Ub2e4#Ub978_#Uc0c1#Ud0dc.png",
       "action": "select",
@@ -1749,20 +1634,20 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 3,
-      "label": "잘못된 부품을 가리키는 손동작",
+      "label": "잘못된 부품을 손가락으로 가리킨다",
       "keywords": [
         "잘못된 부품",
         "부품 상자",
         "잘못된",
         "부품을",
-        "가리키는",
-        "손동작",
+        "손가락으로",
+        "가리킨다",
         "고르기",
         "선별",
         "골라내기"
       ],
       "aliases": [],
-      "search_text": "assembly 잘못된 부품을 가리키는 손동작 select 잘못된 부품 부품 상자 잘못된 부품을 가리키는 손동작 고르기 선별 골라내기",
+      "search_text": "assembly 잘못된 부품을 손가락으로 가리킨다 select 잘못된 부품 부품 상자 잘못된 부품을 손가락으로 가리킨다 고르기 선별 골라내기",
       "image": "assembly/ASSEMBLY_028_03.webp",
       "source_file": "ASSEMBLY_028_03_#Uc798#Ubabb#Ub41c_#Ubd80#Ud488#Uc744_#Uac00#Ub9ac#Ud0a4#Ub294_#Uc190#Ub3d9#Uc791.png",
       "action": "select",
@@ -1777,21 +1662,21 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 4,
-      "label": "잘못된 부품 상자를 분리하는 모습",
+      "label": "잘못된 부품 상자를 따로 옮긴다",
       "keywords": [
         "잘못된 부품",
         "부품 상자",
         "잘못된",
         "부품",
         "상자를",
-        "분리하는",
-        "모습",
+        "따로",
+        "옮긴다",
         "고르기",
         "선별",
         "골라내기"
       ],
       "aliases": [],
-      "search_text": "assembly 잘못된 부품 상자를 분리하는 모습 select 잘못된 부품 부품 상자 잘못된 부품 상자를 분리하는 모습 고르기 선별 골라내기",
+      "search_text": "assembly 잘못된 부품 상자를 따로 옮긴다 select 잘못된 부품 부품 상자 잘못된 부품 상자를 따로 옮긴다 고르기 선별 골라내기",
       "image": "assembly/ASSEMBLY_028_04.webp",
       "source_file": "ASSEMBLY_028_04_#Uc798#Ubabb#Ub41c_#Ubd80#Ud488_#Uc0c1#Uc790#Ub97c_#Ubd84#Ub9ac#Ud558#Ub294_#Ubaa8#Uc2b5.png",
       "action": "select",
@@ -1806,7 +1691,7 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 1,
-      "label": "잘못된 부품을 관리자에게 알리는 작업자",
+      "label": "잘못된 부품을 관리자에게 알린다",
       "keywords": [
         "잘못된 부품",
         "관리자",
@@ -1814,14 +1699,13 @@
         "잘못된",
         "부품을",
         "관리자에게",
-        "알리는",
-        "작업자",
+        "알린다",
         "보고",
         "알리기",
         "관리자에게 알리기"
       ],
       "aliases": [],
-      "search_text": "assembly 잘못된 부품을 관리자에게 알리는 작업자 report 잘못된 부품 관리자 부품함 잘못된 부품을 관리자에게 알리는 작업자 보고 알리기 관리자에게 알리기",
+      "search_text": "assembly 잘못된 부품을 관리자에게 알린다 report 잘못된 부품 관리자 부품함 잘못된 부품을 관리자에게 알린다 보고 알리기 관리자에게 알리기",
       "image": "assembly/ASSEMBLY_029_01.webp",
       "source_file": "ASSEMBLY_029_01_#Uc798#Ubabb#Ub41c_#Ubd80#Ud488#Uc744_#Uad00#Ub9ac#Uc790#Uc5d0#Uac8c_#Uc54c#Ub9ac#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "report",
@@ -1835,9 +1719,9 @@
       "id": "ASSEMBLY_029_02",
       "group_id": "ASSEMBLY_029",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 2,
-      "label": "잘못된 부품이 담긴 부품함",
+      "label": "잘못된 부품이 담긴 상자",
       "keywords": [
         "잘못된 부품",
         "관리자",
@@ -1845,45 +1729,15 @@
         "잘못된",
         "부품이",
         "담긴",
+        "상자",
         "보고",
         "알리기",
         "관리자에게 알리기"
       ],
       "aliases": [],
-      "search_text": "assembly 잘못된 부품이 담긴 부품함 report 잘못된 부품 관리자 부품함 잘못된 부품이 담긴 보고 알리기 관리자에게 알리기",
+      "search_text": "assembly 잘못된 부품이 담긴 상자 report 잘못된 부품 관리자 부품함 잘못된 부품이 담긴 상자 보고 알리기 관리자에게 알리기",
       "image": "assembly/ASSEMBLY_029_02.webp",
       "source_file": "ASSEMBLY_029_02_#Uc798#Ubabb#Ub41c_#Ubd80#Ud488#Uc774_#Ub2f4#Uae34_#Ubd80#Ud488#Ud568.png",
-      "action": "report",
-      "objects": [
-        "잘못된 부품",
-        "관리자",
-        "부품함"
-      ]
-    },
-    {
-      "id": "ASSEMBLY_029_03",
-      "group_id": "ASSEMBLY_029",
-      "job": "assembly",
-      "asset_type": "action",
-      "variant": 3,
-      "label": "잘못된 부품을 가리켜 보여주는 동작",
-      "keywords": [
-        "잘못된 부품",
-        "관리자",
-        "부품함",
-        "잘못된",
-        "부품을",
-        "가리켜",
-        "보여주는",
-        "동작",
-        "보고",
-        "알리기",
-        "관리자에게 알리기"
-      ],
-      "aliases": [],
-      "search_text": "assembly 잘못된 부품을 가리켜 보여주는 동작 report 잘못된 부품 관리자 부품함 잘못된 부품을 가리켜 보여주는 동작 보고 알리기 관리자에게 알리기",
-      "image": "assembly/ASSEMBLY_029_03.webp",
-      "source_file": "ASSEMBLY_029_03_#Uc798#Ubabb#Ub41c_#Ubd80#Ud488#Uc744_#Uac00#Ub9ac#Ucf1c_#Ubcf4#Uc5ec#Uc8fc#Ub294_#Ub3d9#Uc791.png",
       "action": "report",
       "objects": [
         "잘못된 부품",
@@ -1897,15 +1751,14 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 4,
-      "label": "관리자가 보고를 확인한 상태",
+      "label": "관리자에게 확인을 받는다",
       "keywords": [
         "잘못된 부품",
         "관리자",
         "부품함",
-        "관리자가",
-        "보고를",
-        "확인한",
-        "상태",
+        "관리자에게",
+        "확인을",
+        "받는다",
         "점검",
         "검사",
         "보고",
@@ -1913,7 +1766,7 @@
         "관리자에게 알리기"
       ],
       "aliases": [],
-      "search_text": "assembly 관리자가 보고를 확인한 상태 report 잘못된 부품 관리자 부품함 관리자가 보고를 확인한 상태 점검 검사 보고 알리기 관리자에게 알리기",
+      "search_text": "assembly 관리자에게 확인을 받는다 report 잘못된 부품 관리자 부품함 관리자에게 확인을 받는다 점검 검사 보고 알리기 관리자에게 알리기",
       "image": "assembly/ASSEMBLY_029_04.webp",
       "source_file": "ASSEMBLY_029_04_#Uad00#Ub9ac#Uc790#Uac00_#Ubcf4#Uace0#Ub97c_#Ud655#Uc778#Ud55c_#Uc0c1#Ud0dc.png",
       "action": "report",
@@ -1929,22 +1782,23 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 1,
-      "label": "부품 상자를 작업대 위에 놓는 작업자",
+      "label": "부품 상자를 작업대 위에 놓는다",
       "keywords": [
         "부품 상자",
         "작업대",
         "부품",
         "상자를",
         "위에",
-        "놓는",
-        "작업자",
+        "놓는다",
         "놓기",
         "올리기",
         "진열",
         "배치"
       ],
-      "aliases": [],
-      "search_text": "assembly 부품 상자를 작업대 위에 놓는 작업자 place 부품 상자 작업대 부품 상자를 위에 놓는 작업자 놓기 올리기 진열 배치",
+      "aliases": [
+        "부품 상자를 작업대 위에 올린다"
+      ],
+      "search_text": "assembly 부품 상자를 작업대 위에 놓는다 place 부품 상자 작업대 부품 상자를 위에 놓는다 놓기 올리기 진열 배치 부품 상자를 작업대 위에 올린다",
       "image": "assembly/ASSEMBLY_030_01.webp",
       "source_file": "ASSEMBLY_030_01_#Ubd80#Ud488_#Uc0c1#Uc790#Ub97c_#Uc791#Uc5c5#Ub300_#Uc704#Uc5d0_#Ub193#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "place",
@@ -1957,15 +1811,12 @@
       "id": "ASSEMBLY_030_02",
       "group_id": "ASSEMBLY_030",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 2,
-      "label": "작업대에 올릴 회색 부품 상자",
+      "label": "빈 부품 상자",
       "keywords": [
         "부품 상자",
         "작업대",
-        "작업대에",
-        "올릴",
-        "회색",
         "부품",
         "상자",
         "놓기",
@@ -1974,7 +1825,7 @@
         "배치"
       ],
       "aliases": [],
-      "search_text": "assembly 작업대에 올릴 회색 부품 상자 place 부품 상자 작업대 작업대에 올릴 회색 부품 상자 놓기 올리기 진열 배치",
+      "search_text": "assembly 빈 부품 상자 place 부품 상자 작업대 부품 상자 놓기 올리기 진열 배치",
       "image": "assembly/ASSEMBLY_030_02.webp",
       "source_file": "ASSEMBLY_030_02_#Uc791#Uc5c5#Ub300#Uc5d0_#Uc62c#Ub9b4_#Ud68c#Uc0c9_#Ubd80#Ud488_#Uc0c1#Uc790.png",
       "action": "place",
@@ -1987,24 +1838,23 @@
       "id": "ASSEMBLY_030_03",
       "group_id": "ASSEMBLY_030",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 3,
-      "label": "작업대 위에 부품 상자를 올린 상태",
+      "label": "작업대 위에 올린 부품 상자",
       "keywords": [
         "부품 상자",
         "작업대",
         "위에",
-        "부품",
-        "상자를",
         "올린",
-        "상태",
+        "부품",
+        "상자",
         "놓기",
         "올리기",
         "진열",
         "배치"
       ],
       "aliases": [],
-      "search_text": "assembly 작업대 위에 부품 상자를 올린 상태 place 부품 상자 작업대 위에 부품 상자를 올린 상태 놓기 올리기 진열 배치",
+      "search_text": "assembly 작업대 위에 올린 부품 상자 place 부품 상자 작업대 위에 올린 부품 상자 놓기 올리기 진열 배치",
       "image": "assembly/ASSEMBLY_030_03.webp",
       "source_file": "ASSEMBLY_030_03_#Uc791#Uc5c5#Ub300_#Uc704#Uc5d0_#Ubd80#Ud488_#Uc0c1#Uc790#Ub97c_#Uc62c#Ub9b0_#Uc0c1#Ud0dc.png",
       "action": "place",
@@ -2019,17 +1869,16 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 1,
-      "label": "부품 상자를 여는 작업자",
+      "label": "부품 상자를 연다",
       "keywords": [
         "부품 상자",
         "부품",
         "상자를",
-        "여는",
-        "작업자",
+        "연다",
         "열기"
       ],
       "aliases": [],
-      "search_text": "assembly 부품 상자를 여는 작업자 open 부품 상자 부품 상자를 여는 작업자 열기",
+      "search_text": "assembly 부품 상자를 연다 open 부품 상자 부품 상자를 연다 열기",
       "image": "assembly/ASSEMBLY_031_01.webp",
       "source_file": "ASSEMBLY_031_01_#Ubd80#Ud488_#Uc0c1#Uc790#Ub97c_#Uc5ec#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "open",
@@ -2041,7 +1890,7 @@
       "id": "ASSEMBLY_031_02",
       "group_id": "ASSEMBLY_031",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 2,
       "label": "열린 부품 상자",
       "keywords": [
@@ -2066,18 +1915,17 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 3,
-      "label": "상자 덮개를 위로 여는 손동작",
+      "label": "상자 덮개를 위로 연다",
       "keywords": [
         "부품 상자",
         "상자",
         "덮개를",
         "위로",
-        "여는",
-        "손동작",
+        "연다",
         "열기"
       ],
       "aliases": [],
-      "search_text": "assembly 상자 덮개를 위로 여는 손동작 open 부품 상자 상자 덮개를 위로 여는 손동작 열기",
+      "search_text": "assembly 상자 덮개를 위로 연다 open 부품 상자 상자 덮개를 위로 연다 열기",
       "image": "assembly/ASSEMBLY_031_03.webp",
       "source_file": "ASSEMBLY_031_03_#Uc0c1#Uc790_#Ub36e#Uac1c#Ub97c_#Uc704#Ub85c_#Uc5ec#Ub294_#Uc190#Ub3d9#Uc791.png",
       "action": "open",
@@ -2089,18 +1937,18 @@
       "id": "ASSEMBLY_031_04",
       "group_id": "ASSEMBLY_031",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 4,
-      "label": "열린 상자 픽토그램",
+      "label": "열린 부품 상자",
       "keywords": [
         "부품 상자",
         "열린",
+        "부품",
         "상자",
-        "픽토그램",
         "열기"
       ],
       "aliases": [],
-      "search_text": "assembly 열린 상자 픽토그램 open 부품 상자 열린 상자 픽토그램 열기",
+      "search_text": "assembly 열린 부품 상자 open 부품 상자 열린 부품 상자 열기",
       "image": "assembly/ASSEMBLY_031_04.webp",
       "source_file": "ASSEMBLY_031_04_#Uc5f4#Ub9b0_#Uc0c1#Uc790_#Ud53d#Ud1a0#Uadf8#Ub7a8.png",
       "action": "open",
@@ -2114,46 +1962,22 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 1,
-      "label": "부품 수량표를 확인하는 작업자",
+      "label": "부품 수량표를 확인한다",
       "keywords": [
         "부품 수량표",
         "부품",
         "수량표를",
-        "확인하는",
-        "작업자",
+        "확인한다",
         "점검",
         "검사",
         "확인"
       ],
-      "aliases": [],
-      "search_text": "assembly 부품 수량표를 확인하는 작업자 check 부품 수량표 부품 수량표를 확인하는 작업자 점검 검사 확인",
+      "aliases": [
+        "부품 수량표를 점검한다"
+      ],
+      "search_text": "assembly 부품 수량표를 확인한다 check 부품 수량표 부품 수량표를 확인한다 점검 검사 확인 부품 수량표를 점검한다",
       "image": "assembly/ASSEMBLY_032_01.webp",
       "source_file": "ASSEMBLY_032_01_#Ubd80#Ud488_#Uc218#Ub7c9#Ud45c#Ub97c_#Ud655#Uc778#Ud558#Ub294_#Uc791#Uc5c5#Uc790.png",
-      "action": "check",
-      "objects": [
-        "부품 수량표"
-      ]
-    },
-    {
-      "id": "ASSEMBLY_032_02",
-      "group_id": "ASSEMBLY_032",
-      "job": "assembly",
-      "asset_type": "action",
-      "variant": 2,
-      "label": "부품 그림이 있는 수량표",
-      "keywords": [
-        "부품 수량표",
-        "부품",
-        "그림이",
-        "있는",
-        "수량표",
-        "확인",
-        "점검"
-      ],
-      "aliases": [],
-      "search_text": "assembly 부품 그림이 있는 수량표 check 부품 수량표 부품 그림이 있는 수량표 확인 점검",
-      "image": "assembly/ASSEMBLY_032_02.webp",
-      "source_file": "ASSEMBLY_032_02_#Ubd80#Ud488_#Uadf8#Ub9bc#Uc774_#Uc788#Ub294_#Uc218#Ub7c9#Ud45c.png",
       "action": "check",
       "objects": [
         "부품 수량표"
@@ -2165,19 +1989,21 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 3,
-      "label": "수량표의 항목을 확인하는 손동작",
+      "label": "점검표 항목을 손가락으로 확인한다",
       "keywords": [
         "부품 수량표",
-        "수량표의",
+        "점검표",
         "항목을",
-        "확인하는",
-        "손동작",
+        "손가락으로",
+        "확인한다",
         "점검",
         "검사",
         "확인"
       ],
-      "aliases": [],
-      "search_text": "assembly 수량표의 항목을 확인하는 손동작 check 부품 수량표 수량표의 항목을 확인하는 손동작 점검 검사 확인",
+      "aliases": [
+        "점검표 항목을 손가락으로 점검한다"
+      ],
+      "search_text": "assembly 점검표 항목을 손가락으로 확인한다 check 부품 수량표 점검표 항목을 손가락으로 확인한다 점검 검사 확인 점검표 항목을 손가락으로 점검한다",
       "image": "assembly/ASSEMBLY_032_03.webp",
       "source_file": "ASSEMBLY_032_03_#Uc218#Ub7c9#Ud45c#Uc758_#Ud56d#Ubaa9#Uc744_#Ud655#Uc778#Ud558#Ub294_#Uc190#Ub3d9#Uc791.png",
       "action": "check",
@@ -2189,20 +2015,21 @@
       "id": "ASSEMBLY_032_04",
       "group_id": "ASSEMBLY_032",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 4,
-      "label": "부품 수량표 확인 픽토그램",
+      "label": "수량표와 확인 완료 부품 상자",
       "keywords": [
         "부품 수량표",
-        "부품",
-        "수량표",
+        "수량표와",
         "확인",
-        "픽토그램",
+        "완료",
+        "부품",
+        "상자",
         "점검",
         "검사"
       ],
       "aliases": [],
-      "search_text": "assembly 부품 수량표 확인 픽토그램 check 부품 수량표 부품 수량표 확인 픽토그램 점검 검사",
+      "search_text": "assembly 수량표와 확인 완료 부품 상자 check 부품 수량표 수량표와 확인 완료 부품 상자 점검 검사",
       "image": "assembly/ASSEMBLY_032_04.webp",
       "source_file": "ASSEMBLY_032_04_#Ubd80#Ud488_#Uc218#Ub7c9#Ud45c_#Ud655#Uc778_#Ud53d#Ud1a0#Uadf8#Ub7a8.png",
       "action": "check",
@@ -2214,20 +2041,20 @@
       "id": "ASSEMBLY_033_01",
       "group_id": "ASSEMBLY_033",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 1,
-      "label": "개수를 셀 부품이 담긴 트레이",
+      "label": "부품이 가지런히 담긴 트레이",
       "keywords": [
         "부품",
         "트레이",
-        "개수를",
         "부품이",
+        "가지런히",
         "담긴",
         "수량 확인",
         "개수 세기"
       ],
       "aliases": [],
-      "search_text": "assembly 개수를 셀 부품이 담긴 트레이 count 부품 트레이 개수를 부품이 담긴 수량 확인 개수 세기",
+      "search_text": "assembly 부품이 가지런히 담긴 트레이 count 부품 트레이 부품이 가지런히 담긴 수량 확인 개수 세기",
       "image": "assembly/ASSEMBLY_033_01.webp",
       "source_file": "ASSEMBLY_033_01_#Uac1c#Uc218#Ub97c_#Uc140_#Ubd80#Ud488#Uc774_#Ub2f4#Uae34_#Ud2b8#Ub808#Uc774.png",
       "action": "count",
@@ -2240,21 +2067,20 @@
       "id": "ASSEMBLY_033_02",
       "group_id": "ASSEMBLY_033",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 2,
-      "label": "가지런히 놓인 부품을 세는 트레이",
+      "label": "부품이 가지런히 담긴 트레이",
       "keywords": [
         "부품",
         "트레이",
+        "부품이",
         "가지런히",
-        "놓인",
-        "부품을",
-        "세는",
+        "담긴",
         "수량 확인",
         "개수 세기"
       ],
       "aliases": [],
-      "search_text": "assembly 가지런히 놓인 부품을 세는 트레이 count 부품 트레이 가지런히 놓인 부품을 세는 수량 확인 개수 세기",
+      "search_text": "assembly 부품이 가지런히 담긴 트레이 count 부품 트레이 부품이 가지런히 담긴 수량 확인 개수 세기",
       "image": "assembly/ASSEMBLY_033_02.webp",
       "source_file": "ASSEMBLY_033_02_#Uac00#Uc9c0#Ub7f0#Ud788_#Ub193#Uc778_#Ubd80#Ud488#Uc744_#Uc138#Ub294_#Ud2b8#Ub808#Uc774.png",
       "action": "count",
@@ -2269,19 +2095,22 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 1,
-      "label": "부품이 부족한 작업 트레이",
+      "label": "트레이에 빠진 부품을 확인한다",
       "keywords": [
         "부품",
         "작업 트레이",
-        "부품이",
-        "부족한",
-        "작업",
-        "트레이",
-        "확인",
-        "점검"
+        "트레이에",
+        "빠진",
+        "부품을",
+        "확인한다",
+        "점검",
+        "검사",
+        "확인"
       ],
-      "aliases": [],
-      "search_text": "assembly 부품이 부족한 작업 트레이 check 부품 작업 트레이 부품이 부족한 작업 트레이 확인 점검",
+      "aliases": [
+        "트레이에 빠진 부품을 점검한다"
+      ],
+      "search_text": "assembly 트레이에 빠진 부품을 확인한다 check 부품 작업 트레이 트레이에 빠진 부품을 확인한다 점검 검사 확인 트레이에 빠진 부품을 점검한다",
       "image": "assembly/ASSEMBLY_034_01.webp",
       "source_file": "ASSEMBLY_034_01_#Ubd80#Ud488#Uc774_#Ubd80#Uc871#Ud55c_#Uc791#Uc5c5_#Ud2b8#Ub808#Uc774.png",
       "action": "check",
@@ -2296,20 +2125,19 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 2,
-      "label": "비어 있는 부품 자리를 가리키는 동작",
+      "label": "부품이 빠진 칸을 가리킨다",
       "keywords": [
         "부품",
         "작업 트레이",
-        "비어",
-        "있는",
-        "자리를",
-        "가리키는",
-        "동작",
+        "부품이",
+        "빠진",
+        "칸을",
+        "가리킨다",
         "확인",
         "점검"
       ],
       "aliases": [],
-      "search_text": "assembly 비어 있는 부품 자리를 가리키는 동작 check 부품 작업 트레이 비어 있는 자리를 가리키는 동작 확인 점검",
+      "search_text": "assembly 부품이 빠진 칸을 가리킨다 check 부품 작업 트레이 부품이 빠진 칸을 가리킨다 확인 점검",
       "image": "assembly/ASSEMBLY_034_02.webp",
       "source_file": "ASSEMBLY_034_02_#Ube44#Uc5b4_#Uc788#Ub294_#Ubd80#Ud488_#Uc790#Ub9ac#Ub97c_#Uac00#Ub9ac#Ud0a4#Ub294_#Ub3d9#Uc791.png",
       "action": "check",
@@ -2324,22 +2152,21 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 1,
-      "label": "부족한 부품을 관리자에게 보여주는 작업자",
+      "label": "부족한 부품 트레이를 관리자에게 보여준다",
       "keywords": [
         "부품",
         "작업 트레이",
         "관리자",
         "부족한",
-        "부품을",
+        "트레이를",
         "관리자에게",
-        "보여주는",
-        "작업자",
+        "보여준다",
         "보고",
         "알리기",
         "관리자에게 알리기"
       ],
       "aliases": [],
-      "search_text": "assembly 부족한 부품을 관리자에게 보여주는 작업자 report 부품 작업 트레이 관리자 부족한 부품을 관리자에게 보여주는 작업자 보고 알리기 관리자에게 알리기",
+      "search_text": "assembly 부족한 부품 트레이를 관리자에게 보여준다 report 부품 작업 트레이 관리자 부족한 트레이를 관리자에게 보여준다 보고 알리기 관리자에게 알리기",
       "image": "assembly/ASSEMBLY_035_01.webp",
       "source_file": "ASSEMBLY_035_01_#Ubd80#Uc871#Ud55c_#Ubd80#Ud488#Uc744_#Uad00#Ub9ac#Uc790#Uc5d0#Uac8c_#Ubcf4#Uc5ec#Uc8fc#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "report",
@@ -2355,22 +2182,21 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 2,
-      "label": "부족한 부품의 빈 자리를 가리키는 동작",
+      "label": "부품이 없는 빈 칸을 가리킨다",
       "keywords": [
         "부품",
         "작업 트레이",
         "관리자",
-        "부족한",
-        "부품의",
-        "자리를",
-        "가리키는",
-        "동작",
+        "부품이",
+        "없는",
+        "칸을",
+        "가리킨다",
         "보고",
         "알리기",
         "관리자에게 알리기"
       ],
       "aliases": [],
-      "search_text": "assembly 부족한 부품의 빈 자리를 가리키는 동작 report 부품 작업 트레이 관리자 부족한 부품의 자리를 가리키는 동작 보고 알리기 관리자에게 알리기",
+      "search_text": "assembly 부품이 없는 빈 칸을 가리킨다 report 부품 작업 트레이 관리자 부품이 없는 칸을 가리킨다 보고 알리기 관리자에게 알리기",
       "image": "assembly/ASSEMBLY_035_02.webp",
       "source_file": "ASSEMBLY_035_02_#Ubd80#Uc871#Ud55c_#Ubd80#Ud488#Uc758_#Ube48_#Uc790#Ub9ac#Ub97c_#Uac00#Ub9ac#Ud0a4#Ub294_#Ub3d9#Uc791.png",
       "action": "report",
@@ -2386,21 +2212,21 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 3,
-      "label": "관리자에게 부품 부족을 알리는 모습",
+      "label": "부품이 부족하다고 관리자에게 알린다",
       "keywords": [
         "부품",
         "작업 트레이",
         "관리자",
+        "부품이",
+        "부족하다고",
         "관리자에게",
-        "부족을",
-        "알리는",
-        "모습",
+        "알린다",
         "보고",
         "알리기",
         "관리자에게 알리기"
       ],
       "aliases": [],
-      "search_text": "assembly 관리자에게 부품 부족을 알리는 모습 report 부품 작업 트레이 관리자 관리자에게 부족을 알리는 모습 보고 알리기 관리자에게 알리기",
+      "search_text": "assembly 부품이 부족하다고 관리자에게 알린다 report 부품 작업 트레이 관리자 부품이 부족하다고 관리자에게 알린다 보고 알리기 관리자에게 알리기",
       "image": "assembly/ASSEMBLY_035_03.webp",
       "source_file": "ASSEMBLY_035_03_#Uad00#Ub9ac#Uc790#Uc5d0#Uac8c_#Ubd80#Ud488_#Ubd80#Uc871#Uc744_#Uc54c#Ub9ac#Ub294_#Ubaa8#Uc2b5.png",
       "action": "report",
@@ -2416,20 +2242,17 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 1,
-      "label": "부품의 파손 여부를 확인하는 작업자",
+      "label": "부품이 깨졌는지 살펴본다",
       "keywords": [
         "파손 부품",
-        "부품의",
-        "파손",
-        "여부를",
-        "확인하는",
-        "작업자",
-        "점검",
-        "검사",
-        "확인"
+        "부품이",
+        "깨졌는지",
+        "살펴본다",
+        "확인",
+        "점검"
       ],
       "aliases": [],
-      "search_text": "assembly 부품의 파손 여부를 확인하는 작업자 check 파손 부품 부품의 파손 여부를 확인하는 작업자 점검 검사 확인",
+      "search_text": "assembly 부품이 깨졌는지 살펴본다 check 파손 부품 부품이 깨졌는지 살펴본다 확인 점검",
       "image": "assembly/ASSEMBLY_036_01.webp",
       "source_file": "ASSEMBLY_036_01_#Ubd80#Ud488#Uc758_#Ud30c#Uc190_#Uc5ec#Ubd80#Ub97c_#Ud655#Uc778#Ud558#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "check",
@@ -2441,20 +2264,20 @@
       "id": "ASSEMBLY_036_02",
       "group_id": "ASSEMBLY_036",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 2,
-      "label": "금이 가고 깨진 부품",
+      "label": "금이 가서 깨진 부품",
       "keywords": [
         "파손 부품",
         "금이",
-        "가고",
+        "가서",
         "깨진",
         "부품",
         "확인",
         "점검"
       ],
       "aliases": [],
-      "search_text": "assembly 금이 가고 깨진 부품 check 파손 부품 금이 가고 깨진 부품 확인 점검",
+      "search_text": "assembly 금이 가서 깨진 부품 check 파손 부품 금이 가서 깨진 부품 확인 점검",
       "image": "assembly/ASSEMBLY_036_02.webp",
       "source_file": "ASSEMBLY_036_02_#Uae08#Uc774_#Uac00#Uace0_#Uae68#Uc9c4_#Ubd80#Ud488.png",
       "action": "check",
@@ -2466,20 +2289,20 @@
       "id": "ASSEMBLY_036_03",
       "group_id": "ASSEMBLY_036",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 3,
-      "label": "파손된 부품 경고 픽토그램",
+      "label": "깨진 부품 경고 표시",
       "keywords": [
         "파손 부품",
-        "파손된",
+        "깨진",
         "부품",
         "경고",
-        "픽토그램",
+        "표시",
         "확인",
         "점검"
       ],
       "aliases": [],
-      "search_text": "assembly 파손된 부품 경고 픽토그램 check 파손 부품 파손된 부품 경고 픽토그램 확인 점검",
+      "search_text": "assembly 깨진 부품 경고 표시 check 파손 부품 깨진 부품 경고 표시 확인 점검",
       "image": "assembly/ASSEMBLY_036_03.webp",
       "source_file": "ASSEMBLY_036_03_#Ud30c#Uc190#Ub41c_#Ubd80#Ud488_#Uacbd#Uace0_#Ud53d#Ud1a0#Uadf8#Ub7a8.png",
       "action": "check",
@@ -2493,7 +2316,7 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 1,
-      "label": "파손된 부품을 불량품 통에 넣는 작업자",
+      "label": "파손된 부품을 불량품 통에 넣는다",
       "keywords": [
         "파손 부품",
         "불량품 통",
@@ -2501,14 +2324,13 @@
         "부품을",
         "불량품",
         "통에",
-        "넣는",
-        "작업자",
+        "넣는다",
         "넣기",
         "담기",
         "꽂기"
       ],
       "aliases": [],
-      "search_text": "assembly 파손된 부품을 불량품 통에 넣는 작업자 put_in 파손 부품 불량품 통 파손된 부품을 불량품 통에 넣는 작업자 넣기 담기 꽂기",
+      "search_text": "assembly 파손된 부품을 불량품 통에 넣는다 put_in 파손 부품 불량품 통 파손된 부품을 불량품 통에 넣는다 넣기 담기 꽂기",
       "image": "assembly/ASSEMBLY_037_01.webp",
       "source_file": "ASSEMBLY_037_01_#Ud30c#Uc190#Ub41c_#Ubd80#Ud488#Uc744_#Ubd88#Ub7c9#Ud488_#Ud1b5#Uc5d0_#Ub123#Ub294_#Uc791#Uc5c5#Uc790.png",
       "action": "put_in",
@@ -2521,22 +2343,21 @@
       "id": "ASSEMBLY_037_02",
       "group_id": "ASSEMBLY_037",
       "job": "assembly",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": 2,
-      "label": "파손된 부품과 빨간 불량품 통",
+      "label": "파손된 부품과 불량품 통",
       "keywords": [
         "파손 부품",
         "불량품 통",
         "파손된",
         "부품과",
-        "빨간",
         "불량품",
         "넣기",
         "담기",
         "꽂기"
       ],
       "aliases": [],
-      "search_text": "assembly 파손된 부품과 빨간 불량품 통 put_in 파손 부품 불량품 통 파손된 부품과 빨간 불량품 넣기 담기 꽂기",
+      "search_text": "assembly 파손된 부품과 불량품 통 put_in 파손 부품 불량품 통 파손된 부품과 불량품 넣기 담기 꽂기",
       "image": "assembly/ASSEMBLY_037_02.webp",
       "source_file": "ASSEMBLY_037_02_#Ud30c#Uc190#Ub41c_#Ubd80#Ud488#Uacfc_#Ube68#Uac04_#Ubd88#Ub7c9#Ud488_#Ud1b5.png",
       "action": "put_in",
@@ -2551,21 +2372,21 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 3,
-      "label": "파손된 부품을 아래로 넣는 손동작",
+      "label": "파손된 부품을 불량품 통에 넣는다",
       "keywords": [
         "파손 부품",
         "불량품 통",
         "파손된",
         "부품을",
-        "아래로",
-        "넣는",
-        "손동작",
+        "불량품",
+        "통에",
+        "넣는다",
         "넣기",
         "담기",
         "꽂기"
       ],
       "aliases": [],
-      "search_text": "assembly 파손된 부품을 아래로 넣는 손동작 put_in 파손 부품 불량품 통 파손된 부품을 아래로 넣는 손동작 넣기 담기 꽂기",
+      "search_text": "assembly 파손된 부품을 불량품 통에 넣는다 put_in 파손 부품 불량품 통 파손된 부품을 불량품 통에 넣는다 넣기 담기 꽂기",
       "image": "assembly/ASSEMBLY_037_03.webp",
       "source_file": "ASSEMBLY_037_03_#Ud30c#Uc190#Ub41c_#Ubd80#Ud488#Uc744_#Uc544#Ub798#Ub85c_#Ub123#Ub294_#Uc190#Ub3d9#Uc791.png",
       "action": "put_in",
@@ -2580,7 +2401,7 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 4,
-      "label": "파손된 부품을 불량품 통에 넣는 픽토그램",
+      "label": "파손된 부품을 불량품 통에 넣는다",
       "keywords": [
         "파손 부품",
         "불량품 통",
@@ -2588,14 +2409,13 @@
         "부품을",
         "불량품",
         "통에",
-        "넣는",
-        "픽토그램",
+        "넣는다",
         "넣기",
         "담기",
         "꽂기"
       ],
       "aliases": [],
-      "search_text": "assembly 파손된 부품을 불량품 통에 넣는 픽토그램 put_in 파손 부품 불량품 통 파손된 부품을 불량품 통에 넣는 픽토그램 넣기 담기 꽂기",
+      "search_text": "assembly 파손된 부품을 불량품 통에 넣는다 put_in 파손 부품 불량품 통 파손된 부품을 불량품 통에 넣는다 넣기 담기 꽂기",
       "image": "assembly/ASSEMBLY_037_04.webp",
       "source_file": "ASSEMBLY_037_04_#Ud30c#Uc190#Ub41c_#Ubd80#Ud488#Uc744_#Ubd88#Ub7c9#Ud488_#Ud1b5#Uc5d0_#Ub123#Ub294_#Ud53d#Ud1a0#Uadf8#Ub7a8.png",
       "action": "put_in",
@@ -2610,7 +2430,7 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 1,
-      "label": "정상 부품을 작업 트레이에 놓는 작업자",
+      "label": "정상 부품을 작업 트레이에 놓는다",
       "keywords": [
         "정상 부품",
         "작업 트레이",
@@ -2618,48 +2438,18 @@
         "부품을",
         "작업",
         "트레이에",
-        "놓는",
-        "작업자",
+        "놓는다",
         "놓기",
         "올리기",
         "진열",
         "배치"
       ],
-      "aliases": [],
-      "search_text": "assembly 정상 부품을 작업 트레이에 놓는 작업자 place 정상 부품 작업 트레이 정상 부품을 작업 트레이에 놓는 작업자 놓기 올리기 진열 배치",
+      "aliases": [
+        "정상 부품을 작업 트레이에 올린다"
+      ],
+      "search_text": "assembly 정상 부품을 작업 트레이에 놓는다 place 정상 부품 작업 트레이 정상 부품을 작업 트레이에 놓는다 놓기 올리기 진열 배치 정상 부품을 작업 트레이에 올린다",
       "image": "assembly/ASSEMBLY_038_01.webp",
       "source_file": "ASSEMBLY_038_01_#Uc815#Uc0c1_#Ubd80#Ud488#Uc744_#Uc791#Uc5c5_#Ud2b8#Ub808#Uc774#Uc5d0_#Ub193#Ub294_#Uc791#Uc5c5#Uc790.png",
-      "action": "place",
-      "objects": [
-        "정상 부품",
-        "작업 트레이"
-      ]
-    },
-    {
-      "id": "ASSEMBLY_038_02",
-      "group_id": "ASSEMBLY_038",
-      "job": "assembly",
-      "asset_type": "action",
-      "variant": 2,
-      "label": "정상 부품만 담긴 파란 작업 트레이",
-      "keywords": [
-        "정상 부품",
-        "작업 트레이",
-        "정상",
-        "부품만",
-        "담긴",
-        "파란",
-        "작업",
-        "트레이",
-        "놓기",
-        "올리기",
-        "진열",
-        "배치"
-      ],
-      "aliases": [],
-      "search_text": "assembly 정상 부품만 담긴 파란 작업 트레이 place 정상 부품 작업 트레이 정상 부품만 담긴 파란 작업 트레이 놓기 올리기 진열 배치",
-      "image": "assembly/ASSEMBLY_038_02.webp",
-      "source_file": "ASSEMBLY_038_02_#Uc815#Uc0c1_#Ubd80#Ud488#Ub9cc_#Ub2f4#Uae34_#Ud30c#Ub780_#Uc791#Uc5c5_#Ud2b8#Ub808#Uc774.png",
       "action": "place",
       "objects": [
         "정상 부품",
@@ -2672,22 +2462,23 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 3,
-      "label": "정상 부품을 트레이에 내려놓는 손동작",
+      "label": "정상 부품을 트레이에 내려놓는다",
       "keywords": [
         "정상 부품",
         "작업 트레이",
         "정상",
         "부품을",
         "트레이에",
-        "내려놓는",
-        "손동작",
+        "내려놓는다",
         "놓기",
         "올리기",
         "진열",
         "배치"
       ],
-      "aliases": [],
-      "search_text": "assembly 정상 부품을 트레이에 내려놓는 손동작 place 정상 부품 작업 트레이 정상 부품을 트레이에 내려놓는 손동작 놓기 올리기 진열 배치",
+      "aliases": [
+        "정상 부품을 트레이에 내려올린다"
+      ],
+      "search_text": "assembly 정상 부품을 트레이에 내려놓는다 place 정상 부품 작업 트레이 정상 부품을 트레이에 내려놓는다 놓기 올리기 진열 배치 정상 부품을 트레이에 내려올린다",
       "image": "assembly/ASSEMBLY_038_03.webp",
       "source_file": "ASSEMBLY_038_03_#Uc815#Uc0c1_#Ubd80#Ud488#Uc744_#Ud2b8#Ub808#Uc774#Uc5d0_#Ub0b4#Ub824#Ub193#Ub294_#Uc190#Ub3d9#Uc791.png",
       "action": "place",
@@ -2702,7 +2493,7 @@
       "job": "assembly",
       "asset_type": "action",
       "variant": 4,
-      "label": "정상 부품을 작업 트레이에 넣는 픽토그램",
+      "label": "정상 부품을 작업 트레이에 넣는다",
       "keywords": [
         "정상 부품",
         "작업 트레이",
@@ -2710,15 +2501,14 @@
         "부품을",
         "작업",
         "트레이에",
-        "넣는",
-        "픽토그램",
+        "넣는다",
         "놓기",
         "올리기",
         "진열",
         "배치"
       ],
       "aliases": [],
-      "search_text": "assembly 정상 부품을 작업 트레이에 넣는 픽토그램 place 정상 부품 작업 트레이 정상 부품을 작업 트레이에 넣는 픽토그램 놓기 올리기 진열 배치",
+      "search_text": "assembly 정상 부품을 작업 트레이에 넣는다 place 정상 부품 작업 트레이 정상 부품을 작업 트레이에 넣는다 놓기 올리기 진열 배치",
       "image": "assembly/ASSEMBLY_038_04.webp",
       "source_file": "ASSEMBLY_038_04_#Uc815#Uc0c1_#Ubd80#Ud488#Uc744_#Uc791#Uc5c5_#Ud2b8#Ub808#Uc774#Uc5d0_#Ub123#Ub294_#Ud53d#Ud1a0#Uadf8#Ub7a8.png",
       "action": "place",
@@ -2733,20 +2523,18 @@
       "job": "cafe",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 바닐라 시럽병",
+      "label": "바닐라 시럽병",
       "keywords": [
         "시럽병",
-        "도구",
         "바닐라"
       ],
       "aliases": [],
-      "search_text": "cafe 도구 바닐라 시럽병 other 시럽병 도구 바닐라",
+      "search_text": "cafe 바닐라 시럽병 other 시럽병 바닐라",
       "image": "cafe/CAFE_TOOL_001.webp",
       "source_file": "#Ub3c4#Uad6c_#Ubc14#Ub2d0#Ub77c_#Uc2dc#Ub7fd#Ubcd1.png",
       "action": "other",
       "objects": [
-        "시럽병",
-        "도구"
+        "시럽병"
       ]
     },
     {
@@ -2755,20 +2543,18 @@
       "job": "cafe",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 카라멜 시럽병",
+      "label": "카라멜 시럽병",
       "keywords": [
         "시럽병",
-        "도구",
         "카라멜"
       ],
       "aliases": [],
-      "search_text": "cafe 도구 카라멜 시럽병 other 시럽병 도구 카라멜",
+      "search_text": "cafe 카라멜 시럽병 other 시럽병 카라멜",
       "image": "cafe/CAFE_TOOL_002.webp",
       "source_file": "#Ub3c4#Uad6c_#Uce74#Ub77c#Uba5c_#Uc2dc#Ub7fd#Ubcd1.png",
       "action": "other",
       "objects": [
-        "시럽병",
-        "도구"
+        "시럽병"
       ]
     },
     {
@@ -2777,20 +2563,18 @@
       "job": "cafe",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 헤이즐넛 시럽병",
+      "label": "헤이즐넛 시럽병",
       "keywords": [
         "시럽병",
-        "도구",
         "헤이즐넛"
       ],
       "aliases": [],
-      "search_text": "cafe 도구 헤이즐넛 시럽병 other 시럽병 도구 헤이즐넛",
+      "search_text": "cafe 헤이즐넛 시럽병 other 시럽병 헤이즐넛",
       "image": "cafe/CAFE_TOOL_003.webp",
       "source_file": "#Ub3c4#Uad6c_#Ud5e4#Uc774#Uc990#Ub11b_#Uc2dc#Ub7fd#Ubcd1.png",
       "action": "other",
       "objects": [
-        "시럽병",
-        "도구"
+        "시럽병"
       ]
     },
     {
@@ -3381,7 +3165,7 @@
       "group_id": "CAFE_009",
       "job": "cafe",
       "asset_type": "action",
-      "variant": null,
+      "variant": 1,
       "label": "얼음을 컵에 담는다",
       "keywords": [
         "얼음",
@@ -3760,10 +3544,10 @@
     },
     {
       "id": "CAFE_026",
-      "group_id": "CAFE_026",
+      "group_id": "CAFE_009",
       "job": "cafe",
       "asset_type": "action",
-      "variant": null,
+      "variant": 2,
       "label": "얼음을 컵에 담는다",
       "keywords": [
         "얼음",
@@ -4116,6 +3900,7 @@
       "keywords": [
         "고객",
         "음료",
+        "손님",
         "음료를",
         "고객에게",
         "건넨다",
@@ -4123,13 +3908,14 @@
         "전달"
       ],
       "aliases": [],
-      "search_text": "cafe 음료를 고객에게 건넨다 handover 고객 음료 음료를 고객에게 건넨다 건네기 전달",
+      "search_text": "cafe 음료를 고객에게 건넨다 handover 고객 음료 손님 음료를 고객에게 건넨다 건네기 전달",
       "image": "cafe/CAFE_045.webp",
       "source_file": "CAFE_045_#Uc74c#Ub8cc#Ub97c_#Uace0#Uac1d#Uc5d0#Uac8c_#Uac74#Ub128#Ub2e4.png",
       "action": "handover",
       "objects": [
         "고객",
-        "음료"
+        "음료",
+        "손님"
       ]
     },
     {
@@ -5256,19 +5042,17 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 건조기",
+      "label": "건조기",
       "keywords": [
-        "건조기",
-        "도구"
+        "건조기"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 건조기 other 건조기 도구",
+      "search_text": "cleaning 건조기 other",
       "image": "cleaning/CLEANING_TOOL_002.webp",
       "source_file": "#Ub3c4#Uad6c_#Uac74#Uc870#Uae30.png",
       "action": "other",
       "objects": [
-        "건조기",
-        "도구"
+        "건조기"
       ]
     },
     {
@@ -5277,19 +5061,17 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 건조대",
+      "label": "건조대",
       "keywords": [
-        "건조대",
-        "도구"
+        "건조대"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 건조대 other 건조대 도구",
+      "search_text": "cleaning 건조대 other",
       "image": "cleaning/CLEANING_TOOL_003.webp",
       "source_file": "#Ub3c4#Uad6c_#Uac74#Uc870#Ub300.png",
       "action": "other",
       "objects": [
-        "건조대",
-        "도구"
+        "건조대"
       ]
     },
     {
@@ -5298,19 +5080,16 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 건조볼",
+      "label": "건조볼",
       "keywords": [
-        "도구",
         "건조볼"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 건조볼 other 도구 건조볼",
+      "search_text": "cleaning 건조볼 other",
       "image": "cleaning/CLEANING_TOOL_004.webp",
       "source_file": "#Ub3c4#Uad6c_#Uac74#Uc870#Ubcfc.png",
       "action": "other",
-      "objects": [
-        "도구"
-      ]
+      "objects": []
     },
     {
       "id": "CLEANING_TOOL_005",
@@ -5318,19 +5097,16 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 다리미판",
+      "label": "다리미판",
       "keywords": [
-        "도구",
         "다리미판"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 다리미판 other 도구 다리미판",
+      "search_text": "cleaning 다리미판 other",
       "image": "cleaning/CLEANING_TOOL_005.webp",
       "source_file": "#Ub3c4#Uad6c_#Ub2e4#Ub9ac#Ubbf8#Ud310.png",
       "action": "other",
-      "objects": [
-        "도구"
-      ]
+      "objects": []
     },
     {
       "id": "CLEANING_TOOL_006",
@@ -5338,19 +5114,16 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 다리미",
+      "label": "다리미",
       "keywords": [
-        "도구",
         "다리미"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 다리미 other 도구 다리미",
+      "search_text": "cleaning 다리미 other",
       "image": "cleaning/CLEANING_TOOL_006.webp",
       "source_file": "#Ub3c4#Uad6c_#Ub2e4#Ub9ac#Ubbf8.png",
       "action": "other",
-      "objects": [
-        "도구"
-      ]
+      "objects": []
     },
     {
       "id": "CLEANING_TOOL_007",
@@ -5358,20 +5131,18 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 빨래집게",
+      "label": "빨래집게",
       "keywords": [
         "집게",
-        "도구",
         "빨래집게"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 빨래집게 other 집게 도구 빨래집게",
+      "search_text": "cleaning 빨래집게 other 집게",
       "image": "cleaning/CLEANING_TOOL_007.webp",
       "source_file": "#Ub3c4#Uad6c_#Ube68#Ub798#Uc9d1#Uac8c.png",
       "action": "other",
       "objects": [
-        "집게",
-        "도구"
+        "집게"
       ]
     },
     {
@@ -5380,19 +5151,16 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 섬유유연제",
+      "label": "섬유유연제",
       "keywords": [
-        "도구",
         "섬유유연제"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 섬유유연제 other 도구 섬유유연제",
+      "search_text": "cleaning 섬유유연제 other",
       "image": "cleaning/CLEANING_TOOL_008.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc12c#Uc720#Uc720#Uc5f0#Uc81c.png",
       "action": "other",
-      "objects": [
-        "도구"
-      ]
+      "objects": []
     },
     {
       "id": "CLEANING_TOOL_009",
@@ -5400,19 +5168,16 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 세제스쿱",
+      "label": "세제스쿱",
       "keywords": [
-        "도구",
         "세제스쿱"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 세제스쿱 other 도구 세제스쿱",
+      "search_text": "cleaning 세제스쿱 other",
       "image": "cleaning/CLEANING_TOOL_009.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc138#Uc81c#Uc2a4#Ucff1.png",
       "action": "other",
-      "objects": [
-        "도구"
-      ]
+      "objects": []
     },
     {
       "id": "CLEANING_TOOL_010",
@@ -5420,19 +5185,17 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 세탁기",
+      "label": "세탁기",
       "keywords": [
-        "세탁기",
-        "도구"
+        "세탁기"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 세탁기 other 세탁기 도구",
+      "search_text": "cleaning 세탁기 other",
       "image": "cleaning/CLEANING_TOOL_010.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc138#Ud0c1#Uae30.png",
       "action": "other",
       "objects": [
-        "세탁기",
-        "도구"
+        "세탁기"
       ]
     },
     {
@@ -5441,19 +5204,16 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 세탁망",
+      "label": "세탁망",
       "keywords": [
-        "도구",
         "세탁망"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 세탁망 other 도구 세탁망",
+      "search_text": "cleaning 세탁망 other",
       "image": "cleaning/CLEANING_TOOL_011.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc138#Ud0c1#Ub9dd.png",
       "action": "other",
-      "objects": [
-        "도구"
-      ]
+      "objects": []
     },
     {
       "id": "CLEANING_TOOL_012",
@@ -5461,19 +5221,16 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 세탁바구니",
+      "label": "세탁바구니",
       "keywords": [
-        "도구",
         "세탁바구니"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 세탁바구니 other 도구 세탁바구니",
+      "search_text": "cleaning 세탁바구니 other",
       "image": "cleaning/CLEANING_TOOL_012.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc138#Ud0c1#Ubc14#Uad6c#Ub2c8.png",
       "action": "other",
-      "objects": [
-        "도구"
-      ]
+      "objects": []
     },
     {
       "id": "CLEANING_TOOL_013",
@@ -5481,19 +5238,16 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 세탁세제",
+      "label": "세탁세제",
       "keywords": [
-        "도구",
         "세탁세제"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 세탁세제 other 도구 세탁세제",
+      "search_text": "cleaning 세탁세제 other",
       "image": "cleaning/CLEANING_TOOL_013.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc138#Ud0c1#Uc138#Uc81c.png",
       "action": "other",
-      "objects": [
-        "도구"
-      ]
+      "objects": []
     },
     {
       "id": "CLEANING_TOOL_014",
@@ -5501,19 +5255,16 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 세탁주머니",
+      "label": "세탁주머니",
       "keywords": [
-        "도구",
         "세탁주머니"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 세탁주머니 other 도구 세탁주머니",
+      "search_text": "cleaning 세탁주머니 other",
       "image": "cleaning/CLEANING_TOOL_014.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc138#Ud0c1#Uc8fc#Uba38#Ub2c8.png",
       "action": "other",
-      "objects": [
-        "도구"
-      ]
+      "objects": []
     },
     {
       "id": "CLEANING_TOOL_015",
@@ -5521,19 +5272,16 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 얼룩난 천",
+      "label": "얼룩난 천",
       "keywords": [
-        "도구",
         "얼룩난"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 얼룩난 천 other 도구 얼룩난",
+      "search_text": "cleaning 얼룩난 천 other 얼룩난",
       "image": "cleaning/CLEANING_TOOL_015.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc5bc#Ub8e9#Ub09c_#Ucc9c.png",
       "action": "other",
-      "objects": [
-        "도구"
-      ]
+      "objects": []
     },
     {
       "id": "CLEANING_TOOL_016",
@@ -5541,19 +5289,17 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 옷걸이",
+      "label": "옷걸이",
       "keywords": [
-        "도구",
         "옷",
         "옷걸이"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 옷걸이 other 도구 옷 옷걸이",
+      "search_text": "cleaning 옷걸이 other 옷",
       "image": "cleaning/CLEANING_TOOL_016.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc637#Uac78#Uc774.png",
       "action": "other",
       "objects": [
-        "도구",
         "옷"
       ]
     },
@@ -5563,20 +5309,18 @@
       "job": "cleaning",
       "asset_type": "tool",
       "variant": null,
-      "label": "도구 접은 세탁물",
+      "label": "접은 세탁물",
       "keywords": [
         "세탁물",
-        "도구",
         "접은"
       ],
       "aliases": [],
-      "search_text": "cleaning 도구 접은 세탁물 other 세탁물 도구 접은",
+      "search_text": "cleaning 접은 세탁물 other 세탁물 접은",
       "image": "cleaning/CLEANING_TOOL_017.webp",
       "source_file": "#Ub3c4#Uad6c_#Uc811#Uc740_#Uc138#Ud0c1#Ubb3c.png",
       "action": "other",
       "objects": [
-        "세탁물",
-        "도구"
+        "세탁물"
       ]
     },
     {
@@ -5634,7 +5378,9 @@
       "image": "cleaning/CLEANING_TOOL_020.webp",
       "source_file": "#Ubd84#Ubb34#Uae30.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "분무기"
+      ]
     },
     {
       "id": "CLEANING_TOOL_021",
@@ -5653,26 +5399,6 @@
       "image": "cleaning/CLEANING_TOOL_021.webp",
       "source_file": "#Ube57#Uc790#Ub8e8.png",
       "action": "sweep",
-      "objects": []
-    },
-    {
-      "id": "CLEANING_TOOL_022",
-      "group_id": "CLEANING_TOOL_022",
-      "job": "cleaning",
-      "asset_type": "tool",
-      "variant": null,
-      "label": "빨래를 담는 유니폼 작업자",
-      "keywords": [
-        "빨래를",
-        "담는",
-        "유니폼",
-        "작업자"
-      ],
-      "aliases": [],
-      "search_text": "cleaning 빨래를 담는 유니폼 작업자 other 빨래를 담는 유니폼 작업자",
-      "image": "cleaning/CLEANING_TOOL_022.webp",
-      "source_file": "#Ube68#Ub798#Ub97c #Ub2f4#Ub294 #Uc720#Ub2c8#Ud3fc #Uc791#Uc5c5#Uc790.png",
-      "action": "other",
       "objects": []
     },
     {
@@ -6529,6 +6255,7 @@
       "variant": null,
       "label": "차체의 물기를 천으로 닦는다",
       "keywords": [
+        "마른 천",
         "물기",
         "차체",
         "차체의",
@@ -6539,11 +6266,12 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "cleaning 차체의 물기를 천으로 닦는다 clean 물기 차체 차체의 물기를 천으로 닦는다 청소 닦기",
+      "search_text": "cleaning 차체의 물기를 천으로 닦는다 clean 마른 천 물기 차체 차체의 물기를 천으로 닦는다 청소 닦기",
       "image": "cleaning/CLEANING_032.webp",
       "source_file": "CLEANING_032_#Ucc28#Uccb4#Uc758_#Ubb3c#Uae30#Ub97c_#Ucc9c#Uc73c#Ub85c_#Ub2e6#Ub294#Ub2e4.png",
       "action": "clean",
       "objects": [
+        "마른 천",
         "물기",
         "차체"
       ]
@@ -6557,6 +6285,8 @@
       "label": "차량 창문을 닦는다",
       "keywords": [
         "차량 창문",
+        "자동차",
+        "창문",
         "차량",
         "창문을",
         "닦는다",
@@ -6564,12 +6294,14 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "cleaning 차량 창문을 닦는다 clean 차량 창문 차량 창문을 닦는다 청소 닦기",
+      "search_text": "cleaning 차량 창문을 닦는다 clean 차량 창문 자동차 창문 차량 창문을 닦는다 청소 닦기",
       "image": "cleaning/CLEANING_033.webp",
       "source_file": "CLEANING_033_#Ucc28#Ub7c9_#Ucc3d#Ubb38#Uc744_#Ub2e6#Ub294#Ub2e4.png",
       "action": "clean",
       "objects": [
-        "차량 창문"
+        "차량 창문",
+        "자동차",
+        "창문"
       ]
     },
     {
@@ -6581,6 +6313,7 @@
       "label": "차량 내부의 쓰레기를 줍는다",
       "keywords": [
         "쓰레기",
+        "자동차",
         "차량",
         "내부의",
         "쓰레기를",
@@ -6590,12 +6323,13 @@
         "수거"
       ],
       "aliases": [],
-      "search_text": "cleaning 차량 내부의 쓰레기를 줍는다 pick_up 쓰레기 차량 내부의 쓰레기를 줍는다 줍기 집기 수거",
+      "search_text": "cleaning 차량 내부의 쓰레기를 줍는다 pick_up 쓰레기 자동차 차량 내부의 쓰레기를 줍는다 줍기 집기 수거",
       "image": "cleaning/CLEANING_034.webp",
       "source_file": "CLEANING_034_#Ucc28#Ub7c9_#Ub0b4#Ubd80#Uc758_#Uc4f0#Ub808#Uae30#Ub97c_#Uc90d#Ub294#Ub2e4.png",
       "action": "pick_up",
       "objects": [
         "쓰레기",
+        "자동차",
         "차량"
       ]
     },
@@ -6609,6 +6343,7 @@
       "keywords": [
         "차량 바닥",
         "매트",
+        "자동차",
         "차량",
         "바닥",
         "매트를",
@@ -6620,13 +6355,14 @@
       "aliases": [
         "차량 바닥 매트를 빼낸다"
       ],
-      "search_text": "cleaning 차량 바닥 매트를 꺼낸다 remove 차량 바닥 매트 차량 바닥 매트를 꺼낸다 꺼내기 빼기 제거 차량 바닥 매트를 빼낸다",
+      "search_text": "cleaning 차량 바닥 매트를 꺼낸다 remove 차량 바닥 매트 자동차 차량 바닥 매트를 꺼낸다 꺼내기 빼기 제거 차량 바닥 매트를 빼낸다",
       "image": "cleaning/CLEANING_035.webp",
       "source_file": "CLEANING_035_#Ucc28#Ub7c9_#Ubc14#Ub2e5_#Ub9e4#Ud2b8#Ub97c_#Uaebc#Ub0b8#Ub2e4.png",
       "action": "remove",
       "objects": [
         "차량 바닥",
-        "매트"
+        "매트",
+        "자동차"
       ]
     },
     {
@@ -6639,6 +6375,7 @@
       "keywords": [
         "차량 바닥",
         "청소기",
+        "자동차",
         "차량",
         "내부",
         "바닥을",
@@ -6647,13 +6384,14 @@
         "진공청소"
       ],
       "aliases": [],
-      "search_text": "cleaning 차량 내부 바닥을 청소기로 청소한다 vacuum 차량 바닥 청소기 차량 내부 바닥을 청소기로 청소한다 진공청소",
+      "search_text": "cleaning 차량 내부 바닥을 청소기로 청소한다 vacuum 차량 바닥 청소기 자동차 차량 내부 바닥을 청소기로 청소한다 진공청소",
       "image": "cleaning/CLEANING_036.webp",
       "source_file": "CLEANING_036_#Ucc28#Ub7c9_#Ub0b4#Ubd80_#Ubc14#Ub2e5#Uc744_#Uccad#Uc18c#Uae30#Ub85c_#Uccad#Uc18c#Ud55c#Ub2e4.png",
       "action": "vacuum",
       "objects": [
         "차량 바닥",
-        "청소기"
+        "청소기",
+        "자동차"
       ]
     },
     {
@@ -6662,20 +6400,22 @@
       "job": "cleaning",
       "asset_type": "action",
       "variant": null,
-      "label": "사용한 세탁물을 수거한다",
+      "label": "사용한 세탁물을 바구니에 담는다",
       "keywords": [
         "세탁물",
         "사용한",
         "세탁물을",
-        "수거한다",
-        "모으기",
-        "한곳에 모으기"
+        "바구니에",
+        "담는다",
+        "넣기",
+        "담기",
+        "꽂기"
       ],
       "aliases": [],
-      "search_text": "cleaning 사용한 세탁물을 수거한다 collect 세탁물 사용한 세탁물을 수거한다 모으기 한곳에 모으기",
+      "search_text": "cleaning 사용한 세탁물을 바구니에 담는다 put_in 세탁물 사용한 세탁물을 바구니에 담는다 넣기 담기 꽂기",
       "image": "cleaning/CLEANING_037.webp",
       "source_file": "CLEANING_037_#Uc0ac#Uc6a9#Ud55c_#Uc138#Ud0c1#Ubb3c#Uc744_#Uc218#Uac70#Ud55c#Ub2e4.png",
-      "action": "collect",
+      "action": "put_in",
       "objects": [
         "세탁물"
       ]
@@ -17351,12 +17091,13 @@
     },
     {
       "id": "ASSEMBLY_166",
-      "group_id": "ASSEMBLY_166",
+      "group_id": "ASSEMBLY_AUX_013",
       "job": "assembly",
       "asset_type": "action",
-      "variant": null,
+      "variant": 2,
       "label": "작업대를 천으로 닦는다",
       "keywords": [
+        "마른 천",
         "작업대",
         "작업대를",
         "천으로",
@@ -17365,20 +17106,21 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "assembly 작업대를 천으로 닦는다 clean 작업대 작업대를 천으로 닦는다 청소 닦기",
+      "search_text": "assembly 작업대를 천으로 닦는다 clean 마른 천 작업대 작업대를 천으로 닦는다 청소 닦기",
       "image": "assembly/ASSEMBLY_166.webp",
       "source_file": "ASSEMBLY_166_작업대를_천으로_닦는다.png",
       "action": "clean",
       "objects": [
+        "마른 천",
         "작업대"
       ]
     },
     {
       "id": "ASSEMBLY_167",
-      "group_id": "ASSEMBLY_167",
+      "group_id": "ASSEMBLY_AUX_003",
       "job": "assembly",
       "asset_type": "action",
-      "variant": null,
+      "variant": 2,
       "label": "작업대가 깨끗한지 확인한다",
       "keywords": [
         "작업대",
@@ -18033,6 +17775,7 @@
       "keywords": [
         "박스",
         "고객",
+        "손님",
         "손",
         "상자를",
         "앞에",
@@ -18042,13 +17785,14 @@
         "전달"
       ],
       "aliases": [],
-      "search_text": "delivery 상자를 문 앞에 선 손님에게 건넨다 handover 박스 고객 손 상자를 앞에 손님에게 건넨다 건네기 전달",
+      "search_text": "delivery 상자를 문 앞에 선 손님에게 건넨다 handover 박스 고객 손님 손 상자를 앞에 손님에게 건넨다 건네기 전달",
       "image": "delivery/DELIVERY_016.webp",
       "source_file": "DELIVERY_016_상자를 문 앞에 선 손님에게 건넨다.png",
       "action": "handover",
       "objects": [
         "박스",
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -18062,10 +17806,10 @@
       "keywords": [
         "화면",
         "고객",
+        "손님",
         "손",
         "태블릿",
         "화면을",
-        "손님",
         "쪽으로",
         "돌려",
         "내민다",
@@ -18073,13 +17817,14 @@
         "옮기기"
       ],
       "aliases": [],
-      "search_text": "delivery 태블릿 화면을 손님 쪽으로 돌려 내민다 move 화면 고객 손 태블릿 화면을 손님 쪽으로 돌려 내민다 이동 옮기기",
+      "search_text": "delivery 태블릿 화면을 손님 쪽으로 돌려 내민다 move 화면 고객 손님 손 태블릿 화면을 쪽으로 돌려 내민다 이동 옮기기",
       "image": "delivery/DELIVERY_017.webp",
       "source_file": "DELIVERY_017_태블릿 화면을 손님 쪽으로 돌려 내민다.png",
       "action": "move",
       "objects": [
         "화면",
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -18093,6 +17838,7 @@
       "keywords": [
         "화면",
         "고객",
+        "손님",
         "손",
         "손님이",
         "화면에",
@@ -18102,13 +17848,14 @@
         "기다린다"
       ],
       "aliases": [],
-      "search_text": "delivery 손님이 화면에 서명하는 동안 옆에서 기다린다 other 화면 고객 손 손님이 화면에 서명하는 동안 옆에서 기다린다",
+      "search_text": "delivery 손님이 화면에 서명하는 동안 옆에서 기다린다 other 화면 고객 손님 손 손님이 화면에 서명하는 동안 옆에서 기다린다",
       "image": "delivery/DELIVERY_018.webp",
       "source_file": "DELIVERY_018_손님이 화면에 서명하는 동안 옆에서 기다린다.png",
       "action": "other",
       "objects": [
         "화면",
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -18191,7 +17938,7 @@
       "group_id": "DELIVERY_022",
       "job": "delivery",
       "asset_type": "action",
-      "variant": null,
+      "variant": 1,
       "label": "초인종을 누른다",
       "keywords": [
         "초인종을",
@@ -18576,13 +18323,13 @@
       "job": "delivery",
       "asset_type": "action",
       "variant": null,
-      "label": "조끼 착용",
+      "label": "조끼를 입는다",
       "keywords": [
-        "조끼",
-        "착용"
+        "조끼를",
+        "입는다"
       ],
       "aliases": [],
-      "search_text": "delivery 조끼 착용 other 조끼 착용",
+      "search_text": "delivery 조끼를 입는다 other 조끼를 입는다",
       "image": "delivery/DELIVERY_036.webp",
       "source_file": "DELIVERY_036_조끼 착용.png",
       "action": "other",
@@ -18592,7 +18339,7 @@
       "id": "DELIVERY_037",
       "group_id": "DELIVERY_037",
       "job": "delivery",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": null,
       "label": "조끼 착용 완료",
       "keywords": [
@@ -18613,13 +18360,13 @@
       "job": "delivery",
       "asset_type": "action",
       "variant": null,
-      "label": "안전화 착용",
+      "label": "안전화를 신는다",
       "keywords": [
-        "안전화",
-        "착용"
+        "안전화를",
+        "신는다"
       ],
       "aliases": [],
-      "search_text": "delivery 안전화 착용 other 안전화 착용",
+      "search_text": "delivery 안전화를 신는다 other 안전화를 신는다",
       "image": "delivery/DELIVERY_038.webp",
       "source_file": "DELIVERY_038_안전화 착용.png",
       "action": "other",
@@ -18629,7 +18376,7 @@
       "id": "DELIVERY_039",
       "group_id": "DELIVERY_039",
       "job": "delivery",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": null,
       "label": "안전화 착용 완료",
       "keywords": [
@@ -18650,13 +18397,14 @@
       "job": "delivery",
       "asset_type": "action",
       "variant": null,
-      "label": "서명 전 태블릿",
+      "label": "태블릿에 펜으로 서명한다",
       "keywords": [
-        "서명",
-        "태블릿"
+        "태블릿에",
+        "펜으로",
+        "서명한다"
       ],
       "aliases": [],
-      "search_text": "delivery 서명 전 태블릿 other 서명 태블릿",
+      "search_text": "delivery 태블릿에 펜으로 서명한다 other 태블릿에 펜으로 서명한다",
       "image": "delivery/DELIVERY_040.webp",
       "source_file": "DELIVERY_040_서명 전 태블릿.png",
       "action": "other",
@@ -18666,15 +18414,16 @@
       "id": "DELIVERY_041",
       "group_id": "DELIVERY_041",
       "job": "delivery",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": null,
-      "label": "서명 후 태블릿",
+      "label": "서명 완료된 태블릿",
       "keywords": [
         "서명",
+        "완료된",
         "태블릿"
       ],
       "aliases": [],
-      "search_text": "delivery 서명 후 태블릿 other 서명 태블릿",
+      "search_text": "delivery 서명 완료된 태블릿 other 서명 완료된 태블릿",
       "image": "delivery/DELIVERY_041.webp",
       "source_file": "DELIVERY_041_서명 후 태블릿.png",
       "action": "other",
@@ -18682,18 +18431,19 @@
     },
     {
       "id": "DELIVERY_042",
-      "group_id": "DELIVERY_042",
+      "group_id": "DELIVERY_022",
       "job": "delivery",
       "asset_type": "action",
-      "variant": null,
-      "label": "초인종 누르기",
+      "variant": 2,
+      "label": "초인종을 누른다",
       "keywords": [
-        "초인종",
+        "초인종을",
+        "누른다",
         "누르기",
         "압착"
       ],
       "aliases": [],
-      "search_text": "delivery 초인종 누르기 press 초인종 누르기 압착",
+      "search_text": "delivery 초인종을 누른다 press 초인종을 누른다 누르기 압착",
       "image": "delivery/DELIVERY_042.webp",
       "source_file": "DELIVERY_042_초인종 누르기.png",
       "action": "press",
@@ -18705,15 +18455,16 @@
       "job": "delivery",
       "asset_type": "action",
       "variant": null,
-      "label": "상자 가지고 노크",
+      "label": "상자를 들고 문을 두드린다",
       "keywords": [
         "박스",
-        "상자",
-        "가지고",
-        "노크"
+        "상자를",
+        "들고",
+        "문을",
+        "두드린다"
       ],
       "aliases": [],
-      "search_text": "delivery 상자 가지고 노크 other 박스 상자 가지고 노크",
+      "search_text": "delivery 상자를 들고 문을 두드린다 other 박스 상자를 들고 문을 두드린다",
       "image": "delivery/DELIVERY_043.webp",
       "source_file": "DELIVERY_043_상자 가지고 노크.png",
       "action": "other",
@@ -18727,13 +18478,14 @@
       "job": "delivery",
       "asset_type": "action",
       "variant": null,
-      "label": "안전모 착용",
+      "label": "안전모를 머리에 쓴다",
       "keywords": [
-        "안전모",
-        "착용"
+        "안전모를",
+        "머리에",
+        "쓴다"
       ],
       "aliases": [],
-      "search_text": "delivery 안전모 착용 other 안전모 착용",
+      "search_text": "delivery 안전모를 머리에 쓴다 other 안전모를 머리에 쓴다",
       "image": "delivery/DELIVERY_044.webp",
       "source_file": "DELIVERY_044_안전모 착용.png",
       "action": "other",
@@ -18743,7 +18495,7 @@
       "id": "DELIVERY_045",
       "group_id": "DELIVERY_045",
       "job": "delivery",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": null,
       "label": "안전모 착용 완료",
       "keywords": [
@@ -18764,23 +18516,27 @@
       "job": "delivery",
       "asset_type": "action",
       "variant": null,
-      "label": "목장갑 착용",
+      "label": "목장갑을 손에 낀다",
       "keywords": [
-        "목장갑",
-        "착용"
+        "손",
+        "목장갑을",
+        "손에",
+        "낀다"
       ],
       "aliases": [],
-      "search_text": "delivery 목장갑 착용 other 목장갑 착용",
+      "search_text": "delivery 목장갑을 손에 낀다 other 손 목장갑을 손에 낀다",
       "image": "delivery/DELIVERY_046.webp",
       "source_file": "DELIVERY_046_목장갑 착용.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "손"
+      ]
     },
     {
       "id": "DELIVERY_047",
       "group_id": "DELIVERY_047",
       "job": "delivery",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": null,
       "label": "목장갑 착용 완료",
       "keywords": [
@@ -19167,36 +18923,34 @@
       "job": "display",
       "asset_type": "action",
       "variant": null,
-      "label": "가격표 라벨과 선반 위 상품을 번갈아 확인",
+      "label": "가격표와 선반 상품을 확인한다",
       "keywords": [
         "가격표",
         "선반",
         "진열대",
         "매대",
-        "라벨",
         "상품",
         "제품",
         "물건",
-        "라벨과",
+        "가격표와",
         "상품을",
-        "번갈아",
-        "확인",
+        "확인한다",
         "점검",
-        "검사"
+        "검사",
+        "확인"
       ],
       "aliases": [
-        "가격표 라벨과 선반 위 제품을 번갈아 확인",
-        "가격표 라벨과 진열대 위 상품을 번갈아 확인",
-        "가격표 라벨과 진열대 위 제품을 번갈아 확인"
+        "가격표와 선반 제품을 확인한다",
+        "가격표와 진열대 상품을 확인한다",
+        "가격표와 선반 상품을 점검한다"
       ],
-      "search_text": "display 가격표 라벨과 선반 위 상품을 번갈아 확인 check 가격표 선반 라벨 상품 진열대 매대 제품 물건 라벨과 상품을 번갈아 확인 점검 검사 가격표 라벨과 선반 위 제품을 번갈아 확인 가격표 라벨과 진열대 위 상품을 번갈아 확인 가격표 라벨과 진열대 위 제품을 번갈아 확인",
+      "search_text": "display 가격표와 선반 상품을 확인한다 check 가격표 선반 상품 진열대 매대 제품 물건 가격표와 상품을 확인한다 점검 검사 확인 가격표와 선반 제품을 확인한다 가격표와 진열대 상품을 확인한다 가격표와 선반 상품을 점검한다",
       "image": "display/DISPLAY_007.webp",
       "source_file": "DISPLAY_007_가격표 라벨과 선반 위 상품을 번갈아 확인.png",
       "action": "check",
       "objects": [
         "가격표",
         "선반",
-        "라벨",
         "상품"
       ]
     },
@@ -19299,7 +19053,7 @@
       "group_id": "DISPLAY_011",
       "job": "display",
       "asset_type": "action",
-      "variant": null,
+      "variant": 1,
       "label": "태블릿에 수량을 입력한다",
       "keywords": [
         "태블릿에",
@@ -19340,18 +19094,18 @@
     },
     {
       "id": "DISPLAY_013",
-      "group_id": "DISPLAY_013",
+      "group_id": "DISPLAY_011",
       "job": "display",
       "asset_type": "action",
-      "variant": null,
-      "label": "태블릿 수량입력 UI a",
+      "variant": 2,
+      "label": "태블릿에 수량을 입력한다",
       "keywords": [
-        "태블릿",
-        "수량입력",
-        "UI"
+        "태블릿에",
+        "수량을",
+        "입력한다"
       ],
       "aliases": [],
-      "search_text": "display 태블릿 수량입력 UI a other 태블릿 수량입력 UI",
+      "search_text": "display 태블릿에 수량을 입력한다 other 태블릿에 수량을 입력한다",
       "image": "display/DISPLAY_013.webp",
       "source_file": "DISPLAY_013_태블릿 수량입력 UI a.png",
       "action": "other",
@@ -19359,18 +19113,18 @@
     },
     {
       "id": "DISPLAY_014",
-      "group_id": "DISPLAY_014",
+      "group_id": "DISPLAY_011",
       "job": "display",
       "asset_type": "action",
-      "variant": null,
-      "label": "태블릿 수량입력 UI b",
+      "variant": 3,
+      "label": "태블릿에 수량을 입력한다",
       "keywords": [
-        "태블릿",
-        "수량입력",
-        "UI"
+        "태블릿에",
+        "수량을",
+        "입력한다"
       ],
       "aliases": [],
-      "search_text": "display 태블릿 수량입력 UI b other 태블릿 수량입력 UI",
+      "search_text": "display 태블릿에 수량을 입력한다 other 태블릿에 수량을 입력한다",
       "image": "display/DISPLAY_014.webp",
       "source_file": "DISPLAY_014_태블릿 수량입력 UI b.png",
       "action": "other",
@@ -19381,15 +19135,15 @@
       "group_id": "DISPLAY_015",
       "job": "display",
       "asset_type": "action",
-      "variant": null,
-      "label": "태블릿 수량입력 UI c",
+      "variant": 1,
+      "label": "태블릿에서 수량을 늘린다",
       "keywords": [
-        "태블릿",
-        "수량입력",
-        "UI"
+        "태블릿에서",
+        "수량을",
+        "늘린다"
       ],
       "aliases": [],
-      "search_text": "display 태블릿 수량입력 UI c other 태블릿 수량입력 UI",
+      "search_text": "display 태블릿에서 수량을 늘린다 other 태블릿에서 수량을 늘린다",
       "image": "display/DISPLAY_015.webp",
       "source_file": "DISPLAY_015_태블릿 수량입력 UI c.png",
       "action": "other",
@@ -19397,18 +19151,18 @@
     },
     {
       "id": "DISPLAY_016",
-      "group_id": "DISPLAY_016",
+      "group_id": "DISPLAY_015",
       "job": "display",
       "asset_type": "action",
-      "variant": null,
-      "label": "태블릿 수량입력 UI d",
+      "variant": 2,
+      "label": "태블릿에서 수량을 늘린다",
       "keywords": [
-        "태블릿",
-        "수량입력",
-        "UI"
+        "태블릿에서",
+        "수량을",
+        "늘린다"
       ],
       "aliases": [],
-      "search_text": "display 태블릿 수량입력 UI d other 태블릿 수량입력 UI",
+      "search_text": "display 태블릿에서 수량을 늘린다 other 태블릿에서 수량을 늘린다",
       "image": "display/DISPLAY_016.webp",
       "source_file": "DISPLAY_016_태블릿 수량입력 UI d.png",
       "action": "other",
@@ -19567,17 +19321,24 @@
       "job": "display",
       "asset_type": "action",
       "variant": null,
-      "label": "정리된 통로",
+      "label": "진열대 통로를 살펴본다",
       "keywords": [
-        "정리된",
-        "통로"
+        "선반",
+        "진열대",
+        "매대",
+        "통로를",
+        "살펴본다",
+        "배치",
+        "놓기"
       ],
       "aliases": [],
-      "search_text": "display 정리된 통로 other 정리된 통로",
+      "search_text": "display 진열대 통로를 살펴본다 other 선반 진열대 매대 통로를 살펴본다 배치 놓기",
       "image": "display/DISPLAY_022.webp",
       "source_file": "DISPLAY_022_정리된 통로.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "선반"
+      ]
     },
     {
       "id": "DISPLAY_023",
@@ -19756,21 +19517,28 @@
       "job": "display",
       "asset_type": "action",
       "variant": null,
-      "label": "유통기한 라벨 확인",
+      "label": "상자의 유통기한 라벨을 확인한다",
       "keywords": [
         "라벨",
+        "박스",
+        "상자의",
         "유통기한",
-        "확인",
+        "라벨을",
+        "확인한다",
         "점검",
-        "검사"
+        "검사",
+        "확인"
       ],
-      "aliases": [],
-      "search_text": "display 유통기한 라벨 확인 check 라벨 유통기한 확인 점검 검사",
+      "aliases": [
+        "상자의 유통기한 라벨을 점검한다"
+      ],
+      "search_text": "display 상자의 유통기한 라벨을 확인한다 check 라벨 박스 상자의 유통기한 라벨을 확인한다 점검 검사 확인 상자의 유통기한 라벨을 점검한다",
       "image": "display/DISPLAY_028.webp",
       "source_file": "DISPLAY_028_유통기한 라벨 확인.png",
       "action": "check",
       "objects": [
-        "라벨"
+        "라벨",
+        "박스"
       ]
     },
     {
@@ -19779,17 +19547,20 @@
       "job": "display",
       "asset_type": "action",
       "variant": null,
-      "label": "유통기한 날짜 비교",
+      "label": "유통기한을 달력 날짜와 비교한다",
       "keywords": [
-        "유통기한",
-        "날짜",
-        "비교"
+        "유통기한을",
+        "달력",
+        "날짜와",
+        "비교한다",
+        "비교",
+        "대조"
       ],
       "aliases": [],
-      "search_text": "display 유통기한 날짜 비교 other 유통기한 날짜 비교",
+      "search_text": "display 유통기한을 달력 날짜와 비교한다 compare 유통기한을 달력 날짜와 비교한다 비교 대조",
       "image": "display/DISPLAY_029.webp",
       "source_file": "DISPLAY_029_유통기한 날짜 비교.png",
-      "action": "other",
+      "action": "compare",
       "objects": []
     },
     {
@@ -19868,18 +19639,20 @@
       "label": "두리번거리는 손님을 발견한다",
       "keywords": [
         "고객",
+        "손님",
         "손",
         "두리번거리는",
         "손님을",
         "발견한다"
       ],
       "aliases": [],
-      "search_text": "display 두리번거리는 손님을 발견한다 other 고객 손 두리번거리는 손님을 발견한다",
+      "search_text": "display 두리번거리는 손님을 발견한다 other 고객 손님 손 두리번거리는 손님을 발견한다",
       "image": "display/DISPLAY_032.webp",
       "source_file": "DISPLAY_032_두리번거리는 손님을 발견한다.png",
       "action": "other",
       "objects": [
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -19892,6 +19665,7 @@
       "label": "손님에게 다가가 원하는 방향을 안내한다",
       "keywords": [
         "고객",
+        "손님",
         "손",
         "손님에게",
         "다가가",
@@ -19903,12 +19677,13 @@
         "위치 안내"
       ],
       "aliases": [],
-      "search_text": "display 손님에게 다가가 원하는 방향을 안내한다 guide 고객 손 손님에게 다가가 원하는 방향을 안내한다 안내 방향 안내 위치 안내",
+      "search_text": "display 손님에게 다가가 원하는 방향을 안내한다 guide 고객 손님 손 손님에게 다가가 원하는 방향을 안내한다 안내 방향 안내 위치 안내",
       "image": "display/DISPLAY_033.webp",
       "source_file": "DISPLAY_033_손님에게 다가가 원하는 방향을 안내한다.png",
       "action": "guide",
       "objects": [
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -19924,6 +19699,7 @@
         "진열대",
         "매대",
         "고객",
+        "손님",
         "손",
         "손님과",
         "함께",
@@ -19936,13 +19712,14 @@
       "aliases": [
         "손님과 함께 해당 진열대까지 걸어간다"
       ],
-      "search_text": "display 손님과 함께 해당 선반까지 걸어간다 grind 선반 고객 손 진열대 매대 손님과 함께 해당 선반까지 걸어간다 분쇄 갈기 손님과 함께 해당 진열대까지 걸어간다",
+      "search_text": "display 손님과 함께 해당 선반까지 걸어간다 grind 선반 고객 손님 손 진열대 매대 손님과 함께 해당 선반까지 걸어간다 분쇄 갈기 손님과 함께 해당 진열대까지 걸어간다",
       "image": "display/DISPLAY_034.webp",
       "source_file": "DISPLAY_034_손님과 함께 해당 선반까지 걸어간다.png",
       "action": "grind",
       "objects": [
         "선반",
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -20453,13 +20230,14 @@
       "job": "display",
       "asset_type": "action",
       "variant": null,
-      "label": "앞치마 착용",
+      "label": "앞치마를 입는다",
       "keywords": [
         "앞치마",
-        "착용"
+        "앞치마를",
+        "입는다"
       ],
       "aliases": [],
-      "search_text": "display 앞치마 착용 other 앞치마 착용",
+      "search_text": "display 앞치마를 입는다 other 앞치마 앞치마를 입는다",
       "image": "display/DISPLAY_052.webp",
       "source_file": "DISPLAY_052_앞치마 착용.png",
       "action": "other",
@@ -20471,7 +20249,7 @@
       "id": "DISPLAY_053",
       "group_id": "DISPLAY_053",
       "job": "display",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": null,
       "label": "앞치마 착용 완료",
       "keywords": [
@@ -20494,17 +20272,21 @@
       "job": "display",
       "asset_type": "action",
       "variant": null,
-      "label": "명찰 착용",
+      "label": "명찰을 앞치마에 단다",
       "keywords": [
-        "명찰",
-        "착용"
+        "앞치마",
+        "명찰을",
+        "앞치마에",
+        "단다"
       ],
       "aliases": [],
-      "search_text": "display 명찰 착용 other 명찰 착용",
+      "search_text": "display 명찰을 앞치마에 단다 other 앞치마 명찰을 앞치마에 단다",
       "image": "display/DISPLAY_054.webp",
       "source_file": "DISPLAY_054_명찰 착용.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "앞치마"
+      ]
     },
     {
       "id": "DISPLAY_TOOL_001",
@@ -20914,6 +20696,7 @@
       "variant": null,
       "label": "차를 멈춰 세운다",
       "keywords": [
+        "자동차",
         "차를",
         "멈춰",
         "세운다",
@@ -20921,11 +20704,13 @@
         "바로 세우기"
       ],
       "aliases": [],
-      "search_text": "gas 차를 멈춰 세운다 stand 차를 멈춰 세운다 세우기 바로 세우기",
+      "search_text": "gas 차를 멈춰 세운다 stand 자동차 차를 멈춰 세운다 세우기 바로 세우기",
       "image": "gas/GAS_001.webp",
       "source_file": "GAS_001_차를 멈춰 세운다.png",
       "action": "stand",
-      "objects": []
+      "objects": [
+        "자동차"
+      ]
     },
     {
       "id": "GAS_002",
@@ -20935,6 +20720,7 @@
       "variant": null,
       "label": "자동차를 안내한다",
       "keywords": [
+        "자동차",
         "자동차를",
         "안내한다",
         "안내",
@@ -20942,11 +20728,13 @@
         "위치 안내"
       ],
       "aliases": [],
-      "search_text": "gas 자동차를 안내한다 guide 자동차를 안내한다 안내 방향 안내 위치 안내",
+      "search_text": "gas 자동차를 안내한다 guide 자동차 자동차를 안내한다 안내 방향 안내 위치 안내",
       "image": "gas/GAS_002.webp",
       "source_file": "GAS_002_자동차를 안내한다.png",
       "action": "guide",
-      "objects": []
+      "objects": [
+        "자동차"
+      ]
     },
     {
       "id": "GAS_003",
@@ -20956,29 +20744,37 @@
       "variant": null,
       "label": "자동차의 주유구 뚜껑을 연다",
       "keywords": [
-        "자동차의",
+        "주유구 뚜껑",
+        "자동차",
         "주유구",
+        "자동차의",
         "뚜껑을",
         "연다",
         "열기"
       ],
       "aliases": [],
-      "search_text": "gas 자동차의 주유구 뚜껑을 연다 open 자동차의 주유구 뚜껑을 연다 열기",
+      "search_text": "gas 자동차의 주유구 뚜껑을 연다 open 주유구 뚜껑 자동차 주유구 자동차의 뚜껑을 연다 열기",
       "image": "gas/GAS_003.webp",
       "source_file": "GAS_003_자동차의 주유구 뚜껑을 연다.png",
       "action": "open",
-      "objects": []
+      "objects": [
+        "주유구 뚜껑",
+        "자동차",
+        "주유구"
+      ]
     },
     {
       "id": "GAS_004",
       "group_id": "GAS_004",
       "job": "gas",
       "asset_type": "action",
-      "variant": null,
+      "variant": 1,
       "label": "주유건을 자동차 주유구에 꽂는다",
       "keywords": [
-        "주유건을",
         "자동차",
+        "주유구",
+        "주유건",
+        "주유건을",
         "주유구에",
         "꽂는다",
         "넣기",
@@ -20986,11 +20782,15 @@
         "꽂기"
       ],
       "aliases": [],
-      "search_text": "gas 주유건을 자동차 주유구에 꽂는다 put_in 주유건을 자동차 주유구에 꽂는다 넣기 담기 꽂기",
+      "search_text": "gas 주유건을 자동차 주유구에 꽂는다 put_in 자동차 주유구 주유건 주유건을 주유구에 꽂는다 넣기 담기 꽂기",
       "image": "gas/GAS_004.webp",
       "source_file": "GAS_004_주유건을 자동차 주유구에 꽂는다.png",
       "action": "put_in",
-      "objects": []
+      "objects": [
+        "자동차",
+        "주유구",
+        "주유건"
+      ]
     },
     {
       "id": "GAS_005",
@@ -21000,17 +20800,22 @@
       "variant": null,
       "label": "주유건을 주유기 거치대에 건다",
       "keywords": [
+        "주유기 거치대",
+        "주유건",
         "주유건을",
         "주유기",
         "거치대에",
         "건다"
       ],
       "aliases": [],
-      "search_text": "gas 주유건을 주유기 거치대에 건다 other 주유건을 주유기 거치대에 건다",
+      "search_text": "gas 주유건을 주유기 거치대에 건다 other 주유기 거치대 주유건 주유건을 주유기 거치대에 건다",
       "image": "gas/GAS_005.webp",
       "source_file": "GAS_005_주유건을 주유기 거치대에 건다.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "주유기 거치대",
+        "주유건"
+      ]
     },
     {
       "id": "GAS_006",
@@ -21020,6 +20825,9 @@
       "variant": null,
       "label": "분무기로 자동차에 세정액을 뿌린다",
       "keywords": [
+        "자동차",
+        "세정액",
+        "분무기",
         "분무기로",
         "자동차에",
         "세정액을",
@@ -21028,11 +20836,15 @@
         "분사"
       ],
       "aliases": [],
-      "search_text": "gas 분무기로 자동차에 세정액을 뿌린다 spray 분무기로 자동차에 세정액을 뿌린다 뿌리기 분사",
+      "search_text": "gas 분무기로 자동차에 세정액을 뿌린다 spray 자동차 세정액 분무기 분무기로 자동차에 세정액을 뿌린다 뿌리기 분사",
       "image": "gas/GAS_006.webp",
       "source_file": "GAS_006_분무기로 자동차에 세정액을 뿌린다.png",
       "action": "spray",
-      "objects": []
+      "objects": [
+        "자동차",
+        "세정액",
+        "분무기"
+      ]
     },
     {
       "id": "GAS_007",
@@ -21042,6 +20854,8 @@
       "variant": null,
       "label": "스퀴지로 유리를 닦는다",
       "keywords": [
+        "유리",
+        "스퀴지",
         "스퀴지로",
         "유리를",
         "닦는다",
@@ -21049,11 +20863,14 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "gas 스퀴지로 유리를 닦는다 clean 스퀴지로 유리를 닦는다 청소 닦기",
+      "search_text": "gas 스퀴지로 유리를 닦는다 clean 유리 스퀴지 스퀴지로 유리를 닦는다 청소 닦기",
       "image": "gas/GAS_007.webp",
       "source_file": "GAS_007_스퀴지로 유리를 닦는다.png",
       "action": "clean",
-      "objects": []
+      "objects": [
+        "유리",
+        "스퀴지"
+      ]
     },
     {
       "id": "GAS_008",
@@ -21063,6 +20880,8 @@
       "variant": null,
       "label": "마른 천으로 유리에 남은 물기를 닦는다",
       "keywords": [
+        "유리",
+        "마른 천",
         "물기",
         "마른",
         "천으로",
@@ -21074,11 +20893,13 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "gas 마른 천으로 유리에 남은 물기를 닦는다 clean 물기 마른 천으로 유리에 남은 물기를 닦는다 청소 닦기",
+      "search_text": "gas 마른 천으로 유리에 남은 물기를 닦는다 clean 유리 마른 천 물기 마른 천으로 유리에 남은 물기를 닦는다 청소 닦기",
       "image": "gas/GAS_008.webp",
       "source_file": "GAS_008_마른 천으로 유리에 남은 물기를 닦는다.png",
       "action": "clean",
       "objects": [
+        "유리",
+        "마른 천",
         "물기"
       ]
     },
@@ -21090,6 +20911,7 @@
       "variant": null,
       "label": "유리가 깨끗해진 것을 확인한다",
       "keywords": [
+        "유리",
         "유리가",
         "깨끗해진",
         "것을",
@@ -21101,11 +20923,13 @@
       "aliases": [
         "유리가 깨끗해진 것을 점검한다"
       ],
-      "search_text": "gas 유리가 깨끗해진 것을 확인한다 check 유리가 깨끗해진 것을 확인한다 점검 검사 확인 유리가 깨끗해진 것을 점검한다",
+      "search_text": "gas 유리가 깨끗해진 것을 확인한다 check 유리 유리가 깨끗해진 것을 확인한다 점검 검사 확인 유리가 깨끗해진 것을 점검한다",
       "image": "gas/GAS_009.webp",
       "source_file": "GAS_009_유리가 깨끗해진 것을 확인한다.png",
       "action": "check",
-      "objects": []
+      "objects": [
+        "유리"
+      ]
     },
     {
       "id": "GAS_010",
@@ -21221,7 +21045,9 @@
       "variant": null,
       "label": "휴대용 결제 단말기를 손님에게 건넨다",
       "keywords": [
+        "결제 단말기",
         "고객",
+        "손님",
         "손",
         "휴대용",
         "결제",
@@ -21232,12 +21058,14 @@
         "전달"
       ],
       "aliases": [],
-      "search_text": "gas 휴대용 결제 단말기를 손님에게 건넨다 handover 고객 손 휴대용 결제 단말기를 손님에게 건넨다 건네기 전달",
+      "search_text": "gas 휴대용 결제 단말기를 손님에게 건넨다 handover 결제 단말기 고객 손님 손 휴대용 결제 단말기를 손님에게 건넨다 건네기 전달",
       "image": "gas/GAS_014.webp",
       "source_file": "GAS_014_휴대용 결제 단말기를 손님에게 건넨다.png",
       "action": "handover",
       "objects": [
+        "결제 단말기",
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -21250,6 +21078,7 @@
       "label": "손님이 결제하는 동안 옆에서 기다린다",
       "keywords": [
         "고객",
+        "손님",
         "손",
         "손님이",
         "결제하는",
@@ -21258,12 +21087,13 @@
         "기다린다"
       ],
       "aliases": [],
-      "search_text": "gas 손님이 결제하는 동안 옆에서 기다린다 other 고객 손 손님이 결제하는 동안 옆에서 기다린다",
+      "search_text": "gas 손님이 결제하는 동안 옆에서 기다린다 other 고객 손님 손 손님이 결제하는 동안 옆에서 기다린다",
       "image": "gas/GAS_015.webp",
       "source_file": "GAS_015_손님이 결제하는 동안 옆에서 기다린다.png",
       "action": "other",
       "objects": [
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -21275,6 +21105,7 @@
       "variant": null,
       "label": "결제 단말기에서 영수증이 출력된다",
       "keywords": [
+        "결제 단말기",
         "영수증",
         "결제",
         "단말기에서",
@@ -21282,11 +21113,12 @@
         "출력된다"
       ],
       "aliases": [],
-      "search_text": "gas 결제 단말기에서 영수증이 출력된다 other 영수증 결제 단말기에서 영수증이 출력된다",
+      "search_text": "gas 결제 단말기에서 영수증이 출력된다 other 결제 단말기 영수증 결제 단말기에서 영수증이 출력된다",
       "image": "gas/GAS_016.webp",
       "source_file": "GAS_016_결제 단말기에서 영수증이 출력된다.png",
       "action": "other",
       "objects": [
+        "결제 단말기",
         "영수증"
       ]
     },
@@ -21299,12 +21131,13 @@
       "label": "출력된 영수증을 자동차 창문 너머로 손님에게 건넨다",
       "keywords": [
         "영수증",
+        "자동차",
+        "창문",
         "고객",
+        "손님",
         "손",
         "출력된",
         "영수증을",
-        "자동차",
-        "창문",
         "너머로",
         "손님에게",
         "건넨다",
@@ -21312,13 +21145,16 @@
         "전달"
       ],
       "aliases": [],
-      "search_text": "gas 출력된 영수증을 자동차 창문 너머로 손님에게 건넨다 handover 영수증 고객 손 출력된 영수증을 자동차 창문 너머로 손님에게 건넨다 건네기 전달",
+      "search_text": "gas 출력된 영수증을 자동차 창문 너머로 손님에게 건넨다 handover 영수증 자동차 창문 고객 손님 손 출력된 영수증을 너머로 손님에게 건넨다 건네기 전달",
       "image": "gas/GAS_017.webp",
       "source_file": "GAS_017_출력된 영수증을 자동차 창문 너머로 손님에게 건넨다.png",
       "action": "handover",
       "objects": [
         "영수증",
+        "자동차",
+        "창문",
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -21331,6 +21167,7 @@
       "label": "타이어 옆면의 밸브를 확인한다",
       "keywords": [
         "타이어",
+        "밸브",
         "옆면의",
         "밸브를",
         "확인한다",
@@ -21341,11 +21178,14 @@
       "aliases": [
         "타이어 옆면의 밸브를 점검한다"
       ],
-      "search_text": "gas 타이어 옆면의 밸브를 확인한다 check 타이어 옆면의 밸브를 확인한다 점검 검사 확인 타이어 옆면의 밸브를 점검한다",
+      "search_text": "gas 타이어 옆면의 밸브를 확인한다 check 타이어 밸브 옆면의 밸브를 확인한다 점검 검사 확인 타이어 옆면의 밸브를 점검한다",
       "image": "gas/GAS_018.webp",
       "source_file": "GAS_018_타이어 옆면의 밸브를 확인한다.png",
       "action": "check",
-      "objects": []
+      "objects": [
+        "타이어",
+        "밸브"
+      ]
     },
     {
       "id": "GAS_019",
@@ -21355,6 +21195,7 @@
       "variant": null,
       "label": "타이어 밸브 캡을 연다",
       "keywords": [
+        "밸브 캡",
         "타이어",
         "밸브",
         "캡을",
@@ -21362,20 +21203,26 @@
         "열기"
       ],
       "aliases": [],
-      "search_text": "gas 타이어 밸브 캡을 연다 open 타이어 밸브 캡을 연다 열기",
+      "search_text": "gas 타이어 밸브 캡을 연다 open 밸브 캡 타이어 밸브 캡을 연다 열기",
       "image": "gas/GAS_019.webp",
       "source_file": "GAS_019_타이어 밸브 캡을 연다.png",
       "action": "open",
-      "objects": []
+      "objects": [
+        "밸브 캡",
+        "타이어",
+        "밸브"
+      ]
     },
     {
       "id": "GAS_020",
       "group_id": "GAS_020",
       "job": "gas",
       "asset_type": "action",
-      "variant": null,
+      "variant": 1,
       "label": "측정기로 압력을 확인한다",
       "keywords": [
+        "공기압 측정기",
+        "압력",
         "측정기로",
         "압력을",
         "확인한다",
@@ -21386,11 +21233,14 @@
       "aliases": [
         "측정기로 압력을 점검한다"
       ],
-      "search_text": "gas 측정기로 압력을 확인한다 check 측정기로 압력을 확인한다 점검 검사 확인 측정기로 압력을 점검한다",
+      "search_text": "gas 측정기로 압력을 확인한다 check 공기압 측정기 압력 측정기로 압력을 확인한다 점검 검사 확인 측정기로 압력을 점검한다",
       "image": "gas/GAS_020.webp",
       "source_file": "GAS_020_측정기로 압력을 확인한다.png",
       "action": "check",
-      "objects": []
+      "objects": [
+        "공기압 측정기",
+        "압력"
+      ]
     },
     {
       "id": "GAS_021",
@@ -21400,6 +21250,7 @@
       "variant": null,
       "label": "타이어 밸브 캡을 돌려서 연다",
       "keywords": [
+        "밸브 캡",
         "타이어",
         "밸브",
         "캡을",
@@ -21408,11 +21259,15 @@
         "열기"
       ],
       "aliases": [],
-      "search_text": "gas 타이어 밸브 캡을 돌려서 연다 open 타이어 밸브 캡을 돌려서 연다 열기",
+      "search_text": "gas 타이어 밸브 캡을 돌려서 연다 open 밸브 캡 타이어 밸브 캡을 돌려서 연다 열기",
       "image": "gas/GAS_021.webp",
       "source_file": "GAS_021_타이어 밸브 캡을 돌려서 연다.png",
       "action": "open",
-      "objects": []
+      "objects": [
+        "밸브 캡",
+        "타이어",
+        "밸브"
+      ]
     },
     {
       "id": "GAS_022",
@@ -21422,26 +21277,33 @@
       "variant": null,
       "label": "타이어 밸브 캡을 배낸다",
       "keywords": [
+        "밸브 캡",
         "타이어",
         "밸브",
         "캡을",
         "배낸다"
       ],
       "aliases": [],
-      "search_text": "gas 타이어 밸브 캡을 배낸다 other 타이어 밸브 캡을 배낸다",
+      "search_text": "gas 타이어 밸브 캡을 배낸다 other 밸브 캡 타이어 밸브 캡을 배낸다",
       "image": "gas/GAS_022.webp",
       "source_file": "GAS_022_타이어 밸브 캡을 배낸다.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "밸브 캡",
+        "타이어",
+        "밸브"
+      ]
     },
     {
       "id": "GAS_023",
-      "group_id": "GAS_023",
+      "group_id": "GAS_020",
       "job": "gas",
       "asset_type": "action",
-      "variant": null,
+      "variant": 2,
       "label": "측정기로 압력을 확인한다",
       "keywords": [
+        "공기압 측정기",
+        "압력",
         "측정기로",
         "압력을",
         "확인한다",
@@ -21452,11 +21314,14 @@
       "aliases": [
         "측정기로 압력을 점검한다"
       ],
-      "search_text": "gas 측정기로 압력을 확인한다 check 측정기로 압력을 확인한다 점검 검사 확인 측정기로 압력을 점검한다",
+      "search_text": "gas 측정기로 압력을 확인한다 check 공기압 측정기 압력 측정기로 압력을 확인한다 점검 검사 확인 측정기로 압력을 점검한다",
       "image": "gas/GAS_023.webp",
       "source_file": "GAS_023_측정기로 압력을 확인한다.png",
       "action": "check",
-      "objects": []
+      "objects": [
+        "공기압 측정기",
+        "압력"
+      ]
     },
     {
       "id": "GAS_024",
@@ -21466,6 +21331,8 @@
       "variant": null,
       "label": "차량의 창문에 스프레이를 뿌린다",
       "keywords": [
+        "자동차",
+        "창문",
         "차량",
         "차량의",
         "창문에",
@@ -21475,11 +21342,13 @@
         "분사"
       ],
       "aliases": [],
-      "search_text": "gas 차량의 창문에 스프레이를 뿌린다 spray 차량 차량의 창문에 스프레이를 뿌린다 뿌리기 분사",
+      "search_text": "gas 차량의 창문에 스프레이를 뿌린다 spray 자동차 창문 차량 차량의 창문에 스프레이를 뿌린다 뿌리기 분사",
       "image": "gas/GAS_024.webp",
       "source_file": "GAS_024_차량의 창문에 스프레이를 뿌린다.png",
       "action": "spray",
       "objects": [
+        "자동차",
+        "창문",
         "차량"
       ]
     },
@@ -21491,6 +21360,9 @@
       "variant": null,
       "label": "스퀴지로 차량의 창문을 닦는다",
       "keywords": [
+        "자동차",
+        "스퀴지",
+        "창문",
         "차량",
         "스퀴지로",
         "차량의",
@@ -21500,11 +21372,14 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "gas 스퀴지로 차량의 창문을 닦는다 clean 차량 스퀴지로 차량의 창문을 닦는다 청소 닦기",
+      "search_text": "gas 스퀴지로 차량의 창문을 닦는다 clean 자동차 스퀴지 창문 차량 스퀴지로 차량의 창문을 닦는다 청소 닦기",
       "image": "gas/GAS_025.webp",
       "source_file": "GAS_025_스퀴지로 차량의 창문을 닦는다.png",
       "action": "clean",
       "objects": [
+        "자동차",
+        "스퀴지",
+        "창문",
         "차량"
       ]
     },
@@ -21516,6 +21391,9 @@
       "variant": null,
       "label": "천으로 차량의 프론트글라스를 닦는다",
       "keywords": [
+        "유리",
+        "마른 천",
+        "자동차",
         "차량",
         "천으로",
         "차량의",
@@ -21525,11 +21403,14 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "gas 천으로 차량의 프론트글라스를 닦는다 clean 차량 천으로 차량의 프론트글라스를 닦는다 청소 닦기",
+      "search_text": "gas 천으로 차량의 프론트글라스를 닦는다 clean 유리 마른 천 자동차 차량 천으로 차량의 프론트글라스를 닦는다 청소 닦기",
       "image": "gas/GAS_026.webp",
       "source_file": "GAS_026_천으로 차량의 프론트글라스를 닦는다.png",
       "action": "clean",
       "objects": [
+        "유리",
+        "마른 천",
+        "자동차",
         "차량"
       ]
     },
@@ -21541,6 +21422,9 @@
       "variant": null,
       "label": "천으로 차량의 옆창문을 닦는다",
       "keywords": [
+        "마른 천",
+        "자동차",
+        "창문",
         "차량",
         "천으로",
         "차량의",
@@ -21550,11 +21434,14 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "gas 천으로 차량의 옆창문을 닦는다 clean 차량 천으로 차량의 옆창문을 닦는다 청소 닦기",
+      "search_text": "gas 천으로 차량의 옆창문을 닦는다 clean 마른 천 자동차 창문 차량 천으로 차량의 옆창문을 닦는다 청소 닦기",
       "image": "gas/GAS_027.webp",
       "source_file": "GAS_027_천으로 차량의 옆창문을 닦는다.png",
       "action": "clean",
       "objects": [
+        "마른 천",
+        "자동차",
+        "창문",
         "차량"
       ]
     },
@@ -21566,6 +21453,8 @@
       "variant": null,
       "label": "창문을 내린 상태에서 창문의 단면을 천으로 닦는다",
       "keywords": [
+        "마른 천",
+        "창문",
         "창문을",
         "내린",
         "상태에서",
@@ -21577,11 +21466,14 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "gas 창문을 내린 상태에서 창문의 단면을 천으로 닦는다 clean 창문을 내린 상태에서 창문의 단면을 천으로 닦는다 청소 닦기",
+      "search_text": "gas 창문을 내린 상태에서 창문의 단면을 천으로 닦는다 clean 마른 천 창문 창문을 내린 상태에서 창문의 단면을 천으로 닦는다 청소 닦기",
       "image": "gas/GAS_028.webp",
       "source_file": "GAS_028_창문을 내린 상태에서 창문의 단면을 천으로 닦는다.png",
       "action": "clean",
-      "objects": []
+      "objects": [
+        "마른 천",
+        "창문"
+      ]
     },
     {
       "id": "GAS_029",
@@ -21591,6 +21483,8 @@
       "variant": null,
       "label": "천으로 창문을 문질러서 닦는다",
       "keywords": [
+        "마른 천",
+        "창문",
         "천으로",
         "창문을",
         "문질러서",
@@ -21599,11 +21493,14 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "gas 천으로 창문을 문질러서 닦는다 clean 천으로 창문을 문질러서 닦는다 청소 닦기",
+      "search_text": "gas 천으로 창문을 문질러서 닦는다 clean 마른 천 창문 천으로 창문을 문질러서 닦는다 청소 닦기",
       "image": "gas/GAS_029.webp",
       "source_file": "GAS_029_천으로 창문을 문질러서 닦는다.png",
       "action": "clean",
-      "objects": []
+      "objects": [
+        "마른 천",
+        "창문"
+      ]
     },
     {
       "id": "GAS_030",
@@ -21613,6 +21510,7 @@
       "variant": null,
       "label": "깨끗해진 창문을 확인한다",
       "keywords": [
+        "창문",
         "깨끗해진",
         "창문을",
         "확인한다",
@@ -21623,11 +21521,13 @@
       "aliases": [
         "깨끗해진 창문을 점검한다"
       ],
-      "search_text": "gas 깨끗해진 창문을 확인한다 check 깨끗해진 창문을 확인한다 점검 검사 확인 깨끗해진 창문을 점검한다",
+      "search_text": "gas 깨끗해진 창문을 확인한다 check 창문 깨끗해진 창문을 확인한다 점검 검사 확인 깨끗해진 창문을 점검한다",
       "image": "gas/GAS_030.webp",
       "source_file": "GAS_030_깨끗해진 창문을 확인한다.png",
       "action": "check",
-      "objects": []
+      "objects": [
+        "창문"
+      ]
     },
     {
       "id": "GAS_031",
@@ -21637,19 +21537,23 @@
       "variant": null,
       "label": "차량에게 후진 신호를 보낸다",
       "keywords": [
+        "자동차",
         "차량",
+        "신호",
         "차량에게",
         "후진",
         "신호를",
         "보낸다"
       ],
       "aliases": [],
-      "search_text": "gas 차량에게 후진 신호를 보낸다 other 차량 차량에게 후진 신호를 보낸다",
+      "search_text": "gas 차량에게 후진 신호를 보낸다 other 자동차 차량 신호 차량에게 후진 신호를 보낸다",
       "image": "gas/GAS_031.webp",
       "source_file": "GAS_031_차량에게 후진 신호를 보낸다.png",
       "action": "other",
       "objects": [
-        "차량"
+        "자동차",
+        "차량",
+        "신호"
       ]
     },
     {
@@ -21660,19 +21564,23 @@
       "variant": null,
       "label": "차량에게 정지 신호를 보낸다",
       "keywords": [
+        "자동차",
         "차량",
+        "신호",
         "차량에게",
         "정지",
         "신호를",
         "보낸다"
       ],
       "aliases": [],
-      "search_text": "gas 차량에게 정지 신호를 보낸다 other 차량 차량에게 정지 신호를 보낸다",
+      "search_text": "gas 차량에게 정지 신호를 보낸다 other 자동차 차량 신호 차량에게 정지 신호를 보낸다",
       "image": "gas/GAS_032.webp",
       "source_file": "GAS_032_차량에게 정지 신호를 보낸다.png",
       "action": "other",
       "objects": [
-        "차량"
+        "자동차",
+        "차량",
+        "신호"
       ]
     },
     {
@@ -21683,7 +21591,9 @@
       "variant": null,
       "label": "바닥에 흐른 기름을 흡착포로 닥는다",
       "keywords": [
+        "흡착포",
         "바닥",
+        "기름",
         "바닥에",
         "흐른",
         "기름을",
@@ -21691,12 +21601,14 @@
         "닥는다"
       ],
       "aliases": [],
-      "search_text": "gas 바닥에 흐른 기름을 흡착포로 닥는다 other 바닥 바닥에 흐른 기름을 흡착포로 닥는다",
+      "search_text": "gas 바닥에 흐른 기름을 흡착포로 닥는다 other 흡착포 바닥 기름 바닥에 흐른 기름을 흡착포로 닥는다",
       "image": "gas/GAS_033.webp",
       "source_file": "GAS_033_바닥에 흐른 기름을 흡착포로 닥는다.png",
       "action": "other",
       "objects": [
-        "바닥"
+        "흡착포",
+        "바닥",
+        "기름"
       ]
     },
     {
@@ -21707,6 +21619,8 @@
       "variant": null,
       "label": "자동차의 주유 뚜껑을 연다",
       "keywords": [
+        "주유구 뚜껑",
+        "자동차",
         "자동차의",
         "주유",
         "뚜껑을",
@@ -21714,11 +21628,14 @@
         "열기"
       ],
       "aliases": [],
-      "search_text": "gas 자동차의 주유 뚜껑을 연다 open 자동차의 주유 뚜껑을 연다 열기",
+      "search_text": "gas 자동차의 주유 뚜껑을 연다 open 주유구 뚜껑 자동차 자동차의 주유 뚜껑을 연다 열기",
       "image": "gas/GAS_034.webp",
       "source_file": "GAS_034_자동차의 주유 뚜껑을 연다.png",
       "action": "open",
-      "objects": []
+      "objects": [
+        "주유구 뚜껑",
+        "자동차"
+      ]
     },
     {
       "id": "GAS_035",
@@ -21728,6 +21645,8 @@
       "variant": null,
       "label": "주유건을 거치대에서 꺼낸다",
       "keywords": [
+        "주유기 거치대",
+        "주유건",
         "주유건을",
         "거치대에서",
         "꺼낸다",
@@ -21738,22 +21657,27 @@
       "aliases": [
         "주유건을 거치대에서 빼낸다"
       ],
-      "search_text": "gas 주유건을 거치대에서 꺼낸다 remove 주유건을 거치대에서 꺼낸다 꺼내기 빼기 제거 주유건을 거치대에서 빼낸다",
+      "search_text": "gas 주유건을 거치대에서 꺼낸다 remove 주유기 거치대 주유건 주유건을 거치대에서 꺼낸다 꺼내기 빼기 제거 주유건을 거치대에서 빼낸다",
       "image": "gas/GAS_035.webp",
       "source_file": "GAS_035_주유건을 거치대에서 꺼낸다.png",
       "action": "remove",
-      "objects": []
+      "objects": [
+        "주유기 거치대",
+        "주유건"
+      ]
     },
     {
       "id": "GAS_036",
-      "group_id": "GAS_036",
+      "group_id": "GAS_004",
       "job": "gas",
       "asset_type": "action",
-      "variant": null,
+      "variant": 2,
       "label": "주유건을 자동차 주유구에 꽂는다",
       "keywords": [
-        "주유건을",
         "자동차",
+        "주유구",
+        "주유건",
+        "주유건을",
         "주유구에",
         "꽂는다",
         "넣기",
@@ -21761,11 +21685,15 @@
         "꽂기"
       ],
       "aliases": [],
-      "search_text": "gas 주유건을 자동차 주유구에 꽂는다 put_in 주유건을 자동차 주유구에 꽂는다 넣기 담기 꽂기",
+      "search_text": "gas 주유건을 자동차 주유구에 꽂는다 put_in 자동차 주유구 주유건 주유건을 주유구에 꽂는다 넣기 담기 꽂기",
       "image": "gas/GAS_036.webp",
       "source_file": "GAS_036_주유건을 자동차 주유구에 꽂는다.png",
       "action": "put_in",
-      "objects": []
+      "objects": [
+        "자동차",
+        "주유구",
+        "주유건"
+      ]
     },
     {
       "id": "GAS_037",
@@ -21775,18 +21703,24 @@
       "variant": null,
       "label": "주유건을 자동차 주유구에 꽂고 기다린다",
       "keywords": [
-        "주유건을",
         "자동차",
+        "주유구",
+        "주유건",
+        "주유건을",
         "주유구에",
         "꽂고",
         "기다린다"
       ],
       "aliases": [],
-      "search_text": "gas 주유건을 자동차 주유구에 꽂고 기다린다 other 주유건을 자동차 주유구에 꽂고 기다린다",
+      "search_text": "gas 주유건을 자동차 주유구에 꽂고 기다린다 other 자동차 주유구 주유건 주유건을 주유구에 꽂고 기다린다",
       "image": "gas/GAS_037.webp",
       "source_file": "GAS_037_주유건을 자동차 주유구에 꽂고 기다린다.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "자동차",
+        "주유구",
+        "주유건"
+      ]
     },
     {
       "id": "GAS_038",
@@ -21796,6 +21730,8 @@
       "variant": null,
       "label": "주유가 끝나면 주유건을 주유구에서 빼낸다",
       "keywords": [
+        "주유구",
+        "주유건",
         "주유가",
         "끝나면",
         "주유건을",
@@ -21806,11 +21742,14 @@
         "제거"
       ],
       "aliases": [],
-      "search_text": "gas 주유가 끝나면 주유건을 주유구에서 빼낸다 remove 주유가 끝나면 주유건을 주유구에서 빼낸다 꺼내기 빼기 제거",
+      "search_text": "gas 주유가 끝나면 주유건을 주유구에서 빼낸다 remove 주유구 주유건 주유가 끝나면 주유건을 주유구에서 빼낸다 꺼내기 빼기 제거",
       "image": "gas/GAS_038.webp",
       "source_file": "GAS_038_주유가 끝나면 주유건을 주유구에서 빼낸다.png",
       "action": "remove",
-      "objects": []
+      "objects": [
+        "주유구",
+        "주유건"
+      ]
     },
     {
       "id": "GAS_039",
@@ -21820,6 +21759,8 @@
       "variant": null,
       "label": "주유건을 주유기 거치대에 다시 꽂는다",
       "keywords": [
+        "주유기 거치대",
+        "주유건",
         "주유건을",
         "주유기",
         "거치대에",
@@ -21830,11 +21771,14 @@
         "꽂기"
       ],
       "aliases": [],
-      "search_text": "gas 주유건을 주유기 거치대에 다시 꽂는다 put_in 주유건을 주유기 거치대에 다시 꽂는다 넣기 담기 꽂기",
+      "search_text": "gas 주유건을 주유기 거치대에 다시 꽂는다 put_in 주유기 거치대 주유건 주유건을 주유기 거치대에 다시 꽂는다 넣기 담기 꽂기",
       "image": "gas/GAS_039.webp",
       "source_file": "GAS_039_주유건을 주유기 거치대에 다시 꽂는다.png",
       "action": "put_in",
-      "objects": []
+      "objects": [
+        "주유기 거치대",
+        "주유건"
+      ]
     },
     {
       "id": "GAS_040",
@@ -21851,7 +21795,9 @@
       "image": "gas/GAS_040.webp",
       "source_file": "GAS_040_주유건.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "주유건"
+      ]
     },
     {
       "id": "GAS_041",
@@ -21868,7 +21814,9 @@
       "image": "gas/GAS_041.webp",
       "source_file": "GAS_041_스퀴지.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "스퀴지"
+      ]
     },
     {
       "id": "GAS_042",
@@ -21886,7 +21834,9 @@
       "image": "gas/GAS_042.webp",
       "source_file": "GAS_042_세정액 스프레이.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "세정액"
+      ]
     },
     {
       "id": "GAS_043",
@@ -21896,6 +21846,7 @@
       "variant": null,
       "label": "공기압 측정기",
       "keywords": [
+        "공기압 측정기",
         "공기압",
         "측정기"
       ],
@@ -21904,7 +21855,9 @@
       "image": "gas/GAS_043.webp",
       "source_file": "GAS_043_공기압 측정기.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "공기압 측정기"
+      ]
     },
     {
       "id": "GAS_044",
@@ -21914,16 +21867,19 @@
       "variant": null,
       "label": "휴대용 결제 단말기",
       "keywords": [
+        "결제 단말기",
         "휴대용",
         "결제",
         "단말기"
       ],
       "aliases": [],
-      "search_text": "gas 휴대용 결제 단말기 other 휴대용 결제 단말기",
+      "search_text": "gas 휴대용 결제 단말기 other 결제 단말기 휴대용 결제 단말기",
       "image": "gas/GAS_044.webp",
       "source_file": "GAS_044_휴대용 결제 단말기.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "결제 단말기"
+      ]
     },
     {
       "id": "GAS_045",
@@ -21933,6 +21889,7 @@
       "variant": null,
       "label": "마른 천",
       "keywords": [
+        "마른 천",
         "마른"
       ],
       "aliases": [],
@@ -21940,7 +21897,9 @@
       "image": "gas/GAS_045.webp",
       "source_file": "GAS_045_마른 천.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "마른 천"
+      ]
     },
     {
       "id": "SERVING_001",
@@ -22221,41 +22180,40 @@
       "id": "SERVING_012",
       "group_id": "SERVING_012",
       "job": "serving",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": null,
-      "label": "정돈되지 않은 의자와 테이블",
+      "label": "치우기 전의 지저분한 테이블",
       "keywords": [
         "테이블",
-        "의자",
-        "정돈되지",
-        "않은",
-        "의자와"
+        "치우기",
+        "전의",
+        "지저분한",
+        "정리"
       ],
       "aliases": [],
-      "search_text": "serving 정돈되지 않은 의자와 테이블 other 테이블 의자 정돈되지 않은 의자와",
+      "search_text": "serving 치우기 전의 지저분한 테이블 clear 테이블 치우기 전의 지저분한 정리",
       "image": "serving/SERVING_012.webp",
       "source_file": "SERVING_012_정돈되지 않은 의자와 테이블.png",
-      "action": "other",
+      "action": "clear",
       "objects": [
-        "테이블",
-        "의자"
+        "테이블"
       ]
     },
     {
       "id": "SERVING_013",
       "group_id": "SERVING_013",
       "job": "serving",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": null,
-      "label": "정돈된 의자와 테이블",
+      "label": "정돈된 테이블과 의자",
       "keywords": [
         "테이블",
         "의자",
         "정돈된",
-        "의자와"
+        "테이블과"
       ],
       "aliases": [],
-      "search_text": "serving 정돈된 의자와 테이블 other 테이블 의자 정돈된 의자와",
+      "search_text": "serving 정돈된 테이블과 의자 other 테이블 의자 정돈된 테이블과",
       "image": "serving/SERVING_013.webp",
       "source_file": "SERVING_013_정돈된 의자와 테이블.png",
       "action": "other",
@@ -22268,16 +22226,17 @@
       "id": "SERVING_014",
       "group_id": "SERVING_014",
       "job": "serving",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": null,
-      "label": "닦이지 않은 테이블",
+      "label": "음식 얼룩이 묻은 테이블",
       "keywords": [
         "테이블",
-        "닦이지",
-        "않은"
+        "음식",
+        "얼룩이",
+        "묻은"
       ],
       "aliases": [],
-      "search_text": "serving 닦이지 않은 테이블 other 테이블 닦이지 않은",
+      "search_text": "serving 음식 얼룩이 묻은 테이블 other 테이블 음식 얼룩이 묻은",
       "image": "serving/SERVING_014.webp",
       "source_file": "SERVING_014_닦이지 않은 테이블.png",
       "action": "other",
@@ -22289,15 +22248,16 @@
       "id": "SERVING_015",
       "group_id": "SERVING_015",
       "job": "serving",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": null,
-      "label": "닦인 테이블",
+      "label": "깨끗하게 닦인 테이블",
       "keywords": [
         "테이블",
+        "깨끗하게",
         "닦인"
       ],
       "aliases": [],
-      "search_text": "serving 닦인 테이블 other 테이블 닦인",
+      "search_text": "serving 깨끗하게 닦인 테이블 other 테이블 깨끗하게 닦인",
       "image": "serving/SERVING_015.webp",
       "source_file": "SERVING_015_닦인 테이블.png",
       "action": "other",
@@ -22398,6 +22358,7 @@
       "label": "빈 자리로 손님을 안내한다",
       "keywords": [
         "고객",
+        "손님",
         "손",
         "자리로",
         "손님을",
@@ -22407,12 +22368,13 @@
         "위치 안내"
       ],
       "aliases": [],
-      "search_text": "serving 빈 자리로 손님을 안내한다 guide 고객 손 자리로 손님을 안내한다 안내 방향 안내 위치 안내",
+      "search_text": "serving 빈 자리로 손님을 안내한다 guide 고객 손님 손 자리로 손님을 안내한다 안내 방향 안내 위치 안내",
       "image": "serving/SERVING_019.webp",
       "source_file": "SERVING_019_빈 자리로 손님을 안내한다.png",
       "action": "guide",
       "objects": [
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -22863,6 +22825,7 @@
       "variant": null,
       "label": "유리잔이 깨진 것을 확인한다",
       "keywords": [
+        "유리",
         "유리잔이",
         "깨진",
         "것을",
@@ -22874,11 +22837,13 @@
       "aliases": [
         "유리잔이 깨진 것을 점검한다"
       ],
-      "search_text": "serving 유리잔이 깨진 것을 확인한다 check 유리잔이 깨진 것을 확인한다 점검 검사 확인 유리잔이 깨진 것을 점검한다",
+      "search_text": "serving 유리잔이 깨진 것을 확인한다 check 유리 유리잔이 깨진 것을 확인한다 점검 검사 확인 유리잔이 깨진 것을 점검한다",
       "image": "serving/SERVING_037.webp",
       "source_file": "SERVING_037_유리잔이 깨진 것을 확인한다.png",
       "action": "check",
-      "objects": []
+      "objects": [
+        "유리"
+      ]
     },
     {
       "id": "SERVING_038",
@@ -22888,9 +22853,10 @@
       "variant": null,
       "label": "유리 파편을 피해 손님들을 다른 자리로 안내한다",
       "keywords": [
-        "고객",
-        "손",
         "유리",
+        "고객",
+        "손님",
+        "손",
         "파편을",
         "피해",
         "손님들을",
@@ -22902,12 +22868,14 @@
         "위치 안내"
       ],
       "aliases": [],
-      "search_text": "serving 유리 파편을 피해 손님들을 다른 자리로 안내한다 guide 고객 손 유리 파편을 피해 손님들을 다른 자리로 안내한다 안내 방향 안내 위치 안내",
+      "search_text": "serving 유리 파편을 피해 손님들을 다른 자리로 안내한다 guide 유리 고객 손님 손 파편을 피해 손님들을 다른 자리로 안내한다 안내 방향 안내 위치 안내",
       "image": "serving/SERVING_038.webp",
       "source_file": "SERVING_038_유리 파편을 피해 손님들을 다른 자리로 안내한다.png",
       "action": "guide",
       "objects": [
+        "유리",
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -22919,6 +22887,7 @@
       "variant": null,
       "label": "유리조각을 쓸어담는다",
       "keywords": [
+        "유리",
         "유리조각을",
         "쓸어담는다",
         "쓸기",
@@ -22926,11 +22895,13 @@
         "먼지 모으기"
       ],
       "aliases": [],
-      "search_text": "serving 유리조각을 쓸어담는다 sweep 유리조각을 쓸어담는다 쓸기 빗자루 먼지 모으기",
+      "search_text": "serving 유리조각을 쓸어담는다 sweep 유리 유리조각을 쓸어담는다 쓸기 빗자루 먼지 모으기",
       "image": "serving/SERVING_039.webp",
       "source_file": "SERVING_039_유리조각을 쓸어담는다.png",
       "action": "sweep",
-      "objects": []
+      "objects": [
+        "유리"
+      ]
     },
     {
       "id": "SERVING_040",
@@ -22940,6 +22911,7 @@
       "variant": null,
       "label": "유리조각을 종이로 감싼다",
       "keywords": [
+        "유리",
         "유리조각을",
         "종이로",
         "감싼다",
@@ -22948,11 +22920,13 @@
         "감싸기"
       ],
       "aliases": [],
-      "search_text": "serving 유리조각을 종이로 감싼다 pack 유리조각을 종이로 감싼다 포장한다 포장하기 감싸기",
+      "search_text": "serving 유리조각을 종이로 감싼다 pack 유리 유리조각을 종이로 감싼다 포장한다 포장하기 감싸기",
       "image": "serving/SERVING_040.webp",
       "source_file": "SERVING_040_유리조각을 종이로 감싼다.png",
       "action": "pack",
-      "objects": []
+      "objects": [
+        "유리"
+      ]
     },
     {
       "id": "SERVING_041",
@@ -22962,6 +22936,7 @@
       "variant": null,
       "label": "종이에 싸인 유리조각을 쓰레기통에 버린다",
       "keywords": [
+        "유리",
         "쓰레기통",
         "종이에",
         "싸인",
@@ -22972,11 +22947,12 @@
         "폐기"
       ],
       "aliases": [],
-      "search_text": "serving 종이에 싸인 유리조각을 쓰레기통에 버린다 discard 쓰레기통 종이에 싸인 유리조각을 쓰레기통에 버린다 버리기 폐기",
+      "search_text": "serving 종이에 싸인 유리조각을 쓰레기통에 버린다 discard 유리 쓰레기통 종이에 싸인 유리조각을 쓰레기통에 버린다 버리기 폐기",
       "image": "serving/SERVING_041.webp",
       "source_file": "SERVING_041_종이에 싸인 유리조각을 쓰레기통에 버린다.png",
       "action": "discard",
       "objects": [
+        "유리",
         "쓰레기통"
       ]
     },
@@ -23160,6 +23136,7 @@
       "label": "호출하는 손님에게 다가간다",
       "keywords": [
         "고객",
+        "손님",
         "손",
         "호출하는",
         "손님에게",
@@ -23168,12 +23145,13 @@
         "갈기"
       ],
       "aliases": [],
-      "search_text": "serving 호출하는 손님에게 다가간다 grind 고객 손 호출하는 손님에게 다가간다 분쇄 갈기",
+      "search_text": "serving 호출하는 손님에게 다가간다 grind 고객 손님 손 호출하는 손님에게 다가간다 분쇄 갈기",
       "image": "serving/SERVING_049.webp",
       "source_file": "SERVING_049_호출하는 손님에게 다가간다.png",
       "action": "grind",
       "objects": [
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -23186,6 +23164,7 @@
       "label": "손님에게서 주문을 듣고 적는다",
       "keywords": [
         "고객",
+        "손님",
         "손",
         "손님에게서",
         "주문을",
@@ -23193,12 +23172,13 @@
         "적는다"
       ],
       "aliases": [],
-      "search_text": "serving 손님에게서 주문을 듣고 적는다 other 고객 손 손님에게서 주문을 듣고 적는다",
+      "search_text": "serving 손님에게서 주문을 듣고 적는다 other 고객 손님 손 손님에게서 주문을 듣고 적는다",
       "image": "serving/SERVING_050.webp",
       "source_file": "SERVING_050_손님에게서 주문을 듣고 적는다.png",
       "action": "other",
       "objects": [
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -23230,6 +23210,7 @@
       "label": "포스에서 결제하러 오는 손님을 받는다",
       "keywords": [
         "고객",
+        "손님",
         "손",
         "포스에서",
         "결제하러",
@@ -23241,12 +23222,13 @@
         "수령"
       ],
       "aliases": [],
-      "search_text": "serving 포스에서 결제하러 오는 손님을 받는다 receive 고객 손 포스에서 결제하러 오는 손님을 받는다 받기 건네받기 수령",
+      "search_text": "serving 포스에서 결제하러 오는 손님을 받는다 receive 고객 손님 손 포스에서 결제하러 오는 손님을 받는다 받기 건네받기 수령",
       "image": "serving/SERVING_052.webp",
       "source_file": "SERVING_052_포스에서 결제하러 오는 손님을 받는다.png",
       "action": "receive",
       "objects": [
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -23258,17 +23240,20 @@
       "variant": null,
       "label": "결제 단말기로 결제를 진행한다",
       "keywords": [
+        "결제 단말기",
         "결제",
         "단말기로",
         "결제를",
         "진행한다"
       ],
       "aliases": [],
-      "search_text": "serving 결제 단말기로 결제를 진행한다 other 결제 단말기로 결제를 진행한다",
+      "search_text": "serving 결제 단말기로 결제를 진행한다 other 결제 단말기 결제 단말기로 결제를 진행한다",
       "image": "serving/SERVING_053.webp",
       "source_file": "SERVING_053_결제 단말기로 결제를 진행한다.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "결제 단말기"
+      ]
     },
     {
       "id": "SERVING_054",
@@ -23333,6 +23318,7 @@
       "label": "결제하는 손님에게 현금을 받는다",
       "keywords": [
         "고객",
+        "손님",
         "손",
         "결제하는",
         "손님에게",
@@ -23343,12 +23329,13 @@
         "수령"
       ],
       "aliases": [],
-      "search_text": "serving 결제하는 손님에게 현금을 받는다 receive 고객 손 결제하는 손님에게 현금을 받는다 받기 건네받기 수령",
+      "search_text": "serving 결제하는 손님에게 현금을 받는다 receive 고객 손님 손 결제하는 손님에게 현금을 받는다 받기 건네받기 수령",
       "image": "serving/SERVING_056.webp",
       "source_file": "SERVING_056_결제하는 손님에게 현금을 받는다.png",
       "action": "receive",
       "objects": [
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -23361,6 +23348,7 @@
       "label": "손님에게 동전을 거슬러 준다",
       "keywords": [
         "고객",
+        "손님",
         "손",
         "손님에게",
         "동전을",
@@ -23368,12 +23356,13 @@
         "준다"
       ],
       "aliases": [],
-      "search_text": "serving 손님에게 동전을 거슬러 준다 other 고객 손 손님에게 동전을 거슬러 준다",
+      "search_text": "serving 손님에게 동전을 거슬러 준다 other 고객 손님 손 손님에게 동전을 거슬러 준다",
       "image": "serving/SERVING_057.webp",
       "source_file": "SERVING_057_손님에게 동전을 거슬러 준다.png",
       "action": "other",
       "objects": [
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -23386,6 +23375,7 @@
       "label": "손님에게 지폐를 거슬러 준다",
       "keywords": [
         "고객",
+        "손님",
         "손",
         "손님에게",
         "지폐를",
@@ -23393,12 +23383,13 @@
         "준다"
       ],
       "aliases": [],
-      "search_text": "serving 손님에게 지폐를 거슬러 준다 other 고객 손 손님에게 지폐를 거슬러 준다",
+      "search_text": "serving 손님에게 지폐를 거슬러 준다 other 고객 손님 손 손님에게 지폐를 거슬러 준다",
       "image": "serving/SERVING_058.webp",
       "source_file": "SERVING_058_손님에게 지폐를 거슬러 준다.png",
       "action": "other",
       "objects": [
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -23408,13 +23399,15 @@
       "job": "serving",
       "asset_type": "action",
       "variant": null,
-      "label": "앞치마 착용",
+      "label": "앞치마 끈을 허리에 묶는다",
       "keywords": [
         "앞치마",
-        "착용"
+        "끈을",
+        "허리에",
+        "묶는다"
       ],
       "aliases": [],
-      "search_text": "serving 앞치마 착용 other 앞치마 착용",
+      "search_text": "serving 앞치마 끈을 허리에 묶는다 other 앞치마 끈을 허리에 묶는다",
       "image": "serving/SERVING_059.webp",
       "source_file": "SERVING_059_앞치마 착용.png",
       "action": "other",
@@ -23426,7 +23419,7 @@
       "id": "SERVING_060",
       "group_id": "SERVING_060",
       "job": "serving",
-      "asset_type": "action",
+      "asset_type": "support",
       "variant": null,
       "label": "앞치마 착용 완료",
       "keywords": [
@@ -23567,6 +23560,7 @@
       "label": "아기 동반 손님을 확인한다",
       "keywords": [
         "고객",
+        "손님",
         "손",
         "아기",
         "동반",
@@ -23579,12 +23573,13 @@
       "aliases": [
         "아기 동반 손님을 점검한다"
       ],
-      "search_text": "serving 아기 동반 손님을 확인한다 check 고객 손 아기 동반 손님을 확인한다 점검 검사 확인 아기 동반 손님을 점검한다",
+      "search_text": "serving 아기 동반 손님을 확인한다 check 고객 손님 손 아기 동반 손님을 확인한다 점검 검사 확인 아기 동반 손님을 점검한다",
       "image": "serving/SERVING_066.webp",
       "source_file": "SERVING_066_아기 동반 손님을 확인한다.png",
       "action": "check",
       "objects": [
         "고객",
+        "손님",
         "손"
       ]
     },
@@ -23703,6 +23698,7 @@
       "variant": null,
       "label": "마른 천으로 물기를 닦는다",
       "keywords": [
+        "마른 천",
         "물기",
         "마른",
         "천으로",
@@ -23712,11 +23708,12 @@
         "닦기"
       ],
       "aliases": [],
-      "search_text": "serving 마른 천으로 물기를 닦는다 clean 물기 마른 천으로 물기를 닦는다 청소 닦기",
+      "search_text": "serving 마른 천으로 물기를 닦는다 clean 마른 천 물기 마른 천으로 물기를 닦는다 청소 닦기",
       "image": "serving/SERVING_071.webp",
       "source_file": "SERVING_071_마른 천으로 물기를 닦는다.png",
       "action": "clean",
       "objects": [
+        "마른 천",
         "물기"
       ]
     },
@@ -24177,6 +24174,7 @@
       "variant": null,
       "label": "타이어를 세척한다",
       "keywords": [
+        "타이어",
         "타이어를",
         "세척한다",
         "씻기",
@@ -24184,11 +24182,13 @@
         "세척"
       ],
       "aliases": [],
-      "search_text": "cleaning 타이어를 세척한다 wash 타이어를 세척한다 씻기 헹구기 세척",
+      "search_text": "cleaning 타이어를 세척한다 wash 타이어 타이어를 세척한다 씻기 헹구기 세척",
       "image": "cleaning/CLEANING_058.webp",
       "source_file": "CLEANING_058_타이어를 세척한다.jpg",
       "action": "wash",
-      "objects": []
+      "objects": [
+        "타이어"
+      ]
     },
     {
       "id": "CLEANING_059",
@@ -24791,6 +24791,7 @@
       "variant": null,
       "label": "깨진 유리를 정리한다",
       "keywords": [
+        "유리",
         "깨진",
         "유리를",
         "정리한다",
@@ -24798,11 +24799,13 @@
         "정돈"
       ],
       "aliases": [],
-      "search_text": "cleaning 깨진 유리를 정리한다 organize 깨진 유리를 정리한다 정리 정돈",
+      "search_text": "cleaning 깨진 유리를 정리한다 organize 유리 깨진 유리를 정리한다 정리 정돈",
       "image": "cleaning/CLEANING_085.webp",
       "source_file": "CLEANING_085_깨진 유리를 정리한다.png",
       "action": "organize",
-      "objects": []
+      "objects": [
+        "유리"
+      ]
     },
     {
       "id": "CLEANING_086",
@@ -25031,8 +25034,8 @@
       "variant": null,
       "label": "창문 레일 안에 있는 먼지를 치운다",
       "keywords": [
-        "먼지",
         "창문",
+        "먼지",
         "레일",
         "안에",
         "있는",
@@ -25042,11 +25045,12 @@
         "정리"
       ],
       "aliases": [],
-      "search_text": "cleaning 창문 레일 안에 있는 먼지를 치운다 clear 먼지 창문 레일 안에 있는 먼지를 치운다 치우기 정리",
+      "search_text": "cleaning 창문 레일 안에 있는 먼지를 치운다 clear 창문 먼지 레일 안에 있는 먼지를 치운다 치우기 정리",
       "image": "cleaning/CLEANING_096.webp",
       "source_file": "CLEANING_096_창문 레일 안에 있는 먼지를 치운다.png",
       "action": "clear",
       "objects": [
+        "창문",
         "먼지"
       ]
     },
@@ -25354,17 +25358,20 @@
       "variant": null,
       "label": "후드 기름때 제거를 한다",
       "keywords": [
+        "기름",
         "후드",
         "기름때",
         "제거를",
         "한다"
       ],
       "aliases": [],
-      "search_text": "cleaning 후드 기름때 제거를 한다 other 후드 기름때 제거를 한다",
+      "search_text": "cleaning 후드 기름때 제거를 한다 other 기름 후드 기름때 제거를 한다",
       "image": "cleaning/CLEANING_110.webp",
       "source_file": "CLEANING_110_후드 기름때 제거를 한다.png",
       "action": "other",
-      "objects": []
+      "objects": [
+        "기름"
+      ]
     },
     {
       "id": "CLEANING_111",
@@ -25765,7 +25772,9 @@
       "image": "cleaning/CLEANING_128.webp",
       "source_file": "CLEANING_128_창문 잠금장치를 닦는다.png",
       "action": "clean",
-      "objects": []
+      "objects": [
+        "창문"
+      ]
     },
     {
       "id": "CLEANING_129",
@@ -26454,17 +26463,20 @@
       "variant": null,
       "label": "유리창을 닦는다",
       "keywords": [
+        "유리",
         "유리창을",
         "닦는다",
         "청소",
         "닦기"
       ],
       "aliases": [],
-      "search_text": "cleaning 유리창을 닦는다 clean 유리창을 닦는다 청소 닦기",
+      "search_text": "cleaning 유리창을 닦는다 clean 유리 유리창을 닦는다 청소 닦기",
       "image": "cleaning/CLEANING_158.webp",
       "source_file": "CLEANING_158_유리창을 닦는다.jpg",
       "action": "clean",
-      "objects": []
+      "objects": [
+        "유리"
+      ]
     },
     {
       "id": "CLEANING_159",
@@ -26822,6 +26834,7 @@
       "variant": null,
       "label": "프라이팬 기름을 제거한다",
       "keywords": [
+        "기름",
         "프라이팬",
         "기름을",
         "제거한다",
@@ -26830,11 +26843,13 @@
         "제거"
       ],
       "aliases": [],
-      "search_text": "cleaning 프라이팬 기름을 제거한다 remove 프라이팬 기름을 제거한다 꺼내기 빼기 제거",
+      "search_text": "cleaning 프라이팬 기름을 제거한다 remove 기름 프라이팬 기름을 제거한다 꺼내기 빼기 제거",
       "image": "cleaning/CLEANING_174.webp",
       "source_file": "CLEANING_174_프라이팬 기름을 제거한다.jpg",
       "action": "remove",
-      "objects": []
+      "objects": [
+        "기름"
+      ]
     },
     {
       "id": "CLEANING_175",
@@ -26844,6 +26859,7 @@
       "variant": null,
       "label": "유리창 물때를 제거한다",
       "keywords": [
+        "유리",
         "유리창",
         "물때를",
         "제거한다",
@@ -26852,11 +26868,13 @@
         "제거"
       ],
       "aliases": [],
-      "search_text": "cleaning 유리창 물때를 제거한다 remove 유리창 물때를 제거한다 꺼내기 빼기 제거",
+      "search_text": "cleaning 유리창 물때를 제거한다 remove 유리 유리창 물때를 제거한다 꺼내기 빼기 제거",
       "image": "cleaning/CLEANING_175.webp",
       "source_file": "CLEANING_175_유리창 물때를 제거한다.jpg",
       "action": "remove",
-      "objects": []
+      "objects": [
+        "유리"
+      ]
     },
     {
       "id": "CLEANING_176",
@@ -27174,6 +27192,8 @@
       "variant": null,
       "label": "유리창 스퀴지를 세척한다",
       "keywords": [
+        "유리",
+        "스퀴지",
         "유리창",
         "스퀴지를",
         "세척한다",
@@ -27182,11 +27202,14 @@
         "세척"
       ],
       "aliases": [],
-      "search_text": "cleaning 유리창 스퀴지를 세척한다 wash 유리창 스퀴지를 세척한다 씻기 헹구기 세척",
+      "search_text": "cleaning 유리창 스퀴지를 세척한다 wash 유리 스퀴지 유리창 스퀴지를 세척한다 씻기 헹구기 세척",
       "image": "cleaning/CLEANING_190.webp",
       "source_file": "CLEANING_190_유리창 스퀴지를 세척한다.jpg",
       "action": "wash",
-      "objects": []
+      "objects": [
+        "유리",
+        "스퀴지"
+      ]
     }
   ]
 }

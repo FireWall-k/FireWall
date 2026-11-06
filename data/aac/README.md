@@ -6,16 +6,17 @@
 
 ## 구성
 
-- `images/assembly/` — 106장
+- `images/assembly/` — 235장 (2026-09-16 변형 세트 ASSEMBLY_023~038·AUX 확장)
 - `images/cafe/` — 101장
-- `images/cleaning/` — 74장
-- `images/packaging/` — 44장
+- `images/cleaning/` — 213장 (2026-09-23 CLEANING_051~190 140장 추가)
+- `images/packaging/` — 164장 (2026-09-23 120장 추가)
 - `images/retail/` — 76장
 - `images/delivery/` — 55장 (배송·택배, 2026-09-21 추가)
 - `images/display/` — 74장 (진열·재고·손님 안내)
 - `images/gas/` — 45장 (주유소·세차)
 - `images/serving/` — 86장 (홀 서빙·퇴식)
-- 총 661장
+- 총 1,049장 — 정확한 수는 `aac_assets.json`의 `asset_count`/`jobs`가 기준이며,
+  `ai_service/tests/test_aac_data.py`가 이미지·메타데이터·인덱스·임베딩의 정합성을 CI에서 검사한다.
 
 새 직무 4개는 `scripts/import_aac_images.py`로 등록했다(원본 PNG 1254px 등 → 768×768 WebP,
 원본은 저장소 밖 `_aac_originals/`에 두고 커밋하지 않는다). 번호가 겹친 파일(DELIVERY_035 두 장)은
@@ -23,7 +24,8 @@
 data/aac/aac_assets.json` → `build_aac_index.py --resume` → `build_aac_embeddings.py` 순서로 돌린다
 (enrich는 기본 출력이 `aac_assets.enriched.json`이라 `--output`을 주지 않으면 반영되지 않는다).
 
-모든 런타임 이미지는 768×768 WebP로 정규화되어 있습니다.
+모든 런타임 이미지는 768×768 WebP로 정규화되어 있습니다(2026-11-06: packaging 164장이 1254/1024px 원본 그대로
+커밋돼 있던 것을 재정규화했고, 같은 그림이 다른 ID로 두 번 들어간 9쌍과 메타데이터 없는 GAS_046을 정리했다).
 
 ## 메타데이터
 
