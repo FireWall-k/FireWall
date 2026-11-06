@@ -74,7 +74,7 @@ def ai_decompose(req: DecomposeRequest) -> DecomposeResult:
 
 @app.post("/ai/map-symbols", response_model=MapSymbolsResult)
 def ai_map_symbols(req: MapSymbolsRequest) -> MapSymbolsResult:
-    result = map_symbols(req.keywords, req.context)
+    result = map_symbols(req.keywords, req.context.model_dump(exclude_unset=True))
     fallback_count = sum(1 for s in result.symbols if s.needs_fallback)
     logger.info("map-symbols ok total=%s fallback=%s",
                 len(result.symbols), fallback_count)
@@ -92,7 +92,7 @@ def ai_aac_search(req: AacSearchRequest) -> AacSearchResult:
 
     matches = search_assets(
         query,
-        req.context,
+        req.context.model_dump(exclude_unset=True),
         limit=req.limit
     )
 

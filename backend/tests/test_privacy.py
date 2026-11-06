@@ -711,3 +711,168 @@ def test_delete_with_open_reader_retries_and_purge_finishes_checkpoint(client, c
         report = retention.purge(db)
     assert report["wal_checkpointed"] is True
     assert name.encode("utf-8") not in _db_files_bytes()
+
+
+# --- 8. 2차 검증 지적 보완(Phase 0.2 fix 2) -----------------------------------
+
+# 한국어 조사·어미는 겹쳐 붙는다. 예전 경계 규칙(접사 하나 + 조사 하나)은 이 꼴의 실명을 그대로 보냈다.
+_COMPOUND_FORMS = ["에게는", "한테도", "랑은", "는요", "님께서는", "와는", "에게도", "만은", "네", "도요",
+                   "한테서는", "보다는", "께는", "씨였어요", "이가요"]
+
+
+@pytest.mark.parametrize("tail", _COMPOUND_FORMS)
+def test_compound_particles_are_masked(tail):
+    from privacy import Pseudonymizer
+    p = Pseudonymizer(["김민지", "John"])
+    assert p.mask(f"{'김민지'}{tail} 상자를 주세요.") == f"근로자 A{tail} 상자를 주세요."
+
+
+def test_latin_name_is_masked_case_insensitively_with_compound_particles():
+    from privacy import Pseudonymizer
+    p = Pseudonymizer(["John"])
+    assert p.mask("John에게는 컵을") == "근로자 A에게는 컵을"
+    assert p.mask("john은 컵을, JOHN도요") == "근로자 A은 컵을, 근로자 A도요"
+    # 다른 낱말의 일부는 그대로 둔다.
+    assert p.mask("Johnson 상자") == "Johnson 상자"
+    # 대소문자만 다른 이름은 같은 사람으로 보고 별칭을 하나만 만든다.
+    assert Pseudonymizer(["John", "john"]).mask("john") == "근로자 A"
+
+
+def test_unmask_keeps_ordinary_uppercase_words():
+    """'근로자 ID'·'근로자 OK'·'근로자 TV'는 별칭이 아니다. 지우면 코칭·분해 문장이 망가진다."""
+    from privacy import Pseudonymizer
+    p = Pseudonymizer(["홍길동"])
+    assert p.unmask("근로자 ID를 확인하고 근로자 OK 사인을 받고 근로자 TV를 끄세요.") == \
+        "근로자 ID를 확인하고 근로자 OK 사인을 받고 근로자 TV를 끄세요."
+    # 만든 별칭은 되돌리고, 지어낸 한 글자 별칭은 '근로자'로 바꾼다.
+    assert p.unmask("근로자 A와 근로자 C") == "홍길동와 근로자"
+    # 두 글자 별칭은 실제로 만든 것만 되돌린다.
+    many = Pseudonymizer([f"근로자이름{i:02d}" for i in range(28)])
+    assert many.unmask("근로자 AB 님") == "근로자이름27 님"
+    assert many.unmask("근로자 ZZ 님") == "근로자 ZZ 님"
+
+
+def test_compound_forms_never_reach_ai_payloads(client, capture):
+    """직무 생성(분해)·단계 추가(그림 검색)·코칭 세 경로의 AI 페이로드 어디에도 실명이 없어야 한다."""
+    token = _new_employer(client)
+    name = "정하늘"
+    wid = _create_worker(client, token, name)
+    raw = (f"{name}에게는 상자를 주세요. {name}한테도 알려 주세요. {name}와는 같이 옮기세요. "
+           f"{name}는요 컵을 닦아요. {name}님께서는 쉬세요. {name}네 자리 옆에 두세요.")
+    r = client.post("/api/tasks", json={"raw_input": raw, "work_environment": f"{name}네 창고"},
+                    headers=auth(token))
+    assert r.status_code == 201, r.text
+    task = r.json()
+    # 응답은 실명으로 되돌아와 저장된다.
+    assert task["steps"][0]["sentence"] == f"{name}에게는 상자를 주세요."
+
+    r = client.post(f"/api/tasks/{task['id']}/steps",
+                    json={"sentence": f"{name}에게도 장갑을 주세요.", "action_type": "move"}, headers=auth(token))
+    assert r.status_code == 201, r.text
+
+    _publish_assign_log(client, token, task["id"], wid)
+    _grant(client, token, wid)
+    r = client.get(f"/api/dashboard/tasks/{task['id']}/coaching?worker_id={wid}", headers=auth(token))
+    assert r.status_code == 200, r.text
+
+    kinds = {k for k, _ in capture.calls}
+    assert {"decompose", "map_symbols", "coaching"} <= kinds
+    sent = capture.dump()
+    assert name not in sent
+    assert "근로자 A에게는" in sent and "근로자 A님께서는" in sent and "근로자 A네 창고" in sent
+
+
+def test_symbol_search_context_drops_unknown_fields(client, capture):
+    """그림 검색 맥락도 백엔드가 아는 필드만 보낸다(이름 필드가 끼어들 자리가 없다)."""
+    token = _new_employer(client)
+    _create_worker(client, token, "오민수")
+    client.post("/api/tasks", json={"raw_input": "오민수에게는 상자를 주세요."}, headers=auth(token))
+    contexts = [p["context"] for k, p in capture.calls if k == "map_symbols"]
+    assert contexts
+    allowed = {"business_type", "work_environment", "job", "job_hint", "sentence", "action_type", "raw_input"}
+    for ctx in contexts:
+        assert set(ctx) <= allowed
+        assert "오민수" not in json.dumps(ctx, ensure_ascii=False)
+
+
+def test_aggregate_views_audit_each_included_worker(client, capture):
+    """근로자를 고르지 않은 집계 화면도 누구의 기록이 보였는지 근로자마다 남긴다."""
+    token = _new_employer(client)
+    emp = _employer_id(token)
+    wid, task = _coaching_setup(client, token, capture, name="집계대상하나")
+    other = _create_worker(client, token, "집계대상둘")
+    client.post(f"/api/tasks/{task['id']}/assignments", json={"worker_ids": [other]}, headers=auth(token))
+    with SessionLocal() as db:
+        a = db.scalar(select(Assignment).where(Assignment.worker_id == other))
+        steps = db.scalars(select(Step).where(Step.task_id == task["id"]).order_by(Step.order_index)).all()
+        db.add(PerformanceLog(assignment_id=a.id, step_id=steps[0].id, duration_sec=10))
+        db.commit()
+
+    assert client.get(f"/api/dashboard/tasks/{task['id']}/workers", headers=auth(token)).status_code == 200
+    assert client.get(f"/api/dashboard/tasks/{task['id']}", headers=auth(token)).status_code == 200
+    assert client.get(f"/api/dashboard/tasks/{task['id']}/coaching", headers=auth(token)).status_code == 200
+
+    actions = {(a, w) for a, w, _ in _audits(emp)}
+    for action in ("dashboard.workers", "dashboard.view", "coaching.view"):
+        assert (action, wid) in actions, action
+        assert (action, other) in actions, action
+        assert (action, None) not in actions, action
+
+
+def test_aggregate_view_without_workers_still_audited(client, capture):
+    token = _new_employer(client)
+    emp = _employer_id(token)
+    task = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요."}, headers=auth(token)).json()
+    client.get(f"/api/dashboard/tasks/{task['id']}", headers=auth(token))
+    assert ("dashboard.view", None) in {(a, w) for a, w, _ in _audits(emp)}
+
+
+def test_personal_info_consent_is_listed(client):
+    token = _new_employer(client)
+    wid = _create_worker(client, token, "수집동의대상")
+    w = next(x for x in client.get("/api/workers", headers=auth(token)).json() if x["id"] == wid)
+    assert w["personal_info_consent"] is False and w["ai_consent"] is False
+    _grant(client, token, wid, consent_type="personal_info")
+    w = next(x for x in client.get("/api/workers", headers=auth(token)).json() if x["id"] == wid)
+    assert w["personal_info_consent"] is True and w["ai_consent"] is False
+
+
+def test_tts_cache_hit_refreshes_mtime(monkeypatch, tmp_path):
+    import tts
+    monkeypatch.setenv("TTS_CACHE_DIR", str(tmp_path))
+    path = tmp_path / f"{tts._google_voice_key('상자를 옮기세요.')}.mp3"
+    path.write_bytes(b"x")
+    old = time.time() - 3 * 86400
+    os.utime(path, (old, old))
+    assert tts.synthesize_tts_url("상자를 옮기세요.")
+    assert path.stat().st_mtime > time.time() - 60
+
+
+def test_purge_does_not_delete_tts_reused_during_purge(client, capture, monkeypatch, tmp_path):
+    """purge가 고아 파일을 고른 뒤 지우기 전에, 새 단계가 같은 문장의 캐시를 다시 쓰면 지우지 않는다."""
+    import tts
+    monkeypatch.setenv("TTS_CACHE_DIR", str(tmp_path))
+    token = _new_employer(client)
+    task = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요."}, headers=auth(token)).json()
+    sentence = "오래된 캐시 문장입니다."
+    path = tmp_path / f"{tts._google_voice_key(sentence)}.mp3"
+    path.write_bytes(b"x")
+    old = time.time() - 3 * 86400
+    os.utime(path, (old, old))
+
+    real_checkpoint = retention.checkpoint_wal
+
+    def reuse_then_checkpoint(db):
+        # 고른 뒤·지우기 전 사이에 직무 수정이 같은 문장을 다시 쓴 상황.
+        url = tts.synthesize_tts_url(sentence)
+        with SessionLocal() as other:
+            step = other.scalars(select(Step).where(Step.task_id == task["id"])).first()
+            step.tts_audio_url = url
+            other.commit()
+        return real_checkpoint(db)
+
+    monkeypatch.setattr(retention, "checkpoint_wal", reuse_then_checkpoint)
+    with SessionLocal() as db:
+        report = retention.purge(db)
+    assert path.exists()
+    assert report["tts_files"] == 0

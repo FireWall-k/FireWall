@@ -84,6 +84,13 @@ def synthesize_tts_url(text: str) -> str | None:
     filename = f"{_google_voice_key(text)}.mp3"
     out_path = get_tts_cache_dir() / filename
     if out_path.exists() and out_path.stat().st_size > 0:
+        # 캐시를 다시 쓸 때 수정 시각을 지금으로 당긴다. purge(retention.orphan_tts_files)는 "어느 단계도
+        # 참조하지 않고 유예시간보다 오래된" 파일을 지우는데, 하루 넘게 안 쓰이던 파일을 새 단계가 막 다시
+        # 쓰는 순간 지우면 커밋된 단계가 없는 mp3를 가리키게 된다. 갱신된 시각이 유예시간 동안 지켜 준다.
+        try:
+            os.utime(out_path)
+        except OSError:
+            pass  # 읽기 전용 볼륨 등. 시각을 못 바꿔도 purge가 지우기 직전에 참조를 다시 확인한다.
         return _public_url(filename)
 
     global _cooldown_until

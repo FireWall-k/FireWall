@@ -109,3 +109,50 @@ def test_decompose_log_does_not_contain_raw_input(prompts, caplog):
     caplog.set_level("INFO", logger="ai_harness")
     TestClient(ai_main.app).post("/ai/decompose", json={"raw_input": f"{_NAME} 씨는 상자를 옮기세요."})
     assert _NAME not in caplog.text
+
+
+# --- 그림 매칭·검색 맥락도 아는 필드만 받는다 ----------------------------------------
+
+_SYMBOL_CTX = {"business_type": "물류", "job": "물류", "sentence": "근로자 A에게는 상자를 주세요.",
+               "action_type": "move", "raw_input": "근로자 A에게는 상자를 주세요."}
+
+
+def _with_name_fields(ctx: dict) -> dict:
+    return {**ctx, "worker_name": _NAME, "display_name": _NAME, "name": _NAME, "worker_note": _NOTE,
+            "worker": {"name": _NAME}}
+
+
+def test_map_symbols_context_drops_unknown_fields(monkeypatch):
+    seen: list[dict] = []
+
+    def fake_map_symbols(keywords, context):
+        seen.append(context)
+        return ai_main.MapSymbolsResult(symbols=[])
+
+    monkeypatch.setattr(ai_main, "map_symbols", fake_map_symbols)
+    r = TestClient(ai_main.app).post("/ai/map-symbols",
+                                     json={"keywords": ["상자"], "context": _with_name_fields(_SYMBOL_CTX)})
+    assert r.status_code == 200, r.text
+    # 보낸 필드 중 아는 것만 그대로 — 기본값이 끼어들지 않아 매칭 결과는 예전과 같다.
+    assert seen == [_SYMBOL_CTX]
+
+
+def test_aac_search_context_drops_unknown_fields(monkeypatch):
+    seen: list[dict] = []
+
+    def fake_search(query, context, limit=5):
+        seen.append(context)
+        return []
+
+    monkeypatch.setattr(ai_main, "search_assets", fake_search)
+    r = TestClient(ai_main.app).post("/ai/aac/search",
+                                     json={"query": "상자", "context": _with_name_fields({"job": "물류"})})
+    assert r.status_code == 200, r.text
+    assert seen == [{"job": "물류"}]
+
+
+def test_symbol_context_accepts_null_values():
+    """예전 dict 계약에서 통과하던 null 값을 422로 바꾸면 그림 매칭 전체가 폴백으로 떨어진다."""
+    r = TestClient(ai_main.app).post("/ai/map-symbols",
+                                     json={"keywords": ["상자"], "context": {"action_type": None, "job": None}})
+    assert r.status_code == 200, r.text

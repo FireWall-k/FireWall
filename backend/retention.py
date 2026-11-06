@@ -105,6 +105,15 @@ def purge(db: Session, *, dry_run: bool = False, now: datetime | None = None) ->
     # 지울 것이 없어도 매번 한다 — 근로자 삭제 직후 다른 연결의 읽기 때문에 끝나지 못한 체크포인트를
     # 여기서 다시 해, 삭제된 이름·메모가 -wal 파일에 남아 있는 기간을 하루 안으로 줄인다.
     report["wal_checkpointed"] = checkpoint_wal(db)
+    # 위에서 고른 뒤 시간이 흘렀다. 그사이 직무 생성·단계 수정이 같은 문장의 캐시를 다시 썼으면
+    # (tts.synthesize_tts_url이 수정 시각을 갱신하고, 단계가 그 파일을 참조하게 된다) 지우면 안 된다.
+    # 지우기 직전에 참조와 수정 시각을 한 번 더 확인하고, 실제로 지운 개수를 보고한다.
+    still_orphan = {p.name for p in orphan_tts_files(db)}
+    deleted = 0
     for path in orphans:
+        if path.name not in still_orphan:
+            continue
         path.unlink(missing_ok=True)
+        deleted += 1
+    report["tts_files"] = deleted
     return report

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Download, KeyRound, Trash2, UserPlus, UserRound } from "lucide-react";
-import { api, AuthError, type ConsentSubject, type Worker, type WorkerWithCode } from "../api";
+import { api, AuthError, type ConsentSubject, type ConsentType, type Worker, type WorkerWithCode } from "../api";
 import { maskedAccessCode } from "../workerCodes";
 
 // 직접 정하는 코드는 4~12자리 숫자만 받는다(서버와 같은 규칙). 비우면 서버가 6자리를 만든다.
@@ -31,6 +31,28 @@ function downloadJson(filename: string, data: unknown) {
 }
 
 const SUBJECT_LABEL: Record<ConsentSubject, string> = { self: "당사자", guardian: "보호자" };
+
+// 동의 종류별 화면 문구와 목록 응답의 상태 필드. 개인정보 처리방침(docs/privacy)의 두 항목과 맞춘다.
+// 예전 화면은 AI 처리 동의만 기록할 수 있어, 서비스 제공의 기본 근거인 수집·이용 동의는 API로만 남길 수 있었다.
+const CONSENT_UI: Record<ConsentType, {
+  label: string;
+  field: "ai_consent" | "personal_info_consent";
+  confirm: string;
+  revokeConfirm: string;
+}> = {
+  personal_info: {
+    label: "개인정보 수집·이용 동의",
+    field: "personal_info_consent",
+    confirm: "동의서 원본은 사업장에서 보관해 주세요.",
+    revokeConfirm: "철회 후에는 이 근로자의 개인정보를 더 쓰지 말고, 필요하면 내보내기 후 삭제해 주세요.",
+  },
+  ai_processing: {
+    label: "AI 처리(국외 이전) 동의",
+    field: "ai_consent",
+    confirm: "동의서 원본은 사업장에서 보관해 주세요. 동의하면 AI 코칭에 이 근로자의 수행 기록이 쓰입니다.",
+    revokeConfirm: "이후 AI 코칭은 기본 규칙 제안만 나와요.",
+  },
+};
 
 export default function WorkersPage() {
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -117,36 +139,37 @@ export default function WorkersPage() {
     }
   }
 
-  async function recordConsent(w: Worker, subject: ConsentSubject) {
+  async function recordConsent(w: Worker, subject: ConsentSubject, type: ConsentType = "ai_processing") {
+    const ui = CONSENT_UI[type];
     if (!window.confirm(
-      `${SUBJECT_LABEL[subject]}에게서 '${w.display_name}'의 AI 처리(국외 이전) 동의를 받으셨나요?\n`
-      + "동의서 원본은 사업장에서 보관해 주세요. 동의하면 AI 코칭에 이 근로자의 수행 기록이 쓰입니다.",
+      `${SUBJECT_LABEL[subject]}에게서 '${w.display_name}'의 ${ui.label}를 받으셨나요?\n${ui.confirm}`,
     )) {
       return;
     }
     setError(null);
     setNotice(null);
     try {
-      await api.grantConsent(w.id, "ai_processing", subject);
-      replaceWorker({ ...w, ai_consent: true });
-      setNotice(`'${w.display_name}'의 AI 처리 동의(${SUBJECT_LABEL[subject]})를 기록했어요.`);
+      await api.grantConsent(w.id, type, subject);
+      replaceWorker({ ...w, [ui.field]: true });
+      setNotice(`'${w.display_name}'의 ${ui.label}(${SUBJECT_LABEL[subject]})를 기록했어요.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "동의를 기록하지 못했습니다.");
     }
   }
 
-  async function revokeConsent(w: Worker) {
-    if (!window.confirm(`'${w.display_name}'의 AI 처리 동의 철회를 기록할까요?\n이후 AI 코칭은 기본 규칙 제안만 나와요.`)) {
+  async function revokeConsent(w: Worker, type: ConsentType = "ai_processing") {
+    const ui = CONSENT_UI[type];
+    if (!window.confirm(`'${w.display_name}'의 ${ui.label} 철회를 기록할까요?\n${ui.revokeConfirm}`)) {
       return;
     }
     setError(null);
     setNotice(null);
     try {
       const consents = await api.listConsents(w.id);
-      const active = consents.filter((c) => c.consent_type === "ai_processing" && !c.revoked_at);
+      const active = consents.filter((c) => c.consent_type === type && !c.revoked_at);
       await Promise.all(active.map((c) => api.revokeConsent(w.id, c.id)));
-      replaceWorker({ ...w, ai_consent: false });
-      setNotice(`'${w.display_name}'의 AI 처리 동의 철회를 기록했어요.`);
+      replaceWorker({ ...w, [ui.field]: false });
+      setNotice(`'${w.display_name}'의 ${ui.label} 철회를 기록했어요.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "동의 철회를 기록하지 못했습니다.");
     }
@@ -322,6 +345,35 @@ export default function WorkersPage() {
                 </div>
                 {/* 개인정보·AI 설정. 동의가 없으면 이 근로자의 기록은 해외 AI로 보내지 않는다(서버가 막는다). */}
                 <div className="mt-3 space-y-2 rounded-xl bg-paper-100 px-3 py-2 text-xs text-ink-700">
+                  {/* 서비스 이용의 기본 근거. 상태 문구를 AI 처리 줄("기록됨/없음")과 다르게 둬 두 줄을 헷갈리지 않게 한다. */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span>
+                      개인정보 수집·이용 동의:{" "}
+                      <strong className={w.personal_info_consent ? "text-moss-600" : "text-ink-500"}>
+                        {w.personal_info_consent ? "받음" : "미기록"}
+                      </strong>
+                    </span>
+                    {w.personal_info_consent ? (
+                      <button
+                        onClick={() => revokeConsent(w, "personal_info")}
+                        className="rounded-lg border border-paper-200 bg-white px-2 py-1 font-medium"
+                        aria-label={`근로자 ${w.display_name} 개인정보 수집·이용 동의 철회 기록`}
+                      >
+                        동의 철회 기록
+                      </button>
+                    ) : (
+                      (["self", "guardian"] as const).map((subject) => (
+                        <button
+                          key={subject}
+                          onClick={() => recordConsent(w, subject, "personal_info")}
+                          className="rounded-lg border border-paper-200 bg-white px-2 py-1 font-medium"
+                          aria-label={`근로자 ${w.display_name} ${SUBJECT_LABEL[subject]} 개인정보 수집·이용 동의 기록`}
+                        >
+                          {SUBJECT_LABEL[subject]} 동의 받음
+                        </button>
+                      ))
+                    )}
+                  </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span>
                       AI 처리 동의:{" "}

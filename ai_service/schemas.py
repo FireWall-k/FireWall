@@ -59,14 +59,35 @@ class DecomposeResult(BaseModel):
 # --- /ai/map-symbols -------------------------------------------------------
 
 
+class SymbolContext(BaseModel):
+    """그림 매칭·검색 맥락. AAC 검색(local_aac)이 실제로 읽는 필드만 받고 나머지는 버린다.
+
+    예전에는 아무 dict나 받아 그대로 넘겼다. 이 경로도 질의 문장을 임베딩 API(해외)로 보내므로, 호출하는
+    쪽이 이름 필드를 실수로 넣으면 그대로 흘러간다. DecomposeContext와 같은 이유로 거절(422) 대신 버린다.
+    main.py는 model_dump(exclude_unset=True)로 넘겨, 보낸 필드만 예전과 똑같은 dict로 검색에 전달한다
+    (빈 값 기본값이 끼어들어 매칭 결과가 달라지지 않게).
+    """
+    model_config = ConfigDict(extra="ignore")
+
+    # None도 받는다. 예전 dict 계약에서는 백엔드가 빈 값을 None으로 보내도 통과했으므로, 여기서 422로
+    # 바꾸면 그림 매칭 전체가 폴백으로 떨어진다.
+    business_type: str | None = None
+    work_environment: str | None = None
+    job: str | None = None
+    job_hint: str | None = None
+    sentence: str | None = None
+    action_type: str | None = None
+    raw_input: str | None = None
+
+
 class MapSymbolsRequest(BaseModel):
     keywords: list[str]
-    context: dict = {}
+    context: SymbolContext = SymbolContext()
 
 
 class AacSearchRequest(BaseModel):
     query: str
-    context: dict = {}
+    context: SymbolContext = SymbolContext()
     limit: int = Field(default=5, ge=1, le=20)
 
 

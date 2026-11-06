@@ -185,6 +185,8 @@ export interface Worker {
   ai_note_allowed?: boolean;
   /** AI 처리(국외 이전) 동의가 살아 있는지. 없으면 AI 코칭은 규칙 기반 제안만 나온다. */
   ai_consent?: boolean;
+  /** 개인정보 수집·이용 동의가 살아 있는지(사업주가 동의서를 받았다고 기록했는지). */
+  personal_info_consent?: boolean;
   /** 이름이 일반 낱말("하나"·"보람" 등)과 같아 AI에 보낼 때 호칭이 붙은 경우("하나 씨")만 가릴 수 있다. */
   name_ambiguous?: boolean;
 }

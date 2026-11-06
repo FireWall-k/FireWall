@@ -170,6 +170,8 @@ class WorkerOut(BaseModel):
     ai_note_allowed: bool = False
     # AI 처리(국외 이전) 동의가 살아 있는지. 없으면 AI 코칭은 규칙 기반 제안만 쓴다.
     ai_consent: bool = False
+    # 개인정보 수집·이용 동의가 살아 있는지. 사업주 화면에서 동의서 수령 기록 여부를 보여 주는 데 쓴다.
+    personal_info_consent: bool = False
     # 이름이 일반 낱말("하나"·"보람" 등)과 같아, AI에 보낼 때 호칭("하나 씨")이 붙은 경우만 가릴 수 있다.
     # 사업주 화면에 "직무 문장에는 이름 대신 '근로자'라고 써 달라"는 경고를 띄우는 데 쓴다.
     name_ambiguous: bool = False

@@ -58,19 +58,33 @@ def _alias(i: int) -> str:
 
 # 이름 앞뒤 경계. 표시 이름을 단순 부분 문자열로 바꾸면 "하나" 같은 이름이 "하나씩"·"하나하나"의 낱말까지
 # 별칭으로 바꿔 LLM 분해 입력과 그림 검색 질의를 망가뜨린다("컵을 근로자 A씩 꺼내서…").
-# 그래서 이름 바로 앞에 글자가 붙어 있지 않고, 이름 뒤가 끝·공백·구두점이거나 호칭·조사로 끝날 때만 바꾼다.
+# 그래서 이름 바로 앞에 글자가 붙어 있지 않고, 이름 뒤가 끝·공백·구두점이거나 호칭·조사·어미로 끝날 때만 바꾼다.
 _WORD_CHAR = r"[가-힣A-Za-z0-9]"
 # 이름 뒤에 붙는 호칭과 애칭 접사("길동이가"의 '이'). 호칭은 "하나 씨"처럼 띄어 써도 이름이 분명하다.
 _HONORIFIC = r"(?:선생님|씨|님)"
-_NAME_SUFFIX = r"(?:씨|님|이)"
-# 자주 쓰는 조사. 길이가 긴 것부터 둬야 "에게서"가 "에게"+"서"로 잘려 경계 검사에 걸리지 않는다.
-_PARTICLES = sorted([
-    "이", "가", "은", "는", "을", "를", "의", "도", "만", "와", "과", "랑", "이랑", "하고",
-    "에게", "에게서", "한테", "한테서", "께", "께서", "아", "야", "에", "로", "으로", "처럼",
-    "보다", "부터", "까지", "이나", "나", "이랑", "이에요", "예요", "이고", "고", "이며", "며",
-], key=len, reverse=True)
-_PARTICLE = "(?:" + "|".join(_PARTICLES) + ")"
-_STRICT_TAIL = rf"(?:{_NAME_SUFFIX}?{_PARTICLE}?)(?!{_WORD_CHAR})"
+# 이름 뒤에 올 수 있는 조각(호칭·접사·조사·보조사·서술격 어미). 한국어는 이것들이 겹쳐 붙는다
+# ("김민지에게는"="에게"+"는", "김민지님께서는"="님"+"께서"+"는", "김민지는요"="는"+"요").
+# 예전에는 접사 하나 + 조사 하나까지만 봐서 겹친 꼴의 실명이 그대로 해외 LLM으로 갔다(검증 지적).
+# 그래서 이 조각이 몇 개(_MAX_TAIL_PIECES까지) 이어진 뒤 낱말이 끝나면 이름으로 본다.
+# 목록에 없는 조각으로 이어지면("홍길동동") 다른 낱말로 보고 바꾸지 않는다 — 그래서 목록은 넉넉히 둔다.
+_TAIL_PIECES = sorted({
+    # 호칭·접사·복수
+    "씨", "님", "이", "선생님", "쌤", "양", "군", "들", "네",
+    # 격조사
+    "가", "은", "는", "을", "를", "의", "에", "에서", "에게", "에게서", "한테", "한테서", "께", "께서",
+    "더러", "보고", "로", "으로", "와", "과", "랑", "이랑", "하고", "아", "야", "여", "이여",
+    # 보조사
+    "도", "만", "요", "이요", "처럼", "같이", "만큼", "보다", "부터", "까지", "마다", "대로", "조차", "마저",
+    "밖에", "뿐", "야말로", "이야말로", "나", "이나", "나마", "이나마", "라도", "이라도", "든", "이든",
+    "든지", "이든지", "라고", "이라고", "라는", "이라는", "라면", "이라면",
+    # 서술격 조사 '이다'의 활용("김민지예요", "김민지였어요", "김민지이고")
+    "다", "이다", "입니다", "이에요", "예요", "에요", "이야", "이고", "고", "이며", "며", "이지", "지",
+    "이죠", "죠", "지요", "인데", "인", "이니", "니", "였", "이었", "어", "어요", "었", "던", "습니다",
+}, key=len, reverse=True)  # 긴 것부터 둬야 "에게서"가 "에게"+"서"로 잘려 경계 검사에 걸리지 않는다.
+_TAIL_PIECE = "(?:" + "|".join(_TAIL_PIECES) + ")"
+_MAX_TAIL_PIECES = 4
+_STRICT_TAIL = rf"(?:{_TAIL_PIECE}){{0,{_MAX_TAIL_PIECES}}}(?!{_WORD_CHAR})"
+_LATIN_RE = re.compile(r"[A-Za-z]")
 # 일반 낱말·수사와 글자가 같은 이름. 이런 이름은 "컵 하나 꺼내세요"처럼 경계 규칙을 지켜도 낱말과
 # 구분할 수 없으므로 "하나 씨"·"하나님께"처럼 호칭이 붙은 경우만 바꾼다. 사업주 화면에도 경고한다
 # (WorkerOut.name_ambiguous). 목록에 없는 2음절 이름도 낱말과 겹칠 수 있어 문서에 한계로 적었다.
@@ -98,7 +112,8 @@ class Pseudonymizer:
     한계(문서화):
     - 등록된 표시 이름과 글자가 똑같을 때만 바꾼다. 성을 뺀 이름("길동 씨")이나 별명은 못 잡는다 —
       사업주 화면에 "AI에 보낼 문장에는 이름 대신 '근로자'라고 써 달라"고 안내한다.
-    - 반대로 이름이 아닌 낱말을 바꾸지 않으려고 경계(앞은 글자가 아니고, 뒤는 호칭·조사·끝)를 둔다.
+    - 반대로 이름이 아닌 낱말을 바꾸지 않으려고 경계(앞은 글자가 아니고, 뒤는 끝이거나 호칭·조사·어미
+      조각이 이어지다 끝남 — _TAIL_PIECES)를 둔다. 목록에 없는 조각이 붙은 꼴은 놓칠 수 있다.
       그래도 "하나가 남았다"처럼 낱말 + 조사 꼴은 바꿀 수 있어, 일반 낱말과 같은 이름은 호칭이
       붙은 경우만 바꾼다(COMMON_WORD_NAMES).
     """
@@ -108,10 +123,19 @@ class Pseudonymizer:
         for name in names:
             name = (name or "").strip()
             too_short = len(name) < _MIN_NAME_LEN and name not in COMMON_WORD_NAMES
-            if too_short or name.lower() in _GENERIC_NAMES or name in self._to_alias:
+            # 라틴 문자 이름은 대소문자만 다른 것("John"/"john")을 같은 사람으로 본다 — 패턴이 대소문자를
+            # 가리지 않으므로 별칭을 둘 만들어 봐야 한쪽만 쓰인다.
+            if _LATIN_RE.search(name):
+                seen = name.lower() in {n.lower() for n in self._to_alias}
+            else:
+                seen = name in self._to_alias
+            if too_short or name.lower() in _GENERIC_NAMES or seen:
                 continue
             self._to_alias[name] = _alias(len(self._to_alias))
         self._to_name = {a: n for n, a in self._to_alias.items()}
+        # 라틴 문자 이름은 대소문자를 가리지 않고 맞춘다("John"으로 등록해도 문장에는 "john"이 올 수 있다).
+        # 맞은 글자 그대로는 _to_alias에 없으므로 소문자 키로 찾는다.
+        self._to_alias_ci = {n.lower(): a for n, a in self._to_alias.items() if _LATIN_RE.search(n)}
         # 긴 것부터 맞춰야 "김근로"와 "김근"이 함께 있을 때 짧은 쪽이 긴 이름의 일부를 먼저 먹지 않는다.
         self._mask_re = self._pattern(self._to_alias)
 
@@ -125,13 +149,20 @@ class Pseudonymizer:
                 tail = rf"(?=\s?{_HONORIFIC})"
             else:
                 tail = rf"(?={_STRICT_TAIL})"
-            alts.append(rf"(?<!{_WORD_CHAR}){re.escape(k)}{tail}")
+            name = re.escape(k)
+            if _LATIN_RE.search(k):
+                name = rf"(?i:{name})"
+            alts.append(rf"(?<!{_WORD_CHAR}){name}{tail}")
         return re.compile("|".join(alts))
+
+    def _alias_for(self, matched: str) -> str:
+        alias = self._to_alias.get(matched)
+        return alias if alias is not None else self._to_alias_ci[matched.lower()]
 
     def mask(self, text: str) -> str:
         if not self._mask_re or not text:
             return text
-        return self._mask_re.sub(lambda m: self._to_alias[m.group(0)], text)
+        return self._mask_re.sub(lambda m: self._alias_for(m.group(0)), text)
 
     def unmask(self, text: str) -> str:
         if not text or "근로자" not in text:
@@ -144,6 +175,11 @@ class Pseudonymizer:
                 return name
             # 이 요청에서 만든 적 없는 별칭(LLM이 지어낸 "근로자 C" 등). 그대로 두면 근로자 화면·TTS에
             # 별칭이 나가므로 일반 낱말 "근로자"로 바꾸고 경고를 남긴다.
+            # 단 알파벳 한 글자일 때만 그렇게 본다. "근로자 ID"·"근로자 OK"·"근로자 TV"처럼 두 글자 이상의
+            # 대문자는 평범한 문장일 가능성이 훨씬 커서, 지우면 코칭·분해 결과가 망가진다(검증 지적).
+            # 두 글자 별칭(근로자 AA…)은 이 요청에서 실제로 만든 것만 위에서 되돌린다.
+            if len(m.group(1)) != 1:
+                return m.group(0)
             leftovers.append(m.group(0))
             return "근로자"
 
@@ -241,5 +277,23 @@ def record_access(db: Session, request: Request, user: dict, action: str,
             return
     db.add(AccessAuditLog(actor_id=user["sub"], actor_role=user.get("role", "employer"),
                           action=action, worker_id=worker_id, at=_utcnow_naive(), request_ip=ip))
+    if commit:
+        db.commit()
+
+
+def record_access_for_workers(db: Session, request: Request, user: dict, action: str,
+                              worker_ids, *, commit: bool = True) -> None:
+    """여러 근로자의 기록이 함께 보이는 화면(집계 대시보드·배정 근로자 목록·집계 코칭)의 열람 기록.
+
+    worker_id=None 한 줄만 남기면 "누구의 기록을 봤는지"를 나중에 추적할 수 없다(검증 지적). 화면에 실린
+    근로자마다 한 줄씩 남긴다. 실린 근로자가 없으면 열람 사실만 남게 worker_id=None 한 줄을 쓴다.
+    폴링 묶기(DEDUPED_ACTIONS)는 근로자별로 따로 적용된다.
+    """
+    ids = sorted({w for w in worker_ids if w})
+    if not ids:
+        record_access(db, request, user, action, None, commit=commit)
+        return
+    for wid in ids:
+        record_access(db, request, user, action, wid, commit=False)
     if commit:
         db.commit()

@@ -199,6 +199,40 @@ describe("WorkersPage — 개인정보(동의·메모·내보내기·삭제)", (
     expect(await screen.findByText("기록됨")).toBeInTheDocument();
   });
 
+  it("개인정보 수집·이용 동의도 화면에서 기록한다", async () => {
+    const user = userEvent.setup();
+    grantConsent.mockResolvedValue({ id: "c1" });
+    render(<WorkersPage />);
+    expect(await screen.findByText("미기록")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "근로자 김근로 당사자 개인정보 수집·이용 동의 기록" }));
+
+    await waitFor(() => expect(grantConsent).toHaveBeenCalledWith("w1", "personal_info", "self"));
+    expect(await screen.findByText("받음")).toBeInTheDocument();
+    // AI 처리 동의는 따로다 — 수집·이용 동의만으로 AI 전송이 켜지지 않는다.
+    expect(screen.getByText("없음")).toBeInTheDocument();
+  });
+
+  it("개인정보 동의 철회는 살아 있는 수집·이용 동의만 철회한다", async () => {
+    const user = userEvent.setup();
+    listWorkers.mockResolvedValue([
+      { id: "w1", display_name: "김근로", access_code_hint: "34", access_code_length: 6,
+        ai_consent: true, personal_info_consent: true },
+    ]);
+    listConsents.mockResolvedValue([
+      { id: "c-pi", consent_type: "personal_info", revoked_at: null },
+      { id: "c-ai", consent_type: "ai_processing", revoked_at: null },
+    ]);
+    revokeConsent.mockResolvedValue({});
+    render(<WorkersPage />);
+    await user.click(await screen.findByRole("button", { name: "근로자 김근로 개인정보 수집·이용 동의 철회 기록" }));
+
+    await waitFor(() => expect(revokeConsent).toHaveBeenCalledTimes(1));
+    expect(revokeConsent).toHaveBeenCalledWith("w1", "c-pi");
+    expect(await screen.findByText("미기록")).toBeInTheDocument();
+    expect(screen.getByText("기록됨")).toBeInTheDocument();
+  });
+
   it("동의 철회는 살아 있는 AI 처리 동의만 철회한다", async () => {
     const user = userEvent.setup();
     listWorkers.mockResolvedValue([

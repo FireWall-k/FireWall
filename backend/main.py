@@ -55,7 +55,9 @@ from privacy import (
     has_active_consent,
     is_ambiguous_name,
     policy_version,
+    CONSENT_PERSONAL_INFO,
     record_access,
+    record_access_for_workers,
     workers_with_active_consent,
 )
 from schemas import (
@@ -301,15 +303,18 @@ def list_workers(request: Request, db: Session = Depends(get_db),
     workers = db.scalars(
         select(Worker).where(Worker.employer_id == user["sub"]).order_by(Worker.created_at)
     ).all()
-    consented = workers_with_active_consent(db, [w.id for w in workers])
+    ids = [w.id for w in workers]
+    consented = workers_with_active_consent(db, ids)
+    personal = workers_with_active_consent(db, ids, CONSENT_PERSONAL_INFO)
     record_access(db, request, user, "worker.list")
-    return [_worker_out(w, w.id in consented) for w in workers]
+    return [_worker_out(w, w.id in consented, w.id in personal) for w in workers]
 
 
-def _worker_out(w: Worker, ai_consent: bool = False) -> WorkerOut:
+def _worker_out(w: Worker, ai_consent: bool = False, personal_info_consent: bool = False) -> WorkerOut:
     return WorkerOut(id=w.id, display_name=w.display_name,
                      access_code_hint=w.access_code_hint, access_code_length=w.access_code_length,
                      note=w.note or "", ai_note_allowed=bool(w.ai_note_allowed), ai_consent=ai_consent,
+                     personal_info_consent=personal_info_consent,
                      name_ambiguous=is_ambiguous_name(w.display_name))
 
 
@@ -321,9 +326,11 @@ def _owned_worker(worker_id: str, employer_id: str, db: Session) -> Worker:
     return worker
 
 
-def _worker_with_code(w: Worker, code: str, ai_consent: bool = False) -> WorkerWithCodeOut:
+def _worker_with_code(w: Worker, code: str, ai_consent: bool = False,
+                      personal_info_consent: bool = False) -> WorkerWithCodeOut:
     # 평문 코드는 DB에 없으므로, 방금 만든(또는 받은) 코드를 응답에 한 번만 실어 보낸다.
-    return WorkerWithCodeOut(**_worker_out(w, ai_consent).model_dump(), access_code=code)
+    return WorkerWithCodeOut(**_worker_out(w, ai_consent, personal_info_consent).model_dump(),
+                             access_code=code)
 
 
 @app.get("/api/workplace", response_model=WorkplaceOut)
@@ -414,7 +421,8 @@ def reissue_access_code(worker_id: str, db: Session = Depends(get_db),
             # 확인과 저장 사이에 동시 요청이 같은 코드를 먼저 가져간 경우. 다른 코드로 다시 뽑는다.
             db.rollback()
             continue
-        return _worker_with_code(worker, code, has_active_consent(db, worker.id))
+        return _worker_with_code(worker, code, has_active_consent(db, worker.id),
+                                 has_active_consent(db, worker.id, CONSENT_PERSONAL_INFO))
     raise HTTPException(status_code=503, detail="접속 코드를 만들지 못했습니다. 다시 시도해 주세요.")
 
 
@@ -433,7 +441,8 @@ def update_worker(worker_id: str, payload: WorkerUpdate, request: Request,
     record_access(db, request, user, "worker.update", worker.id, commit=False)
     db.commit()
     db.refresh(worker)
-    return _worker_out(worker, has_active_consent(db, worker.id))
+    return _worker_out(worker, has_active_consent(db, worker.id),
+                       has_active_consent(db, worker.id, CONSENT_PERSONAL_INFO))
 
 
 # --- 사업주: 동의 기록 ---
@@ -1246,6 +1255,16 @@ def create_log(payload: PerformanceLogCreate, db: Session = Depends(get_db),
 
 
 # --- 사업주: 대시보드 집계 ---
+def _log_worker_ids(logs, db: Session) -> set[str]:
+    """수행 로그들이 어느 근로자의 것인지(접근 감사용)."""
+    assignment_ids = {log.assignment_id for log in logs}
+    if not assignment_ids:
+        return set()
+    return set(db.scalars(
+        select(Assignment.worker_id).where(Assignment.id.in_(assignment_ids))
+    ).all())
+
+
 def _logs_by_step(task_id: str, worker_id: str | None, db: Session) -> dict[str, PerformanceLog]:
     """직무의 수행 로그를 step_id 기준으로 모은다.
 
@@ -1270,7 +1289,6 @@ def dashboard_workers(task_id: str, request: Request, db: Session = Depends(get_
                       user: dict = Depends(require_employer)) -> list[DashboardWorkerOut]:
     """이 직무를 배정받은 근로자 목록(중복 제거). 대시보드 근로자 선택용."""
     _owned_task(task_id, user["sub"], db)
-    record_access(db, request, user, "dashboard.workers")
     assignments = db.scalars(
         select(Assignment).where(Assignment.task_id == task_id).order_by(Assignment.assigned_date)
     ).all()
@@ -1287,6 +1305,8 @@ def dashboard_workers(task_id: str, request: Request, db: Session = Depends(get_
             worker_id=worker.id, display_name=worker.display_name,
             access_code_hint=worker.access_code_hint, status=a.status,
         ))
+    # 이 목록에는 여러 근로자의 이름·진행 상태가 실린다. 누구의 정보가 보였는지 남기려고 근로자마다 기록한다.
+    record_access_for_workers(db, request, user, "dashboard.workers", [o.worker_id for o in out])
     return out
 
 
@@ -1300,7 +1320,13 @@ def dashboard(task_id: str, request: Request, worker_id: str | None = None,
         _owned_worker(worker_id, user["sub"], db)
     logs_by_step = _logs_by_step(task_id, worker_id, db)
     # 근로자별 수행 기록 열람. 3초 폴링은 privacy.record_access가 짧은 창 안에서 한 줄로 합친다.
-    record_access(db, request, user, "dashboard.view", worker_id)
+    if worker_id:
+        record_access(db, request, user, "dashboard.view", worker_id)
+    else:
+        # 근로자를 고르지 않은 집계 화면에도 여러 근로자의 수행 기록이 섞여 보인다. worker_id=None 한 줄로는
+        # 누구의 기록이 보였는지 알 수 없으므로, 실제로 화면에 실린 기록의 근로자마다 남긴다.
+        record_access_for_workers(db, request, user, "dashboard.view",
+                                  _log_worker_ids(logs_by_step.values(), db))
 
     step_stats: list[StepStat] = []
     stuck_steps: list[int] = []
@@ -1377,7 +1403,11 @@ def task_coaching(task_id: str, request: Request, worker_id: str | None = None,
         note = _sendable_note(db, target, None)
         if note:
             coaching_context["worker_note"] = masker.mask(note)
-    record_access(db, request, user, "coaching.view", worker_id)
+    if worker_id:
+        record_access(db, request, user, "coaching.view", worker_id)
+    else:
+        # 집계 코칭은 배정된 근로자 전원의 기록을 쓴다. 대시보드 집계와 같은 이유로 근로자마다 남긴다.
+        record_access_for_workers(db, request, user, "coaching.view", included)
     raw = masker.unmask_obj(ai_client.coaching(masker.mask(task.title), steps_payload,
                                                coaching_context, allow_llm=allow_llm))
     suggestions = []
