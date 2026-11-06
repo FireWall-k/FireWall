@@ -42,6 +42,14 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements*.txt
       - run: pip install -r requirements.txt -r requirements-dev.txt
+      # 빈 DB에 리비전 체인 전체를 적용한 뒤 models.py와 차이가 없는지 본다.
+      # 모델만 고치고 리비전을 안 만들면 여기서 실패한다(운영 DB에는 컬럼이 안 생기므로).
+      - name: 빈 DB에서 전체 마이그레이션 + alembic check
+        env:
+          DATABASE_URL: sqlite:///${{ runner.temp }}/ci-migrate.db
+        run: |
+          python -m alembic upgrade head
+          python -m alembic check
       - run: python -m pytest -q
 
   frontend:

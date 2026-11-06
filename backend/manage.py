@@ -4,6 +4,7 @@
 비밀번호는 명령줄 인자로 받지 않는다(셸 기록·프로세스 목록에 남는다). 입력 프롬프트나 표준입력으로 받는다.
 
 사용 예 (docker compose):
+    docker compose run --rm migrate          # 스키마를 head로(배포 때는 compose가 자동으로 먼저 실행)
     docker compose exec backend python manage.py create-employer --login itda --org "잇다 보호작업장"
     docker compose exec backend python manage.py set-password --login itda
     echo "$PW" | docker compose exec -T backend python manage.py create-employer --login itda --password-stdin
@@ -17,7 +18,8 @@ import sys
 from sqlalchemy import select
 
 from auth import hash_password
-from database import Base, SessionLocal, apply_pending_columns, engine
+import db_migrate
+from database import SessionLocal
 from models import Employer
 
 MIN_PASSWORD_LEN = 8
@@ -36,8 +38,8 @@ def _read_password(from_stdin: bool) -> str:
 
 
 def create_employer(login: str, name: str, org: str, password: str) -> str:
-    Base.metadata.create_all(bind=engine)
-    apply_pending_columns()
+    # 운영에서는 migrate 서비스가 먼저 돌았어야 한다(아니면 이유를 적고 멈춘다). 개발이면 여기서 올린다.
+    db_migrate.ensure_schema_ready()
     with SessionLocal() as db:
         if db.scalar(select(Employer).where(Employer.login_id == login)) is not None:
             raise SystemExit(f"이미 있는 아이디입니다: {login}")
@@ -57,6 +59,15 @@ def set_password(login: str, password: str) -> None:
         db.commit()
 
 
+def migrate() -> None:
+    """스키마를 head로 올린다. Alembic 도입 전 DB(alembic_version 없음)는 보정 후 baseline으로 stamp한다."""
+    report = db_migrate.migrate()
+    if report["adopted_legacy"]:
+        added = ", ".join(report["repaired_columns"]) or "없음"
+        print(f"기존(Alembic 도입 전) DB를 baseline으로 등록했습니다. 추가한 컬럼: {added}")
+    print(f"DB 스키마: {report['from_revision'] or '없음'} -> {report['to_revision']}")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="manage.py", description="JOB CARD 운영 관리")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -71,7 +82,12 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--login", required=True)
     p.add_argument("--password-stdin", action="store_true")
 
+    sub.add_parser("migrate", help="DB 스키마를 최신(head)으로 올리기 — 배포 때 migrate 서비스가 실행")
+
     args = parser.parse_args(argv)
+    if args.cmd == "migrate":
+        migrate()
+        return
     pw = _read_password(args.password_stdin)
     if args.cmd == "create-employer":
         emp_id = create_employer(args.login, args.name, args.org, pw)

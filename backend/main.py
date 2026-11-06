@@ -41,7 +41,8 @@ from auth import (
     require_worker,
     verify_password,
 )
-from database import Base, apply_pending_columns, engine, get_db
+import db_migrate
+from database import get_db
 from models import Assignment, Employer, PerformanceLog, Step, Task, Worker
 from schemas import (
     AacMatch,
@@ -84,11 +85,10 @@ logger = logging.getLogger("jobcard.backend")
 async def lifespan(app: FastAPI):
     # 운영 설정이 잘못됐으면(약한 시크릿 등) 첫 로그인 때가 아니라 지금 멈춘다.
     check_production_config()
-    Base.metadata.create_all(bind=engine)
-    # create_all은 기존 테이블에 컬럼을 추가하지 않는다. 모델에 새로 생긴 컬럼을 메운다.
-    added = apply_pending_columns()
-    if added:
-        logger.info("DB 컬럼 추가: %s", ", ".join(added))
+    # 스키마 변경은 요청 프로세스가 아니라 migrate 서비스(`python manage.py migrate`)가 한다.
+    # 여기서는 DB가 head인지 확인만 한다 — 운영은 아니면 기동 거부, 개발은 자동 upgrade(db_migrate 참고).
+    db_migrate.ensure_schema_ready()
+    # 시드는 스키마가 준비된 뒤에 돌아야 한다(빈 DB에서 테이블이 없으면 조회부터 깨진다).
     _ensure_seed()
     yield
 

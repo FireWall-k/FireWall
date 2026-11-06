@@ -38,10 +38,29 @@ services:
     volumes:
       - ./data/aac:/app/aac:ro
 
+  # 일회성 스키마 마이그레이션. backend와 같은 이미지로 `manage.py migrate`를 한 번 돌리고 끝난다.
+  # 요청을 받는 backend 프로세스(lifespan)에서 돌리지 않는 이유: 인스턴스가 여럿이면 마이그레이션이
+  # 겹치고, 실패하면 반쯤 바뀐 DB로 요청을 받게 된다. backend는 이 서비스가 성공해야 뜬다.
+  # Alembic 도입 전 볼륨(alembic_version 없음)도 이 명령이 보정 후 baseline으로 stamp한다.
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: jobcard-backend
+    command: ["python", "manage.py", "migrate"]
+    restart: "no"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      DATABASE_URL: "sqlite:////app/data/jobcard.db"
+      JOBCARD_ENV: "${JOBCARD_ENV:-dev}"
+    volumes:
+      - jobcard-data:/app/data
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: jobcard-backend
     container_name: jobcard-api
     ports:
       - "127.0.0.1:8000:8000"  # 위 ai_service 주석 참고
@@ -85,6 +104,8 @@ services:
     depends_on:
       ai_service:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()"]
       interval: 10s

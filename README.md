@@ -37,6 +37,9 @@ FireWall/
 │   ├── aac_assets.py       자체 AAC 이미지 정적 서빙 경로 헬퍼
 │   ├── photos.py           단계별 현장 사진 업로드(자동 상징 대체)
 │   ├── models.py           SQLAlchemy ORM
+│   ├── db_migrate.py       Alembic 실행기(레거시 DB 보정·stamp·기동 시 head 확인)
+│   ├── migrations/         Alembic 리비전(스키마 변경은 여기로만)
+│   ├── manage.py           운영 명령(migrate, create-employer, set-password)
 │   ├── ai_client.py        백엔드↔AI 하네스 경계
 │   └── schemas.py          프론트 대면 입출력 스키마
 ├── frontend/          React + TS + Vite (5173)
@@ -82,13 +85,6 @@ DB·TTS 캐시·업로드 사진은 Docker named volume `jobcard-data`에 유지
 AAC 이미지(`data/aac`)는 읽기 전용 바인드 마운트라 이미지·메타데이터만 바꾸면 컨테이너
 재빌드 없이 바로 반영됩니다(코드를 바꾸면 재빌드 필요).
 
-> **스키마 변경**: 정식 마이그레이션 도구(Alembic)는 아직 없습니다. `create_all()`은 없는
-> *테이블*만 만들고 기존 테이블에 *컬럼*은 추가하지 않으므로, 모델에 컬럼을 늘리면 이미
-> 만들어진 DB에서 조회가 깨집니다. 그 구멍은 `backend/database.py`의
-> `apply_pending_columns()`가 서버 기동 시 `ALTER TABLE`로 메웁니다.
-> **컬럼을 추가하면 `_ADDED_COLUMNS`에도 등록**하고, 기존 행이 채워지도록 NULL 허용이거나
-> 기본값이 있어야 합니다. 컬럼 삭제·타입 변경은 지원하지 않습니다(그때는 Alembic 도입).
-
 초기화가 필요하면 볼륨까지 함께 제거합니다.
 
 ```bash
@@ -100,6 +96,49 @@ docker compose down -v
 ```bash
 docker compose down
 docker volume rm jobcard_jobcard-data
+```
+
+### 스키마 변경과 마이그레이션 (Alembic)
+
+스키마는 `backend/migrations/versions/`의 Alembic 리비전으로만 바꿉니다. `docker compose up`을
+하면 일회성 `migrate` 서비스가 `python manage.py migrate`로 DB를 최신(head)으로 올린 뒤에야
+`backend`가 뜹니다(`depends_on: service_completed_successfully`). 요청을 받는 서버 프로세스는
+스키마를 바꾸지 않습니다.
+
+- **운영(`JOBCARD_ENV=prod`)**: DB가 head가 아니면 백엔드가 "먼저 `python manage.py migrate`를
+  실행하라"는 메시지와 함께 **기동을 거부**합니다.
+- **개발**: `uvicorn main:app`만 띄워도 기동 시 자동으로 head까지 올립니다(편의).
+
+모델을 바꿨다면 리비전을 만들고, 생성된 파일을 검토한 뒤 함께 커밋합니다.
+
+```bash
+cd backend
+alembic revision --autogenerate -m "workers에 xxx 컬럼 추가"   # 생성 파일을 반드시 손으로 확인
+python manage.py migrate                                        # 로컬 DB에 적용
+alembic check                                                   # 모델과 리비전이 일치하는지(CI도 검사)
+```
+
+SQLite는 `ALTER TABLE`로 컬럼 변경·삭제를 못 하므로 `render_as_batch=True`(테이블 재생성 + 복사)로
+동작합니다. 새 컬럼은 기존 행을 채울 수 있게 NULL 허용이거나 `server_default`가 있어야 합니다.
+
+#### Alembic 도입 전 볼륨(`jobcard-data`) 업그레이드
+
+이전 버전으로 만든 DB에는 `alembic_version` 테이블이 없고, 일부 컬럼(`tasks.business_type`,
+`tasks.work_environment`, `tasks.job`, `steps.symbol_query`)이 빠져 있을 수 있습니다. 이런 DB에
+`alembic upgrade head`를 바로 하면 이미 있는 테이블을 또 만들려다 실패하므로, **반드시
+`manage.py migrate`를 씁니다**(compose는 자동으로 이 명령을 실행합니다). 이 명령은
+
+1. `alembic_version`이 없고 앱 테이블이 있으면 레거시 DB로 판단하고,
+2. 빠진 컬럼을 `NOT NULL DEFAULT ''`로 추가하고(예전 코드가 NULL 허용으로 붙인 컬럼은 NULL을 ''로
+   채운 뒤 NOT NULL로 조임), 빠진 테이블은 baseline 정의로 만든 다음,
+3. baseline 리비전(`0001_baseline`)으로 `stamp`하고, 이어서 `upgrade head` 합니다.
+
+데이터는 지우지 않으며 여러 번 실행해도 안전합니다. 업그레이드 전 백업을 권장합니다(아래 "백업").
+
+```bash
+docker compose build
+docker compose run --rm migrate      # 출력 예: 기존(Alembic 도입 전) DB를 baseline으로 등록했습니다 ...
+docker compose up -d
 ```
 
 ## AAC: 자체 이미지 데이터셋
@@ -371,7 +410,8 @@ mp3 기록·해시 캐시·URL 반환·예외 폴백까지 실제 코드를 실�
    `JOBCARD_ENV=prod`인데 시크릿이 비었거나 32자 미만이면 백엔드가 **기동을 거부**한다.
 2. **HTTPS**: 컨테이너 포트는 `127.0.0.1`에만 열려 있다. 앞에 리버스 프록시(Caddy/nginx)를 두고
    프론트(5173)와 API(8000)를 각 도메인으로 연결한다. 근로자 접속 코드가 평문으로 오가므로 HTTP로 공개하지 않는다.
-3. **기동 후 사업주 계정 만들기** (운영에서는 데모 계정이 없다)
+3. **기동 후 사업주 계정 만들기** (운영에서는 데모 계정이 없다). `up`이 `migrate` 서비스로 스키마를 먼저
+   올린다(위 "스키마 변경과 마이그레이션" 참고).
    ```bash
    docker compose up -d --build
    docker compose exec backend python manage.py create-employer --login itda --org "잇다 보호작업장"

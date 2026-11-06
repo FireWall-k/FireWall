@@ -26,6 +26,11 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 import ai_client  # noqa: E402
 import main  # noqa: E402
+import db_migrate  # noqa: E402
+
+# 테스트 DB 스키마도 운영과 같은 경로(Alembic 리비전)로 만든다. 예전처럼 create_all()로 만들면
+# 리비전을 빠뜨린 모델 변경이 테스트에서는 통과하고 실제 DB에서만 깨진다.
+db_migrate.migrate()
 
 
 def _fake_decompose(raw_input: str, context=None) -> dict:
