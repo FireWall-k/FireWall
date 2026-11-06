@@ -18,12 +18,14 @@ from __future__ import annotations
 import logging
 import mimetypes
 import os
+import posixpath
 import re
 import secrets
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
+from urllib.parse import unquote
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -974,10 +976,28 @@ def _is_own_image_url(url: str) -> bool:
     """근로자 화면에 뜨는 그림은 이 서버가 내주는 AAC 이미지여야 한다(업로드 사진은 update_step이 따로 본다).
 
     아무 URL이나 받으면 외부 이미지(부적절한 그림, 접속 추적용 픽셀)가 근로자 화면에 뜬다.
+    경로는 퍼센트 인코딩을 끝까지 푼 뒤 검사한다. 브라우저·프록시는 %2e%2e를 ..로, %2f를 /로 풀어 정규화하므로
+    인코딩된 채로 보면 "/api/aac/images/%2e%2e/..."가 prefix 검사를 통과해 AAC 폴더 밖 경로를 가리킬 수 있다.
+    이중 인코딩(%252e)도 있으니 더 바뀌지 않을 때까지 푼다. 정규화 결과가 원래 경로와 다르면(., .., //) 거부한다.
     """
     base = os.getenv("PUBLIC_BACKEND_URL", "http://localhost:8000").rstrip("/")
     path = url[len(base):] if url.startswith(base + "/") else url
-    return path.startswith(_OWN_IMAGE_PATHS) and ".." not in path and "//" not in path
+    decoded = path
+    for _ in range(5):
+        nxt = unquote(decoded)
+        if nxt == decoded:
+            break
+        decoded = nxt
+    else:
+        return False  # 다섯 번 풀어도 계속 바뀌는 경로는 정상 그림 URL이 아니다
+    if any(ch in decoded for ch in ("\\", "\x00", "?", "#")) or "//" in decoded:
+        return False
+    if posixpath.normpath(decoded) != decoded or ".." in decoded.split("/"):
+        return False
+    return decoded.startswith(_OWN_IMAGE_PATHS)
+
+
+_MEDIA_GONE = "사진이 방금 다른 화면에서 지워졌습니다. 사진을 다시 올려 주세요."
 
 
 @app.patch("/api/tasks/{task_id}/steps/{step_id}", response_model=StepOut)
@@ -989,6 +1009,7 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
     if step is None or step.task_id != task_id:
         raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
     released: list[str] = []
+    claimed: str | None = None
     if payload.symbol_url is not None:
         media_id = media.parse_media_url(payload.symbol_url)
         if media_id is not None:
@@ -997,6 +1018,7 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
             rec = media.owned(db, user["sub"], media_id, media.KIND_PHOTO)
             if rec is None:
                 raise HTTPException(status_code=400, detail="이 서비스의 그림이나 사진만 단계에 붙일 수 있습니다.")
+            claimed = rec.id
             if step.symbol_media_id and step.symbol_media_id != rec.id:
                 released.append(step.symbol_media_id)
             step.symbol_media_id = rec.id
@@ -1021,9 +1043,24 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
         # 저장된 symbol_query는 옛 문장에 묶여 있다. 비우면 후보 조회가 새 문장에서
         # 검색어를 다시 뽑는다.
         step.symbol_query = ""
+    # 확인과 커밋 사이에 다른 요청의 release()가 레코드를 지우지 못하게 커밋 직전에 같은 트랜잭션에서 잠근다
+    # (media.claim). TTS 합성(네트워크 호출) 뒤에 잠그는 이유: SQLite 쓰기 잠금은 DB 전체라, 합성 동안 쥐고 있으면
+    # 다른 모든 쓰기가 기다린다. 이미 지워졌으면 붙이지 않는다 — 400(남의 것)과 구분해 409로 다시 시도하게 한다.
+    if claimed is not None and not media.claim(db, user["sub"], claimed, media.KIND_PHOTO):
+        db.rollback()
+        raise HTTPException(status_code=409, detail=_MEDIA_GONE)
     db.commit()
     media.release(db, released)
+    # 커밋 뒤 재확인: claim의 잠금은 SQLite에서는 충분하지만, 격리 수준이 다른 DB나 잠금 밖에서 지운 경우까지
+    # 단계가 사라진 media를 가리킨 채 남지 않게 한다. 사라졌으면 그림 없음 상태로 되돌리고 409를 준다.
     db.refresh(step)
+    if step.symbol_media_id and not media.exists_(db, step.symbol_media_id):
+        step.symbol_media_id = None
+        step.symbol_url = None
+        step.symbol_source = "fallback"
+        step.needs_fallback = True
+        db.commit()
+        raise HTTPException(status_code=409, detail=_MEDIA_GONE)
     return _step_to_out(step)
 
 

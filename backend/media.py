@@ -20,7 +20,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from sqlalchemy import delete, exists, func, or_, select
+from sqlalchemy import delete, exists, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from auth import media_signature
@@ -139,6 +139,30 @@ def owned(db: Session, employer_id: str, media_id: str, kind: str) -> MediaFile 
     if rec is None or rec.employer_id != employer_id or rec.kind != kind:
         return None
     return rec
+
+
+def claim(db: Session, employer_id: str, media_id: str, kind: str) -> bool:
+    """단계에 붙이기 직전, owned()로 확인한 소유 레코드에 같은 트랜잭션에서 쓰기 잠금을 건다.
+
+    왜: owned()로 확인만 하고 붙이면, 확인과 커밋 사이에 다른 요청의 release()가 "참조 없음"을 보고 레코드와
+    파일을 지울 수 있다(사진 되돌리기·교체). 그러면 단계가 지워진 media id를 가리킨다(SQLite는 FK를 강제하지
+    않는다). 그래서 확인한 행을 아무 값도 바꾸지 않는 UPDATE로 "건드려" 둔다.
+    - 이미 지워졌으면 rowcount가 0 → False(호출한 쪽이 붙이지 않는다).
+    - 아직 있으면 이 트랜잭션이 커밋할 때까지 쓰기 잠금을 쥔다(SQLite는 DB 쓰기 잠금, Postgres는 행 잠금).
+      release()의 DELETE는 그동안 기다렸다가, 커밋된 새 참조를 보고 지우지 않는다.
+    커밋은 호출한 쪽이 한다. 다른 엔진·격리 수준까지 대비해 호출한 쪽은 커밋 뒤 exists_()로 한 번 더 확인한다.
+    """
+    result = db.execute(
+        update(MediaFile)
+        .where(MediaFile.id == media_id, MediaFile.employer_id == employer_id, MediaFile.kind == kind)
+        .values(employer_id=MediaFile.employer_id)
+        .execution_options(synchronize_session=False))
+    return bool(result.rowcount)
+
+
+def exists_(db: Session, media_id: str) -> bool:
+    """레코드가 지금 DB에 있는지(세션 캐시가 아니라 DB를 본다)."""
+    return db.scalar(select(func.count()).select_from(MediaFile).where(MediaFile.id == media_id)) > 0
 
 
 def _unreferenced():

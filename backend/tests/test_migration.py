@@ -611,12 +611,49 @@ def test_0004_moves_legacy_urls_to_owned_records(monkeypatch, tmp_path):
     photo, audio = records[s1.symbol_media_id], records[s1.tts_media_id]
     assert (photo.employer_id, photo.kind, audio.employer_id, audio.kind) == ("e1", "photo", "e1", "tts")
     assert audio.storage_key == tts_name
-    # 옛 사진은 메타데이터를 지운 WebP로 다시 저장된다(원본은 레코드가 없어 gc-media가 나중에 지운다).
+    # 옛 사진은 메타데이터를 지운 WebP로 다시 저장되고, EXIF(GPS)가 든 원본은 그 자리에서 지워진다
+    # (gc-media 유예시간 동안 촬영 위치가 디스크에 남지 않게).
     assert photo.storage_key.endswith(".webp")
     clean = Image.open(photo_dir / photo.storage_key)
     assert not dict(clean.getexif()) and max(clean.size) <= 1600
+    assert not (photo_dir / photo_name).exists()
+    assert sorted(p.name for p in photo_dir.iterdir()) == [photo.storage_key]  # 임시 파일도 남지 않는다
     # 파일이 없던 URL은 비우고 사진은 폴백 상태로 되돌린다.
     assert tuple(s2) == (None, None, None, "fallback", 1)
+
+
+def test_0004_resumes_after_original_was_deleted(monkeypatch, tmp_path):
+    """원본을 지운 뒤 DB 변경이 롤백되거나 멈춘 상태(단계는 여전히 원본 URL)에서 다시 돌려도 사진을 잃지 않는다:
+    원본 이름에서 정해지는 WebP 이름으로 앞선 실행의 결과를 찾아 이어 간다."""
+    from io import BytesIO
+
+    from PIL import Image
+
+    photo_dir = tmp_path / "photos"
+    photo_dir.mkdir()
+    monkeypatch.setenv("PHOTO_DIR", str(photo_dir))
+    monkeypatch.setenv("TTS_CACHE_DIR", str(tmp_path / "tts"))
+    revision = db_migrate._script().get_revision("0004_media_files").module
+    photo_name = "f" * 32 + ".jpg"
+    done_key = revision._converted_key(photo_name)
+    assert done_key == revision._converted_key(photo_name) and done_key.endswith(".webp")
+    buf = BytesIO()
+    Image.new("RGB", (40, 30), (9, 9, 9)).save(buf, "WEBP")
+    (photo_dir / done_key).write_bytes(buf.getvalue())  # 앞선 실행이 남긴 WebP, 원본은 이미 없음
+
+    engine = _new_engine("media_0004_resume")
+    _make_full_legacy_db(engine)
+    db_migrate.migrate(engine)
+    db_migrate.downgrade(engine, "0003_privacy")
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE steps SET symbol_url = :p, symbol_source = 'photo' WHERE id = 's1'"),
+                     {"p": f"http://localhost:8000/api/photos/{photo_name}"})
+    db_migrate.upgrade_to_head(engine)
+    with engine.connect() as conn:
+        key = conn.execute(text(
+            "SELECT m.storage_key FROM steps s JOIN media_files m ON m.id = s.symbol_media_id "
+            "WHERE s.id = 's1'")).scalar()
+    assert key == done_key
 
 
 def test_0004_downgrade_restores_static_urls(monkeypatch, tmp_path):

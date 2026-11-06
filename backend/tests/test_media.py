@@ -361,3 +361,102 @@ def test_tts_scope_changes_cache_key():
     assert tts._google_voice_key("같은 문장", "emp-a") != tts._google_voice_key("같은 문장", "emp-b")
     with pytest.raises(ValueError):
         tts.synthesize_tts("문장", "")
+
+
+# --- 7. AAC 그림 URL: 퍼센트 인코딩 경로 조작 ---------------------------------------
+
+@pytest.mark.parametrize("url", [
+    "http://localhost:8000/api/aac/images/%2e%2e/%2e%2e/etc/passwd",
+    "/api/aac/images/%2E%2E/photos/x.webp",
+    "/api/aac/images/..%2f..%2fapi/media/x",
+    "/api/aac/images/retail%2f%2fevil.example/x.webp",
+    "/api/aac/images/%252e%252e/x.webp",       # 이중 인코딩(한 번 디코딩하면 %2e%2e)
+    "/api/aac/images/retail%5c..%5c..%5cx.webp",  # 역슬래시
+    "/api/aac/images/retail/x.webp%00.png",
+    "/api/aac/images/./retail/x.webp",
+])
+def test_own_image_url_rejects_encoded_traversal(url):
+    """브라우저·프록시는 %2e%2e를 ..로 풀어 경로를 정규화한다. 인코딩된 채로 검사하면 ".."이 안 보여
+    통과하고, 근로자 화면에서는 AAC 폴더 밖 경로를 요청하게 된다."""
+    assert main._is_own_image_url(url) is False
+
+
+def test_own_image_url_accepts_plain_aac_paths():
+    assert main._is_own_image_url("http://localhost:8000/api/aac/images/retail/RETAIL_001.webp")
+    assert main._is_own_image_url("/api/aac/images/retail/RETAIL_001.webp")
+    # 한글 등 정상 문자를 인코딩한 경로는 디코딩해도 안전하므로 받는다.
+    assert main._is_own_image_url("/api/aac/images/retail/%EC%83%81%EC%9E%90.webp")
+
+
+def test_update_step_rejects_encoded_traversal(client, employer_token):
+    task = _task(client, employer_token)
+    step_id = task["steps"][0]["id"]
+    r = client.patch(f"/api/tasks/{task['id']}/steps/{step_id}",
+                     json={"symbol_url": "/api/aac/images/%2e%2e/%2e%2e/etc/passwd"},
+                     headers=auth(employer_token))
+    assert r.status_code == 400
+
+
+# --- 8. release()와 update_step 경합 ----------------------------------------------
+
+def test_update_step_does_not_attach_media_released_concurrently(client, employer_token, monkeypatch):
+    """update_step이 소유 레코드를 확인한 직후, 다른 요청(사진 되돌리기)이 마지막 참조를 떼고 release()로
+    레코드·파일을 지우면, 예전에는 update_step이 그대로 커밋해 단계가 지워진 media id를 가리켰다
+    (근로자 화면에 깨진 그림, 레코드 없는 id). 이제는 붙이지 않고 409로 다시 시도하게 한다."""
+    task = _task(client, employer_token)
+    url = _upload(client, employer_token, task, step_index=0)["symbol_url"]
+    media_id = _media_id(url)
+    step0, step1 = task["steps"][0]["id"], task["steps"][1]["id"]
+    real_owned = media.owned
+
+    def owned_then_concurrent_release(db, employer_id, mid, kind):
+        rec = real_owned(db, employer_id, mid, kind)
+        # 확인과 붙이기 사이에 끼어드는 다른 요청(DELETE .../photo와 같은 일).
+        with SessionLocal() as other:
+            other.get(Step, step0).symbol_media_id = None
+            other.commit()
+            assert media.release(other, [mid]) == 1
+        return rec
+
+    monkeypatch.setattr(media, "owned", owned_then_concurrent_release)
+    r = client.patch(f"/api/tasks/{task['id']}/steps/{step1}", json={"symbol_url": url},
+                     headers=auth(employer_token))
+    assert r.status_code == 409, r.text
+    with SessionLocal() as db:
+        assert db.get(MediaFile, media_id) is None
+        assert db.get(Step, step1).symbol_media_id is None  # 지워진 media를 가리키지 않는다
+    # 경합이 없으면 정상으로 붙는다(회귀 확인).
+    monkeypatch.setattr(media, "owned", real_owned)
+    url2 = _upload(client, employer_token, task, step_index=0)["symbol_url"]
+    r = client.patch(f"/api/tasks/{task['id']}/steps/{step1}", json={"symbol_url": url2},
+                     headers=auth(employer_token))
+    assert r.status_code == 200, r.text
+
+
+def test_update_step_revalidates_after_commit(client, employer_token, monkeypatch):
+    """잠금을 잡은 뒤에도(다른 DB 엔진에서 격리 수준이 달라도) 커밋 직후 레코드가 사라졌으면 단계를 되돌린다."""
+    task = _task(client, employer_token)
+    url = _upload(client, employer_token, task, step_index=0)["symbol_url"]
+    media_id = _media_id(url)
+    step0, step1 = task["steps"][0]["id"], task["steps"][1]["id"]
+    real_release = media.release
+
+    def release_and_steal(db, ids):
+        # update_step의 커밋 직후 다른 연결이 레코드를 강제로 지운 상황(FK 미적용 SQLite 기준).
+        if not getattr(release_and_steal, "done", False):
+            release_and_steal.done = True
+            with SessionLocal() as other:
+                other.get(Step, step0).symbol_media_id = None
+                other.get(Step, step1).symbol_media_id = None
+                other.commit()
+                real_release(other, [media_id])
+                other.get(Step, step1).symbol_media_id = media_id  # 커밋된 참조만 남기고 레코드는 없음
+                other.commit()
+        return real_release(db, ids)
+
+    monkeypatch.setattr(media, "release", release_and_steal)
+    r = client.patch(f"/api/tasks/{task['id']}/steps/{step1}", json={"symbol_url": url},
+                     headers=auth(employer_token))
+    assert r.status_code == 409, r.text
+    with SessionLocal() as db:
+        assert db.get(Step, step1).symbol_media_id is None
