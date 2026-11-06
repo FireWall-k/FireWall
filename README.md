@@ -186,7 +186,7 @@ AAC_EMBED_TIMEOUT=3               # 질의 임베딩 호출 타임아웃(초)
 기본 설정:
 
 ```env
-GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/google-tts.json
+GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google_tts_credentials   # compose가 Docker secret으로 넘긴다
 GOOGLE_TTS_LANGUAGE=ko-KR
 GOOGLE_TTS_VOICE=ko-KR-Standard-A
 GOOGLE_TTS_SPEAKING_RATE=0.9
@@ -205,13 +205,14 @@ TTS_CACHE_DIR=/app/data/tts
 secrets/google-tts.json
 ```
 
-Docker Compose에는 이미 다음 볼륨이 설정되어 있습니다.
+Docker Compose는 이 파일 하나만 Docker secret(`google_tts_credentials`)으로 backend 컨테이너의
+`/run/secrets/google_tts_credentials`에 넘깁니다(예전처럼 `./secrets` 폴더 전체를 마운트하지 않습니다).
+처음에는 `sh scripts/init-secrets.sh`(Windows: `scripts\init-secrets.ps1`)로 빈 자리표시자 파일을
+만들어 두세요 — 원본 파일이 없으면 compose가 기동을 거부합니다. 파일이 비어 있으면 TTS는 ADC(Workload
+Identity 등)를 시도하고, 그것도 없으면 브라우저 음성으로 대체됩니다.
 
-```yaml
-- ./secrets:/app/secrets:ro
-```
-
-실제 JSON 키 파일은 Git에 커밋하지 마세요(`.gitignore`로 제외됩니다).
+실제 JSON 키 파일은 Git에 커밋하지 마세요(`.gitignore`로 제외됩니다). 서비스 계정 키 대신 단기
+자격증명을 쓰는 방법과 키 교체 절차는 [docs/security/secrets.md](docs/security/secrets.md)에 있습니다.
 
 ### Google TTS 동작 방식
 
@@ -372,8 +373,10 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 LLM_TIMEOUT=20
 ```
 
-Docker는 호스트의 `OPENAI_API_KEY`를 자동 주입합니다(`docker compose` 실행 전
-`export OPENAI_API_KEY=sk-...`).
+Docker에서는 키를 환경변수가 아니라 Docker secret 파일 `secrets/openai_api_key.txt`에 넣습니다
+(컨테이너에는 `/run/secrets/openai_api_key`로 보이고 `OPENAI_API_KEY_FILE`이 그 경로를 가리킨다).
+환경변수 키는 `docker inspect` 등에 그대로 보이기 때문입니다. 예전처럼 `.env`의 `OPENAI_API_KEY`도
+파일이 비어 있을 때만 하위호환으로 읽습니다 — 자세한 우선순위는 [docs/security/secrets.md](docs/security/secrets.md).
 
 직무 생성(`POST /api/tasks`)은 선택 필드 `business_type`, `work_environment`,
 `worker_note`를 받습니다.
@@ -416,15 +419,19 @@ mp3 기록·해시 캐시·URL 반환·예외 폴백까지 실제 코드를 실�
 
 단일 서버에 `docker compose`로 올리는 구성이다. 순서대로 확인한다.
 
-1. **`.env` 채우기** (`.env.example` 참고)
+1. **비밀값 파일 만들기** — `sh scripts/init-secrets.sh` 후 값을 넣는다(비밀값은 `.env`에 두지 않는다,
+   [docs/security/secrets.md](docs/security/secrets.md)).
+   ```bash
+   python -c "import secrets; print(secrets.token_urlsafe(48))" > secrets/jobcard_secret.txt
+   printf '%s' 'sk-...' > secrets/openai_api_key.txt      # 없으면 규칙 기반으로 동작
+   ```
+   **`.env` 채우기** (`.env.example` 참고, 비밀값이 아닌 설정만)
    ```env
    JOBCARD_ENV=prod
-   JOBCARD_SECRET=<python -c "import secrets; print(secrets.token_urlsafe(48))" 결과>
    CORS_ORIGINS=https://jobcard.example.kr
    PUBLIC_BACKEND_URL=https://api.jobcard.example.kr
    VITE_API_BASE=https://api.jobcard.example.kr
    TRUST_FORWARDED_FOR=1          # HTTPS 리버스 프록시 뒤일 때만
-   OPENAI_API_KEY=sk-...          # 없으면 규칙 기반으로 동작
    ```
    `JOBCARD_ENV=prod`인데 시크릿이 비었거나 32자 미만이면 백엔드가 **기동을 거부**한다.
 2. **HTTPS**: 컨테이너 포트는 `127.0.0.1`에만 열려 있다. 앞에 리버스 프록시(Caddy/nginx)를 두고

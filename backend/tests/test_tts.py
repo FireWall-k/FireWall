@@ -153,3 +153,43 @@ def test_client_is_reused_across_calls(monkeypatch, tmp_path):
     monkeypatch.setattr(m, "TextToSpeechClient", counting_client)
     assert tts.synthesize_tts("하나", "emp-test") and tts.synthesize_tts("둘", "emp-test")
     assert made["n"] == 1
+
+
+# --- Phase 0.5: 빈 자격증명 파일(init-secrets 자리표시자)이면 ADC(Workload Identity 등)로 ---------------
+class _FakeTTSModule:
+    """TextToSpeechClient를 만들 때의 GOOGLE_APPLICATION_CREDENTIALS 값을 기록한다."""
+
+    def __init__(self):
+        self.seen = []
+        outer = self
+
+        class _Client:
+            def __init__(self):
+                outer.seen.append(os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"))
+
+        self.TextToSpeechClient = _Client
+
+
+def test_empty_credentials_file_falls_back_to_adc(tmp_path, monkeypatch):
+    # compose는 항상 /run/secrets/google_tts_credentials를 가리킨다. 키 파일을 안 쓰는 설치(Workload
+    # Identity·메타데이터 서버)에서 이 빈 파일을 그대로 넘기면 google-auth가 JSON 파싱 오류로 ADC를 막는다.
+    empty = tmp_path / "google-tts.json"
+    empty.write_text("", encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(empty))
+    tts._reset_state()
+    fake = _FakeTTSModule()
+    tts._get_client(fake)
+    assert fake.seen == [None]
+    assert "GOOGLE_APPLICATION_CREDENTIALS" not in os.environ
+    tts._reset_state()
+
+
+def test_nonempty_credentials_file_is_kept(tmp_path, monkeypatch):
+    cred = tmp_path / "google-tts.json"
+    cred.write_text('{"type": "service_account"}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(cred))
+    tts._reset_state()
+    fake = _FakeTTSModule()
+    tts._get_client(fake)
+    assert fake.seen == [str(cred)]
+    tts._reset_state()

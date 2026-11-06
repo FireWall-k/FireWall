@@ -4,7 +4,8 @@
 - 토큰: HMAC-SHA256 서명 JSON (sub, role, exp)
 - FastAPI 의존성: get_current_user / require_employer / require_worker
 
-운영 주의: JOBCARD_SECRET 환경변수를 반드시 강한 랜덤 값으로 설정한다.
+운영 주의: JOBCARD_SECRET를 반드시 강한 랜덤 값으로 설정한다(운영은 Docker secret 파일 →
+JOBCARD_SECRET_FILE, secret_env.py·docs/security/secrets.md).
 기본값은 개발 전용이며, 미설정 상태로는 운영 기동을 막는다(PROD 가드).
 """
 from __future__ import annotations
@@ -17,6 +18,8 @@ import os
 import time
 
 from fastapi import Depends, Header, HTTPException
+
+from secret_env import read_secret
 
 _DEV_SECRET = "dev-insecure-secret-change-me"
 
@@ -31,7 +34,8 @@ def is_production() -> bool:
 def _secret() -> str:
     # docker-compose의 "${JOBCARD_SECRET:-}"처럼 빈 값으로 넘어오면 '설정 안 함'과 같다.
     # 빈 문자열을 그대로 HMAC 키로 쓰면 누구나 토큰을 위조할 수 있다.
-    secret = (os.getenv("JOBCARD_SECRET") or "").strip() or _DEV_SECRET
+    # JOBCARD_SECRET_FILE(/run/secrets/jobcard_secret)이 환경변수보다 우선한다(secret_env.py 참고).
+    secret = read_secret("JOBCARD_SECRET").strip() or _DEV_SECRET
     if is_production() and (secret == _DEV_SECRET or len(secret) < _MIN_PROD_SECRET_LEN):
         raise RuntimeError(
             f"운영 환경에서는 JOBCARD_SECRET를 {_MIN_PROD_SECRET_LEN}자 이상의 무작위 값으로 설정해야 합니다. "

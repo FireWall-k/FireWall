@@ -7,4 +7,6 @@ import os
 import sys
 
 os.environ["AAC_EMBEDDINGS"] = "off"
+# 개발자 셸의 OPENAI_API_KEY_FILE이 실제 키를 읽어 오지 않게 한다(secret_env.py는 파일을 우선한다).
+os.environ.pop("OPENAI_API_KEY_FILE", None)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

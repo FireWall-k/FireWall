@@ -14,6 +14,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # 비밀값 스캔(Phase 0.5): 저장소 히스토리 전체를 gitleaks로 훑는다. 커밋에 키가 섞이면 실패한다.
+  # gitleaks-action 대신 공식 릴리스 바이너리를 쓰는 이유: 조직 저장소에서는 그 액션이 유료 라이선스 키
+  # (GITLEAKS_LICENSE)를 요구한다. 바이너리는 버전과 SHA-256을 아래에 고정해 바꿔치기를 막는다.
+  # 로컬 커밋 전 검사는 .pre-commit-config.yaml의 같은 버전 훅이 한다.
+  secret-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: "8.30.1"
+      GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"  # linux_x64.tar.gz
+    steps:
+      # 액션은 커밋 SHA로 고정한다(태그는 옮겨질 수 있다). 다른 잡의 고정은 Phase 1에서 한다.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 0  # 최신 커밋만이 아니라 히스토리 전체를 본다(지웠던 키도 히스토리에 남는다)
+      - name: gitleaks 설치(체크섬 검증)
+        run: |
+          curl -sSfL -o gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          rm gitleaks.tar.gz
+      # --redact: 찾은 값을 로그에 찍지 않는다(공개 CI 로그로 키가 한 번 더 새지 않게).
+      - name: 히스토리 전체 스캔
+        run: ./gitleaks git . --config .gitleaks.toml --redact --verbose --exit-code 1
+
   ai_service:
     runs-on: ubuntu-latest
     defaults:

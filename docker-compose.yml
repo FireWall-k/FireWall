@@ -25,6 +25,11 @@ services:
       AAC_EMBED_MATCH_MIN_MARGIN: "0.02"
       AAC_EMBED_TIMEOUT: "3"
       # OpenAI(LLM) — 키가 있으면 맥락적응 분해 + AI 코칭이 켜지고, 없으면 규칙 기반 폴백.
+      # 키는 Docker secret 파일(./secrets/openai_api_key.txt → /run/secrets/openai_api_key)로 받는다.
+      # 환경변수 값은 docker inspect·/proc/<pid>/environ에 그대로 보이기 때문이다(docs/security/secrets.md).
+      OPENAI_API_KEY_FILE: "/run/secrets/openai_api_key"
+      # 하위호환: 예전처럼 .env의 OPENAI_API_KEY도 읽지만, 위 파일이 비어 있을 때만 쓴다(secret_env.py).
+      # 파일로 옮긴 뒤 .env에서 지우면 여기는 빈 값이 되어 아무것도 노출되지 않는다. 다음 정리 때 이 줄을 없앤다.
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       OPENAI_MODEL: "${OPENAI_MODEL:-gpt-4o-mini}"
       OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://api.openai.com/v1}"
@@ -35,6 +40,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    secrets:
+      - openai_api_key
     volumes:
       - ./data/aac:/app/aac:ro
 
@@ -55,6 +62,9 @@ services:
       JOBCARD_ENV: "${JOBCARD_ENV:-dev}"
       # 0002 리비전이 기존 근로자 접속 코드를 HMAC(JOBCARD_SECRET) 해시로 바꾼다. backend와 같은 키여야
       # 한다 — 다르면(예: 여기만 비어 개발용 기본 키로 해시) 기존 근로자 전원이 로그인하지 못한다.
+      # 그래서 backend·purge와 같은 Docker secret(jobcard_secret)을 받는다. 파일이 환경변수보다 우선한다.
+      JOBCARD_SECRET_FILE: "/run/secrets/jobcard_secret"
+      # 하위호환(파일이 비어 있을 때만 쓴다). backend 주석 참고.
       JOBCARD_SECRET: "${JOBCARD_SECRET:-}"
       # 0004 리비전이 기존 사진·TTS URL을 소유 레코드로 옮기면서 파일을 읽고(사진은 EXIF를 지워 다시 저장) 쓴다.
       # backend와 같은 경로여야 한다 — 다르면 파일이 없는 것으로 보고 URL을 비운다.
@@ -62,6 +72,8 @@ services:
       PHOTO_DIR: "/app/data/photos"
       # 되돌릴 때(downgrade) 옛 정적 URL을 다시 만드는 기준 주소.
       PUBLIC_BACKEND_URL: "${PUBLIC_BACKEND_URL:-http://localhost:8000}"
+    secrets:
+      - jobcard_secret
     volumes:
       - jobcard-data:/app/data
 
@@ -81,7 +93,8 @@ services:
       PYTHONUNBUFFERED: "1"
       DATABASE_URL: "sqlite:////app/data/jobcard.db"
       JOBCARD_ENV: "${JOBCARD_ENV:-dev}"
-      JOBCARD_SECRET: "${JOBCARD_SECRET:-}"
+      JOBCARD_SECRET_FILE: "/run/secrets/jobcard_secret"
+      JOBCARD_SECRET: "${JOBCARD_SECRET:-}"  # 하위호환(backend 주석 참고)
       TTS_CACHE_DIR: "/app/data/tts"
       # 고아 사진·TTS 정리(media.gc)도 purge가 함께 한다.
       PHOTO_DIR: "/app/data/photos"
@@ -92,6 +105,8 @@ services:
       TTS_ORPHAN_GRACE_HOURS: "${TTS_ORPHAN_GRACE_HOURS:-24}"
       # 사진·TTS 공통 유예시간. 비우면 예전 TTS_ORPHAN_GRACE_HOURS 값을 그대로 쓴다.
       MEDIA_ORPHAN_GRACE_HOURS: "${MEDIA_ORPHAN_GRACE_HOURS:-${TTS_ORPHAN_GRACE_HOURS:-24}}"
+    secrets:
+      - jobcard_secret
     volumes:
       - jobcard-data:/app/data
 
@@ -116,6 +131,11 @@ services:
       JOBCARD_ENV: "${JOBCARD_ENV:-dev}"
       # 토큰 서명 키. 예전에는 이 줄이 없어 컨테이너가 저장소에 적힌 개발용 기본 키로 서명했다
       # (누구나 사업주 토큰을 위조할 수 있었다). 생성: python -c "import secrets; print(secrets.token_urlsafe(48))"
+      # 값은 Docker secret 파일(./secrets/jobcard_secret.txt → /run/secrets/jobcard_secret)에 둔다.
+      JOBCARD_SECRET_FILE: "/run/secrets/jobcard_secret"
+      # 하위호환: 위 파일이 비어 있을 때만 .env의 JOBCARD_SECRET를 쓴다(secret_env.py). 이 줄을 바로 없애지
+      # 않는 이유: 키를 .env에만 둔 기존 설치본이 업그레이드하자마자 개발용 기본 키로 바뀌면 근로자 접속 코드
+      # 해시가 모두 어긋난다. 파일로 옮기고 .env에서 지우면 빈 값이 된다. 다음 정리 때 이 줄을 없앤다.
       JOBCARD_SECRET: "${JOBCARD_SECRET:-}"
       DEMO_SEED: "${DEMO_SEED:-}"
       # 데모 사업장 코드(근로자 로그인 화면에서 처음 한 번 입력). 데모 계정이 처음 만들어질 때만 쓴다.
@@ -126,7 +146,10 @@ services:
       # ports를 127.0.0.1로 고정했으니(위 ai_service 주석) localhost가 정상 동작한다.
       PUBLIC_BACKEND_URL: "${PUBLIC_BACKEND_URL:-http://localhost:8000}"
       # Google Cloud Text-to-Speech 기본 사용 설정
-      GOOGLE_APPLICATION_CREDENTIALS: "/app/secrets/google-tts.json"
+      # 서비스 계정 JSON은 Docker secret으로 이 파일 하나만 넘긴다. 예전에는 ./secrets 디렉터리 전체를
+      # 바인드 마운트해 backend가 쓰지 않는 다른 비밀값 파일(OpenAI 키 등)까지 읽을 수 있었다.
+      # 파일이 비어 있으면(키 없는 설치) tts.py가 ADC(Workload Identity 등)로 넘어간다.
+      GOOGLE_APPLICATION_CREDENTIALS: "/run/secrets/google_tts_credentials"
       GOOGLE_TTS_LANGUAGE: "ko-KR"
       GOOGLE_TTS_VOICE: "ko-KR-Standard-A"
       GOOGLE_TTS_SPEAKING_RATE: "0.9"
@@ -143,9 +166,10 @@ services:
       # SQLite는 macOS 바인드 마운트(VirtioFS)에서 'disk I/O error'를 내므로
       # DB/사진/TTS 데이터는 Docker named volume에 둔다(리눅스 VM 내부 I/O로 회피).
       - jobcard-data:/app/data
-      # Google 서비스 계정 JSON 파일을 ./secrets/google-tts.json 위치에 넣으세요.
-      # 이 파일은 ZIP에 포함하지 않았고, .gitignore로 제외되어야 합니다.
-      - ./secrets:/app/secrets:ro
+    # backend에 필요한 것만 연결한다(OpenAI 키는 ai_service만 쓴다).
+    secrets:
+      - jobcard_secret
+      - google_tts_credentials
     depends_on:
       ai_service:
         condition: service_healthy
@@ -173,3 +197,15 @@ services:
 
 volumes:
   jobcard-data:
+
+# 비밀값은 환경변수가 아니라 파일로 넘긴다(컨테이너 안 /run/secrets/<이름>, 읽기 전용).
+# 원본 파일이 없으면 compose가 기동을 거부하므로 처음 한 번 scripts/init-secrets.sh(Windows: .ps1)로
+# 빈 파일을 만든다 — 빈 파일이면 앱은 예전 동작(환경변수/기본값/규칙 기반 폴백)을 그대로 한다.
+# 파일은 .gitignore 대상이다. 절차·교체 방법은 docs/security/secrets.md.
+secrets:
+  openai_api_key:
+    file: ./secrets/openai_api_key.txt
+  jobcard_secret:
+    file: ./secrets/jobcard_secret.txt
+  google_tts_credentials:
+    file: ./secrets/google-tts.json

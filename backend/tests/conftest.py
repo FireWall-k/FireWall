@@ -23,6 +23,8 @@ os.environ["DEMO_WORKPLACE_CODE"] = "DEMO01"
 # 그림 URL 검증·공개 URL 생성이 이 값에 기대므로 실행 환경과 상관없이 고정한다.
 os.environ["PUBLIC_BACKEND_URL"] = "http://localhost:8000"
 os.environ.pop("JOBCARD_ENV", None)
+# 개발자 셸에 JOBCARD_SECRET_FILE이 있으면 파일이 위 테스트 키보다 우선한다(secret_env.py) — 지운다.
+os.environ.pop("JOBCARD_SECRET_FILE", None)
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

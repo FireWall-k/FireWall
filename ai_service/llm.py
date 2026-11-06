@@ -17,9 +17,13 @@ import os
 
 import httpx
 
+from secret_env import read_secret
+
 logger = logging.getLogger("ai_harness.llm")
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+# 운영은 OPENAI_API_KEY_FILE(/run/secrets/openai_api_key)로 받는다 — 환경변수 키는 docker inspect 등에
+# 그대로 보이기 때문이다. OPENAI_API_KEY 직접 값은 로컬 개발 하위호환(secret_env.py의 우선순위 참고).
+OPENAI_API_KEY = read_secret("OPENAI_API_KEY").strip()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
 LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "20"))

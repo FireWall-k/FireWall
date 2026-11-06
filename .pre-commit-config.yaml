@@ -1,0 +1,10 @@
+# pre-commit 훅 — Phase 0.5에서는 비밀값 스캔(gitleaks)만 둔다. ruff·eslint 등 나머지는 Phase 1에서 추가한다.
+# 설치: pip install pre-commit && pre-commit install
+# 왜 커밋 전에도 막나: CI에서 잡으면 이미 원격 히스토리에 올라간 뒤라 키를 교체해야 한다.
+# rev는 태그가 아니라 커밋 SHA로 고정한다(태그는 옮겨질 수 있다). 올릴 때는 `pre-commit autoupdate --freeze`.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # frozen: v8.30.1
+    hooks:
+      # 스테이징된 변경만 본다. 설정은 저장소 루트 .gitleaks.toml을 자동으로 읽는다.
+      - id: gitleaks

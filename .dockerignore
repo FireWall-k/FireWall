@@ -13,3 +13,5 @@ backend/data
 # Secrets
 secrets/*.json
 secrets/*.key
+# 비밀값은 이미지에 굽지 않는다 — 실행 시 Docker secrets(/run/secrets)로만 넘긴다.
+secrets/

@@ -5,7 +5,8 @@
 None을 반환하고, 프론트엔드는 브라우저 SpeechSynthesis를 fallback으로 사용한다.
 
 운영 의도:
-- MVP/PoC: GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/google-tts.json 설정
+- 인증: GOOGLE_APPLICATION_CREDENTIALS(compose는 Docker secret /run/secrets/google_tts_credentials) 또는
+  ADC(Workload Identity 등 — docs/security/secrets.md). 자격증명 파일이 비어 있으면 ADC로 넘어간다.
 - 음성 캐시: 같은 문장/음성 옵션은 mp3를 재생성하지 않고 캐시 재사용
 - (Phase 0.3) 캐시는 사업장(scope)별로 나눈다. 단계 문장에는 근로자 이름이 들어갈 수 있다. 예전처럼 문장 해시만으로
   전역 공유하면 ① 공개 URL(/api/tts/<hash>.mp3)을 아는 누구나 음성을 받을 수 있었고 ② 다른 사업장이 같은 문장을
@@ -45,8 +46,26 @@ def _get_client(texttospeech):
     global _client_cache
     with _state_lock:
         if _client_cache is None or _client_cache[0] is not texttospeech:
+            _drop_empty_credentials_path()
             _client_cache = (texttospeech, texttospeech.TextToSpeechClient())
         return _client_cache[1]
+
+
+def _drop_empty_credentials_path() -> None:
+    """GOOGLE_APPLICATION_CREDENTIALS가 빈 파일을 가리키면 변수를 지워 ADC로 넘어가게 한다(Phase 0.5).
+
+    compose는 Docker secret(/run/secrets/google_tts_credentials)을 항상 이 변수로 넘기고, 키 파일이 없는
+    설치에서는 scripts/init-secrets가 빈 자리표시자 파일을 만든다. 빈 파일을 그대로 두면 google-auth가 JSON
+    파싱 오류로 멈춰 Workload Identity·메타데이터 서버 같은 ADC(서비스 계정 키 없는 인증)를 쓸 수 없다.
+    """
+    path = _env("GOOGLE_APPLICATION_CREDENTIALS")
+    try:
+        empty = bool(path) and os.path.getsize(path) == 0
+    except OSError:
+        return  # 파일이 없으면 google-auth가 경로를 담은 분명한 오류를 낸다(쿨다운 경고로 남는다).
+    if empty:
+        os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
+        logger.info("Google TTS credentials file is empty; using Application Default Credentials.")
 
 
 def _env(name: str, default: str = "") -> str:
@@ -121,7 +140,7 @@ def _synthesize_google(text: str, out_path: Path) -> None:
     """Google Cloud Text-to-Speech 합성.
 
     인증은 GOOGLE_APPLICATION_CREDENTIALS 환경변수 또는 Google ADC 방식을 따른다.
-    Docker에서는 기본적으로 /app/secrets/google-tts.json 경로를 사용한다.
+    Docker에서는 Docker secret(/run/secrets/google_tts_credentials)을 사용한다.
     """
     try:
         from google.cloud import texttospeech  # type: ignore[import-not-found]

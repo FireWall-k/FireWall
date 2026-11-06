@@ -9,8 +9,17 @@ dist/
 # Env
 .env
 # Secrets
+# Docker secrets 원본(docs/security/secrets.md). 확장자 목록만 막으면 새 형식(.txt 등)을 추가할 때마다
+# 빠뜨릴 수 있어 디렉터리 전체를 막고, 커밋해도 되는 안내 파일만 예외로 둔다.
+secrets/*
+!secrets/README.md
+!secrets/*.example
+# 위 규칙이 바뀌어도 남도록 명시(Phase 0.5 요구사항)
+secrets/*.txt
 secrets/*.json
 secrets/*.key
+.env.*
+!.env.example
 # Runtime data
 backend/data/photos/
 backend/data/tts/
