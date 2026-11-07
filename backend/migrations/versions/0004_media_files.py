@@ -125,7 +125,9 @@ def _migrate_photos(bind, media) -> None:
         m = _PHOTO_URL_RE.search(url or "")
         path = _photo_dir() / m.group(1) if m else None
         done = _photo_dir() / _converted_key(path.name) if path is not None else None
-        if path is not None and path.name not in converted and not path.is_file()                 and done is not None and done.is_file():
+        resumable = (path is not None and done is not None and path.name not in converted
+                     and not path.is_file() and done.is_file())
+        if resumable:
             # 앞선 실행이 WebP를 만들고 원본을 지운 뒤 멈췄다(DB는 롤백). 만들어 둔 WebP로 이어 간다.
             converted[path.name] = (done.name, done.read_bytes())
         if path is None or (path.name not in converted and not path.is_file()):
