@@ -2,8 +2,8 @@
   "dataset": "dev",
   "query_mode": "full",
   "embedding": "off",
-  "threshold": 0.22,
-  "min_margin": 0.02,
+  "threshold": 0.215,
+  "min_margin": 0.018,
   "n_cases": 180,
   "n_normal": 114,
   "n_gap": 66,
@@ -13,17 +13,17 @@
     "recall@20": 0.816,
     "wrong_accept_rate": 0.028,
     "gap_declined_rate": 0.985,
-    "handoff_rate": 0.856,
-    "accept_precision": 0.808,
-    "correct_auto_rate": 0.117,
-    "normal_correct_auto_rate": 0.184
+    "handoff_rate": 0.85,
+    "accept_precision": 0.815,
+    "correct_auto_rate": 0.122,
+    "normal_correct_auto_rate": 0.193
   },
   "counts": {
     "wrong_accept": 5,
     "wrong_accept_normal": 4,
     "wrong_accept_gap": 1,
-    "correct_auto": 21,
-    "accepted": 26,
+    "correct_auto": 22,
+    "accepted": 27,
     "top1_hit": 54
   },
   "fingerprint": {

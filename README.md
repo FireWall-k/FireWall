@@ -171,8 +171,9 @@ docker compose up -d
 
 ```env
 AAC_DATA_DIR=/app/aac
-AAC_MATCH_THRESHOLD=0.22          # 임베딩 없을 때 채택 점수 임계값
-AAC_MATCH_MIN_MARGIN=0.02         # 임베딩 없을 때 1·2위 점수 차 최소값
+AAC_MATCH_THRESHOLD=0.215         # 임베딩 없을 때 채택 점수 임계값
+AAC_MATCH_MIN_MARGIN=0.018        # 임베딩 없을 때 1위와 경쟁 후보(같은 그림 묶음 제외)의 점수 차 최소값
+AAC_MATCH_MARGIN_MODE=absolute    # relative면 (s1−s2)/s1 ≥ AAC_MATCH_MIN_REL_MARGIN(기본 0.06)으로 판정
 AAC_EMBEDDINGS=auto               # off로 끌 수 있음
 AAC_EMBED_MATCH_THRESHOLD=0.35    # 임베딩 사용 시 임계값(척도가 올라가 더 높다)
 AAC_EMBED_MATCH_MIN_MARGIN=0.02   # 임베딩 사용 시 여유

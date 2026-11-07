@@ -919,7 +919,7 @@ def _same_action(asset_id_a: str, asset_id_b: str) -> bool:
     """두 자산이 완전히 같은 동작(동사·대상·세부·도구·장소 전부 일치)을 가리키는가.
 
     LLM 인덱스의 frame이 그 정도로 세밀하게 겹치는 자산 쌍은 거의 항상 같은 그림을
-    다른 번호로 중복 등록한 것이다(예: DELIVERY_022/041 둘 다 "초인종을 누른다").
+    다른 번호로 중복 등록한 것이다(예: SERVING_020/021 "빈 접시(들)를 쟁반에 담는다").
     """
     index = load_index()
     fa = (index.get(asset_id_a) or {}).get("frame") or {}
@@ -928,6 +928,69 @@ def _same_action(asset_id_a: str, asset_id_b: str) -> bool:
         return False
     keys = ("verb", "object", "object_detail", "instrument", "location")
     return all(fa.get(k) == fb.get(k) for k in keys)
+
+
+def _same_picture(a: dict, b: dict) -> bool:
+    """두 검색 결과가 사용자에게 사실상 같은 카드인가 — 여유 판정에서 한 묶음으로 본다.
+
+    - 같은 직무: frame 5칸이 전부 같으면 같은 동작(_same_action). 같은 직무 안에서는
+      캐릭터·배경이 같아 frame 일치만으로 충분하다(기존 규칙 유지).
+    - 다른 직무(옵션, AAC_MATCH_CROSS_JOB_TWINS=on일 때만): 라벨 문자열까지 같고 frame도
+      같아야 한다. frame만 같은 경우(‘바닥을 밀대로 닦는다’ vs ‘밀대로 바닥을 닦는다’)는 묶지
+      않는다. 라벨까지 같은 쌍(‘안전화를 신는다’ ASSEMBLY_AUX_011/DELIVERY_038, 사물 카드
+      ‘앞치마’)은 같은 동작을 직무 폴더마다 다시 그린 것이다. 사물 카드는 동사가 없어
+      _same_action이 거짓이므로 frame 비교를 직접 한다.
+
+    다른 직무 묶음을 기본으로 켜지 않는 이유: 2026-09-22 사용자 결정(eval/README.md "쌍둥이 자산
+    여유 면제 시도 → 되돌림") — 직무가 다르면 그림 속 캐릭터의 복장·배경이 달라, 발달장애
+    근로자에게는 그 시각적 일치가 텍스트 의미보다 중요할 수 있다. 라벨까지 같아도 그림 파일은
+    직무마다 따로 그려져 이 우려는 그대로다. P5 네 측정에서도 켜고 끈 결과가 한 건도 다르지 않아
+    (해당 쌍이 1·2위로 붙은 케이스가 없다) 기본값을 바꿀 근거가 없다. 실사용자 확인 뒤에 켠다.
+    """
+    id_a, id_b = a.get("asset_id"), b.get("asset_id")
+    if not id_a or not id_b:
+        return False
+    if a.get("job") == b.get("job"):
+        return _same_action(id_a, id_b)
+    if os.getenv("AAC_MATCH_CROSS_JOB_TWINS", "off").strip().lower() not in ("1", "on", "true"):
+        return False
+    label_a, label_b = a.get("label"), b.get("label")
+    if not label_a or label_a != label_b:
+        return False
+    index = load_index()
+    fa = (index.get(id_a) or {}).get("frame")
+    fb = (index.get(id_b) or {}).get("frame")
+    if fa is None or fb is None:
+        return False
+    keys = ("verb", "object", "object_detail", "instrument", "location")
+    return all(fa.get(k) == fb.get(k) for k in keys)
+
+
+_MARGIN_MODES = ("absolute", "relative")
+
+
+def _margin_settings(embedding: bool) -> tuple[float, float, str, float]:
+    """(임계값, 절대 여유, 여유 방식, 상대 여유) — 임베딩 유무에 따라 다른 env 묶음을 읽는다.
+
+    여유 방식(AAC_[EMBED_]MATCH_MARGIN_MODE):
+      absolute(기본) — s1−s2 ≥ MIN_MARGIN
+      relative       — (s1−s2)/s1 ≥ MIN_REL_MARGIN
+    상대 여유는 점수 척도가 바뀌어도(임베딩 가산, 규칙 가중치 변경) 같은 값을 쓸 수 있게 하려는
+    옵션이다. P5 스윕(골든·개발 × full·sentence, 임베딩 off)에서는 절대 여유보다 나은 운영점이
+    없어 기본은 absolute로 둔다. 알 수 없는 값은 요청을 실패시키지 않고 absolute로 본다.
+    """
+    prefix = "AAC_EMBED_MATCH_" if embedding else "AAC_MATCH_"
+    if embedding:
+        threshold = float(os.getenv(prefix + "THRESHOLD", "0.35"))
+        min_margin = float(os.getenv(prefix + "MIN_MARGIN", "0.02"))
+    else:
+        threshold = float(os.getenv(prefix + "THRESHOLD", "0.215"))
+        min_margin = float(os.getenv(prefix + "MIN_MARGIN", "0.018"))
+    mode = os.getenv(prefix + "MARGIN_MODE", "absolute").strip().lower()
+    if mode not in _MARGIN_MODES:
+        mode = "absolute"
+    min_rel = float(os.getenv(prefix + "MIN_REL_MARGIN", "0.06"))
+    return threshold, min_margin, mode, min_rel
 
 
 def decide(results: list[dict], embedding: bool = False, *,
@@ -946,48 +1009,52 @@ def decide(results: list[dict], embedding: bool = False, *,
     검토 화면에서 다르게 다뤄야 한다(전자는 폴백, 후자는 후보를 보여주고 사람이 선택).
 
     두 기본값 모두 eval/run_match_eval.py 의 스윕으로 교정했다. 스코어러를 고치면
-    점수 척도가 바뀌므로 반드시 다시 교정해야 한다.
+    점수 척도가 바뀌므로 반드시 다시 교정해야 한다. P5(P2·P3 게이트·동사 원형 뒤)에서
+    임베딩 없는 경로를 0.22/0.02 → 0.215/0.018로 다시 골랐다 — 네 측정(골든·개발 × full·sentence)
+    모두 오답 채택이 늘지 않는 구간(임계값 0.2125~0.22 × 여유 0.018~0.02) 안쪽에서 정답 넘김이
+    가장 적은 점이다. 여유 0.017 이하·임계값 0.21 이하는 오답 채택이 바로 늘어 그 바깥은 피했다.
 
     임계값은 두 벌이다. 임베딩 가산 항이 붙으면 점수 척도가 올라가므로(정답은 더 높게,
     오답도 조금 높게) 같은 임계값을 쓰면 안 된다 — 임베딩을 쓴 검색은 AAC_EMBED_MATCH_*
-    (0.35 / 0.02), 못 쓴 검색(키 없음·호출 실패)은 기존 AAC_MATCH_*(0.22 / 0.02)로 판정한다.
+    (0.35 / 0.02), 못 쓴 검색(키 없음·호출 실패)은 AAC_MATCH_*(0.215 / 0.018)로 판정한다.
+    임베딩 쪽은 키 없는 환경에서 잴 수 없어 P5에서 건드리지 않았다.
+
+    여유는 "2위"가 아니라 "1위와 같은 그림 묶음(_same_picture) 밖의 첫 후보"와 잰다. 쌍둥이
+    그림끼리는 어느 쪽이 나와도 맞으므로 서로 여유를 깎으면 안 되고, 반대로 쌍둥이를 건너뛴
+    뒤의 경쟁자가 바짝 붙어 있으면 여전히 고를 수 없다(예전 규칙은 2위가 쌍둥이면 3위를 안 봤다).
     여유 값은 독립 블라인드 스윕으로 0.04→0.02로 낮췄다 — 정밀도는 거의 그대로인데
     자동 채택이 크게 늘었다. 자세한 표는 eval/README.md.
 
     반환: {"match": dict|None, "reason": str, "candidates": list, "margin": float,
            "embedding": bool}
       reason — "accepted" | "no_candidate" | "low_score" | "low_margin" | "frame_mismatch"
+      margin — 묶음 밖 첫 경쟁자와의 절대 점수 차(경쟁자가 없으면 1위 점수)
 
     sentence/query를 주면 마지막에 대상 일치 게이트를 건다: 채택될 1순위 그림의 대상이
     문장의 대상과 분명히 다르면 frame_mismatch로 채택을 보류한다(후보는 그대로 준다).
     """
-    if embedding:
-        threshold = float(os.getenv("AAC_EMBED_MATCH_THRESHOLD", "0.35"))
-        min_margin = float(os.getenv("AAC_EMBED_MATCH_MIN_MARGIN", "0.02"))
-    else:
-        threshold = float(os.getenv("AAC_MATCH_THRESHOLD", "0.22"))
-        min_margin = float(os.getenv("AAC_MATCH_MIN_MARGIN", "0.02"))
+    threshold, min_margin, margin_mode, min_rel_margin = _margin_settings(embedding)
 
     if not results:
         return {"match": None, "reason": "no_candidate", "candidates": [], "margin": 0.0,
                 "embedding": embedding}
 
     best = results[0]
-    # 후보가 하나뿐이면 비교 대상이 없다. 경쟁자가 없으므로 여유는 최대로 본다.
-    margin = best["score"] - results[1]["score"] if len(results) > 1 else best["score"]
+    # 1위와 같은 그림 묶음은 건너뛰고 첫 경쟁자를 찾는다. 경쟁자가 없으면(후보 하나, 또는
+    # 나머지가 전부 쌍둥이) 비교 대상이 없으므로 여유는 최대로 본다.
+    rival = next((r for r in results[1:] if not _same_picture(best, r)), None)
+    margin = best["score"] - rival["score"] if rival is not None else best["score"]
 
     if best["score"] < threshold:
         return {"match": None, "reason": "low_score", "candidates": results, "margin": margin,
                 "embedding": embedding}
-    # 여유가 좁아도, 1·2위가 "같은 직무 안에서 같은 동작을 가리키는 쌍둥이 자산"이면
-    # (예: DELIVERY_022/041 둘 다 "초인종을 누른다") 어느 쪽이 나와도 정답이라 위험 신호가
-    # 아니다. 범위를 "같은 직무일 때만"으로 좁힌 이유는, 직무가 다르면 동작 텍스트는 같아도
-    # 그림 속 캐릭터의 복장·배경이 달라 사용자에게 어느 쪽이 맞는지가 텍스트 의미보다 더
-    # 중요할 수 있기 때문.
-    is_twin = (len(results) > 1 and margin < min_margin
-               and best.get("job") == results[1].get("job")
-               and _same_action(best["asset_id"], results[1]["asset_id"]))
-    if margin < min_margin and not is_twin:
+    if margin_mode == "relative":
+        # best["score"] ≥ threshold > 0 이 아닐 수도 있다(임계값 0 설정) — 0으로 나누지 않는다.
+        enough = rival is None or (best["score"] > 0
+                                   and margin / best["score"] >= min_rel_margin)
+    else:
+        enough = margin >= min_margin
+    if not enough:
         return {"match": None, "reason": "low_margin", "candidates": results, "margin": margin,
                 "embedding": embedding}
     if sentence:

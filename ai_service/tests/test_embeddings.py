@@ -141,15 +141,15 @@ def test_score_never_exceeds_one():
 # ---------- 이중 임계값 ----------
 
 def test_decide_uses_embedding_thresholds_only_when_flagged():
-    # 임베딩 없음: 0.22/0.02 — 0.30은 임계값을 넘고 여유 0.10도 충분 → 채택
+    # 임베딩 없음: 0.215/0.018(P5 재보정) — 0.30은 임계값을 넘고 여유 0.10도 충분 → 채택
     plain = [{"asset_id": "A", "score": 0.30}, {"asset_id": "B", "score": 0.20}]
     assert decide(plain)["reason"] == "accepted"
     # 같은 점수라도 임베딩을 썼다면 점수 척도가 올라가 있으므로 0.35 미만은 거절
     assert decide(plain, embedding=True)["reason"] == "low_score"
     assert decide(plain, embedding=True)["embedding"] is True
 
-    # 여유 임계값 자체는 둘 다 0.02로 같다(독립 블라인드 393문장 스윕으로 확인 — 0.04는
-    # 과했다: 정밀도는 거의 그대로인데 자동 채택만 놓쳤다). 점수 임계값(0.35 vs 0.22)만 다르다.
+    # 여유 임계값은 임베딩 0.02, 임베딩 없음 0.018로 거의 같다(독립 블라인드 393문장 스윕 — 0.04는
+    # 과했다: 정밀도는 거의 그대로인데 자동 채택만 놓쳤다). 점수 임계값(0.35 vs 0.215)이 주된 차이다.
     close = [{"asset_id": "A", "score": 0.50}, {"asset_id": "B", "score": 0.485}]  # 여유 0.015
     assert decide(close)["reason"] == "low_margin"
     assert decide(close, embedding=True)["reason"] == "low_margin"

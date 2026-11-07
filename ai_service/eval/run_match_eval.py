@@ -59,7 +59,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np  # noqa: E402
 
 import embeddings  # noqa: E402
-from local_aac import get_data_dir, load_assets, search_for_step_detailed, step_query  # noqa: E402
+from local_aac import (  # noqa: E402
+    _margin_settings, get_data_dir, load_assets, search_for_step_detailed, step_query,
+)
 
 EVAL_DIR = Path(__file__).resolve().parent
 DATASET_PATH = EVAL_DIR / "match_dataset.json"
@@ -76,7 +78,7 @@ class EmbeddingCacheMiss(RuntimeError):
 
 
 class MixedEmbeddingError(RuntimeError):
-    """일부 케이스만 임베딩을 썼다 — 임계값 두 벌(0.35/0.22)이 섞여 수치가 무의미하다."""
+    """일부 케이스만 임베딩을 썼다 — 임계값 두 벌(0.35/0.215)이 섞여 수치가 무의미하다."""
 
 
 def resolve_dataset(value: str | os.PathLike) -> Path:
@@ -197,7 +199,9 @@ def eval_case(case: dict, accept: set[str], recall_depth: int, shortlist: int,
         "wrong_accept": accepted and not accepted_hit,
         "correct_auto": accepted_hit,
         "top_score": round(ranked[0]["score"], 4) if ranked else 0.0,
-        "margin": round(ranked[0]["score"] - ranked[1]["score"], 4) if len(ranked) > 1 else 0.0,
+        # 판정이 실제로 본 여유(같은 그림 묶음 밖 첫 경쟁자 기준). 단순 1·2위 차를 적으면
+        # 쌍둥이 때문에 여유 0으로 보이는데 채택된 케이스가 생겨 리포트를 잘못 읽게 된다.
+        "margin": round(decision["margin"], 4) if len(ranked) > 1 else 0.0,
         "top_label": ranked[0]["label"] if ranked else "",
         "top_id": ranked_ids[0] if ranked_ids else "",
         "candidates": [
@@ -378,15 +382,18 @@ def run(only_case: str | None = None, only_job: str | None = None,
 
     # check_embedding_consistency를 통과했으므로 모든 케이스가 같은 임계값 세트로 판정됐다.
     used_embedding = embedding == "cached"
+    settings = _margin_settings(used_embedding)
     return {
         "dataset": dataset_name(dataset_path),
         "query_mode": query_mode,
         "embedding_mode": embedding,
         "embedding": used_embedding,
-        "threshold": float(os.getenv("AAC_EMBED_MATCH_THRESHOLD", "0.35") if used_embedding
-                           else os.getenv("AAC_MATCH_THRESHOLD", "0.22")),
-        "min_margin": float(os.getenv("AAC_EMBED_MATCH_MIN_MARGIN", "0.02") if used_embedding
-                            else os.getenv("AAC_MATCH_MIN_MARGIN", "0.02")),
+        # 기본값을 여기 따로 적지 않고 판정 함수와 같은 곳에서 읽는다 — 기본값을 바꿀 때
+        # 리포트·기준선의 임계값 표기가 실제 판정과 어긋나지 않게.
+        "threshold": settings[0],
+        "min_margin": settings[1],
+        "margin_mode": settings[2],
+        "min_rel_margin": settings[3],
         "n_cases": len(rows),
         "n_normal": len(normal),
         "n_gap": len(gaps),
@@ -542,16 +549,22 @@ def _memoize_retrieval():
 
 def sweep(query_mode: str, thresholds: list[float],
           margins: list[float] | None = None, dataset: str | os.PathLike = DATASET_PATH,
-          embedding: str = "off") -> list[dict]:
+          embedding: str = "off", margin_mode: str = "absolute") -> list[dict]:
     """채택 기준을 바꿔가며 오답채택 / 사람확인 절충 곡선을 낸다.
 
     margins를 주면 (임계값 × 여유) 2차원으로 돌린다. 스코어러를 고치면 점수 척도가
     바뀌므로 두 값 모두 재교정해야 한다. 눈대중으로 숫자를 찍지 말고 곡선을 보고
     운영점을 고른다.
     """
-    pairs = (("AAC_MATCH_THRESHOLD", "AAC_MATCH_MIN_MARGIN"),
-             ("AAC_EMBED_MATCH_THRESHOLD", "AAC_EMBED_MATCH_MIN_MARGIN"))
+    # margin_mode="relative"면 margins를 상대 여유 (s1−s2)/s1 값으로 쓴다(local_aac._margin_settings).
+    suffix = "MIN_REL_MARGIN" if margin_mode == "relative" else "MIN_MARGIN"
+    pairs = (("AAC_MATCH_THRESHOLD", f"AAC_MATCH_{suffix}"),
+             ("AAC_EMBED_MATCH_THRESHOLD", f"AAC_EMBED_MATCH_{suffix}"))
+    mode_keys = ("AAC_MATCH_MARGIN_MODE", "AAC_EMBED_MATCH_MARGIN_MODE")
     saved = {k: os.environ.get(k) for pair in pairs for k in pair}
+    saved.update({k: os.environ.get(k) for k in mode_keys})
+    for key in mode_keys:
+        os.environ[key] = margin_mode
     restore = _memoize_retrieval()
     rows = []
     try:
@@ -620,6 +633,8 @@ def main() -> None:
                     help="채택 임계값을 바꿔가며 오답채택/사람확인 절충 곡선 출력")
     ap.add_argument("--sweep-margin", action="store_true",
                     help="임계값 × 여유(margin) 2차원 스윕")
+    ap.add_argument("--margin-mode", choices=["absolute", "relative"], default="absolute",
+                    help="--sweep-margin 의 여유 방식: absolute=s1−s2, relative=(s1−s2)/s1")
     ap.add_argument("--json", help="결과를 JSON 파일로 저장(수정 전/후 비교용)")
     ap.add_argument("--write-baseline", action="store_true",
                     help="eval/baselines/{golden,dev}_{full,sentence}.json 을 임베딩 off로 갱신")
@@ -645,12 +660,17 @@ def main() -> None:
 
     if args.sweep or args.sweep_margin:
         if args.sweep_margin:
-            thresholds = [round(0.14 + 0.02 * i, 2) for i in range(5)]
-            margins = [0.0, 0.005, 0.01, 0.02, 0.03, 0.05]
+            # P5 재보정 범위(0.16~0.24). 여유는 운영점(0.018) 근처를 촘촘히 본다.
+            thresholds = [round(0.16 + 0.01 * i, 2) for i in range(9)]
+            if args.margin_mode == "relative":
+                margins = [0.0, 0.02, 0.04, 0.05, 0.06, 0.08, 0.10, 0.12]
+            else:
+                margins = [0.0, 0.01, 0.015, 0.018, 0.02, 0.025, 0.03]
         else:
             thresholds = [round(0.10 + 0.02 * i, 2) for i in range(16)]
             margins = None
-        rows = sweep(args.query_mode, thresholds, margins, dataset=dataset, embedding=embedding)
+        rows = sweep(args.query_mode, thresholds, margins, dataset=dataset, embedding=embedding,
+                     margin_mode=args.margin_mode)
         _print_sweep(rows, args.query_mode)
         if args.json:
             Path(args.json).write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")

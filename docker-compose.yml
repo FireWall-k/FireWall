@@ -15,8 +15,13 @@ services:
     environment:
       PYTHONUNBUFFERED: "1"
       AAC_DATA_DIR: "/app/aac"
-      AAC_MATCH_THRESHOLD: "0.22"
-      AAC_MATCH_MIN_MARGIN: "0.02"
+      AAC_MATCH_THRESHOLD: "0.215"
+      AAC_MATCH_MIN_MARGIN: "0.018"
+      # 여유 방식: absolute(s1−s2) | relative((s1−s2)/s1, AAC_MATCH_MIN_REL_MARGIN 사용)
+      AAC_MATCH_MARGIN_MODE: "absolute"
+      AAC_MATCH_MIN_REL_MARGIN: "0.06"
+      # 직무만 다르고 라벨·frame이 같은 그림을 여유 판정에서 한 묶음으로 볼지. 복장·배경이 달라 기본 off
+      AAC_MATCH_CROSS_JOB_TWINS: "off"
       # 임베딩 가산 항(data/aac/aac_embeddings.npz + 질의 임베딩 호출). 점수 척도가 올라가서
       # 임베딩을 쓴 검색은 위 기본 임계값 대신 아래 값으로 판정한다. 키가 없거나 호출이
       # 실패하면 자동으로 임베딩 없이(위 임계값으로) 동작한다. "off"로 끌 수 있다.

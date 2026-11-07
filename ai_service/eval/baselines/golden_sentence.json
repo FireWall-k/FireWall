@@ -2,8 +2,8 @@
   "dataset": "golden",
   "query_mode": "sentence",
   "embedding": "off",
-  "threshold": 0.22,
-  "min_margin": 0.02,
+  "threshold": 0.215,
+  "min_margin": 0.018,
   "n_cases": 115,
   "n_normal": 92,
   "n_gap": 23,
@@ -13,17 +13,17 @@
     "recall@20": 1.0,
     "wrong_accept_rate": 0.078,
     "gap_declined_rate": 0.739,
-    "handoff_rate": 0.296,
-    "accept_precision": 0.889,
-    "correct_auto_rate": 0.626,
-    "normal_correct_auto_rate": 0.783
+    "handoff_rate": 0.287,
+    "accept_precision": 0.89,
+    "correct_auto_rate": 0.635,
+    "normal_correct_auto_rate": 0.793
   },
   "counts": {
     "wrong_accept": 9,
     "wrong_accept_normal": 3,
     "wrong_accept_gap": 6,
-    "correct_auto": 72,
-    "accepted": 81,
+    "correct_auto": 73,
+    "accepted": 82,
     "top1_hit": 81
   },
   "fingerprint": {

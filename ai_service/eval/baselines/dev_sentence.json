@@ -2,8 +2,8 @@
   "dataset": "dev",
   "query_mode": "sentence",
   "embedding": "off",
-  "threshold": 0.22,
-  "min_margin": 0.02,
+  "threshold": 0.215,
+  "min_margin": 0.018,
   "n_cases": 180,
   "n_normal": 114,
   "n_gap": 66,
@@ -13,17 +13,17 @@
     "recall@20": 0.816,
     "wrong_accept_rate": 0.039,
     "gap_declined_rate": 0.985,
-    "handoff_rate": 0.783,
-    "accept_precision": 0.821,
-    "correct_auto_rate": 0.178,
-    "normal_correct_auto_rate": 0.281
+    "handoff_rate": 0.778,
+    "accept_precision": 0.825,
+    "correct_auto_rate": 0.183,
+    "normal_correct_auto_rate": 0.289
   },
   "counts": {
     "wrong_accept": 7,
     "wrong_accept_normal": 6,
     "wrong_accept_gap": 1,
-    "correct_auto": 32,
-    "accepted": 39,
+    "correct_auto": 33,
+    "accepted": 40,
     "top1_hit": 52
   },
   "fingerprint": {
