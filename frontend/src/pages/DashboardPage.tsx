@@ -13,6 +13,7 @@ import { AlertCircle, BarChart3, CalendarDays, CheckCircle2, ChevronLeft, Chevro
 import { api, AuthError, type Coaching, type Dashboard, type TaskSummary, type Worker } from "../api";
 import { BAR_COLOR, STUCK_BAR_COLOR, stuckIndices } from "../dashboardChart";
 import { maskedAccessCode } from "../workerCodes";
+import { cn } from "../cn";
 
 const DASHBOARD_POLL_MS = 3_000;
 
@@ -122,14 +123,14 @@ function MiniCalendar({
             <button
               key={dateStr}
               onClick={() => onPick(dateStr)}
-              className={
-                "relative aspect-square rounded-lg text-sm " +
-                (isSel
+              className={cn(
+                "relative aspect-square rounded-lg text-sm",
+                isSel
                   ? "bg-moss-500 font-bold text-white"
                   : isToday
                     ? "bg-paper-100 font-semibold text-ink-900"
-                    : "text-ink-700 hover:bg-paper-100")
-              }
+                    : "text-ink-700 hover:bg-paper-100",
+              )}
             >
               {d}
               {hasData && !isSel && (

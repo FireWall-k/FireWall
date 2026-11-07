@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api, AuthError, type HistoryCard, type TodayCard } from "../api";
 import { ActionChip } from "../actions";
 import { mergeStepMedia, useMediaRefresh } from "../media";
+import { cn } from "../cn";
 
 // 자동 '막힘' 감지 임계값. 이 신호가 대시보드 stuck_steps로 전달된다.
 const STUCK_REPLAY_THRESHOLD = 3; // 다시듣기 3회 이상
@@ -43,13 +44,13 @@ export default function WorkerPage() {
     <div className="mx-auto max-w-md">
       <div className="mb-4 flex gap-2">
         <button onClick={() => setMode("today")}
-          className={"min-h-touch flex-1 rounded-xl text-worker font-bold " +
-            (mode === "today" ? "bg-green-700 text-white" : "bg-slate-100 text-slate-600")}>
+          className={cn("min-h-touch flex-1 rounded-xl text-worker font-bold",
+            mode === "today" ? "bg-green-700 text-white" : "bg-slate-100 text-slate-600")}>
           오늘 할 일
         </button>
         <button onClick={() => setMode("history")}
-          className={"min-h-touch flex-1 rounded-xl text-worker font-bold " +
-            (mode === "history" ? "bg-green-700 text-white" : "bg-slate-100 text-slate-600")}>
+          className={cn("min-h-touch flex-1 rounded-xl text-worker font-bold",
+            mode === "history" ? "bg-green-700 text-white" : "bg-slate-100 text-slate-600")}>
           지난 일 보기
         </button>
       </div>
@@ -258,8 +259,8 @@ function TodayView({ cards, onMediaError }: {
       {/* 도움 요청: 누르는 즉시 이 단계가 '막힘'으로 기록되어 사업주 대시보드에 바로 표시된다.
           단계는 넘기지 않는다 — 다음 단계로 가려면 "완료"를 따로 눌러야 한다. */}
       <button onClick={reportHelpNow} aria-pressed={needHelp}
-        className={"mt-4 min-h-touch w-full rounded-2xl border-2 text-worker font-semibold " +
-          (needHelp
+        className={cn("mt-4 min-h-touch w-full rounded-2xl border-2 text-worker font-semibold",
+          needHelp
             ? "border-amber-500 bg-amber-100 text-amber-900"
             : "border-amber-300 bg-amber-50 text-amber-800")}>
         {needHelp ? "🙋 도움을 요청했어요" : "🙋 도움이 필요해요"}
@@ -318,8 +319,8 @@ function HistoryView() {
               <p className="mt-1 text-sm text-slate-500">{c.assigned_date}</p>
             </div>
             <div className="text-right">
-              <span className={"rounded-full px-3 py-1 text-sm font-bold " +
-                (c.status === "done" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800")}>
+              <span className={cn("rounded-full px-3 py-1 text-sm font-bold",
+                c.status === "done" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800")}>
                 {c.status === "done" ? "완료" : "진행 중"}
               </span>
               <p className="mt-1 text-xs text-slate-600">{doneCount} / {c.steps.length}단계</p>

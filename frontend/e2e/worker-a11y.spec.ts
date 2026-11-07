@@ -3,7 +3,8 @@ import AxeBuilder from "@axe-core/playwright";
 
 // 근로자 화면 접근성 회귀 방지(Phase 0.4).
 // 예전에는 min-h-touch·text-worker가 tailwind.config.js에 정의되지 않아 CSS가 생성되지 않았고,
-// 그 결과 근로자용 버튼이 글자 높이(약 40px)로 쪼그라들었다. jsdom 단위 테스트는 클래스 이름만 보므로
+// 그 결과 근로자용 버튼이 글자 높이로 쪼그라들었다(수정 전 실측, Pixel 7 뷰포트: "오늘 할 일"·"지난 일 보기"·
+// "✓ 완료" 24px, "🔊 다시 듣기"·"🙋 도움이 필요해요" 28px, 머리글 "로그아웃" 38px). jsdom 단위 테스트는 클래스 이름만 보므로
 // 이걸 못 잡았다. 여기서는 실제 브라우저 레이아웃으로 버튼 높이를 재고, axe로 심각한 위반을 막는다.
 
 const TOUCH_MIN_PX = 80;
@@ -91,18 +92,26 @@ async function mockBackend(page: Page) {
   });
 }
 
-// 근로자 본문(<main>)의 보이는 버튼이 모두 80px 이상인지 잰다.
-// 머리글의 로그아웃 버튼은 근로자 작업 흐름 밖이라 이 단언에서 제외한다(남은 과제로 보고).
+// 근로자 화면 전체(머리글 포함)의 보이는 상호작용 요소가 모두 80px 이상인지 잰다.
+// 예전에는 <main> 안 버튼만 쟀고 머리글 "로그아웃"(38px)을 빼 두었는데, 근로자가 실제로 누르는 버튼이라
+// 잘못 누르거나 못 누르면 똑같이 막힌다. 그래서 버튼뿐 아니라 링크·입력·role=button까지 화면 전체를 본다.
+const INTERACTIVE = [
+  "button", "a[href]", "input:not([type=hidden])", "select", "textarea", "summary",
+  "[role=button]", "[role=link]", "[role=tab]", "[tabindex]:not([tabindex='-1'])",
+].map((sel) => `${sel}:visible`).join(", ");
+
 async function expectTouchTargets(page: Page) {
-  const buttons = page.locator("main button:visible");
-  const count = await buttons.count();
-  expect(count, "검사할 버튼이 하나도 없으면 화면이 제대로 안 뜬 것").toBeGreaterThan(0);
+  const targets = page.locator(INTERACTIVE);
+  const count = await targets.count();
+  expect(count, "검사할 요소가 하나도 없으면 화면이 제대로 안 뜬 것").toBeGreaterThan(0);
+  // 머리글이 실제로 측정 범위에 들어오는지(로그아웃이 빠지면 예전처럼 <main>만 재는 것과 같다).
+  await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
   for (let i = 0; i < count; i++) {
-    const b = buttons.nth(i);
-    const box = await b.boundingBox();
-    const label = (await b.innerText()).trim();
-    expect(box, `버튼 "${label}" 위치를 잴 수 없음`).not.toBeNull();
-    expect(box!.height, `버튼 "${label}" 높이 ${box!.height}px < ${TOUCH_MIN_PX}px`).toBeGreaterThanOrEqual(TOUCH_MIN_PX);
+    const el = targets.nth(i);
+    const box = await el.boundingBox();
+    const label = ((await el.getAttribute("aria-label")) || (await el.innerText())).trim();
+    expect(box, `"${label}" 위치를 잴 수 없음`).not.toBeNull();
+    expect(box!.height, `"${label}" 높이 ${box!.height}px < ${TOUCH_MIN_PX}px`).toBeGreaterThanOrEqual(TOUCH_MIN_PX);
   }
 }
 

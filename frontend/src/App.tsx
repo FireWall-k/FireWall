@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate } from "re
 import { Briefcase, BarChart3, LogOut, Users } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { clearAuth, getAuth, type AuthState, type Role } from "./api";
+import { cn } from "./cn";
 import LoginPage from "./pages/LoginPage";
 import ManagerPage from "./pages/ManagerPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -9,8 +10,10 @@ import WorkersPage from "./pages/WorkersPage";
 import WorkerPage from "./pages/WorkerPage";
 
 // 위쪽 가로 탭. 사업주 화면 상단 바에서 쓴다(예전 왼쪽 사이드바 메뉴를 대체).
-const tabItem =
-  "flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors";
+// cn()으로 감싸 eslint-plugin-tailwindcss가 이 상수의 클래스도 검사하게 한다(src/cn.ts).
+const tabItem = cn(
+  "flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors",
+);
 
 function RequireAuth({
   auth,
@@ -44,9 +47,11 @@ function Shell({ auth, onLogout, children }: { auth: AuthState; onLogout: () => 
             <p className="text-xs font-bold uppercase tracking-wide text-moss-600">JOB CARD</p>
             <h1 className="text-lg font-bold">{auth.displayName || "근로자"}님의 오늘 할 일</h1>
           </div>
+          {/* 근로자 화면의 모든 버튼은 80px 터치 영역(min-h-touch)을 지킨다. 예전에는 이 버튼만 38px이라
+              작업 버튼보다 훨씬 작았고, e2e도 <main> 안만 재서 놓쳤다(Phase 0.4 보완). */}
           <button
             onClick={logout}
-            className="rounded-xl border border-paper-200 px-3 py-2 text-sm font-semibold text-ink-700 hover:bg-paper-100"
+            className="min-h-touch shrink-0 rounded-xl border border-paper-200 px-4 text-worker font-semibold text-ink-700 hover:bg-paper-100"
           >
             로그아웃
           </button>
@@ -64,7 +69,7 @@ function Shell({ auth, onLogout, children }: { auth: AuthState; onLogout: () => 
             <NavLink
               to="/manager"
               className={({ isActive }) =>
-                `${tabItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
+                cn(tabItem, isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200")
               }
             >
               <Briefcase size={16} />
@@ -73,7 +78,7 @@ function Shell({ auth, onLogout, children }: { auth: AuthState; onLogout: () => 
             <NavLink
               to="/dashboard"
               className={({ isActive }) =>
-                `${tabItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
+                cn(tabItem, isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200")
               }
             >
               <BarChart3 size={16} />
@@ -82,7 +87,7 @@ function Shell({ auth, onLogout, children }: { auth: AuthState; onLogout: () => 
             <NavLink
               to="/workers"
               className={({ isActive }) =>
-                `${tabItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
+                cn(tabItem, isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200")
               }
             >
               <Users size={16} />

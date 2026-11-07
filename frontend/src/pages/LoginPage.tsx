@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { auth, type AuthState } from "../api";
 import { getSavedWorkplaceCode, normalizeWorkplaceCode, saveWorkplaceCode } from "../workerCodes";
+import { cn } from "../cn";
 
 export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void }) {
   const [tab, setTab] = useState<"employer" | "worker">("employer");
@@ -59,8 +60,8 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
           <button
             key={t}
             onClick={() => { setTab(t); setError(null); }}
-            className={"flex-1 rounded-md px-3 py-2 text-sm font-medium " +
-              (tab === t ? "bg-white text-slate-900 shadow" : "text-slate-500")}
+            className={cn("flex-1 rounded-md px-3 py-2 text-sm font-medium",
+              tab === t ? "bg-white text-slate-900 shadow" : "text-slate-500")}
           >
             {t === "employer" ? "사업주" : "근로자"}
           </button>

@@ -4,6 +4,7 @@ import { api, type AacMatch, type Step, type StepSymbolCandidates, type Task, ty
 import { ActionChip } from "../actions";
 import { maskedAccessCode } from "../workerCodes";
 import { mergeStepMedia, useMediaRefresh } from "../media";
+import { cn } from "../cn";
 
 const SAMPLE =
   "예: 택배 상자를 크기별로 분류하고, 큰 상자는 A구역으로 옮겨주세요. 그리고 5개씩 쌓아주세요. 마지막에 수량을 확인하세요.";
@@ -533,13 +534,13 @@ export default function ManagerPage() {
                   if (dragOverIndex !== idx) setDragOverIndex(idx);
                 }}
                 onDrop={() => handleDropOn(idx)}
-                className={
-                  "flex items-start gap-2 rounded-lg border bg-white p-3 transition-colors " +
-                  (dragOverIndex === idx && dragIndex !== null && dragIndex !== idx
-                    ? "border-blue-400 ring-2 ring-blue-200 "
-                    : "border-slate-200 ") +
-                  (dragIndex === idx ? "opacity-50" : "")
-                }
+                className={cn(
+                  "flex items-start gap-2 rounded-lg border bg-white p-3 transition-colors",
+                  dragOverIndex === idx && dragIndex !== null && dragIndex !== idx
+                    ? "border-blue-400 ring-2 ring-blue-200"
+                    : "border-slate-200",
+                  dragIndex === idx && "opacity-50",
+                )}
               >
                 <span
                   draggable
@@ -565,12 +566,12 @@ export default function ManagerPage() {
                   ) : (
                     // 아래 후보 영역이 "그림 고르기"를 안내하는 동안에는 "사진 권장"을
                     // 함께 띄우지 않는다(상충). 후보가 없을 때만 사진을 권한다.
-                    <div className={
-                      "flex h-16 w-16 items-center justify-center rounded border border-dashed text-center text-[10px] "
-                      + (stepCandidates[s.id]?.candidates.length
-                         ? "border-slate-300 bg-slate-50 text-slate-400"
-                         : "border-amber-400 bg-amber-50 text-amber-700")
-                    }>
+                    <div className={cn(
+                      "flex h-16 w-16 items-center justify-center rounded border border-dashed text-center text-[10px]",
+                      stepCandidates[s.id]?.candidates.length
+                        ? "border-slate-300 bg-slate-50 text-slate-400"
+                        : "border-amber-400 bg-amber-50 text-amber-700",
+                    )}>
                       {stepCandidates[s.id]?.candidates.length ? "그림 선택" : "사진 권장"}
                     </div>
                   )}
@@ -740,8 +741,8 @@ export default function ManagerPage() {
                     const checked = selectedWorkerIds.has(w.id);
                     return (
                       <label key={w.id}
-                        className={"flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm " +
-                          (checked
+                        className={cn("flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm",
+                          checked
                             ? "border-green-600 bg-green-50 text-green-900"
                             : "border-slate-300 bg-white text-slate-700")}>
                         <input type="checkbox" className="h-4 w-4" checked={checked}
@@ -768,8 +769,8 @@ export default function ManagerPage() {
                 {/* 버튼 바로 아래에 결과를 보여준다 — 위쪽 배너는 내용이 길면 화면 밖으로 벗어난다. */}
                 {assignFeedback && (
                   <p role="status"
-                    className={"mt-2 text-sm font-semibold " +
-                      (assignFeedback.ok ? "text-green-700" : "text-red-700")}>
+                    className={cn("mt-2 text-sm font-semibold",
+                      assignFeedback.ok ? "text-green-700" : "text-red-700")}>
                     {assignFeedback.text}
                   </p>
                 )}

@@ -1,9 +1,9 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { LayoutGrid, FileText, BarChart3, Tablet } from "lucide-react";
+import { cn } from "../cn";
 
-const navItem =
-  "flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors";
+const navItem = cn("flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors");
 
 export const AdminLayout: React.FC = () => {
   return (
@@ -26,7 +26,7 @@ export const AdminLayout: React.FC = () => {
             <NavLink
               to="/admin/tasks"
               className={({ isActive }) =>
-                `${navItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
+                cn(navItem, isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200")
               }
             >
               <FileText size={17} />
@@ -35,7 +35,7 @@ export const AdminLayout: React.FC = () => {
             <NavLink
               to="/admin/dashboard"
               className={({ isActive }) =>
-                `${navItem} ${isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200"}`
+                cn(navItem, isActive ? "bg-moss-500 text-white" : "text-ink-700 hover:bg-paper-200")
               }
             >
               <BarChart3 size={17} />

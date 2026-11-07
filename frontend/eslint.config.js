@@ -36,10 +36,18 @@ export default defineConfig([
     settings: {
       tailwindcss: {
         config: tailwindConfigPath,
+        // 조건부 클래스는 src/cn.ts의 cn(...)으로 만든다. 문자열 이어붙이기("a " + (c ? "b" : "c"))는
+        // 플러그인이 검사하지 못해 미정의 클래스가 숨을 수 있다. cn 인자(문자열·삼항·&&·템플릿)는 모두 검사한다.
+        callees: ['cn'],
       },
     },
     rules: {
       'tailwindcss/no-custom-classname': 'error',
+      // className을 + 로 이어붙이면 위 규칙이 그 안을 못 본다(검사 구멍). cn(...)이나 템플릿 리터럴을 쓰게 한다.
+      'no-restricted-syntax': ['error', {
+        selector: "JSXAttribute[name.name='className'] BinaryExpression[operator='+']",
+        message: 'className은 + 로 이어붙이지 말고 cn(...)(src/cn.ts)을 쓰세요 — 이어붙인 클래스는 tailwind 린트가 검사하지 못합니다.',
+      }],
     },
   },
 ])
