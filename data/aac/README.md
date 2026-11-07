@@ -6,16 +6,16 @@
 
 ## 구성
 
-- `images/assembly/` — 235장 (2026-09-16 변형 세트 ASSEMBLY_023~038·AUX 확장)
-- `images/cafe/` — 101장
-- `images/cleaning/` — 213장 (2026-09-23 CLEANING_051~190 140장 추가)
-- `images/packaging/` — 164장 (2026-09-23 120장 추가)
-- `images/retail/` — 76장
-- `images/delivery/` — 55장 (배송·택배, 2026-09-21 추가)
+- `images/assembly/` — 254장 (2026-09-16 변형 세트 ASSEMBLY_023~038·AUX 확장)
+- `images/cafe/` — 119장
+- `images/cleaning/` — 240장 (2026-09-23 CLEANING_051~190 140장 추가)
+- `images/packaging/` — 179장 (2026-09-23 120장 추가)
+- `images/retail/` — 96장
+- `images/delivery/` — 67장 (배송·택배, 2026-09-21 추가)
 - `images/display/` — 74장 (진열·재고·손님 안내)
 - `images/gas/` — 45장 (주유소·세차)
 - `images/serving/` — 86장 (홀 서빙·퇴식)
-- 총 1,049장 — 정확한 수는 `aac_assets.json`의 `asset_count`/`jobs`가 기준이며,
+- 총 1,160장 (2026-11-08 갭 해소용 새 카드 111장 추가 — 아래 '새 카드' 절) — 정확한 수는 `aac_assets.json`의 `asset_count`/`jobs`가 기준이며,
   `ai_service/tests/test_aac_data.py`가 이미지·메타데이터·인덱스·임베딩의 정합성을 CI에서 검사한다.
 
 새 직무 4개는 `scripts/import_aac_images.py`로 등록했다(원본 PNG 1254px 등 → 768×768 WebP,
@@ -26,6 +26,16 @@ data/aac/aac_assets.json` → `build_aac_index.py --resume` → `build_aac_embed
 
 모든 런타임 이미지는 768×768 WebP로 정규화되어 있습니다(2026-11-06: packaging 164장이 1254/1024px 원본 그대로
 커밋돼 있던 것을 재정규화했고, 같은 그림이 다른 ID로 두 번 들어간 9쌍과 메타데이터 없는 GAS_046을 정리했다).
+
+## 새 카드 (2026-11-08)
+
+평가셋의 갭 문항(맞는 그림 없음)을 해소하려고 111장을 추가했다(ASSEMBLY_176~, CAFE_091~, CLEANING_191~,
+PACKAGING_165~, RETAIL_093~, DELIVERY_049~). 기존 그림 2장을 참조로 넣어 같은 캐릭터·직무 유니폼을 유지했고,
+판정자가 참조 그림과 나란히 놓고 캐릭터·유니폼·동작·글자 유무·안전을 검수해 통과한 것만 넣었다(118장 중 111장).
+`source_file`은 설계 단계 id(`<JOB>_NEW_<번호>.png`)다. enrich 규칙 필드는 새 카드에만 적용했고(기존 자산은 그대로),
+`aac_index.json` 항목은 build_aac_index.py와 같은 규칙·검증 함수로 만들었다.
+**임베딩(`aac_embeddings.npz`)은 아직 다시 만들지 않았다** — 서비스는 digest 불일치를 감지해 임베딩 없이 동작하고,
+임베딩 최신 여부 테스트 6개가 실패한다. `scripts/build_aac_embeddings.py`를 돌리면 해소된다(1센트 미만).
 
 ## 메타데이터
 

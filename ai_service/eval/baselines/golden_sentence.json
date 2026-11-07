@@ -5,30 +5,30 @@
   "threshold": 0.215,
   "min_margin": 0.018,
   "n_cases": 115,
-  "n_normal": 92,
-  "n_gap": 23,
+  "n_normal": 109,
+  "n_gap": 6,
   "metrics": {
-    "top1_accuracy": 0.88,
-    "recall@3": 0.957,
+    "top1_accuracy": 0.89,
+    "recall@3": 0.936,
     "recall@20": 1.0,
-    "wrong_accept_rate": 0.078,
-    "gap_declined_rate": 0.739,
-    "handoff_rate": 0.287,
-    "accept_precision": 0.89,
-    "correct_auto_rate": 0.635,
-    "normal_correct_auto_rate": 0.793
+    "wrong_accept_rate": 0.043,
+    "gap_declined_rate": 0.667,
+    "handoff_rate": 0.183,
+    "accept_precision": 0.947,
+    "correct_auto_rate": 0.774,
+    "normal_correct_auto_rate": 0.817
   },
   "counts": {
-    "wrong_accept": 9,
+    "wrong_accept": 5,
     "wrong_accept_normal": 3,
-    "wrong_accept_gap": 6,
-    "correct_auto": 73,
-    "accepted": 82,
-    "top1_hit": 81
+    "wrong_accept_gap": 2,
+    "correct_auto": 89,
+    "accepted": 94,
+    "top1_hit": 97
   },
   "fingerprint": {
-    "dataset": "32e2887baf7fd20c",
-    "aac_assets": "86661a16215f170d",
-    "aac_index": "8a889045e69bc5d0"
+    "dataset": "90359073a984eab9",
+    "aac_assets": "19402802b0557dc5",
+    "aac_index": "cf255134661b734b"
   }
 }

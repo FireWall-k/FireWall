@@ -18,9 +18,12 @@
     "펜",
     "attendance sheet"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "ASSEMBLY_178"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_assembly_02",
@@ -37,7 +40,8 @@
    ],
    "accept": [
     "ASSEMBLY_AUX_031",
-    "ASSEMBLY_AUX_017"
+    "ASSEMBLY_AUX_017",
+    "RETAIL_112"
    ],
    "gap": false,
    "confidence": "high"
@@ -81,7 +85,8 @@
    "accept": [
     "PACKAGING_030",
     "PACKAGING_062",
-    "PACKAGING_032"
+    "PACKAGING_032",
+    "ASSEMBLY_185"
    ],
    "gap": false,
    "confidence": "medium"
@@ -99,9 +104,12 @@
     "볼펜심",
     "pen refill"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "ASSEMBLY_179"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_assembly_06",
@@ -116,9 +124,12 @@
     "볼펜심",
     "spring"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "ASSEMBLY_180"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_assembly_07",
@@ -133,9 +144,12 @@
     "볼펜",
     "test paper"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "ASSEMBLY_181"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_assembly_08",
@@ -192,9 +206,12 @@
     "washer",
     "bolt"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "ASSEMBLY_182"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_assembly_11",
@@ -209,9 +226,12 @@
     "볼트",
     "electric screwdriver"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "ASSEMBLY_183"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_assembly_12",
@@ -226,9 +246,14 @@
     "종",
     "break time"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "ASSEMBLY_184",
+    "CLEANING_209",
+    "RETAIL_101"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_assembly_13",
@@ -366,9 +391,14 @@
     "반장",
     "telephone"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "ASSEMBLY_176",
+    "CAFE_092",
+    "PACKAGING_178"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_assembly_20",
@@ -387,7 +417,8 @@
     "ASSEMBLY_166",
     "ASSEMBLY_AUX_013",
     "CAFE_004",
-    "CAFE_086"
+    "CAFE_086",
+    "PACKAGING_184"
    ],
    "gap": false,
    "confidence": "high"
@@ -406,7 +437,11 @@
     "time clock"
    ],
    "accept": [
-    "ASSEMBLY_AUX_036"
+    "ASSEMBLY_AUX_036",
+    "CAFE_093",
+    "ASSEMBLY_177",
+    "CLEANING_192",
+    "RETAIL_095"
    ],
    "gap": false,
    "confidence": "medium"
@@ -445,9 +480,12 @@
     "펌프",
     "syrup"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "CAFE_099"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cafe_04",
@@ -503,9 +541,12 @@
     "행주",
     "steam wand"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "CAFE_095"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cafe_07",
@@ -541,9 +582,12 @@
     "blender",
     "fruit"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "CAFE_100"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cafe_09",
@@ -699,9 +743,12 @@
     "손님",
     "pager"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "CAFE_101"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cafe_17",
@@ -715,9 +762,13 @@
     "전화",
     "telephone"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "CAFE_092",
+    "RETAIL_093"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cafe_18",
@@ -733,9 +784,12 @@
     "stamp",
     "coupon"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "CAFE_102"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cafe_19",
@@ -789,7 +843,10 @@
     "출근"
    ],
    "accept": [
-    "ASSEMBLY_AUX_036"
+    "ASSEMBLY_AUX_036",
+    "CLEANING_192",
+    "CLEANING_191",
+    "ASSEMBLY_178"
    ],
    "gap": false,
    "confidence": "medium"
@@ -866,9 +923,12 @@
     "집게",
     "이물질"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "CLEANING_196"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cleaning_06",
@@ -883,9 +943,12 @@
     "타월 디스펜서",
     "paper towel"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "CLEANING_197"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cleaning_07",
@@ -900,9 +963,12 @@
     "비누 디스펜서",
     "liquid soap"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "CLEANING_198"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cleaning_08",
@@ -917,9 +983,12 @@
     "화장실 입구",
     "기다리기"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "CLEANING_199"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cleaning_09",
@@ -972,9 +1041,12 @@
     "샤워기",
     "bathtub"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "CLEANING_200"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cleaning_12",
@@ -989,9 +1061,12 @@
     "매니저",
     "객실 번호"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "CLEANING_201"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cleaning_13",
@@ -1025,9 +1100,12 @@
     "담당자",
     "부르기"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "CLEANING_202"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cleaning_15",
@@ -1042,9 +1120,12 @@
     "소독약",
     "걸레"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "CLEANING_203"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cleaning_16",
@@ -1059,9 +1140,12 @@
     "걸레",
     "stair handrail"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "low"
+   "accept": [
+    "CLEANING_204"
+   ],
+   "gap": false,
+   "confidence": "low",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cleaning_17",
@@ -1117,9 +1201,12 @@
     "분무기",
     "소독제"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "CLEANING_205"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cleaning_20",
@@ -1134,9 +1221,12 @@
     "서명",
     "펜"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "CLEANING_191"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_packaging_01",
@@ -1213,7 +1303,8 @@
    ],
    "accept": [
     "PACKAGING_049",
-    "RETAIL_088"
+    "RETAIL_088",
+    "DELIVERY_059"
    ],
    "gap": false,
    "confidence": "high"
@@ -1293,9 +1384,12 @@
     "유통기한",
     "stamp"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "PACKAGING_174"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_packaging_09",
@@ -1369,9 +1463,13 @@
     "볼펜",
     "worksheet"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "PACKAGING_175",
+    "ASSEMBLY_189"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_packaging_13",
@@ -1386,9 +1484,12 @@
     "바구니",
     "apple"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "PACKAGING_176"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_packaging_14",
@@ -1403,9 +1504,12 @@
     "사과",
     "foam net"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "PACKAGING_177"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_packaging_15",
@@ -1470,7 +1574,10 @@
     "ID card"
    ],
    "accept": [
-    "ASSEMBLY_AUX_036"
+    "ASSEMBLY_AUX_036",
+    "PACKAGING_172",
+    "ASSEMBLY_177",
+    "CAFE_093"
    ],
    "gap": false,
    "confidence": "low"
@@ -1490,7 +1597,8 @@
     "conveyor"
    ],
    "accept": [
-    "PACKAGING_086"
+    "PACKAGING_086",
+    "PACKAGING_181"
    ],
    "gap": false,
    "confidence": "low",
@@ -1528,9 +1636,13 @@
     "질문하기",
     "ask supervisor"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "PACKAGING_173",
+    "ASSEMBLY_188"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_retail_01",
@@ -1546,7 +1658,10 @@
     "출근"
    ],
    "accept": [
-    "ASSEMBLY_AUX_036"
+    "ASSEMBLY_AUX_036",
+    "RETAIL_095",
+    "ASSEMBLY_177",
+    "CAFE_093"
    ],
    "gap": false,
    "confidence": "medium"
@@ -1565,7 +1680,9 @@
     "테이프"
    ],
    "accept": [
-    "CLEANING_164"
+    "CLEANING_164",
+    "RETAIL_108",
+    "ASSEMBLY_192"
    ],
    "gap": false,
    "confidence": "medium",
@@ -1603,9 +1720,14 @@
     "종이상자",
     "분리수거"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "RETAIL_099",
+    "ASSEMBLY_191",
+    "CAFE_108"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_retail_05",
@@ -1620,9 +1742,12 @@
     "고객",
     "질문"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "RETAIL_096"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_retail_06",
@@ -1656,9 +1781,15 @@
     "전화 받기",
     "사장님"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "RETAIL_093",
+    "RETAIL_100",
+    "CAFE_092",
+    "CLEANING_206"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_retail_08",
@@ -1712,9 +1843,12 @@
     "문",
     "냉동식품"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "RETAIL_097"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_retail_11",
@@ -1729,9 +1863,13 @@
     "점검표",
     "기록"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "RETAIL_102",
+    "CAFE_107"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_retail_12",
@@ -1865,9 +2003,12 @@
     "조장",
     "보고"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "RETAIL_094"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_retail_19",
@@ -1882,9 +2023,12 @@
     "진열 고리",
     "생활용품"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "RETAIL_103"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_retail_20",
@@ -1899,9 +2043,12 @@
     "사물함",
     "퇴근"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "RETAIL_104"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_delivery_01",
@@ -1916,9 +2063,12 @@
     "출근",
     "손가락"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "DELIVERY_048"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_delivery_02",
@@ -1933,9 +2083,12 @@
     "상자",
     "택배 박스"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "DELIVERY_051"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_delivery_03",
@@ -1972,7 +2125,8 @@
    ],
    "accept": [
     "PACKAGING_119",
-    "DELIVERY_002"
+    "DELIVERY_002",
+    "DELIVERY_056"
    ],
    "gap": false,
    "confidence": "low",
@@ -2075,7 +2229,8 @@
    "accept": [
     "DELIVERY_015",
     "DELIVERY_002",
-    "DELIVERY_004"
+    "DELIVERY_004",
+    "DELIVERY_053"
    ],
    "gap": false,
    "confidence": "low",
@@ -2134,9 +2289,14 @@
     "휴대폰",
     "통화"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "DELIVERY_049",
+    "CAFE_092",
+    "CLEANING_206"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_delivery_13",
@@ -2151,9 +2311,12 @@
     "분류함",
     "편지"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "DELIVERY_052"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_delivery_14",
@@ -2207,9 +2370,12 @@
     "대차",
     "운반 카트"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "DELIVERY_050"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_delivery_17",
@@ -2263,9 +2429,13 @@
     "반품 상자",
     "개봉"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "ASSEMBLY_192",
+    "RETAIL_108"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_delivery_20",
@@ -2280,9 +2450,12 @@
     "얼룩",
     "검수"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "DELIVERY_054"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_display_01",
@@ -2302,7 +2475,9 @@
     "ASSEMBLY_031_03",
     "ASSEMBLY_031_01",
     "CLEANING_164",
-    "DISPLAY_023"
+    "DISPLAY_023",
+    "ASSEMBLY_192",
+    "RETAIL_108"
    ],
    "gap": false,
    "confidence": "medium"
@@ -2451,9 +2626,14 @@
     "cardboard",
     "fold"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "ASSEMBLY_191",
+    "CLEANING_210",
+    "RETAIL_099"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_display_09",
@@ -2492,7 +2672,8 @@
     "label"
    ],
    "accept": [
-    "PACKAGING_107"
+    "PACKAGING_107",
+    "RETAIL_111"
    ],
    "gap": false,
    "confidence": "medium"
@@ -2511,9 +2692,14 @@
     "phone",
     "call"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "ASSEMBLY_176",
+    "CAFE_092",
+    "RETAIL_093"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_display_12",
@@ -2651,9 +2837,12 @@
     "lettuce",
     "wilted"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "RETAIL_098"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_display_19",
@@ -2710,7 +2899,10 @@
     "time card"
    ],
    "accept": [
-    "ASSEMBLY_AUX_036"
+    "ASSEMBLY_AUX_036",
+    "ASSEMBLY_177",
+    "CAFE_093",
+    "CLEANING_192"
    ],
    "gap": false,
    "confidence": "medium"
@@ -2827,9 +3019,12 @@
     "카드 단말기",
     "결제"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "CAFE_106"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_gas_08",
@@ -2844,9 +3039,14 @@
     "수화기",
     "사무실"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "CAFE_092",
+    "CLEANING_206",
+    "RETAIL_093"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_gas_09",
@@ -3060,9 +3260,12 @@
     "보고",
     "퇴근"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "PACKAGING_180"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_gas_20",
@@ -3261,7 +3464,10 @@
     "time clock"
    ],
    "accept": [
-    "ASSEMBLY_AUX_036"
+    "ASSEMBLY_AUX_036",
+    "ASSEMBLY_177",
+    "CAFE_093",
+    "CLEANING_192"
    ],
    "gap": false,
    "confidence": "low"
@@ -3363,9 +3569,15 @@
     "telephone",
     "phone call"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "ASSEMBLY_176",
+    "CAFE_092",
+    "CLEANING_206",
+    "RETAIL_093"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_serving_15",
@@ -3460,9 +3672,12 @@
     "chair",
     "table"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "CLEANING_211"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_serving_20",
