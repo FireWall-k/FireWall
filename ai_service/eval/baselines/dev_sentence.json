@@ -1,0 +1,34 @@
+{
+  "dataset": "dev",
+  "query_mode": "sentence",
+  "embedding": "off",
+  "threshold": 0.22,
+  "min_margin": 0.02,
+  "n_cases": 180,
+  "n_normal": 114,
+  "n_gap": 66,
+  "metrics": {
+    "top1_accuracy": 0.404,
+    "recall@3": 0.544,
+    "recall@20": 0.772,
+    "wrong_accept_rate": 0.111,
+    "gap_declined_rate": 0.924,
+    "handoff_rate": 0.744,
+    "accept_precision": 0.565,
+    "correct_auto_rate": 0.144,
+    "normal_correct_auto_rate": 0.228
+  },
+  "counts": {
+    "wrong_accept": 20,
+    "wrong_accept_normal": 15,
+    "wrong_accept_gap": 5,
+    "correct_auto": 26,
+    "accepted": 46,
+    "top1_hit": 46
+  },
+  "fingerprint": {
+    "dataset": "1ada60337706365b",
+    "aac_assets": "86661a16215f170d",
+    "aac_index": "8a889045e69bc5d0"
+  }
+}

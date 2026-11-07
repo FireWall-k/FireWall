@@ -840,11 +840,21 @@ def search_for_step(keywords: list[str], context: dict | None = None) -> dict | 
     return search_for_step_detailed(keywords, context)["match"]
 
 
-def search_for_step_detailed(keywords: list[str], context: dict | None = None) -> dict:
-    """search_for_step에 판정 근거를 더한 형태. decide()의 반환을 그대로 준다."""
-    ctx = dict(context or {})
-    sentence = str(ctx.get("sentence") or "").strip()
+def step_query(keywords: list[str], context: dict | None = None) -> str:
+    """단계 검색 질의 문자열(문장 + 키워드). 평가 하네스가 같은 질의를 재현·캐시하려고 따로 뺐다."""
+    sentence = str((context or {}).get("sentence") or "").strip()
     query_parts = [sentence] + [str(k).strip() for k in keywords if str(k).strip()]
-    query = " ".join(part for part in query_parts if part)
-    results, used_embedding = _search(query, ctx, limit=5)
+    return " ".join(part for part in query_parts if part)
+
+
+def search_for_step_detailed(keywords: list[str], context: dict | None = None,
+                             limit: int = 5) -> dict:
+    """search_for_step에 판정 근거를 더한 형태. decide()의 반환을 그대로 준다.
+
+    limit은 candidates 길이만 바꾼다(decide는 1·2위만 본다). 평가 하네스가 recall@20을 재려고
+    같은 검색 한 번으로 더 긴 후보 목록을 받을 때 쓴다 — 순위용·판정용 검색을 따로 돌리면
+    두 결과가 어긋날 수 있고 두 배 느리다.
+    """
+    ctx = dict(context or {})
+    results, used_embedding = _search(step_query(keywords, ctx), ctx, limit=limit)
     return decide(results, embedding=used_embedding)

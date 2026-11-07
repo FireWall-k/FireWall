@@ -6,9 +6,23 @@
 | 하네스 | 질문 | 실행 |
 |--------|------|------|
 | `run_eval.py` | 문장을 **잘 나눴는가** | `python -m eval.run_eval` |
-| `run_match_eval.py` | 그 문장에 **맞는 그림을 골랐는가**(정해진 골든셋 기준) | `python -m eval.run_match_eval` |
+| `run_match_eval.py` | 그 문장에 **맞는 그림을 골랐는가**(골든셋·개발셋 기준) | `python -m eval.run_match_eval [--dataset dev]` |
 | `blind_test.py` | 그 그림이 **처음 보는 실제 문장에도** 맞는가(내가 안 짠 시험지) | `python -m eval.blind_test` |
 | `final_90/` | 실제 서비스 경로(업종 입력 → 직무 생성) 최종 평가, 신규 90문항 — **튜닝 금지** | `final_90/README.md` |
+
+## 시험지의 역할 — 무엇으로 튜닝하고 무엇은 열지 않는가
+
+같은 시험지로 고치고 채점을 반복하면 점수는 오르지만 처음 보는 문장에서의 실력은 모른다
+(골든셋이 실제로 그랬다 — 골든 top1 0.87, 개발셋 0.38~0.40). 그래서 역할을 나눈다.
+
+| 시험지 | 파일 | 역할 | 규칙 |
+|--------|------|------|------|
+| 골든셋 | `match_dataset.json` (115) | **튜닝용** — 회귀 감지 | 스코어러를 고치며 매번 돌린다. 수치가 낙관적이라는 걸 알고 읽는다 |
+| 개발셋 | `dev_set.json` (180, 9직무×20) | **튜닝용** — 일반화 확인 | 판정자 2명이 이미지를 보고 합의한 라벨. 골든과 함께 매번 돌린다. 계속 튜닝하면 이것도 낙관적이 된다 |
+| 봉인 시험지 | `final_90/` | **튜닝 금지** — 릴리스 판정 | 내용을 열어 규칙을 맞추지 않는다. 릴리스 판정 때만 채점한다 |
+
+특정 케이스 문장을 맞추려는 규칙(케이스 맞추기)은 두 튜닝용 셋에서도 금지다. 규칙은 일반적인
+언어 현상·데이터 원리여야 하고, 근거를 주석으로 남긴다.
 
 ---
 
@@ -78,21 +92,33 @@ python -m eval.run_eval --json after.json
 # 2. AAC 이미지 매칭 평가 하네스
 
 매칭 스코어러(`local_aac.py`)를 고칠 때마다 돌려서 개선/회귀를 숫자로 확인한다.
-**API 키가 없으면(또는 `--no-embedding`) 네트워크를 쓰지 않아 항상 같은 결과가 나온다(결정적).**
-키가 있으면 임베딩 가산 항이 켜져 질의마다 OpenAI 임베딩을 호출한다(프로세스 내 캐시, 비용 미미,
-결과는 사실상 같지만 모델 쪽 변동 가능성은 있다). 기존 점수만 재현하려면 `--no-embedding`.
+**채점은 네트워크를 쓰지 않아 같은 커밋이면 항상 같은 결과가 나온다(결정적).** 임베딩 모드는
+`--embedding off|cached` 둘 중 하나로 명시하며 기본은 `off`다. 예전처럼 "키가 있으면 저절로 켜지는"
+경로는 없앴다 — 개발자 셸에 키가 있느냐에 따라 수치가 달라지면 전후 비교가 무의미하다.
+
+| 모드 | 동작 |
+|------|------|
+| `off` (기본, 옛 `--no-embedding`) | 규칙 점수만, 기존 임계값(0.22/0.02) |
+| `cached` | 질의 벡터를 `eval/.embed_cache/<모델>-<차원>/<질의 sha256>.npy`에서 읽는다. **캐시에 없으면 API를 부르지 않고 오류**. 자산 벡터 파일이 없거나 낡아도 오류 |
+
+캐시는 키가 있는 환경에서 `--fill-embed-cache`로만 채운다(지정한 `--dataset`의 full·sentence 질의).
+어느 모드든 케이스 일부만 임베딩으로 판정되면(임계값 두 벌이 섞이면) 채점이 실패한다.
 
 ## 실행
 
 ```bash
 cd ai_service
 
-python -m eval.run_match_eval                       # 전체 채점
+python -m eval.run_match_eval                       # 골든셋 전체 채점(임베딩 off)
+python -m eval.run_match_eval --dataset dev         # 개발셋(eval/dev_set.json). 파일 경로도 된다
 python -m eval.run_match_eval --query-mode sentence # 규칙 폴백 경로
 python -m eval.run_match_eval --job cleaning        # 특정 직무만
 python -m eval.run_match_eval --case cafe_sweep     # 특정 케이스만
 python -m eval.run_match_eval --verbose             # 케이스별 상위 후보까지
 python -m eval.run_match_eval --sweep               # 임계값 절충 곡선
+python -m eval.run_match_eval --embedding cached    # 디스크 캐시 질의 벡터로 임베딩 경로 채점
+python -m eval.run_match_eval --fill-embed-cache --dataset dev  # 캐시 채우기(OPENAI_API_KEY 필요)
+python -m eval.run_match_eval --write-baseline      # 기준선 네 벌 갱신(아래)
 
 # 스코어러 수정 전/후 비교
 python -m eval.run_match_eval --json before.json
@@ -119,6 +145,25 @@ python -m eval.run_match_eval --json after.json
 | `wrong_accept_rate` | 정답이 아닌데 자동 채택한 비율 — **현장에 오답 카드가 나가는 비율** | ↓ **가장 중요** |
 | `gap_declined_rate` | 정답 자산이 없는 케이스를 올바르게 거절한 비율 | ↑ |
 | `handoff_rate` | 자동 채택하지 않고 넘긴 비율(사람 확인 필요) | 낮되 0은 아님 |
+| `accept_precision` | 자동 채택 중 정답 비율 — **봉인 시험지 수치와 직접 비교되는 지표** | ↑ |
+| `correct_auto_rate` | 정답을 자동 채택한 비율(전체 케이스 기준). `normal_correct_auto_rate`는 일반 케이스 기준 | ↑ |
+
+리포트의 `counts`에는 건수(`wrong_accept`·`wrong_accept_normal`·`wrong_accept_gap`·`correct_auto`·
+`accepted`·`top1_hit`)가 따로 있다. 케이스당 검색은 한 번이다 — 순위(recall@20)와 채택 판정이
+같은 검색 결과에서 나온다.
+
+## 기준선 — CI 안전장치
+
+`eval/baselines/{golden,dev}_{full,sentence}.json`에 임베딩 off 수치·건수와 데이터 지문(정답셋·
+`aac_assets.json`·`aac_index.json`의 정규화 JSON 해시)을 둔다. `tests/test_match_eval.py`는 네 경로
+모두에서 다음이면 실패한다.
+
+- 오답 채택 건수가 기준선보다 **1건 넘게** 늘었다
+- 정답 자동 채택 건수가 기준선보다 **1건 넘게** 줄었다(오답을 '전부 거절'로 줄이는 꼼수 차단)
+- 데이터 지문이 다르다(정답셋·자산을 고쳤으면 같은 커밋에서 기준선도 갱신해야 한다)
+
+스코어러를 개선했으면 `python -m eval.run_match_eval --write-baseline`으로 갱신하고 전후 수치를
+커밋 메시지에 남긴다. 기준선을 올리는 것은 괜찮지만, 나빠진 수치로 덮어써서 테스트를 통과시키지 않는다.
 
 보고서는 거절 사유 분포도 함께 낸다. `low_margin`(후보는 있는데 못 고름)과
 `low_score`/`no_candidate`(쓸 만한 후보가 없음)는 검토 화면에서 다르게 다뤄야 한다 —

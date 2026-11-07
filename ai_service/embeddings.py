@@ -144,12 +144,9 @@ def _query_vector(query: str) -> np.ndarray | None:
         if time.monotonic() < _cooldown_until:
             return None
     try:
-        raw = llm.embed_texts([query], timeout=_QUERY_TIMEOUT)[0]
-        vec = np.asarray(raw, dtype=np.float32)
-        norm = float(np.linalg.norm(vec))
-        if not norm:
+        vec = normalize(llm.embed_texts([query], timeout=_QUERY_TIMEOUT)[0])
+        if vec is None:
             return None
-        vec = vec / norm
     except Exception as e:  # noqa: BLE001 - 어떤 실패든 임베딩 없이 계속한다
         with _lock:
             _cooldown_until = time.monotonic() + _COOLDOWN_SEC
@@ -172,7 +169,19 @@ def query_similarities(query: str) -> QuerySims | None:
     vec = _query_vector(query)
     if vec is None:
         return None
+    return sims_for_vector(store, vec)
+
+
+def sims_for_vector(store: _Store, vec: np.ndarray) -> QuerySims:
+    """정규화된 질의 벡터 → 자산별 유사도. 평가 하네스의 디스크 캐시 경로도 같은 식을 쓰게 따로 뺐다."""
     return QuerySims(store, np.maximum(store.label_vecs @ vec, store.full_vecs @ vec))
+
+
+def normalize(raw) -> np.ndarray | None:
+    """API가 준 벡터를 float32 단위 벡터로. 영벡터면 None."""
+    vec = np.asarray(raw, dtype=np.float32)
+    norm = float(np.linalg.norm(vec))
+    return vec / norm if norm else None
 
 
 def _reset_for_tests() -> None:
