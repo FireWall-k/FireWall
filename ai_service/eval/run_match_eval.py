@@ -479,7 +479,8 @@ def _print_report(report: dict, verbose: bool) -> None:
           f" (일반 {c['wrong_accept_normal']} / 갭 {c['wrong_accept_gap']})")
     print("-" * 78)
     desc = {"accepted": "자동 채택", "no_candidate": "후보 없음 → 폴백",
-            "low_score": "점수 미달 → 폴백", "low_margin": "후보 경합 → 사람이 선택"}
+            "low_score": "점수 미달 → 폴백", "low_margin": "후보 경합 → 사람이 선택",
+            "frame_mismatch": "대상 불일치 → 사람이 선택"}
     for reason, count in sorted(report["reasons"].items(), key=lambda kv: -kv[1]):
         print(f"  {desc.get(reason, reason):<24} {count:>3}건")
     print("=" * 78)

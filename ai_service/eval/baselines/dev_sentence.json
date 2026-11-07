@@ -9,21 +9,21 @@
   "n_gap": 66,
   "metrics": {
     "top1_accuracy": 0.412,
-    "recall@3": 0.553,
+    "recall@3": 0.561,
     "recall@20": 0.772,
-    "wrong_accept_rate": 0.111,
-    "gap_declined_rate": 0.924,
-    "handoff_rate": 0.744,
-    "accept_precision": 0.565,
+    "wrong_accept_rate": 0.056,
+    "gap_declined_rate": 0.985,
+    "handoff_rate": 0.8,
+    "accept_precision": 0.722,
     "correct_auto_rate": 0.144,
     "normal_correct_auto_rate": 0.228
   },
   "counts": {
-    "wrong_accept": 20,
-    "wrong_accept_normal": 15,
-    "wrong_accept_gap": 5,
+    "wrong_accept": 10,
+    "wrong_accept_normal": 9,
+    "wrong_accept_gap": 1,
     "correct_auto": 26,
-    "accepted": 46,
+    "accepted": 36,
     "top1_hit": 47
   },
   "fingerprint": {

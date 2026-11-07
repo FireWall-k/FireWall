@@ -8,26 +8,26 @@
   "n_normal": 92,
   "n_gap": 23,
   "metrics": {
-    "top1_accuracy": 0.87,
+    "top1_accuracy": 0.88,
     "recall@3": 0.957,
     "recall@20": 1.0,
-    "wrong_accept_rate": 0.148,
-    "gap_declined_rate": 0.522,
-    "handoff_rate": 0.243,
-    "accept_precision": 0.805,
-    "correct_auto_rate": 0.609,
-    "normal_correct_auto_rate": 0.761
+    "wrong_accept_rate": 0.078,
+    "gap_declined_rate": 0.739,
+    "handoff_rate": 0.296,
+    "accept_precision": 0.889,
+    "correct_auto_rate": 0.626,
+    "normal_correct_auto_rate": 0.783
   },
   "counts": {
-    "wrong_accept": 17,
-    "wrong_accept_normal": 6,
-    "wrong_accept_gap": 11,
-    "correct_auto": 70,
-    "accepted": 87,
-    "top1_hit": 80
+    "wrong_accept": 9,
+    "wrong_accept_normal": 3,
+    "wrong_accept_gap": 6,
+    "correct_auto": 72,
+    "accepted": 81,
+    "top1_hit": 81
   },
   "fingerprint": {
-    "dataset": "10e515407f3e325d",
+    "dataset": "32e2887baf7fd20c",
     "aac_assets": "86661a16215f170d",
     "aac_index": "8a889045e69bc5d0"
   }

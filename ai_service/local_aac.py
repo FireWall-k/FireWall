@@ -152,6 +152,15 @@ def _verb_stem_map() -> tuple[tuple[str, str], ...]:
     return tuple(sorted(pairs, key=lambda p: (-len(p[0]), p[1])))
 
 
+# 동사 어간 뒤에 남은 부분이 격조사로 끝나면 그 어절은 명사다("쓰레기를"의 '쓰'는
+# 동사 '쓰다'가 아니다). 동사 활용형은 어미(-세요·-다·-고·-어…)로 끝나지 격조사로
+# 끝나지 않는다. 실측: 개발셋에서 명사 첫 글자가 한 글자 어간과 겹쳐 엉뚱한 원형이
+# 동사 가산(+0.10)을 받아 오답 채택이 났다(쓰레기→쓰다/쓸다 등).
+_NOUN_PARTICLE_ENDINGS = (
+    "을", "를", "에", "에서", "의", "과", "와", "로", "으로", "에게", "까지", "부터", "처럼",
+)
+
+
 def _verb_lemmas(text: str) -> set[str]:
     """활용형 문장에서 동사 원형을 뽑는다.
 
@@ -173,6 +182,9 @@ def _verb_lemmas(text: str) -> set[str]:
             # 한 글자 어간('갈','개')은 아무 단어에나 걸리기 쉽다. 어미가 두 글자 이상
             # 붙어 있을 때만 인정한다('갈아주세요'는 통과, '갈색'은 탈락).
             if len(surface) == 1 and len(word) < 3:
+                continue
+            # 어간 뒤가 격조사로 끝나면 명사 어절이다("쓰레기를" → '쓰'+'레기를').
+            if word[len(surface):].endswith(_NOUN_PARTICLE_ENDINGS):
                 continue
             if best_len is not None and len(surface) < best_len:
                 break  # 더 짧은 어간은(정렬상 이제부터 전부) 무시 — 가장 긴 것만 본다.
@@ -564,6 +576,18 @@ _VERB_ANTONYMS: tuple[frozenset[str], ...] = (
     frozenset({"켜다", "끄다"}),
     frozenset({"붙이다", "떼다"}),
     frozenset({"올리다", "내리다"}),
+    # 아래는 개발셋 오답 채택에서 확인한 '같은 대상, 반대 방향' 쌍이다. 모두 verb_class가
+    # 같아(move/operate) 계열 벌점이 안 걸리던 것들이다. 동의어끼리(착용하다·입다)는
+    # 묶지 않는다 — 각 쌍은 한쪽이 다른 쪽을 되돌리는 동작이어야 한다.
+    frozenset({"끼우다", "빼다"}),
+    frozenset({"끼우다", "빼내다"}),
+    frozenset({"착용하다", "벗다"}),
+    frozenset({"입다", "벗다"}),
+    frozenset({"쓰다", "벗다"}),
+    frozenset({"끼다", "벗다"}),
+    frozenset({"채우다", "비우다"}),
+    frozenset({"꽂다", "뽑다"}),
+    frozenset({"싣다", "내리다"}),
 )
 _VERB_ANTONYM_PENALTY = 0.4
 
@@ -760,6 +784,79 @@ def _search(query: str, context: dict | None = None, limit: int = 5) -> tuple[li
     return results, sims is not None
 
 
+# ---- 대상 일치 게이트 -------------------------------------------------------------
+# 오답 채택의 가장 큰 유형은 '동작은 같은데 대상이 다른 그림'이다("문을 닫으세요" →
+# '컵에 뚜껑을 닫는다'). 대상으로 점수를 깎거나 더하는 것은 회귀했으므로(위 주석),
+# 순위는 그대로 두고 자동 채택만 막는다 — 후보로는 남아 사람이 고를 수 있다.
+#
+# 문장의 목적어는 '명사+을/를' 어절로 잡는다. 한국어 지시문에서 목적격 조사가 붙은
+# 명사가 곧 동작의 대상이고, 형태소 분석기 없이도 오탐이 적다.
+_QUERY_OBJECT_RE = re.compile(r"([가-힣]+)(?:을|를)(?=\s|$|[.,!?])")
+
+# 그림의 대상이 이런 일반 명사면 문장의 구체 대상(쿠키·빵·스티커 붙일 물건)을 포함한다.
+# 대상 게이트만 쓰면 개발셋에서 '상품/제품' 그림이 정답인 3건을 잃었다 — 상위어는
+# 하위어와 충돌로 보지 않는다.
+_GENERIC_OBJECTS = frozenset({
+    "상품", "제품", "물건", "물품", "새상품", "부품", "내용물", "구성품", "비품", "라벨", "스티커",
+})
+
+# 같은 대상을 부르는 다른 이름. 인덱스 검색어에 없어서 대상 게이트가 정답을 막는 것을
+# 줄이려고 코드 쪽에 둔다(인덱스 검색어 보강은 별도 단계). 일상어↔표기어 쌍만 넣는다.
+_OBJECT_SYNONYMS: tuple[frozenset[str], ...] = (
+    frozenset({"뚜껑", "덮개"}),
+    frozenset({"빨래", "세탁물"}),
+    frozenset({"박스", "상자"}),
+    frozenset({"수건", "천", "행주"}),
+    frozenset({"휴지", "화장지"}),
+    frozenset({"수저통", "수저함"}),
+)
+
+
+def _object_variants(word: str) -> set[str]:
+    out = {word}
+    for group in _OBJECT_SYNONYMS:
+        if word in group:
+            out |= group
+    return out
+
+
+def _query_objects(sentence: str) -> set[str]:
+    return {m.group(1) for m in _QUERY_OBJECT_RE.finditer(sentence or "")}
+
+
+def _object_conflict(asset: dict, sentence: str, query: str) -> bool:
+    """문장이 말하는 대상과 그림의 대상이 분명히 다른가.
+
+    판단 근거가 없으면(문장에 목적어가 없거나 그림에 대상 정보가 없으면) 충돌로 보지
+    않는다 — 이 게이트는 '확실히 다를 때'만 막는다.
+    """
+    q_objects = _query_objects(sentence)
+    if not q_objects:
+        return False
+    obj = (asset.get("_frame") or {}).get("object")
+    if not obj:
+        return False
+    obj_norm = _normalize(obj)
+    if obj_norm.replace(" ", "") in _GENERIC_OBJECTS:
+        return False
+    q_compact = _normalize(query or sentence).replace(" ", "")
+    # 그림 대상(의 낱말 하나라도)이 질의에 나오면 일치.
+    if any(tok in q_compact for tok in obj_norm.split()):
+        return False
+    # 반대로 문장의 대상(또는 동의어)이 그림 라벨·검색어에 나와도 일치로 본다
+    # (박스↔상자처럼 frame.object와 문장이 다른 이름을 쓰는 경우).
+    hay = (asset.get("_norm", "") + asset.get("_kw_norm", "")).replace(" ", "")
+    for o in q_objects:
+        if any(v in hay for v in _object_variants(_stem_token(o))):
+            return False
+    return True
+
+
+@lru_cache(maxsize=1)
+def _assets_by_id() -> dict[str, dict]:
+    return {a["id"]: a for a in load_assets()}
+
+
 def _same_action(asset_id_a: str, asset_id_b: str) -> bool:
     """두 자산이 완전히 같은 동작(동사·대상·세부·도구·장소 전부 일치)을 가리키는가.
 
@@ -775,7 +872,8 @@ def _same_action(asset_id_a: str, asset_id_b: str) -> bool:
     return all(fa.get(k) == fb.get(k) for k in keys)
 
 
-def decide(results: list[dict], embedding: bool = False) -> dict:
+def decide(results: list[dict], embedding: bool = False, *,
+           sentence: str | None = None, query: str | None = None) -> dict:
     """검색 결과를 자동 채택할지 판정한다.
 
     절대 임계값 하나로는 정답과 오답이 갈리지 않는다. 임계값 스윕 곡선에 오답채택과
@@ -800,7 +898,10 @@ def decide(results: list[dict], embedding: bool = False) -> dict:
 
     반환: {"match": dict|None, "reason": str, "candidates": list, "margin": float,
            "embedding": bool}
-      reason — "accepted" | "no_candidate" | "low_score" | "low_margin"
+      reason — "accepted" | "no_candidate" | "low_score" | "low_margin" | "frame_mismatch"
+
+    sentence/query를 주면 마지막에 대상 일치 게이트를 건다: 채택될 1순위 그림의 대상이
+    문장의 대상과 분명히 다르면 frame_mismatch로 채택을 보류한다(후보는 그대로 준다).
     """
     if embedding:
         threshold = float(os.getenv("AAC_EMBED_MATCH_THRESHOLD", "0.35"))
@@ -831,6 +932,11 @@ def decide(results: list[dict], embedding: bool = False) -> dict:
     if margin < min_margin and not is_twin:
         return {"match": None, "reason": "low_margin", "candidates": results, "margin": margin,
                 "embedding": embedding}
+    if sentence:
+        asset = _assets_by_id().get(best["asset_id"])
+        if asset is not None and _object_conflict(asset, sentence, query or sentence):
+            return {"match": None, "reason": "frame_mismatch", "candidates": results,
+                    "margin": margin, "embedding": embedding}
     return {"match": best, "reason": "accepted", "candidates": results, "margin": margin,
             "embedding": embedding}
 
@@ -856,5 +962,7 @@ def search_for_step_detailed(keywords: list[str], context: dict | None = None,
     두 결과가 어긋날 수 있고 두 배 느리다.
     """
     ctx = dict(context or {})
-    results, used_embedding = _search(step_query(keywords, ctx), ctx, limit=limit)
-    return decide(results, embedding=used_embedding)
+    query = step_query(keywords, ctx)
+    results, used_embedding = _search(query, ctx, limit=limit)
+    sentence = str(ctx.get("sentence") or "").strip()
+    return decide(results, embedding=used_embedding, sentence=sentence, query=query)
