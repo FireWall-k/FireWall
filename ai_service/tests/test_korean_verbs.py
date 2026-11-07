@@ -198,3 +198,60 @@ def test_sentences_without_any_lemma_are_rare():
     # 예전 방식은 개발셋 19문장에서 동사를 하나도 못 찾았다(모아요·문질러요·실어 등).
     empty = [s for s in _dev_sentences() if not _verb_lemmas(s)]
     assert len(empty) <= 6, empty
+
+
+# ---- 뒤 문맥으로 갈리는 어미: -기 / -도록·-게 하다 / -어야 하다·되다 ------------------------
+
+@pytest.mark.parametrize("text,lemma", [
+    ("컵에 우유 붓기", "붓다"),
+    ("완충재 자르기", "자르다"),
+    ("쇼핑카트 옮기기", "옮기다"),
+])
+def test_clause_final_nominal_gi_is_an_instruction(text, lemma):
+    # 작업 목록·체크리스트는 '-기'로 끝난다. 뒤에 서술어가 없으니 그 동사가 할 일이다.
+    assert _verb_analyzer().lemma_roles(text).get(lemma) == "head"
+
+
+def test_listed_gi_steps_each_count():
+    roles = _verb_analyzer().lemma_roles("우유 붓기, 컵 닦기")
+    assert roles.get("붓다") == "head" and roles.get("닦다") == "head"
+
+
+@pytest.mark.parametrize("text,lemma", [
+    ("먹기 전에 손을 씻으세요", "먹다"),
+    ("손을 씻기 전에", "씻다"),
+])
+def test_embedded_nominal_gi_is_not_an_instruction(text, lemma):
+    # '-기 전에'처럼 뒤에 말이 이어지면 다른 말에 딸린 명사절이다.
+    assert lemma not in _verb_analyzer().lemma_roles(text)
+
+
+@pytest.mark.parametrize("text,lemma", [
+    ("라벨을 붙이도록 하세요", "붙이다"),
+    ("바닥을 닦아야 해요", "닦다"),
+    ("문을 닫아야 돼요", "닫다"),
+    ("테이블을 닦아야 합니다", "닦다"),
+    ("문을 닫게 하세요", "닫다"),
+])
+def test_light_verb_hands_final_role_to_main_verb(text, lemma):
+    # 형식 동사 하다/되다는 버려지므로, 그 앞 동사가 지시의 중심(head)이어야 한다.
+    assert _verb_analyzer().lemma_roles(text).get(lemma) == "head"
+
+
+def test_adverbial_ge_without_hada_stays_excluded():
+    # '-게'가 하다 없이 다른 동사를 꾸미면 부사형이라 할 일이 아니다.
+    roles = _verb_analyzer().lemma_roles("천천히 닫게 밀어 주세요")
+    assert "닫다" not in roles
+
+
+def test_chained_auxiliaries_collapse_to_main_verb():
+    # '빼 놔 주세요'는 보조 용언이 둘(놓다·주다) — 끝의 '주다'가 할 일로 남으면 안 된다.
+    roles = _verb_analyzer().lemma_roles("깨진 제품은 따로 빼 놔 주세요")
+    assert roles.get("빼다") == "head"
+    assert "주다" not in roles
+
+
+def test_clause_initial_conjunction_is_not_a_verb():
+    assert "그리다" not in _verb_analyzer().lemma_roles("그리고 바닥을 닦으세요")
+    # 절 가운데의 '그리고'는 동사 '그리다'다.
+    assert "그리다" in _verb_analyzer().lemma_roles("그림을 그리고 색칠하세요")

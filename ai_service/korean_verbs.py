@@ -20,6 +20,10 @@
   - CONN   이어지는 동작(-고/-어서/-면서/-어) — 순서대로 할 동작이라 함께 센다
   - COND   조건·이유(-면/-니까) — "손님이 찾으면"의 '찾다'는 할 일이 아니다
   - EXCL   꾸미는 말·명사형·부사형(-ㄴ/-는/-던/-기/-게/과거형) — "다 붙인 박스"의 '붙이다'
+  다만 아래 셋은 뒤에 무엇이 오느냐로 갈리므로 문장 단위(analyze_text)에서 정한다:
+  - NOMINAL '-기'   절 끝에 서면 체크리스트식 지시("컵에 우유 붓기")라 FINAL, 아니면 EXCL("먹기 전에")
+  - PURP    '-도록/-게' 뒤에 '하다'가 오면 지시("붙이도록 하세요"), 아니면 EXCL("깨끗하게 닦으세요")
+  - OBLIG   '-어야' 뒤에 '하다/되다'가 오면 의무 지시("닦아야 해요"), 아니면 CONN
 """
 from __future__ import annotations
 
@@ -34,6 +38,10 @@ CONN = "conn"
 BARE = "bare"   # 어미 없이 '-아/-어'로만 끝난 어절("꺼내 오세요"의 '꺼내'). 다음 어절이 보조 용언일 수 있다.
 COND = "cond"
 EXCL = "excl"
+# 문맥으로 정하는 종류(모듈 설명 참고). analyze_text를 지나면 위 다섯 가지 중 하나가 된다.
+NOMINAL = "nominal"   # -기
+PURP = "purp"         # -도록 / -게
+OBLIG = "oblig"       # -어야
 
 # 할 일로 세는 종류. 조건절·관형절의 동사는 그림의 동작이 아니라 상황 설명이다.
 MAIN_KINDS = frozenset({FINAL, CONN, BARE})
@@ -159,7 +167,7 @@ def a_forms(stem: str) -> set[str]:
 _END_STEM = {
     "다": FINAL, "고": CONN, "고요": FINAL, "지": CONN, "지요": FINAL, "죠": FINAL,
     "자": FINAL, "네요": FINAL, "거나": CONN, "다가": CONN, "더니": CONN,
-    "게": EXCL, "기": EXCL, "던": EXCL, "도록": EXCL, "든지": EXCL, "거든": COND,
+    "게": PURP, "기": NOMINAL, "던": EXCL, "도록": PURP, "든지": EXCL, "거든": COND,
 }
 # 받침 있는 어간(ㄹ 제외) 뒤
 _END_CONS = {"는": EXCL, "는다": FINAL, "는지": EXCL, "는데": CONN, "습니다": FINAL, "습니까": FINAL}
@@ -169,7 +177,7 @@ _END_OPEN = {"는": EXCL, "는지": EXCL, "는데": CONN}
 _END_HON = {
     "세요": FINAL, "셔요": FINAL, "십시오": FINAL, "시오": FINAL, "세": FINAL, "시죠": FINAL,
     "시지요": FINAL, "십니다": FINAL, "시고": CONN, "시며": CONN, "시면서": CONN, "셔서": CONN,
-    "시면": COND, "시는": EXCL, "신": EXCL, "실": EXCL, "시던": EXCL, "시게": EXCL, "시기": EXCL,
+    "시면": COND, "시는": EXCL, "신": EXCL, "실": EXCL, "시던": EXCL, "시게": PURP, "시기": NOMINAL,
 }
 # 매개모음 어간 뒤(ㄹ탈락형 제외 — ㄹ 어간은 '열면'처럼 받침을 살린다)
 _END_LINK = {"면": COND, "며": CONN, "면서": CONN, "려고": EXCL, "러": EXCL, "려면": COND,
@@ -183,7 +191,7 @@ _END_FUSED_N = {"": EXCL, "다": FINAL, "지": EXCL, "데": CONN, "다고": EXCL
 _END_FUSED_L = {"": EXCL, "게요": FINAL, "께요": FINAL, "래요": FINAL, "까요": FINAL, "때": EXCL, "수": EXCL}
 _END_FUSED_B = {"니다": FINAL, "시다": FINAL, "니까": FINAL}
 # '-아/-어' 활용형 뒤
-_END_A = {"": BARE, "요": FINAL, "서": CONN, "서요": FINAL, "도": CONN, "야": CONN, "라": FINAL,
+_END_A = {"": BARE, "요": FINAL, "서": CONN, "서요": FINAL, "도": CONN, "야": OBLIG, "라": FINAL,
           "다": CONN, "다가": CONN}
 # 과거형(-었/-았). 지시문의 할 일이 아니라 이미 일어난 일이다("다 썼으면", "떨어졌으면").
 _END_PAST = {"어요": EXCL, "어": EXCL, "다": EXCL, "고": EXCL, "으면": EXCL, "으니": EXCL,
@@ -194,6 +202,18 @@ _END_PAST = {"어요": EXCL, "어": EXCL, "다": EXCL, "고": EXCL, "으면": EX
 # '-어 버리다'는 넣지 않는다 — "털어 버리세요"처럼 실제로 버리는 동작인 경우가 많다.
 # '-어 있다'(비어 있는·접혀 있는)는 상태 지속이라 본동사가 '있다'의 어미를 따른다.
 AUXILIARIES = frozenset({"주다", "드리다", "두다", "놓다", "오다", "가다", "보다", "내다", "있다"})
+_AUX_OR_PASSIVE = AUXILIARIES | {"지다"}
+# '-도록/-게/-어야' 뒤에서 앞 동사에 어미를 넘겨주는 형식 동사.
+_LIGHT_HADA = frozenset({"하다"})
+_LIGHT_HADA_DOEDA = frozenset({"하다", "되다"})
+# 절 첫머리의 접속 부사. '그리고'는 겉모양이 '그리다+-고'라 '그린다' 그림에 가산점이 붙었다.
+# 닫힌 목록이고, 절 첫머리에서만 뺀다("그림을 그리고 색칠해요"의 '그리고'는 동사다).
+_CONJUNCTIVE_ADVERBS = frozenset({
+    "그리고", "그래서", "그러면", "그러고", "그러고서", "그러니까", "그러니", "그런데", "그러나",
+    "그래도", "그러다가", "그러므로",
+})
+# 절 경계로 보는 문장 부호. 쉼표도 넣는다 — "우유 붓기, 컵 닦기"처럼 나열한 단계 하나하나가 절이다.
+_CLAUSE_BREAK_RE = re.compile(r"[.!?,;:\n·]")
 # '-어 지다'(떨어지다·흩어지다·쏟아지다)는 상태 변화라 지시 동작이 아니다.
 _PASSIVE_AUX = "지다"
 
@@ -215,7 +235,7 @@ class Analyzer:
         self._generic_hada = generic_hada
         # 보조 용언은 사전에 늘 넣는다 — 모르면 "드려요"가 ㄹ탈락형 '드'(들다)로 잘못 잡힌다.
         self.lemmas = frozenset(
-            w for w in set(lemmas) | AUXILIARIES | {_PASSIVE_AUX} if is_plain_lemma(w)
+            w for w in set(lemmas) | AUXILIARIES | {_PASSIVE_AUX} | _LIGHT_VERBS if is_plain_lemma(w)
         )
         forms: dict[str, list[tuple[str, dict]]] = {}
 
@@ -315,34 +335,79 @@ class Analyzer:
 
     # 문장 ----------------------------------------------------------------------
     def analyze_text(self, text: str) -> list[tuple[int, Parse]]:
-        """(어절 번호, 해석) 목록. 띄어 쓴 보조 용언("접어 두세요")을 앞 동사에 합친다."""
-        words = _TOKEN_RE.findall(text or "")
-        per_word = [self.analyze_word(w) for w in words]
+        """(어절 번호, 해석) 목록. 띄어 쓴 보조 용언("접어 두세요")을 앞 동사에 합치고,
+        뒤 문맥으로 갈리는 어미(-기/-도록/-게/-어야)의 종류를 정한다."""
+        matches = list(_TOKEN_RE.finditer(text or ""))
+        words = [m.group() for m in matches]
+        clause_start = [i == 0 or bool(_CLAUSE_BREAK_RE.search(text[matches[i - 1].end():m.start()]))
+                        for i, m in enumerate(matches)]
+        clause_end = [i + 1 == len(matches) or clause_start[i + 1] for i in range(len(matches))]
+        per_word = [
+            [] if (clause_start[i] and w in _CONJUNCTIVE_ADVERBS) else self.analyze_word(w)
+            for i, w in enumerate(words)
+        ]
         out: list[tuple[int, Parse]] = []
-        skip_next_aux: dict[int, str] = {}
+        skip_aux: dict[int, set[str]] = {}
         for idx, parses in enumerate(per_word):
             nxt = per_word[idx + 1] if idx + 1 < len(per_word) else []
             for p in parses:
-                if p.lemma == skip_next_aux.get(idx):
+                if p.lemma in skip_aux.get(idx, ()):
                     continue  # 앞 동사에 흡수된 보조 용언
                 kind = p.kind
                 if kind == BARE and nxt:
-                    aux = next((q for q in nxt if q.lemma in AUXILIARIES or q.lemma == _PASSIVE_AUX), None)
-                    if aux is not None:
-                        # 본동사는 보조 용언의 어미(종결·조건·관형)를 따른다: "꺼내 오세요"는 지시,
-                        # "꺼내 온 상자"는 꾸밈.
-                        kind = EXCL if aux.lemma == _PASSIVE_AUX else aux.kind
-                        skip_next_aux[idx + 1] = aux.lemma
+                    # 본동사는 보조 용언의 어미(종결·조건·관형)를 따른다: "꺼내 오세요"는 지시,
+                    # "꺼내 온 상자"는 꾸밈. 보조 용언이 겹치면("빼 놔 주세요") 끝까지 따라간다 —
+                    # 가운데 '놔'도 '-어'형이라 그 자리에서 멈추면 마지막 '주세요'가 할 일로 남는다.
+                    kind, absorbed = self._follow_aux(per_word, idx, kind)
+                    for j, lemma in absorbed:
+                        skip_aux.setdefault(j, set()).add(lemma)
                     # 띄어 쓴 합성 동사가 사전에 있으면(채워 넣다 → '채워넣다') 그것도 넣는다.
                     compound = self._compound(words[idx], words[idx + 1])
                     if compound is not None:
-                        out.append((idx, Parse(compound.lemma, compound.kind)))
+                        ckind = compound.kind
+                        if ckind == BARE:
+                            ckind, _ = self._follow_aux(per_word, idx + 1, BARE)
+                        out.append((idx, Parse(compound.lemma, ckind)))
                 elif kind == BARE and len(words[idx]) == 1:
                     # 한 글자 '-어'형(세·내·와)은 수사·대명사·조사와 겉모양이 같다("세 장",
                     # "내 자리"). 뒤에 동사가 이어질 때만 동사로 본다.
                     kind = EXCL
+                elif kind == NOMINAL:
+                    # 명사형 '-기'가 절 끝에 서면 작업 목록·체크리스트의 지시다("완충재 자르기").
+                    # 뒤에 말이 이어지면 '먹기 전에'·'닦기 쉬운'처럼 다른 말에 딸린 명사절이다.
+                    kind = FINAL if clause_end[idx] else EXCL
+                elif kind in (PURP, OBLIG):
+                    # '-도록/-게 하다'(시킴·당부)와 '-어야 하다/되다'(의무)에서 뜻이 있는 동작은
+                    # 앞 동사다. 뒤의 하다/되다는 형식 동사라 버려지므로 그 어미를 앞 동사가 이어받는다.
+                    # '-게 되다'는 '그렇게 되고 만다'는 결과라 지시가 아니어서 '-게'는 '하다'만 받는다.
+                    if kind == OBLIG or words[idx].endswith("도록"):
+                        allowed = _LIGHT_HADA_DOEDA
+                    else:
+                        allowed = _LIGHT_HADA
+                    light = next((q for q in nxt if q.lemma in allowed), None)
+                    if light is not None:
+                        kind, _ = self._follow_aux(per_word, idx + 1, light.kind)
+                    else:
+                        kind = CONN if kind == OBLIG else EXCL
                 out.append((idx, Parse(p.lemma, kind, p.aux)))
         return out
+
+    @staticmethod
+    def _follow_aux(per_word: list[list[Parse]], idx: int, kind: str) -> tuple[str, list[tuple[int, str]]]:
+        """idx 어절이 '-어'형(BARE)이고 뒤가 보조 용언이면 보조 용언의 어미를 따라간다.
+        (최종 종류, 흡수한 (어절 번호, 보조 용언) 목록)."""
+        absorbed: list[tuple[int, str]] = []
+        j = idx
+        while kind == BARE and j + 1 < len(per_word):
+            aux = next((q for q in per_word[j + 1] if q.lemma in _AUX_OR_PASSIVE), None)
+            if aux is None:
+                break
+            j += 1
+            absorbed.append((j, aux.lemma))
+            if aux.lemma == _PASSIVE_AUX:
+                return EXCL, absorbed
+            kind = aux.kind
+        return kind, absorbed
 
     def _compound(self, left: str, right: str) -> Parse | None:
         """띄어 쓴 두 어절을 붙였을 때 사전에 있는 합성 동사가 되면 그 해석.
