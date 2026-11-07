@@ -7,6 +7,7 @@ const createTask = vi.fn();
 const uploadStepPhoto = vi.fn();
 const removeStepPhoto = vi.fn();
 const listWorkers = vi.fn();
+const createWorker = vi.fn();
 const publish = vi.fn();
 const assign = vi.fn();
 // 자동 채택 못 한(needs_fallback=true) 단계는 마운트 시 후보를 조회한다 — 목이 없으면 깨진다.
@@ -19,6 +20,7 @@ vi.mock("../src/api", () => ({
     removeStepPhoto: (t: string, s: string) => removeStepPhoto(t, s),
     stepSymbolCandidates: (t: string, s: string) => stepSymbolCandidates(t, s),
     listWorkers: () => listWorkers(),
+    createWorker: (name: string, code?: string) => createWorker(name, code),
     publish: (id: string) => publish(id),
     assign: (id: string, workerIds: string[]) => assign(id, workerIds),
     updateStep: vi.fn(),
@@ -86,6 +88,36 @@ describe("ManagerPage 사진 업로드 (기능 5)", () => {
     await screen.findByText("되돌리기");
     fireEvent.click(screen.getByText("되돌리기"));
     await waitFor(() => expect(removeStepPhoto).toHaveBeenCalledWith("task-1", "s1"));
+  });
+});
+
+// ---------- 인라인 근로자 추가: 결과는 입력칸 바로 아래에 ----------
+
+describe("ManagerPage — 인라인 근로자 추가", () => {
+  it("추가 실패 오류가 화면 맨 위가 아니라 추가 입력칸 바로 아래에 뜬다", async () => {
+    const user = userEvent.setup();
+    createWorker.mockReset().mockRejectedValue(new Error("이미 사용 중인 접속 코드입니다. 다른 코드를 입력해 주세요."));
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await user.type(await screen.findByLabelText("새 근로자 이름"), "박알바");
+    await user.type(screen.getByLabelText("새 근로자 접속 코드"), "1234");
+    await user.click(screen.getByRole("button", { name: "+ 근로자 추가" }));
+
+    const msgs = await screen.findAllByText(/이미 사용 중인 접속 코드/);
+    expect(msgs).toHaveLength(1); // 위쪽 배너에는 띄우지 않는다
+    const addButton = screen.getByRole("button", { name: "+ 근로자 추가" });
+    // 버튼이 든 입력 줄 바로 다음 요소가 오류 문구다.
+    expect(addButton.parentElement?.nextElementSibling).toBe(msgs[0]);
+  });
+
+  it("목록에는 전체 접속 코드가 보인다", async () => {
+    const user = userEvent.setup();
+    listWorkers.mockResolvedValue([
+      { id: "w1", display_name: "김근로", access_code: "1234", access_code_hint: "34", access_code_length: 4 },
+    ]);
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    expect(await screen.findByRole("checkbox", { name: /김근로 \(코드 1234\)/ })).toBeInTheDocument();
   });
 });
 

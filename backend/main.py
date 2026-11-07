@@ -41,6 +41,8 @@ import ai_client
 from auth import (
     check_production_config,
     code_fingerprint,
+    decrypt_access_code,
+    encrypt_access_code,
     hash_access_code,
     hash_password,
     is_production,
@@ -188,6 +190,7 @@ def _ensure_seed() -> None:
     db = next(get_db())
     try:
         if db.scalar(select(Employer).limit(1)) is not None:
+            _backfill_demo_code_cipher(db)
             return
         employer = Employer(
             id="emp-demo",
@@ -208,6 +211,21 @@ def _ensure_seed() -> None:
         db.commit()
     finally:
         db.close()
+
+
+def _backfill_demo_code_cipher(db: Session) -> None:
+    """0005 이전에 만든 데모 근로자는 코드 암호문이 비어 사업주 화면에 뒤 2자리만 보인다. 데모 코드는 공개
+    기본값(DEMO_WORKER_CODE)이라 해시가 그 값과 맞으면 바로 채운다. 다른(바뀐) 코드는 건드리지 않는다."""
+    employer = db.scalar(select(Employer).where(
+        Employer.login_id == os.getenv("DEMO_EMPLOYER_LOGIN", "demo")))
+    if employer is None:
+        return
+    code = os.getenv("DEMO_WORKER_CODE", "1234")
+    worker = db.scalar(select(Worker).where(Worker.employer_id == employer.id,
+                                            Worker.access_code_hash == hash_access_code(employer.id, code)))
+    if worker is not None and worker.access_code_cipher is None:
+        worker.access_code_cipher = encrypt_access_code(employer.id, code)
+        db.commit()
 
 
 @app.get("/api/auth/demo")
@@ -331,6 +349,11 @@ def worker_login(payload: WorkerLogin, request: Request,
         # 사업장 코드가 틀린 경우와 접속 코드가 틀린 경우를 같은 응답으로 돌려준다.
         # 다르게 답하면 사업장 코드가 존재하는지를 이 엔드포인트로 탐지할 수 있다.
         raise HTTPException(status_code=401, detail="사업장 코드 또는 접속 코드가 올바르지 않습니다.")
+    if worker.access_code_cipher is None:
+        # 0005 이전 근로자는 평문 코드를 알 수 없어 사업주 화면에 뒤 2자리만 보였다. 로그인에 성공한 지금은
+        # 서버가 맞는 평문을 받았으니 암호문을 채워 둔다 — 그다음부터 사업주 화면에 전체 코드가 보인다.
+        worker.access_code_cipher = encrypt_access_code(worker.employer_id, payload.access_code.strip())
+        db.commit()
     return TokenOut(token=make_token(worker.id, "worker",
                                      extra={"cf": code_fingerprint(worker.access_code_hash)}),
                     role="worker",
@@ -370,6 +393,7 @@ def list_workers(request: Request, db: Session = Depends(get_db),
 
 def _worker_out(w: Worker, ai_consent: bool = False, personal_info_consent: bool = False) -> WorkerOut:
     return WorkerOut(id=w.id, display_name=w.display_name,
+                     access_code=decrypt_access_code(w.employer_id, w.access_code_cipher),
                      access_code_hint=w.access_code_hint, access_code_length=w.access_code_length,
                      note=w.note or "", ai_note_allowed=bool(w.ai_note_allowed), ai_consent=ai_consent,
                      personal_info_consent=personal_info_consent,
@@ -386,9 +410,10 @@ def _owned_worker(worker_id: str, employer_id: str, db: Session) -> Worker:
 
 def _worker_with_code(w: Worker, code: str, ai_consent: bool = False,
                       personal_info_consent: bool = False) -> WorkerWithCodeOut:
-    # 평문 코드는 DB에 없으므로, 방금 만든(또는 받은) 코드를 응답에 한 번만 실어 보낸다.
-    return WorkerWithCodeOut(**_worker_out(w, ai_consent, personal_info_consent).model_dump(),
-                             access_code=code)
+    # 방금 만든(또는 받은) 코드를 그대로 싣는다(암호문을 다시 풀 필요가 없다).
+    out = _worker_out(w, ai_consent, personal_info_consent).model_dump()
+    out["access_code"] = code
+    return WorkerWithCodeOut(**out)
 
 
 @app.get("/api/workplace", response_model=WorkplaceOut)
@@ -1442,6 +1467,7 @@ def dashboard_workers(task_id: str, request: Request, db: Session = Depends(get_
             continue
         out.append(DashboardWorkerOut(
             worker_id=worker.id, display_name=worker.display_name,
+            access_code=decrypt_access_code(worker.employer_id, worker.access_code_cipher),
             access_code_hint=worker.access_code_hint, status=a.status,
         ))
     # 이 목록에는 여러 근로자의 이름·진행 상태가 실린다. 누구의 정보가 보였는지 남기려고 근로자마다 기록한다.

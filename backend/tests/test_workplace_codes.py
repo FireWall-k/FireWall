@@ -124,8 +124,10 @@ def test_workplace_code_is_case_and_space_insensitive(client):
     assert _login(client, " demo01 ", "1234").status_code == 200
 
 
-# --- 평문 코드 비노출 ------------------------------------------------------------------
-def test_plaintext_code_only_in_create_and_reissue(client, employer_token):
+# --- 접속 코드 표시 범위 -------------------------------------------------------------
+# 2026-11-07 사용자 요청: 사업주 화면(근로자 목록·대시보드 근로자 목록)에 전체 코드를 보여 준다(근로자에게 다시
+# 알려 줄 수 있게). 대신 그 근로자를 소유한 사업주에게만 나가고, 근로자용 응답·다른 사업장·DB 평문에는 없어야 한다.
+def test_owner_employer_sees_full_code(client, employer_token):
     created = _create(client, employer_token, "평문검사", "97531864")
     assert created.status_code == 201
     w = created.json()
@@ -133,58 +135,102 @@ def test_plaintext_code_only_in_create_and_reissue(client, employer_token):
         assert w["access_code"] == "97531864"
         assert w["access_code_hint"] == "64"
 
-        # 배정까지 한 뒤 사업주가 볼 수 있는 응답 전부에 평문이 없어야 한다.
         task = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"},
                            headers=auth(employer_token)).json()
         client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token))
         assigned = client.post(f"/api/tasks/{task['id']}/assignments",
                                json={"worker_ids": [w["id"]]}, headers=auth(employer_token))
-        bodies = {
-            "list": client.get("/api/workers", headers=auth(employer_token)),
-            "assign": assigned,
-            "dash_workers": client.get(f"/api/dashboard/tasks/{task['id']}/workers",
-                                       headers=auth(employer_token)),
-            "dashboard": client.get(f"/api/dashboard/tasks/{task['id']}?worker_id={w['id']}",
-                                    headers=auth(employer_token)),
-            "worker_tasks": client.get(f"/api/workers/{w['id']}/tasks",
-                                       headers=auth(employer_token)),
-            "workplace": client.get("/api/workplace", headers=auth(employer_token)),
-        }
-        for name, r in bodies.items():
-            assert r.status_code == 200, (name, r.text)
-            assert "97531864" not in r.text, name
-            assert '"access_code"' not in r.text, name
+        assert assigned.status_code == 200
 
-        listed = next(x for x in bodies["list"].json() if x["id"] == w["id"])
-        assert listed["access_code_hint"] == "64"
-        assert listed["access_code_length"] == 8
-        dash = next(x for x in bodies["dash_workers"].json() if x["worker_id"] == w["id"])
-        assert dash["access_code_hint"] == "64"
+        listed = next(x for x in client.get("/api/workers", headers=auth(employer_token)).json()
+                      if x["id"] == w["id"])
+        assert listed["access_code"] == "97531864"
+        dash = next(x for x in client.get(f"/api/dashboard/tasks/{task['id']}/workers",
+                                          headers=auth(employer_token)).json() if x["worker_id"] == w["id"])
+        assert dash["access_code"] == "97531864"
 
+        # 코드 표시가 필요 없는 응답에는 여전히 싣지 않는다.
+        for path in (f"/api/dashboard/tasks/{task['id']}?worker_id={w['id']}",
+                     f"/api/workers/{w['id']}/tasks", "/api/workplace"):
+            r = client.get(path, headers=auth(employer_token))
+            assert r.status_code == 200, (path, r.text)
+            assert "97531864" not in r.text, path
+
+        # 근로자 자신의 로그인·오늘 카드 응답에는 코드가 없다(공용 태블릿 화면에 남지 않게).
         tok = _login(client, DEMO_WP, "97531864")
         assert tok.status_code == 200
         assert "97531864" not in tok.text
+        today = client.get("/api/worker/me/today", headers=auth(tok.json()["token"]))
+        assert "97531864" not in today.text
 
         reissued = client.post(f"/api/workers/{w['id']}/access-code", headers=auth(employer_token))
         new_code = reissued.json()["access_code"]
         assert len(new_code) == 6 and new_code.isdigit()
-        assert reissued.json()["access_code_hint"] == new_code[-2:]
-        assert new_code not in client.get("/api/workers", headers=auth(employer_token)).text
+        relisted = next(x for x in client.get("/api/workers", headers=auth(employer_token)).json()
+                        if x["id"] == w["id"])
+        assert relisted["access_code"] == new_code
     finally:
         client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
 
 
-def test_db_stores_only_hash(client, employer_token):
+def test_other_tenant_never_sees_code(client, employer_token, other_tenant):
+    w = _create(client, employer_token, "남의근로", "86421357").json()
+    try:
+        for path in ("/api/workers", f"/api/workers/{w['id']}/tasks"):
+            r = client.get(path, headers=auth(other_tenant["token"]))
+            assert "86421357" not in r.text, path
+    finally:
+        client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+
+
+def test_db_stores_no_plaintext_code(client, employer_token):
     w = _create(client, employer_token, "해시검사", "86420975").json()
     try:
         db = SessionLocal()
         row = db.get(Worker, w["id"])
         assert "86420975" not in row.access_code_hash
+        assert "86420975" not in (row.access_code_cipher or "")
+        assert row.access_code_cipher and row.access_code_cipher.startswith("v1:")
         assert row.access_code_hint == "75"
         assert len(row.access_code_hash) == 64
         # 평문 컬럼 자체가 없어야 한다.
         assert "access_code" not in Worker.__table__.columns
         db.close()
+    finally:
+        client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+
+
+def test_cipher_moved_to_other_tenant_row_does_not_decrypt(client, employer_token, other_tenant):
+    """암호문은 사업장 id에 묶여 있다(AAD). 다른 사업장 행에 옮겨 붙여도 그 사업주에게 코드가 보이지 않는다."""
+    a = _create(client, employer_token, "원래", "75319864").json()
+    b = _create(client, other_tenant["token"], "옮김", "11223344").json()
+    try:
+        db = SessionLocal()
+        db.get(Worker, b["id"]).access_code_cipher = db.get(Worker, a["id"]).access_code_cipher
+        db.commit()
+        db.close()
+        listed = next(x for x in client.get("/api/workers", headers=auth(other_tenant["token"])).json()
+                      if x["id"] == b["id"])
+        assert listed["access_code"] is None
+    finally:
+        client.delete(f"/api/workers/{a['id']}", headers=auth(employer_token))
+
+
+def test_legacy_worker_code_filled_on_next_login(client, employer_token):
+    """0005 이전 근로자는 암호문이 없다(평문을 몰라서). 로그인에 성공하면 그 순간 채워진다."""
+    w = _create(client, employer_token, "옛근로", "24681357").json()
+    try:
+        db = SessionLocal()
+        db.get(Worker, w["id"]).access_code_cipher = None
+        db.commit()
+        db.close()
+        before = next(x for x in client.get("/api/workers", headers=auth(employer_token)).json()
+                      if x["id"] == w["id"])
+        assert before["access_code"] is None and before["access_code_hint"] == "57"
+        assert _login(client, DEMO_WP, "24681357").status_code == 200
+        after = next(x for x in client.get("/api/workers", headers=auth(employer_token)).json()
+                     if x["id"] == w["id"])
+        assert after["access_code"] == "24681357"
     finally:
         client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
 

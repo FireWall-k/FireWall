@@ -160,9 +160,12 @@ class AssignmentOut(BaseModel):
 
 
 class WorkerOut(BaseModel):
-    """목록용. 평문 접속 코드는 없다(서버도 해시만 갖고 있다) — 뒤 2자리 힌트와 길이만 준다."""
+    """사업주용 근로자 목록 항목. 그 근로자를 소유한 사업주에게만 나가는 응답이다."""
     id: str
     display_name: str
+    # 전체 접속 코드(사업주가 근로자에게 알려 주는 용도). 서버는 암호문으로 들고 있다가 응답 때 푼다.
+    # 0005 이전에 만든 근로자는 평문을 몰라 None — 그 근로자가 한 번 로그인하거나 재발급하면 채워진다.
+    access_code: str | None = None
     access_code_hint: str
     # 4~5자리 예전 코드를 "짧은 코드" 경고로 보여 주는 데 쓴다.
     access_code_length: int
@@ -178,7 +181,7 @@ class WorkerOut(BaseModel):
 
 
 class WorkerWithCodeOut(WorkerOut):
-    """근로자 생성·코드 재발급 응답 전용. 평문 코드를 사업주에게 보여 줄 수 있는 유일한 순간이다."""
+    """근로자 생성·코드 재발급 응답 전용. 방금 만든 코드라 항상 있다."""
     access_code: str
 
 
@@ -202,6 +205,7 @@ class DashboardWorkerOut(BaseModel):
     """대시보드에서 직무별로 어떤 근로자를 볼지 고르기 위한 목록 항목."""
     worker_id: str
     display_name: str
+    access_code: str | None = None  # WorkerOut.access_code와 같은 규칙
     access_code_hint: str
     status: str
 

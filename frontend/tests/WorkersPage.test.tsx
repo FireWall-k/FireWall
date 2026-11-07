@@ -105,13 +105,26 @@ describe("WorkersPage — 접속 코드", () => {
     expect(screen.queryByText(/짧은 코드예요/)).not.toBeInTheDocument();
   });
 
-  it("사업장 코드를 보여 주고, 목록에는 접속 코드 뒤 2자리만 보인다", async () => {
+  // 2026-11-07 사용자 요청: 사업주 화면에서는 접속 코드를 가리지 않고 전체를 보여 준다(근로자에게 다시 알려 줄 수 있게).
+  it("사업장 코드와 근로자의 전체 접속 코드를 보여 준다", async () => {
+    listWorkers.mockResolvedValue([
+      { id: "w1", display_name: "김근로", access_code: "1234", access_code_hint: "34", access_code_length: 4 },
+    ]);
     render(<WorkersPage />);
     expect(await screen.findByText("DEMO01")).toBeInTheDocument();
-    expect(await screen.findByText(/접속 코드 ••34/)).toBeInTheDocument();
+    const list = await screen.findByRole("list");
+    await waitFor(() => expect(list).toHaveTextContent("접속 코드 1234"));
+    expect(list).not.toHaveTextContent("••");
   });
 
-  it("새로 만든 코드는 알림에만 한 번 보이고 목록에는 힌트만 남는다", async () => {
+  it("서버도 전체 코드를 모르는 예전 근로자는 뒤 2자리와 함께 보이는 방법을 안내한다", async () => {
+    render(<WorkersPage />);
+    const list = await screen.findByRole("list");
+    await waitFor(() => expect(list).toHaveTextContent("••34"));
+    expect(list).toHaveTextContent(/한 번 로그인하거나 코드를 새로 만들면 전체 번호가 보여요/);
+  });
+
+  it("새로 만든 근로자는 목록에도 전체 코드가 보인다", async () => {
     const user = userEvent.setup();
     createWorker.mockResolvedValue({
       id: "w2", display_name: "박알바", access_code: "482913", access_code_hint: "13", access_code_length: 6,
@@ -121,11 +134,44 @@ describe("WorkersPage — 접속 코드", () => {
     await user.type(screen.getByLabelText("근로자 이름"), "박알바");
     await user.click(screen.getByRole("button", { name: /추가/ }));
 
-    const notice = await screen.findByRole("status");
-    expect(notice).toHaveTextContent("482913");
-    const list = screen.getByRole("list");
-    expect(list).toHaveTextContent("••13");
-    expect(list).not.toHaveTextContent("482913");
+    expect(await screen.findByRole("status")).toHaveTextContent("482913");
+    expect(screen.getByRole("list")).toHaveTextContent("482913");
+  });
+});
+
+describe("WorkersPage — 근로자 추가 결과 위치", () => {
+  // 화면 맨 위 배너에 띄우면 아래쪽 추가 폼을 보고 있는 사업주가 오류를 못 봤다(사용자 피드백).
+  const addSection = () => screen.getByRole("heading", { name: "근로자 추가" }).closest("section") as HTMLElement;
+
+  it("서버가 거절한 오류는 근로자 추가 폼 안(바로 아래)에 보인다", async () => {
+    const user = userEvent.setup();
+    createWorker.mockRejectedValue(new Error("이미 사용 중인 접속 코드입니다. 다른 코드를 입력해 주세요."));
+    render(<WorkersPage />);
+    await screen.findByText("김근로");
+    await user.type(screen.getByLabelText("근로자 이름"), "박알바");
+    await user.type(screen.getByLabelText("접속 코드"), "1234");
+    await user.click(screen.getByRole("button", { name: /추가/ }));
+
+    const alert = await screen.findByText(/이미 사용 중인 접속 코드/);
+    expect(addSection()).toContainElement(alert);
+  });
+
+  it("입력 검사 오류와 추가 성공 안내도 폼 안에 보인다", async () => {
+    const user = userEvent.setup();
+    render(<WorkersPage />);
+    await screen.findByText("김근로");
+    await user.type(screen.getByLabelText("근로자 이름"), "박알바");
+    await user.type(screen.getByLabelText("접속 코드"), "56");
+    await user.click(screen.getByRole("button", { name: /추가/ }));
+    expect(addSection()).toContainElement(await screen.findByText(/4~12자리 숫자로 정해/));
+
+    createWorker.mockResolvedValue({
+      id: "w2", display_name: "박알바", access_code: "482913", access_code_hint: "13", access_code_length: 6,
+    });
+    await user.clear(screen.getByLabelText("접속 코드"));
+    await user.click(screen.getByRole("button", { name: /추가/ }));
+    expect(addSection()).toContainElement(await screen.findByText(/접속 코드: 482913/));
+    expect(screen.queryByText(/4~12자리 숫자로 정해/)).not.toBeInTheDocument();
   });
 });
 

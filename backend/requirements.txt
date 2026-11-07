@@ -7,3 +7,4 @@ google-cloud-texttospeech>=2.18.0,<3
 python-multipart==0.0.12
 alembic==1.13.3
 pillow==11.3.0
+cryptography==49.0.0

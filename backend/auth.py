@@ -120,6 +120,40 @@ def make_token(sub: str, role: str, ttl: int = TOKEN_TTL_SEC, extra: dict | None
     return f"{body}.{_sign(body)}"
 
 
+def _access_code_cipher_key() -> bytes:
+    # 서명·해시용 키와 섞이지 않게 같은 시크릿에서 용도 문자열로 따로 뽑는다(키 분리).
+    return hmac.new(_secret().encode("utf-8"), b"access-code-cipher:v1", hashlib.sha256).digest()
+
+
+def encrypt_access_code(employer_id: str, access_code: str) -> str:
+    """사업주 화면에 근로자 접속 코드를 그대로 보여 주기 위한 암호문(AES-256-GCM).
+
+    해시만 두면 사업주가 근로자에게 코드를 다시 알려 줄 방법이 없다(사용자 요청: 사업주 화면에 전체 코드 표시).
+    평문 대신 서버 시크릿으로 암호화해 두므로, DB 파일만 새어서는 코드를 알 수 없다는 해시의 성질은 유지된다.
+    employer_id를 연관 데이터(AAD)로 묶어 암호문을 다른 사업장 행에 옮겨 붙이면 복호화가 실패한다.
+    """
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+    nonce = os.urandom(12)
+    sealed = AESGCM(_access_code_cipher_key()).encrypt(nonce, access_code.encode("utf-8"),
+                                                       employer_id.encode("utf-8"))
+    return "v1:" + _b64e(nonce + sealed)
+
+
+def decrypt_access_code(employer_id: str, token: str | None) -> str | None:
+    """복호화 실패(시크릿 교체, 다른 사업장 행, 손상)는 None — 화면은 '재발급하면 보여요'로 대신한다."""
+    if not token or not token.startswith("v1:"):
+        return None
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+    try:
+        raw = _b64d(token[3:])
+        return AESGCM(_access_code_cipher_key()).decrypt(raw[:12], raw[12:],
+                                                         employer_id.encode("utf-8")).decode("utf-8")
+    except Exception:  # noqa: BLE001 - 어떤 이유든 못 풀면 코드를 모르는 것으로 본다
+        return None
+
+
 def hash_access_code(employer_id: str, access_code: str) -> str:
     """근로자 접속 코드의 저장용 해시(hex 64자). 평문 코드는 DB에 남기지 않는다.
 

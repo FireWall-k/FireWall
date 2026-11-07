@@ -121,7 +121,8 @@ export interface Dashboard {
 export interface DashboardWorker {
   worker_id: string;
   display_name: string;
-  /** 접속 코드 뒤 2자리. 평문 코드는 생성·재발급 응답에서만 온다. */
+  /** Worker.access_code와 같은 규칙(모르면 null → 뒤 2자리로 대신). */
+  access_code?: string | null;
   access_code_hint: string;
   status: string;
 }
@@ -196,7 +197,12 @@ export interface TaskSummary {
 export interface Worker {
   id: string;
   display_name: string;
-  /** 서버는 접속 코드를 해시로만 저장한다. 목록에는 뒤 2자리와 길이(짧은 코드 경고용)만 온다. */
+  /**
+   * 전체 접속 코드(사업주가 근로자에게 알려 주는 용도). 서버가 암호문으로 들고 있다가 이 사업주에게만 준다.
+   * 예전에 만든 근로자는 서버도 모르는 상태라 null — 그 근로자가 한 번 로그인하거나 재발급하면 채워진다.
+   */
+  access_code?: string | null;
+  /** 뒤 2자리(access_code가 null일 때 대신 보여 준다)와 길이(짧은 코드 경고용). */
   access_code_hint: string;
   access_code_length: number;
   /** 사업주 메모(근로자 특성). 기본으로는 AI에 보내지 않는다. */

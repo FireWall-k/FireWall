@@ -1,20 +1,13 @@
 import { useEffect, useState } from "react";
 import { Download, KeyRound, Trash2, UserPlus, UserRound } from "lucide-react";
-import { api, AuthError, type ConsentSubject, type ConsentType, type Worker, type WorkerWithCode } from "../api";
-import { maskedAccessCode } from "../workerCodes";
+import { api, AuthError, type ConsentSubject, type ConsentType, type Worker } from "../api";
+import { ACCESS_CODE_UNKNOWN_HINT, accessCodeText } from "../workerCodes";
 
 // 직접 정하는 코드는 4~12자리 숫자만 받는다(서버와 같은 규칙). 비우면 서버가 6자리를 만든다.
 const CODE_RE = /^\d{4,12}$/;
 // 예전에 만든 짧은 코드. 로그인은 되지만 대입으로 뚫리기 쉬워 새로 만들기를 권한다.
-// 서버는 평문 코드를 주지 않으므로(해시 저장) 길이 필드로 판단한다.
+// 서버가 전체 코드를 모르는 예전 근로자도 있으므로 길이 필드로 판단한다.
 const isWeakCode = (w: Worker) => w.access_code_length < 6;
-
-// 생성·재발급 응답의 평문 코드는 알림에만 쓰고 목록 상태에는 넣지 않는다.
-// 목록에 남기면 화면을 다시 그릴 때마다 평문이 보이고, 서버 목록 응답과도 모양이 달라진다.
-const withoutPlainCode = ({ access_code: _plain, ...rest }: WorkerWithCode): Worker => {
-  void _plain;
-  return rest;
-};
 
 // 내보낸 JSON을 파일로 저장한다. 서버는 사본을 남기지 않으므로 이 파일이 사업주가 가진 유일한 사본이다.
 // 파일 이름에 근로자 이름을 넣지 않는다(다운로드 폴더·브라우저 기록에 남는다).
@@ -62,6 +55,10 @@ export default function WorkersPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // 근로자 추가 결과는 추가 폼 바로 아래에 보여 준다. 화면 위쪽 배너에 띄우면 폼을 보고 있는 사업주가
+  // 오류를 못 보고 "추가가 안 된다"고 느꼈다(사용자 피드백). 다른 동작의 결과는 위쪽 배너를 그대로 쓴다.
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addNotice, setAddNotice] = useState<string | null>(null);
   const [workplaceCode, setWorkplaceCode] = useState<string | null>(null);
   // 근로자별 메모 입력 중인 값. 저장 버튼을 누를 때만 서버로 보낸다.
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
@@ -84,25 +81,25 @@ export default function WorkersPage() {
   }, []);
 
   async function addWorker() {
+    setAddNotice(null);
     if (!name.trim()) {
-      setError("이름을 입력해 주세요.");
+      setAddError("이름을 입력해 주세요.");
       return;
     }
     if (code.trim() && !CODE_RE.test(code.trim())) {
-      setError("접속 코드는 4~12자리 숫자로 정해 주세요. 비워 두면 자동으로 만들어요.");
+      setAddError("접속 코드는 4~12자리 숫자로 정해 주세요. 비워 두면 자동으로 만들어요.");
       return;
     }
     setBusy(true);
-    setError(null);
-    setNotice(null);
+    setAddError(null);
     try {
       const w = await api.createWorker(name.trim(), code.trim() || undefined);
-      setWorkers((prev) => [...prev, withoutPlainCode(w)]);
+      setWorkers((prev) => [...prev, w]);
       setName("");
       setCode("");
-      setNotice(`근로자 '${w.display_name}'을(를) 추가했습니다. 접속 코드: ${w.access_code} (지금만 보여요. 근로자에게 알려 주세요)`);
+      setAddNotice(`근로자 '${w.display_name}'을(를) 추가했습니다. 접속 코드: ${w.access_code} (근로자에게 알려 주세요)`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "근로자 추가에 실패했습니다.");
+      setAddError(e instanceof Error ? e.message : "근로자 추가에 실패했습니다.");
     } finally {
       setBusy(false);
     }
@@ -116,8 +113,8 @@ export default function WorkersPage() {
     setNotice(null);
     try {
       const w = await api.reissueAccessCode(id);
-      setWorkers((prev) => prev.map((x) => (x.id === id ? withoutPlainCode(w) : x)));
-      setNotice(`'${w.display_name}'의 새 접속 코드: ${w.access_code} (지금만 보여요. 근로자에게 알려 주세요)`);
+      setWorkers((prev) => prev.map((x) => (x.id === id ? w : x)));
+      setNotice(`'${w.display_name}'의 새 접속 코드: ${w.access_code} (근로자에게 알려 주세요)`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "접속 코드를 바꾸지 못했습니다.");
     }
@@ -281,6 +278,8 @@ export default function WorkersPage() {
         <p className="mt-2 text-xs text-ink-500">
           접속 코드를 비워 두면 겹치지 않는 6자리 숫자를 자동으로 만들어요. 직접 정할 때는 4~12자리 숫자로 입력해 주세요.
         </p>
+        {addError && <div role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">{addError}</div>}
+        {addNotice && <div role="status" className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">{addNotice}</div>}
       </section>
 
       <section className="rounded-2xl border border-paper-200 bg-white p-5 shadow-sm">
@@ -303,7 +302,8 @@ export default function WorkersPage() {
                   <div>
                     <p className="text-sm font-semibold text-ink-900">{w.display_name}</p>
                     <p className="text-xs text-ink-500">
-                      접속 코드 {maskedAccessCode(w.access_code_hint)}
+                      접속 코드 <span className="font-semibold tracking-widest text-ink-900">{accessCodeText(w)}</span>
+                      {!w.access_code && <span className="ml-1.5">({ACCESS_CODE_UNKNOWN_HINT})</span>}
                       {isWeakCode(w) && (
                         <span className="ml-1.5 font-semibold text-signal-red">짧은 코드예요 — 새로 만들어 주세요</span>
                       )}

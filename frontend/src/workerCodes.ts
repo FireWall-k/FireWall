@@ -39,7 +39,17 @@ export function clearSavedWorkplaceCode() {
   }
 }
 
-/** 서버는 평문 접속 코드를 돌려주지 않는다(해시만 저장). 목록에는 뒤 2자리 힌트만 보인다. */
+/** 서버가 전체 코드를 모르는 예전 근로자용 표시(뒤 2자리). */
 export function maskedAccessCode(hint: string): string {
   return `••${hint}`;
 }
+
+/**
+ * 사업주 화면의 접속 코드 표시. 전체 코드가 있으면 그대로(근로자에게 다시 알려 줄 수 있게),
+ * 서버도 모르는 예전 근로자면 뒤 2자리로 대신한다(한 번 로그인하거나 재발급하면 전체가 보인다).
+ */
+export function accessCodeText(w: { access_code?: string | null; access_code_hint: string }): string {
+  return w.access_code ?? maskedAccessCode(w.access_code_hint);
+}
+
+export const ACCESS_CODE_UNKNOWN_HINT = "근로자가 한 번 로그인하거나 코드를 새로 만들면 전체 번호가 보여요";

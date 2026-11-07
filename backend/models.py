@@ -31,7 +31,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from auth import hash_access_code
+from auth import encrypt_access_code, hash_access_code
 from codes import new_workplace_code
 from database import Base
 
@@ -72,12 +72,15 @@ class Worker(Base):
     employer_id: Mapped[str] = mapped_column(ForeignKey("employers.id"), index=True)
     display_name: Mapped[str] = mapped_column(String, default="근로자")
     # 발달장애인 근로자는 비밀번호 대신 짧은 접속 코드로 로그인한다(현장 디바이스 공유 가정).
-    # 평문은 저장하지 않는다 — HMAC(JOBCARD_SECRET, "employer_id:code")만 둔다(auth.hash_access_code).
-    # 평문은 생성·재발급 응답에서 딱 한 번만 사업주에게 보여 준다.
+    # 평문은 저장하지 않는다 — 로그인 조회용 HMAC(JOBCARD_SECRET, "employer_id:code")(auth.hash_access_code)과
+    # 사업주 화면 표시용 암호문(access_code_cipher)만 둔다. 둘 다 시크릿 없이 DB만으로는 코드를 알 수 없다.
     access_code_hash: Mapped[str] = mapped_column(String)
     # 사업주 화면에서 "어느 코드였는지" 알아보는 용도의 뒤 2자리와, 짧은(4~5자리) 예전 코드 경고용 길이.
     access_code_hint: Mapped[str] = mapped_column(String, default="")
     access_code_length: Mapped[int] = mapped_column(Integer, default=0)
+    # 사업주 화면에 전체 코드를 보여 주기 위한 암호문(auth.encrypt_access_code, 0005). 로그인은 여전히 해시로 한다.
+    # 0005 이전에 만든 근로자는 평문을 알 수 없어 비어 있다 — 그 근로자가 다음에 로그인하거나 코드를 재발급하면 채워진다.
+    access_code_cipher: Mapped[str | None] = mapped_column(String, nullable=True)
     # 사업주가 적어 두는 근로자 특성 메모(예: "그림을 선호함"). 장애 특성 같은 민감한 내용이 들어가기 쉬워
     # 기본으로는 AI(해외 LLM)에 보내지 않는다. ai_note_allowed를 사업주가 켜고, 근로자(또는 보호자)의
     # AI 처리 동의(WorkerConsent)가 살아 있을 때만 보낸다(main._sendable_note).
@@ -95,6 +98,7 @@ class Worker(Base):
         self.access_code_hash = hash_access_code(self.employer_id, code)
         self.access_code_hint = code[-2:]
         self.access_code_length = len(code)
+        self.access_code_cipher = encrypt_access_code(self.employer_id, code)
 
 
 class Task(Base):

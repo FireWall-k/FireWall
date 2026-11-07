@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { api, type AacMatch, type Step, type StepSymbolCandidates, type Task, type Worker } from "../api";
 import { ActionChip } from "../actions";
-import { maskedAccessCode } from "../workerCodes";
+import { accessCodeText } from "../workerCodes";
 import { mergeStepMedia, useMediaRefresh } from "../media";
 import { cn } from "../cn";
 
@@ -47,6 +47,9 @@ export default function ManagerPage() {
   const [selectedWorkerIds, setSelectedWorkerIds] = useState<Set<string>>(new Set());
   const [newWorkerName, setNewWorkerName] = useState("");
   const [newWorkerCode, setNewWorkerCode] = useState("");
+  // 인라인 근로자 추가 결과는 그 입력칸 바로 아래에 보여 준다. 화면 맨 위 배너에 띄우면 아래쪽 폼을 보고 있는
+  // 사업주에게 보이지 않았다(사용자 피드백). 배정 결과(assignFeedback)와 같은 방식이다.
+  const [addWorkerFeedback, setAddWorkerFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
   // "보내기" 결과를 버튼 바로 아래에도 보여준다 — 상단 배너(notice)는 직무 내용이 길면
   // 스크롤 밖으로 벗어나 눈에 안 띄기 때문에(실사용에서 발견), 버튼 옆에 한 번 더 알려준다.
@@ -269,26 +272,24 @@ export default function ManagerPage() {
 
   async function handleAddWorker() {
     if (!newWorkerName.trim()) {
-      setError("근로자 이름을 입력해 주세요.");
+      setAddWorkerFeedback({ ok: false, text: "근로자 이름을 입력해 주세요." });
       return;
     }
     if (newWorkerCode.trim() && !/^\d{4,12}$/.test(newWorkerCode.trim())) {
-      setError("접속 코드는 4~12자리 숫자로 정해 주세요. 비워 두면 자동으로 만들어요.");
+      setAddWorkerFeedback({ ok: false, text: "접속 코드는 4~12자리 숫자로 정해 주세요. 비워 두면 자동으로 만들어요." });
       return;
     }
     setBusy(true);
-    setError(null);
-    setNotice(null);
+    setAddWorkerFeedback(null);
     try {
       const w = await api.createWorker(newWorkerName.trim(), newWorkerCode.trim() || undefined);
       setWorkers((prev) => [...prev, w]);
       setSelectedWorkerIds((prev) => new Set(prev).add(w.id));
       setNewWorkerName("");
       setNewWorkerCode("");
-      // 평문 코드는 이 응답에서만 받을 수 있다(서버는 해시만 저장). 목록에는 힌트만 남는다.
-      setNotice(`근로자 '${w.display_name}'을(를) 추가했습니다. 접속 코드: ${w.access_code} (지금만 보여요. 근로자에게 알려 주세요)`);
+      setAddWorkerFeedback({ ok: true, text: `근로자 '${w.display_name}'을(를) 추가했습니다. 접속 코드: ${w.access_code} (근로자에게 알려 주세요)` });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "근로자 추가에 실패했습니다.");
+      setAddWorkerFeedback({ ok: false, text: e instanceof Error ? e.message : "근로자 추가에 실패했습니다." });
     } finally {
       setBusy(false);
     }
@@ -747,7 +748,7 @@ export default function ManagerPage() {
                             : "border-slate-300 bg-white text-slate-700")}>
                         <input type="checkbox" className="h-4 w-4" checked={checked}
                           onChange={() => toggleWorkerSelected(w.id)} />
-                        {w.display_name} (코드 {maskedAccessCode(w.access_code_hint)})
+                        {w.display_name} (코드 {accessCodeText(w)})
                       </label>
                     );
                   })}
@@ -802,6 +803,13 @@ export default function ManagerPage() {
                 + 근로자 추가
               </button>
             </div>
+            {addWorkerFeedback && (
+              <p role={addWorkerFeedback.ok ? "status" : "alert"}
+                className={cn("mt-2 text-sm font-semibold",
+                  addWorkerFeedback.ok ? "text-green-700" : "text-red-700")}>
+                {addWorkerFeedback.text}
+              </p>
+            )}
 
             {/* 등록된 근로자 목록 + 삭제 */}
             {workers.length > 0 && (
@@ -814,7 +822,7 @@ export default function ManagerPage() {
                       className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white py-1 pl-3 pr-1.5 text-sm text-slate-700"
                     >
                       <span>
-                        {w.display_name} <span className="text-slate-400">({maskedAccessCode(w.access_code_hint)})</span>
+                        {w.display_name} <span className="text-slate-400">({accessCodeText(w)})</span>
                       </span>
                       <button
                         onClick={() => handleDeleteWorker(w.id, w.display_name)}
