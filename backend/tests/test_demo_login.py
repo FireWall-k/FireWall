@@ -7,6 +7,7 @@
 - 사업장 코드는 DB의 실제 값을 준다. Alembic 도입 전 설치본은 데모 계정이 DEMO01이 아닌
   무작위 사업장 코드를 받았으므로, 환경변수 기본값을 그대로 주면 근로자 로그인이 틀린다.
 """
+import main
 from auth import hash_password
 from database import SessionLocal
 from models import Employer, Worker
@@ -86,3 +87,13 @@ def test_hidden_in_production(client, monkeypatch):
 def test_hidden_when_demo_seed_off(client, monkeypatch):
     monkeypatch.setenv("DEMO_SEED", "0")
     assert client.get("/api/auth/demo").status_code == 404
+
+
+def test_empty_demo_seed_means_default(client, monkeypatch):
+    """compose의 "${DEMO_SEED:-}"는 .env에 값이 없으면 빈 문자열을 넘긴다. 빈 값을 끔으로 읽으면
+    compose로 새로 설치한 개발 서버에 데모 계정이 생기지 않는다(실제로 그랬다)."""
+    monkeypatch.setenv("DEMO_SEED", "")
+    assert main._demo_seed_enabled() is True
+    assert client.get("/api/auth/demo").status_code == 200
+    monkeypatch.setenv("JOBCARD_ENV", "prod")
+    assert main._demo_seed_enabled() is False

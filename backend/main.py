@@ -173,7 +173,9 @@ def _demo_seed_enabled() -> bool:
     """운영(JOBCARD_ENV=prod)에서는 기본으로 끈다. 공개 저장소에 적힌 demo/demo1234 계정이
     운영 서버에 생기면 그대로 로그인된다. 운영 사업주 계정은 manage.py로 만든다."""
     default = "0" if is_production() else "1"
-    return os.getenv("DEMO_SEED", default).strip() == "1"
+    # compose는 "${DEMO_SEED:-}"로 넘겨 .env에 값이 없으면 빈 문자열이 '설정된' 상태가 된다. 빈 값을 끔으로
+    # 읽으면 compose로 새로 설치한 개발 서버에 README의 데모 계정이 아예 생기지 않았다 — 빈 값은 미설정과 같다.
+    return ((os.getenv("DEMO_SEED") or "").strip() or default) == "1"
 
 
 def _ensure_seed() -> None:
