@@ -81,17 +81,16 @@ services:
     volumes:
       - jobcard-data:/app/data
 
-  # 보존기간이 지난 데이터 삭제(docs/privacy/data-map.md). 평소에는 뜨지 않는다(profiles).
-  # 호스트 cron이 하루 한 번 부른다:
-  #   15 3 * * * cd /srv/jobcard && docker compose --profile maintenance run --rm purge
-  # 서버 프로세스 안에 스케줄러를 두지 않는 이유: backend를 여러 개 띄우면 같은 삭제가 겹친다.
+  # 보존기간이 지난 데이터 삭제(docs/privacy/data-map.md)를 손으로 한 번 돌릴 때 쓴다. 평소에는 뜨지 않는다(profiles).
+  #   docker compose --profile maintenance run --rm purge python manage.py purge --dry-run   # 확인만
+  # 매일 도는 정기 삭제는 아래 scheduler 서비스가 한다(예전처럼 호스트 crontab에 등록할 필요 없음).
   purge:
     image: jobcard-backend  # build는 backend에만(migrate 주석 참고)
     pull_policy: never
     profiles: ["maintenance"]
     command: ["python", "manage.py", "purge"]
     restart: "no"
-    environment:
+    environment: &purge-env
       PYTHONUNBUFFERED: "1"
       DATABASE_URL: "sqlite:////app/data/jobcard.db"
       JOBCARD_ENV: "${JOBCARD_ENV:-dev}"
@@ -107,10 +106,36 @@ services:
       TTS_ORPHAN_GRACE_HOURS: "${TTS_ORPHAN_GRACE_HOURS:-24}"
       # 사진·TTS 공통 유예시간. 비우면 예전 TTS_ORPHAN_GRACE_HOURS 값을 그대로 쓴다.
       MEDIA_ORPHAN_GRACE_HOURS: "${MEDIA_ORPHAN_GRACE_HOURS:-${TTS_ORPHAN_GRACE_HOURS:-24}}"
+      # 마지막 성공 시각 기록(maintenance.py). backend가 같은 볼륨의 같은 파일을 읽어 /health의 purge에 싣는다.
+      PURGE_STATUS_FILE: "/app/data/maintenance/purge_status.json"
     secrets:
       - jobcard_secret
     volumes:
       - jobcard-data:/app/data
+
+  # 정기 보존기간 삭제. 기본 프로필이라 `docker compose up`이면 같이 뜬다. 마지막 성공 후 PURGE_INTERVAL_HOURS
+  # (기본 24)마다 purge(수행 로그·접근 감사 로그 + 고아 사진·TTS 정리)를 한 번 돌리고 성공 시각을 남긴다.
+  # 왜 별도 서비스인가: 예전에는 운영자가 호스트 crontab에 직접 등록해야 해서, 잊으면 개인정보가 보존기간을 넘겨
+  # 남는데 아무 데서도 드러나지 않았다. backend 안에 두지 않는 이유는 backend를 여러 개 띄우면 같은 삭제가 겹치기
+  # 때문이다 — 이 서비스는 반드시 하나만 띄운다(replicas를 늘리지 않는다). 확인: `docker compose logs scheduler`,
+  # 또는 backend `/health`의 purge.last_success_at·age_hours·stale.
+  scheduler:
+    image: jobcard-backend  # build는 backend에만(migrate 주석 참고)
+    pull_policy: never
+    container_name: jobcard-scheduler
+    command: ["python", "manage.py", "schedule"]
+    restart: unless-stopped
+    environment:
+      <<: *purge-env
+      PURGE_INTERVAL_HOURS: "${PURGE_INTERVAL_HOURS:-24}"
+      PURGE_RETRY_MINUTES: "${PURGE_RETRY_MINUTES:-60}"
+    secrets:
+      - jobcard_secret
+    volumes:
+      - jobcard-data:/app/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
   backend:
     build:
@@ -163,6 +188,9 @@ services:
       MEDIA_URL_TTL_SECONDS: "${MEDIA_URL_TTL_SECONDS:-3600}"
       # 개인정보 처리방침 버전(동의 기록에 함께 남는다). 방침을 고치면 올린다.
       PRIVACY_POLICY_VERSION: "${PRIVACY_POLICY_VERSION:-2026-11-07-draft}"
+      # scheduler가 남긴 마지막 purge 성공 기록(/health의 purge). scheduler와 같은 경로여야 한다.
+      PURGE_STATUS_FILE: "/app/data/maintenance/purge_status.json"
+      PURGE_INTERVAL_HOURS: "${PURGE_INTERVAL_HOURS:-24}"
     volumes:
       - ./data/aac:/app/aac:ro
       # SQLite는 macOS 바인드 마운트(VirtioFS)에서 'disk I/O error'를 내므로

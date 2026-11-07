@@ -8,14 +8,17 @@
     docker compose exec backend python manage.py create-employer --login itda --org "잇다 보호작업장"
     docker compose exec backend python manage.py set-password --login itda
     echo "$PW" | docker compose exec -T backend python manage.py create-employer --login itda --password-stdin
-    docker compose exec backend python manage.py purge [--dry-run]   # 보존기간 지난 데이터 삭제(매일 cron)
+    docker compose exec backend python manage.py purge [--dry-run]   # 보존기간 지난 데이터 삭제(평소에는 scheduler 서비스가 매일 한다)
     docker compose exec backend python manage.py gc-media [--dry-run]  # 고아 사진·TTS만 정리(purge도 함께 한다)
+    python manage.py schedule    # 하루 한 번 purge를 도는 루프(compose의 scheduler 서비스가 실행한다)
 """
 from __future__ import annotations
 
 import argparse
 import getpass
+import signal
 import sys
+import threading
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -24,6 +27,7 @@ from auth import hash_password
 from codes import new_workplace_code
 import db_migrate
 from database import SessionLocal
+import maintenance
 import media
 from models import Employer
 import retention
@@ -93,12 +97,16 @@ def migrate() -> None:
 def purge(dry_run: bool) -> None:
     """보존기간이 지난 수행 로그·접근 감사 로그와 어느 단계도 쓰지 않는 TTS 파일을 지운다(retention.py).
 
-    서버 안에 스케줄러를 두지 않는다 — 백엔드 프로세스가 여러 개가 되면 같은 삭제가 겹친다. 호스트 cron이나
-    스케줄러가 하루 한 번 이 명령을 부른다(docs/privacy/data-map.md "삭제 스케줄").
+    요청을 받는 서버 안에 스케줄러를 두지 않는다 — 백엔드 프로세스가 여러 개가 되면 같은 삭제가 겹친다.
+    compose의 scheduler 서비스(`manage.py schedule`)가 하루 한 번 같은 일을 한다. 이 명령은 수동 실행·
+    dry-run 확인용이다(docs/privacy/data-map.md "삭제 스케줄").
     """
     db_migrate.ensure_schema_ready()
     with SessionLocal() as db:
         report = retention.purge(db, dry_run=dry_run)
+    if not dry_run:
+        # 손으로 돌린 purge도 마지막 성공으로 남긴다(/health의 purge, maintenance.py).
+        maintenance.record_success(report)
     verb = "지울 대상" if dry_run else "지움"
     print(f"수행 로그 {report['performance_logs']}건 {verb} "
           f"(보존 {retention.performance_log_retention_days()}일)")
@@ -117,8 +125,37 @@ def _print_media_report(report: dict, verb: str) -> None:
           f"(유예 {media.orphan_grace_hours():g}시간)")
 
 
+def _print_purge_report(report: dict) -> None:
+    print(f"수행 로그 {report['performance_logs']}건 지움, 접근 감사 로그 {report['access_audit_logs']}건 지움")
+    _print_media_report(report, "지움")
+    if report.get("wal_checkpointed") is False:
+        print("경고: WAL 체크포인트를 끝내지 못했습니다. 다음 실행에서 다시 합니다.")
+
+
+def schedule() -> None:
+    """purge를 주기마다(기본 24시간, PURGE_INTERVAL_HOURS) 돌리는 루프. compose의 scheduler 서비스가 실행한다.
+
+    컨테이너의 PID 1은 핸들러 없는 SIGTERM을 무시한다(docker stop이 10초 뒤 강제 종료). 그래서 SIGTERM·SIGINT를
+    받으면 stop 이벤트를 세워 대기 중이든 아니든 곧바로 끝나게 한다. 삭제 도중이면 그 한 번을 마치고 끝난다.
+    """
+    stop = threading.Event()
+
+    def _stop(_signum, _frame) -> None:
+        stop.set()
+
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        try:
+            signal.signal(sig, _stop)
+        except (ValueError, OSError):  # 메인 스레드가 아닐 때(테스트) 등
+            pass
+    print(f"보존기간 삭제 스케줄 시작: {maintenance.default_interval_hours():g}시간마다, "
+          f"상태 파일 {maintenance.status_path()}", flush=True)
+    maintenance.loop(stop, on_report=_print_purge_report)
+    print("보존기간 삭제 스케줄 종료", flush=True)
+
+
 def gc_media(dry_run: bool) -> None:
-    """고아 사진·TTS 정리(media.gc)만 따로 돌린다. purge도 매번 같은 정리를 하므로, 보통은 purge cron으로 충분하다.
+    """고아 사진·TTS 정리(media.gc)만 따로 돌린다. purge도 매번 같은 정리를 하므로, 보통은 scheduler의 매일 purge로 충분하다.
 
     디스크가 갑자기 찼거나 마이그레이션(0004) 직후 옛 파일을 바로 확인하고 싶을 때 쓴다. --dry-run으로 먼저 본다.
     """
@@ -148,6 +185,8 @@ def main(argv: list[str] | None = None) -> None:
     g = sub.add_parser("purge", help="보존기간 지난 수행 로그·접근 감사 로그·미참조 TTS 파일 삭제")
     g.add_argument("--dry-run", action="store_true", help="지우지 않고 개수만 보여 주기")
 
+    sub.add_parser("schedule", help="하루 한 번 purge를 도는 루프(compose scheduler 서비스용)")
+
     m = sub.add_parser("gc-media", help="레코드 없는 사진·TTS 파일과 어느 단계도 쓰지 않는 레코드 삭제")
     m.add_argument("--dry-run", action="store_true", help="지우지 않고 개수만 보여 주기")
 
@@ -157,6 +196,9 @@ def main(argv: list[str] | None = None) -> None:
         return
     if args.cmd == "purge":
         purge(args.dry_run)
+        return
+    if args.cmd == "schedule":
+        schedule()
         return
     if args.cmd == "gc-media":
         gc_media(args.dry_run)

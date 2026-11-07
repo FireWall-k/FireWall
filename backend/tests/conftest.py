@@ -16,6 +16,8 @@ os.environ["JOBCARD_SECRET"] = "test-secret"
 os.environ["TTS_CACHE_DIR"] = f"{_tmp}/tts"
 # 사진도 임시 경로에 둔다(기본 ./data/photos에 테스트 사진이 쌓이지 않게).
 os.environ["PHOTO_DIR"] = f"{_tmp}/photos"
+# purge 마지막 성공 기록(maintenance.py)도 임시 경로에 둔다(기본 ./data/maintenance에 쌓이지 않게).
+os.environ["PURGE_STATUS_FILE"] = f"{_tmp}/maintenance/purge_status.json"
 os.environ["DEMO_EMPLOYER_LOGIN"] = "demo"
 os.environ["DEMO_EMPLOYER_PASSWORD"] = "demo1234"
 os.environ["DEMO_WORKER_CODE"] = "1234"

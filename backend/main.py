@@ -98,6 +98,7 @@ from schemas import (
     WorkplaceOut,
 )
 from ratelimit import client_ip, employer_throttle, ensure_not_blocked, worker_throttle
+import maintenance
 import media
 from photos import MAX_PHOTO_BYTES, ImageRejected, sanitize_image, save_photo, sniff_image
 from tts import synthesize_tts
@@ -251,7 +252,10 @@ def _owned_task(task_id: str, employer_id: str, db: Session) -> Task:
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok"}
+    # purge: 보존기간 삭제 스케줄(scheduler 서비스)의 마지막 성공 시각·경과 시간(maintenance.py).
+    # 실패해도 status는 ok로 둔다 — compose healthcheck가 이 응답을 보므로, 삭제가 밀렸다고 API까지 내리면 안 된다.
+    # 모니터링은 purge.stale(주기의 1.5배 초과 또는 한 번도 성공 안 함)을 경보로 쓴다.
+    return {"status": "ok", "purge": maintenance.health_info()}
 
 
 # --- 인증 ---

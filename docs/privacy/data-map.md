@@ -25,7 +25,7 @@
 |---|---|---|
 | DB 전체 | SQLite `jobcard.db` (Docker named volume `jobcard-data`, `/app/data`) | WAL 모드. `secure_delete=ON`으로 지운 행을 0으로 덮는다. `journal_size_limit=0`으로 WAL 재시작 때 -wal 파일을 잘라 옛 프레임이 파일 뒤쪽에 남지 않게 한다 |
 | TTS mp3 | `/app/data/tts/<hash>.mp3` | 단계 문장 음성. 파일명은 (사업장 id + 음성 옵션 + 문장) 해시 — 사업장끼리 캐시를 공유하지 않는다(Phase 0.3) |
-| 단계 사진 | `/app/data/photos/<uuid>.webp` | 0004 이전 사진은 마이그레이션 때 메타데이터를 지운 WebP로 다시 저장. 옛 원본은 `gc-media`가 지운다 |
+| 단계 사진 | `/app/data/photos/<uuid>.webp` | 0004 이전 사진은 마이그레이션 때 메타데이터를 지운 WebP로 다시 저장하고, EXIF가 든 옛 원본은 그 자리에서 바로 지운다 |
 
 **사진·TTS 접근(Phase 0.3)**: 예전에는 `/api/photos`, `/api/tts`가 인증 없는 정적 경로라 파일명만 알면 누구나 받을 수 있었다. 이제 정적 경로는 없고,
 인증·소유권 검사를 통과한 API 응답에만 단기 서명 URL(`/api/media/{id}?exp=&sig=`, HMAC(JOBCARD_SECRET), 기본 수명
@@ -68,10 +68,10 @@
 
 | 데이터 | 보존 | 삭제 방법 |
 |---|---|---|
-| 수행 로그 | `PERFORMANCE_LOG_RETENTION_DAYS` (기본 365일, `completed_at` 기준) | `manage.py purge` |
-| 접근 감사 로그 | `ACCESS_AUDIT_RETENTION_DAYS` (기본 730일) — 「개인정보의 안전성 확보조치 기준」 제8조: 민감정보 처리 시 접속기록 2년 이상 | `manage.py purge` (앱 코드에 다른 삭제·수정 경로 없음) |
+| 수행 로그 | `PERFORMANCE_LOG_RETENTION_DAYS` (기본 365일, `completed_at` 기준) | scheduler가 매일 `purge` (아래 "삭제 스케줄") |
+| 접근 감사 로그 | `ACCESS_AUDIT_RETENTION_DAYS` (기본 730일) — 「개인정보의 안전성 확보조치 기준」 제8조: 민감정보 처리 시 접속기록 2년 이상 | scheduler가 매일 `purge` (앱 코드에 다른 삭제·수정 경로 없음) |
 | TTS mp3 | 단계를 지우거나 문장을 고치면 그 단계의 소유 레코드는 바로 지운다. 파일은 어느 레코드도 가리키지 않게 된 뒤 `MEDIA_ORPHAN_GRACE_HOURS`(없으면 `TTS_ORPHAN_GRACE_HOURS`, 기본 24시간) 뒤. 캐시를 다시 쓰면 수정 시각을 갱신하고, 정리는 지우기 직전에 레코드·시각을 다시 확인한다(재사용과의 경합 방지) | `manage.py purge` 또는 `manage.py gc-media` |
-| 단계 사진 | 사진을 교체·되돌리거나 단계·직무를 지우면, 다른 단계가 쓰지 않는 한 레코드와 파일을 **바로** 지운다. 레코드 없는 파일(업로드 중 실패, 0004 이전 원본)은 유예시간 뒤 | 즉시(API) + `manage.py purge`/`gc-media` |
+| 단계 사진 | 사진을 교체·되돌리거나 단계·직무를 지우면, 다른 단계가 쓰지 않는 한 레코드와 파일을 **바로** 지운다. 레코드 없는 파일(업로드 중 실패 등)은 유예시간 뒤 | 즉시(API) + scheduler의 매일 `purge`(`gc-media`와 같은 정리) |
 | 근로자 프로필·메모·배정·수행 로그·동의 | 사업주가 삭제할 때까지 | `DELETE /api/workers/{id}` — DB 행 삭제 + `secure_delete` + WAL 체크포인트(아래 "WAL 체크포인트") |
 | 직무 원문·제목·단계 문장 속 근로자 이름, 그 문장의 TTS mp3 | **근로자를 삭제해도 남는다**(직무는 사업주 데이터) | 직무를 고치거나 지워야 사라진다. 삭제 응답의 `name_mentions`와 삭제 확인 대화상자가 이를 알린다. 문장을 고치면 옛 mp3는 미참조가 되어 purge가 지운다 |
 | 직무·단계·사진 | 사업주가 직무를 삭제할 때까지 | `DELETE /api/tasks/{id}` — 단계 행과 그 사진(다른 직무가 쓰지 않으면)·TTS 레코드를 함께 지운다 |
@@ -88,15 +88,33 @@ WAL을 재시작해도 파일을 자르지 않으면 새로 쓴 지점 뒤의 �
 - 매일 도는 `manage.py purge`가 지울 것이 없어도 TRUNCATE 체크포인트를 다시 한다(실패하면 출력에 경고).
 - `journal_size_limit=0`으로 WAL이 재시작될 때마다 파일을 자른다.
 
+### 사진·TTS 보존 정책: 참조되는 동안 보존, 고아만 정리
+
+사진·TTS 파일에는 **날짜 기준 보존기간이 없다.** 어느 단계가 가리키는 동안은 직무의 일부라 그대로 두고
+(근로자가 매일 보는 그림·음성이 어느 날 사라지면 안 된다), **어느 단계도 가리키지 않게 된 것(고아)만** 지운다.
+
+- 고아가 되는 때: 사진 교체·되돌리기, 단계 문장 수정(옛 TTS), 단계·직무 삭제. 사진은 그 자리에서 바로 지우고,
+  TTS 파일과 레코드 없는 파일(업로드·생성 도중 실패)은 `MEDIA_ORPHAN_GRACE_HOURS`(기본 24시간) 유예 뒤 매일 정리가 지운다.
+- 근로자를 지워도 직무의 사진·TTS는 남는다(직무는 사업주 데이터, 위 표). 직무를 고치거나 지워야 사라진다.
+- 사업주가 직무를 오래 두면 사진·TTS도 그만큼 남는다. 직무 자체의 보존기간은 아직 없다(후속 과제, 배정과 같이).
+
 ### 삭제 스케줄
 
-서버 프로세스 안에 스케줄러를 두지 않는다(백엔드를 여러 개 띄우면 같은 삭제가 겹친다). 호스트 cron으로 하루 한 번:
+compose 기본 프로필의 `scheduler` 서비스(backend와 같은 이미지, `python manage.py schedule`)가
+마지막 성공 후 `PURGE_INTERVAL_HOURS`(기본 24시간)마다 `purge`를 한 번 돌린다 — 보존기간이 지난 수행 로그·
+접근 감사 로그 삭제, 고아 사진·TTS 정리(`gc-media`와 같은 일), WAL 체크포인트. 실패하면
+`PURGE_RETRY_MINUTES`(기본 60분) 뒤 다시 한다. `docker compose up`이면 같이 뜨므로 예전처럼 호스트 crontab에
+등록할 필요가 없다(등록을 잊으면 개인정보가 보존기간을 넘겨 남는데 아무 데서도 드러나지 않았다).
 
-```cron
-15 3 * * * cd /srv/jobcard && docker compose --profile maintenance run --rm purge >> /var/log/jobcard-purge.log 2>&1
-```
-
-먼저 확인만 하려면 `docker compose --profile maintenance run --rm purge python manage.py purge --dry-run`.
+- 요청을 받는 backend 안에 두지 않는다(backend를 여러 개 띄우면 같은 삭제가 겹친다). `scheduler`도 **하나만** 띄운다.
+- 마지막 성공 시각은 공유 볼륨의 `PURGE_STATUS_FILE`(`/app/data/maintenance/purge_status.json`)에 남고, backend
+  `GET /health`가 `purge.last_success_at`·`age_hours`·`stale`(주기의 1.5배를 넘김 또는 한 번도 성공 안 함)·
+  `last_error`(오류 종류만, 메시지 없음)로 보여 준다. 모니터링은 `purge.stale == true`를 경보로 쓴다.
+  `stale`이어도 `/health`의 `status`는 `ok`다(삭제가 밀렸다고 API까지 내리지 않는다).
+- 실행 기록·지운 개수: `docker compose logs scheduler`.
+- 손으로 돌리기·확인만 하기: `docker compose --profile maintenance run --rm purge` /
+  `docker compose --profile maintenance run --rm purge python manage.py purge --dry-run`. 손으로 돌린 purge도
+  성공하면 마지막 성공 시각을 갱신한다(dry-run은 갱신하지 않는다).
 
 ## 6. 접근 감사
 

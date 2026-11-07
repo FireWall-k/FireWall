@@ -460,7 +460,10 @@ mp3 기록·해시 캐시·URL 반환·예외 폴백까지 실제 코드를 실�
    ```
 4. **Google TTS**: 서비스 계정 JSON을 `secrets/google-tts.json`에 두고, **해당 GCP 프로젝트에 결제가
    연결돼 있어야 한다**(없으면 403 → 브라우저 음성으로 대체되며, 실패 후 5분간은 호출을 건너뛴다).
-5. **백업**: DB는 named volume `jobcard-data`의 `jobcard.db`(SQLite, WAL 모드). 예:
+5. **보존기간 삭제**: `scheduler` 서비스가 `up`과 함께 떠서 하루 한 번 `purge`(보존기간 지난 수행 로그·접근
+   감사 로그 + 고아 사진·TTS 정리)를 돌린다. crontab 등록은 필요 없다. 마지막 성공은 `GET /health`의
+   `purge.last_success_at`·`age_hours`·`stale`로 확인한다(정책: [docs/privacy/data-map.md](docs/privacy/data-map.md) 5절).
+6. **백업**: DB는 named volume `jobcard-data`의 `jobcard.db`(SQLite, WAL 모드). 예:
    `docker compose exec backend python -c "import sqlite3; s=sqlite3.connect('/app/data/jobcard.db'); d=sqlite3.connect('/app/data/backup.db'); s.backup(d)"`
 
 알려진 한계: DB는 SQLite만 지원한다(날짜 집계가 SQLite 전용 문법). 로그인 시도 제한이 프로세스
