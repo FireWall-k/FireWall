@@ -29,7 +29,10 @@ function Get-EnvValue([string]$Key) {
     foreach ($line in [System.IO.File]::ReadAllLines($EnvFile)) {
         if ($line -match "^\s*(export\s+)?$Key\s*=\s*(.*?)\s*$") {
             $value = $Matches[2]
-            if ($value -match '^"(.*)"$' -or $value -match "^'(.*)'$") { $value = $Matches[1] }
+            # compose의 dotenv와 같은 규칙: 따옴표 값은 따옴표 안만(안의 #은 값), 따옴표 없는 값은 ' #' 뒤를
+            # 주석으로 버린다. 다르게 읽으면 파일 값(우선)이 backend가 쓰던 키와 달라진다(init-secrets.sh 참고).
+            if ($value -match '^"(.*?)"\s*(#.*)?$' -or $value -match "^'(.*?)'\s*(#.*)?$") { $value = $Matches[1] }
+            else { $value = ($value -replace '\s+#.*$', '') }
         }
     }
     return $value

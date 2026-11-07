@@ -30,7 +30,11 @@ env_value() {
   [ -f "$ENV_FILE" ] || { printf ''; return 0; }
   grep -E "^[[:space:]]*(export[[:space:]]+)?$1[[:space:]]*=" "$ENV_FILE" 2>/dev/null | tail -n 1 \
     | sed -E "s/^[[:space:]]*(export[[:space:]]+)?$1[[:space:]]*=[[:space:]]*//; s/\r$//; s/[[:space:]]+$//" \
-    | sed -E "s/^\"(.*)\"$/\1/; s/^'(.*)'$/\1/"
+    | sed -E "/^[\"']/! s/[[:space:]]+#.*$//" \
+    | sed -E "s/^\"(.*)\"[[:space:]]*(#.*)?$/\1/; s/^'(.*)'[[:space:]]*(#.*)?$/\1/"
+  # 위 두 줄: compose의 dotenv와 같은 규칙으로 읽는다. 따옴표 없는 값은 ' #' 뒤를 주석으로 버리고,
+  # 따옴표 값은 따옴표 안만 쓴다(안의 #은 값). 다르게 읽으면 파일 값(우선)이 backend가 쓰던 키와 달라져
+  # 토큰·접속 코드 해시·서명 URL이 전부 무효가 된다.
 }
 
 # 파일이 비었는지(공백·개행만 있어도 빈 것). 앱(secret_env.py, tts.py)과 같은 기준.

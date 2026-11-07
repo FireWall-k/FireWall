@@ -88,3 +88,37 @@ def test_ps1_moves_env_values_without_printing(tmp_path):
     assert (secrets_dir / "openai_api_key.txt").read_bytes() == FAKE_OPENAI.encode()
     assert (secrets_dir / "jobcard_secret.txt").read_bytes() == FAKE_SECRET.encode()
     assert (secrets_dir / "google-tts.json").read_bytes() == b""
+
+
+def test_sh_strips_inline_comment_like_compose(tmp_path):
+    """compose의 dotenv는 따옴표 없는 값에서 ' #' 뒤를 주석으로 버린다. 스크립트가 주석까지 파일에 옮기면
+    파일 값(우선)이 지금까지 backend가 쓰던 키와 달라져 토큰·접속 코드 해시·서명 URL이 전부 무효가 된다."""
+    secrets_dir = tmp_path / "secrets"
+    secrets_dir.mkdir()
+    env_file = tmp_path / ".env"
+    env_file.write_bytes((
+        "JOBCARD_SECRET=abc def # 운영 키\r\n"
+        'OPENAI_API_KEY="sk-test#notcomment" # 따옴표 안의 #은 값\r\n'
+    ).encode("utf-8"))
+    _run_sh(tmp_path, secrets_dir, env_file)
+    assert (secrets_dir / "jobcard_secret.txt").read_text(encoding="utf-8") == "abc def"
+    assert (secrets_dir / "openai_api_key.txt").read_text(encoding="utf-8") == "sk-test#notcomment"
+
+
+def test_ps1_strips_inline_comment_like_compose(tmp_path):
+    """init-secrets.sh와 같은 규칙(test_sh_strips_inline_comment_like_compose 참고)을 Windows 스크립트도 따른다."""
+    ps = shutil.which("pwsh") or shutil.which("powershell")
+    if ps is None:
+        pytest.skip("PowerShell 없음(Windows용 스크립트)")
+    secrets_dir = tmp_path / "secrets"
+    env_file = tmp_path / ".env"
+    env_file.write_bytes((
+        "JOBCARD_SECRET=abc def # 운영 키\r\n"
+        'OPENAI_API_KEY="sk-test#notcomment" # 따옴표 안의 #은 값\r\n'
+    ).encode("utf-8"))
+    subprocess.run(
+        [ps, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(ROOT / "scripts" / "init-secrets.ps1"),
+         "-SecretsDir", str(secrets_dir), "-EnvFile", str(env_file)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True)
+    assert (secrets_dir / "jobcard_secret.txt").read_text(encoding="utf-8") == "abc def"
+    assert (secrets_dir / "openai_api_key.txt").read_text(encoding="utf-8") == "sk-test#notcomment"

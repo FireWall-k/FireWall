@@ -374,6 +374,12 @@ def test_tts_scope_changes_cache_key():
     "/api/aac/images/retail%5c..%5c..%5cx.webp",  # 역슬래시
     "/api/aac/images/retail/x.webp%00.png",
     "/api/aac/images/./retail/x.webp",
+    # 브라우저 URL 파서는 탭·줄바꿈을 지운 뒤 경로를 정규화한다. "." + 탭 + "."은 서버 검사에서는 "."도 ".."도
+    # 아니지만 브라우저에서는 ".."이 되어 AAC 폴더 밖을 가리킨다.
+    "/api/aac/images/.\t./x",
+    "/api/aac/images/.\n./.\r./api/media/x",
+    "/api/aac/images/retail/%09x.webp",
+    "/api/aac/images/retail/x\x7f.webp",
 ])
 def test_own_image_url_rejects_encoded_traversal(url):
     """브라우저·프록시는 %2e%2e를 ..로 풀어 경로를 정규화한다. 인코딩된 채로 검사하면 ".."이 안 보여

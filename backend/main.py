@@ -996,6 +996,10 @@ def _is_own_image_url(url: str) -> bool:
         return False  # 다섯 번 풀어도 계속 바뀌는 경로는 정상 그림 URL이 아니다
     if any(ch in decoded for ch in ("\\", "\x00", "?", "#")) or "//" in decoded:
         return False
+    # 제어 문자(탭·줄바꿈 등)는 브라우저 URL 파서가 지운 뒤 정규화한다. ".\t."은 여기서는 ".."이 아니지만
+    # 브라우저에서는 ".."이 되어 AAC 폴더 밖 경로를 가리키므로, 정상 그림 경로에 없을 제어 문자는 통째로 거부한다.
+    if any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in decoded):
+        return False
     if posixpath.normpath(decoded) != decoded or ".." in decoded.split("/"):
         return False
     return decoded.startswith(_OWN_IMAGE_PATHS)
