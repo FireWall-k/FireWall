@@ -730,14 +730,40 @@ def _tiebreak(asset: dict, preferred_job: str | None, action_type: str | None) -
 
 # 임베딩 유사도를 규칙 점수에 '더하는' 항: w × max(0, 유사도 − 기준).
 # 가산만 한다 — 유사도가 낮다고 깎지 않는다("흔한 신호 부재를 감점하는" 방식은 여러 번
-# 회귀했다). 기준 0.4 아래의 유사도는 잡음이라 0으로 본다.
-_EMBED_WEIGHT = float(os.getenv("AAC_EMBED_WEIGHT", "0.5"))
-_EMBED_BASE = float(os.getenv("AAC_EMBED_BASE", "0.4"))
+# 회귀했다). 기준 아래의 유사도는 잡음이라 0으로 본다.
+#
+# 모델마다 코사인 분포가 달라 기본값이 제공자별로 다르다(AAC_EMBED_PROVIDER):
+#   (가중치, 기준, 채택 임계값, 여유)
+#   openai text-embedding-3-large 256 — 0.5 / 0.4  / 0.35 / 0.02 (예전 블라인드 보정)
+#   local  paraphrase-multilingual-MiniLM-L12-v2 — 0.3 / 0.65 / 0.24 / 0.015
+#          (개발셋 full·sentence 스윕, eval/README.md "로컬 임베딩"). MiniLM은 무관한 문장끼리도
+#          0.3~0.5가 흔해 기준이 높고, 가산이 크면 규칙 점수의 순서를 너무 흔들어 가중치가 작다.
+# 환경변수(AAC_EMBED_WEIGHT/BASE, AAC_EMBED_MATCH_THRESHOLD/MIN_MARGIN)를 주면 그 값이 이긴다.
+_EMBED_DEFAULTS = {
+    "openai": (0.5, 0.4, 0.35, 0.02),
+    "local": (0.3, 0.65, 0.24, 0.015),
+}
+
+
+def _env_float(name: str, default: float) -> float:
+    value = os.getenv(name, "").strip()
+    return float(value) if value else default
+
+
+def _embed_defaults() -> tuple[float, float, float, float]:
+    return _EMBED_DEFAULTS[embeddings.provider()]
+
+
+def _embed_term_params() -> tuple[float, float]:
+    """(가중치, 기준) — 지금 제공자의 기본값 또는 환경변수."""
+    weight, base, _, _ = _embed_defaults()
+    return _env_float("AAC_EMBED_WEIGHT", weight), _env_float("AAC_EMBED_BASE", base)
 
 
 def _score_asset(asset: dict, qf: _QueryFeatures, preferred_job: str | None,
                  action_type: str | None, is_instruction: bool = False,
-                 emb_sim: float | None = None) -> float:
+                 emb_sim: float | None = None,
+                 emb_params: tuple[float, float] | None = None) -> float:
     relevance = _relevance(asset, qf)
 
     # 사물 카드 게이트 — 지시문에는 동작 그림이 맞다. "얼음통을 씻어주세요"에 도구
@@ -756,7 +782,8 @@ def _score_asset(asset: dict, qf: _QueryFeatures, preferred_job: str | None,
 
     score = max(0.0, min(relevance + _tiebreak(asset, preferred_job, action_type), 1.0))
     if emb_sim is not None:
-        score = min(1.0, score + _EMBED_WEIGHT * max(0.0, emb_sim - _EMBED_BASE))
+        weight, base = emb_params or _embed_term_params()
+        score = min(1.0, score + weight * max(0.0, emb_sim - base))
     return score
 
 
@@ -823,6 +850,7 @@ def _search(query: str, context: dict | None = None, limit: int = 5) -> tuple[li
 
     # 못 쓰면(키·파일 없음, 호출 실패) None — 그러면 임베딩 없는 기존 점수로 그대로 진행한다.
     sims = embeddings.query_similarities(query)
+    emb_params = _embed_term_params() if sims is not None else None
 
     ranked: list[tuple[float, dict]] = []
     for asset in assets:
@@ -843,6 +871,7 @@ def _search(query: str, context: dict | None = None, limit: int = 5) -> tuple[li
             action_type,
             is_instruction,
             emb_sim,
+            emb_params,
         )
         if score <= 0:
             continue
@@ -1004,8 +1033,9 @@ def _margin_settings(embedding: bool) -> tuple[float, float, str, float]:
     """
     prefix = "AAC_EMBED_MATCH_" if embedding else "AAC_MATCH_"
     if embedding:
-        threshold = float(os.getenv(prefix + "THRESHOLD", "0.35"))
-        min_margin = float(os.getenv(prefix + "MIN_MARGIN", "0.02"))
+        _, _, thr_default, margin_default = _embed_defaults()
+        threshold = _env_float(prefix + "THRESHOLD", thr_default)
+        min_margin = _env_float(prefix + "MIN_MARGIN", margin_default)
     else:
         threshold = float(os.getenv(prefix + "THRESHOLD", "0.215"))
         min_margin = float(os.getenv(prefix + "MIN_MARGIN", "0.018"))
@@ -1039,8 +1069,8 @@ def decide(results: list[dict], embedding: bool = False, *,
 
     임계값은 두 벌이다. 임베딩 가산 항이 붙으면 점수 척도가 올라가므로(정답은 더 높게,
     오답도 조금 높게) 같은 임계값을 쓰면 안 된다 — 임베딩을 쓴 검색은 AAC_EMBED_MATCH_*
-    (0.35 / 0.02), 못 쓴 검색(키 없음·호출 실패)은 AAC_MATCH_*(0.215 / 0.018)로 판정한다.
-    임베딩 쪽은 키 없는 환경에서 잴 수 없어 P5에서 건드리지 않았다.
+    (제공자별 기본값 — local 0.24 / 0.015, openai 0.35 / 0.02), 못 쓴 검색(꺼짐·파일 낡음·실패)은
+    AAC_MATCH_*(0.215 / 0.018)로 판정한다.
 
     여유는 "2위"가 아니라 "1위와 같은 그림 묶음(_same_picture) 밖의 첫 후보"와 잰다. 쌍둥이
     그림끼리는 어느 쪽이 나와도 맞으므로 서로 여유를 깎으면 안 되고, 반대로 쌍둥이를 건너뛴

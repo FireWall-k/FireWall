@@ -13,11 +13,12 @@
     python -m eval.run_match_eval --job cleaning       # 특정 직무만
     python -m eval.run_match_eval --verbose            # 케이스별 상위 후보까지 출력
     python -m eval.run_match_eval --json before.json   # 스코어러 수정 전/후 비교용
-    python -m eval.run_match_eval --embedding cached   # 질의 임베딩 디스크 캐시로 채점(API 호출 없음)
-    python -m eval.run_match_eval --fill-embed-cache   # 캐시 채우기(OPENAI_API_KEY 필요)
+    python -m eval.run_match_eval --embedding local    # 로컬 모델로 질의 임베딩(무료, 네트워크 없음)
+    python -m eval.run_match_eval --embedding cached   # 질의 임베딩 디스크 캐시로 채점(모델 호출 없음)
+    python -m eval.run_match_eval --fill-embed-cache   # 캐시 채우기(지금 제공자; openai면 키 필요)
     python -m eval.run_match_eval --write-baseline     # eval/baselines/ 네 벌 갱신
 
-네트워크·LLM을 쓰지 않는다(--fill-embed-cache 제외). 임베딩 모드는 off|cached 둘뿐이고
+네트워크·LLM을 쓰지 않는다(--fill-embed-cache 제외). 임베딩 모드는 off|local|cached 셋뿐이고
 '키가 있으면 저절로 켜지는' auto는 받지 않는다 — 개발자 셸에 키가 있느냐에 따라 수치가
 달라지면 전후 비교가 무의미해지기 때문이다. 같은 커밋이면 항상 같은 결과가 나온다(결정적).
 
@@ -70,7 +71,7 @@ DEV_DATASET_PATH = EVAL_DIR / "dev_set.json"
 DATASETS = {"golden": DATASET_PATH, "dev": DEV_DATASET_PATH}
 BASELINE_DIR = EVAL_DIR / "baselines"
 EMBED_CACHE_DIR = EVAL_DIR / ".embed_cache"
-EMBEDDING_MODES = ("off", "cached")
+EMBEDDING_MODES = ("off", "local", "cached")
 
 
 class EmbeddingCacheMiss(RuntimeError):
@@ -224,9 +225,10 @@ def query_cache_path(cache_dir: Path, query: str) -> Path:
     모델·차원을 디렉터리로 나눈 이유: 설정을 바꾼 뒤 옛 벡터를 조용히 섞어 쓰면 점수 척도가
     어긋나는데, 파일 이름만 보고는 알 수 없다. 질의는 _search와 같이 앞뒤 공백만 정규화한다.
     """
-    model = str(embeddings.llm.EMBED_MODEL).replace("/", "_")
+    model, dims = embeddings.active_model()
+    model = str(model).replace("/", "_")
     digest = hashlib.sha256(query.strip().encode("utf-8")).hexdigest()
-    return Path(cache_dir) / f"{model}-{embeddings.llm.EMBED_DIMS}" / f"{digest}.npy"
+    return Path(cache_dir) / f"{model}-{dims}" / f"{digest}.npy"
 
 
 def _read_cached_vector(cache_dir: Path, query: str) -> np.ndarray | None:
@@ -234,7 +236,7 @@ def _read_cached_vector(cache_dir: Path, query: str) -> np.ndarray | None:
     if not path.exists():
         return None
     vec = np.load(path, allow_pickle=False).astype(np.float32)
-    if vec.shape != (int(embeddings.llm.EMBED_DIMS),):
+    if vec.shape != (int(embeddings.active_model()[1]),):
         raise EmbeddingCacheMiss(f"캐시 벡터 차원이 설정과 다릅니다: {path} {vec.shape}")
     return vec
 
@@ -244,6 +246,8 @@ def _embedding_mode(mode: str, cache_dir: Path):
     """채점 동안만 임베딩 경로를 고정한다.
 
     off    — AAC_EMBEDDINGS=off. 키가 있어도 API를 부르지 않는다.
+    local  — 운영과 같은 경로(embeddings.query_similarities)를 로컬 제공자로 돌린다. 키·네트워크
+             없이 결정적이다. AAC_EMBED_PROVIDER를 이 동안 local로 고정한다(셸에 openai가 있어도).
     cached — 질의 유사도를 디스크 캐시 벡터로 계산한다. 캐시에 없으면 API를 부르는 대신
              EmbeddingCacheMiss — CI·키 없는 환경에서도 임베딩 경로를 같은 수치로 재현하기 위해서다.
     프로덕션 코드는 건드리지 않고 embeddings.query_similarities만 잠시 바꿔 끼운다.
@@ -251,9 +255,20 @@ def _embedding_mode(mode: str, cache_dir: Path):
     if mode not in EMBEDDING_MODES:
         raise SystemExit(f"임베딩 모드는 {EMBEDDING_MODES} 중 하나여야 합니다: {mode}")
     saved_env = os.environ.get("AAC_EMBEDDINGS")
+    saved_provider = os.environ.get("AAC_EMBED_PROVIDER")
     original = embeddings.query_similarities
     if mode == "off":
         os.environ["AAC_EMBEDDINGS"] = "off"
+    elif mode == "local":
+        os.environ["AAC_EMBEDDINGS"] = "auto"
+        os.environ["AAC_EMBED_PROVIDER"] = "local"
+        embeddings._load_store.cache_clear()
+        if embeddings._load_store() is None:
+            _restore_env("AAC_EMBEDDINGS", saved_env)
+            _restore_env("AAC_EMBED_PROVIDER", saved_provider)
+            embeddings._load_store.cache_clear()
+            raise SystemExit("로컬 모델로 만든 자산 임베딩 파일(aac_embeddings.npz)이 없거나 현재 "
+                             "라벨과 어긋나 local 모드를 쓸 수 없습니다.")
     else:
         store = embeddings._load_store()
         if store is None:
@@ -275,10 +290,17 @@ def _embedding_mode(mode: str, cache_dir: Path):
         yield
     finally:
         embeddings.query_similarities = original
-        if saved_env is None:
-            os.environ.pop("AAC_EMBEDDINGS", None)
-        else:
-            os.environ["AAC_EMBEDDINGS"] = saved_env
+        _restore_env("AAC_EMBEDDINGS", saved_env)
+        if mode == "local":
+            _restore_env("AAC_EMBED_PROVIDER", saved_provider)
+            embeddings._load_store.cache_clear()
+
+
+def _restore_env(name: str, value: str | None) -> None:
+    if value is None:
+        os.environ.pop(name, None)
+    else:
+        os.environ[name] = value
 
 
 def check_embedding_consistency(rows: list[dict], mode: str) -> None:
@@ -291,18 +313,18 @@ def check_embedding_consistency(rows: list[dict], mode: str) -> None:
     unused = [r["id"] for r in rows if not r["embedding"]]
     if mode == "off" and used:
         raise MixedEmbeddingError(f"임베딩 off인데 임베딩을 쓴 케이스가 있다: {used[:5]}")
-    if mode == "cached" and unused:
-        raise MixedEmbeddingError(f"임베딩 cached인데 임베딩 없이 판정된 케이스가 있다: {unused[:5]}")
+    if mode != "off" and unused:
+        raise MixedEmbeddingError(f"임베딩 {mode}인데 임베딩 없이 판정된 케이스가 있다: {unused[:5]}")
 
 
 def fill_embed_cache(datasets: list[Path], query_modes: list[str],
                      cache_dir: Path = EMBED_CACHE_DIR) -> int:
-    """데이터셋 질의의 임베딩을 API로 받아 디스크 캐시에 채운다. 채운 개수를 돌려준다.
+    """데이터셋 질의의 임베딩을 지금 제공자로 받아 디스크 캐시에 채운다. 채운 개수를 돌려준다.
 
-    키가 있을 때만 동작한다. 채점(--embedding cached)은 절대 API를 부르지 않으므로, 캐시를
-    바꾸는 길은 이것 하나다.
+    openai 제공자는 키가 있을 때만 동작한다. 채점(--embedding cached)은 절대 모델을 부르지 않으므로,
+    캐시를 바꾸는 길은 이것 하나다.
     """
-    if not embeddings.llm.llm_available():
+    if not embeddings.provider_ready():
         raise SystemExit("OPENAI_API_KEY가 없어 질의 임베딩 캐시를 채울 수 없습니다.")
     queries: list[str] = []
     for path in datasets:
@@ -313,7 +335,7 @@ def fill_embed_cache(datasets: list[Path], query_modes: list[str],
                     queries.append(q)
     for start in range(0, len(queries), 64):
         batch = queries[start:start + 64]
-        for q, raw in zip(batch, embeddings.llm.embed_texts(batch)):
+        for q, raw in zip(batch, embeddings.embed_texts(batch)):
             vec = embeddings.normalize(raw)
             if vec is None:
                 raise SystemExit(f"영벡터를 받았습니다: {q!r}")
@@ -381,7 +403,7 @@ def run(only_case: str | None = None, only_job: str | None = None,
         reasons[row["reason"]] = reasons.get(row["reason"], 0) + 1
 
     # check_embedding_consistency를 통과했으므로 모든 케이스가 같은 임계값 세트로 판정됐다.
-    used_embedding = embedding == "cached"
+    used_embedding = embedding != "off"
     settings = _margin_settings(used_embedding)
     return {
         "dataset": dataset_name(dataset_path),
@@ -472,8 +494,9 @@ def _print_report(report: dict, verbose: bool) -> None:
           f"(일반 {report['n_normal']} / 커버리지갭 {report['n_gap']}), "
           f"채택 기준 점수≥{report['threshold']} 및 여유≥{report['min_margin']}")
     print(f"데이터셋: {report['dataset']}   질의 모드: {mode_label}")
-    print("임베딩: " + ("cached (디스크 캐시 질의 벡터, 임베딩용 임계값)" if report["embedding"]
-                       else "off (기존 규칙 점수, 기존 임계값)"))
+    print("임베딩: " + ({"cached": "cached (디스크 캐시 질의 벡터, 임베딩용 임계값)",
+                        "local": "local (로컬 모델 질의 벡터, 임베딩용 임계값)"}
+                       .get(report["embedding_mode"], "off (기존 규칙 점수, 기존 임계값)")))
     print("=" * 78)
     for key, value in m.items():
         bar = "#" * int(value * 30)
@@ -625,7 +648,8 @@ def main() -> None:
     ap.add_argument("--query-mode", choices=["full", "sentence"], default="full",
                     help="full=문장+symbol_query(LLM 경로), sentence=문장만(규칙 폴백 경로)")
     ap.add_argument("--embedding", choices=EMBEDDING_MODES, default="off",
-                    help="off=규칙 점수만(기본), cached=eval/.embed_cache/ 질의 벡터 사용(API 호출 없음)")
+                    help="off=규칙 점수만(기본), local=로컬 모델로 질의 임베딩(무료), "
+                         "cached=eval/.embed_cache/ 질의 벡터 사용(모델 호출 없음)")
     ap.add_argument("--no-embedding", action="store_true",
                     help="--embedding off 와 같다(예전 옵션 호환)")
     ap.add_argument("--verbose", action="store_true", help="케이스별 상위 후보 출력")
@@ -639,7 +663,7 @@ def main() -> None:
     ap.add_argument("--write-baseline", action="store_true",
                     help="eval/baselines/{golden,dev}_{full,sentence}.json 을 임베딩 off로 갱신")
     ap.add_argument("--fill-embed-cache", action="store_true",
-                    help="--dataset 의 full·sentence 질의 임베딩을 API로 받아 캐시에 채운다(키 필요)")
+                    help="--dataset 의 full·sentence 질의 임베딩을 지금 제공자로 받아 캐시에 채운다")
     args = ap.parse_args()
     embedding = "off" if args.no_embedding else args.embedding
 

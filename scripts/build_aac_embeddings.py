@@ -4,16 +4,20 @@
 digest는 ai_service/embeddings.py와 같은 코드를 쓴다 — 인덱스의 라벨·검색어를 고치고 이 스크립트를
 다시 돌리지 않으면 로더가 digest 불일치를 알아채고 임베딩을 쓰지 않는다(안전하게 기존 방식으로 동작).
 
+지금 제공자(AAC_EMBED_PROVIDER, 기본 local)로 만든다. local은 무료 로컬 모델(fastembed)이라 키가
+필요 없다 — 처음 한 번 Hugging Face에서 모델을 내려받는다(AAC_EMBED_CACHE_DIR, 없으면 fastembed 기본 캐시).
+
     cd ai_service
-    export OPENAI_API_KEY=...            # 또는 저장소 루트 .env
-    python ../scripts/build_aac_embeddings.py            # 만들기(401개 ≈ 요청 2번, 1센트 미만)
-    python ../scripts/build_aac_embeddings.py --check    # 낡았는지만 확인(API 호출 없음, 낡으면 종료코드 1)
+    python ../scripts/build_aac_embeddings.py            # 만들기(로컬 모델, 512개 ≈ 수 초)
+    python ../scripts/build_aac_embeddings.py --check    # 낡았는지만 확인(모델 호출 없음, 낡으면 종료코드 1)
+    AAC_EMBED_PROVIDER=openai OPENAI_API_KEY=... python ../scripts/build_aac_embeddings.py  # OpenAI로 만들기
 """
 from __future__ import annotations
 
 import argparse
 import os
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -38,14 +42,13 @@ def _load_dotenv() -> None:
 _load_dotenv()
 
 import embeddings  # noqa: E402
-import llm  # noqa: E402
 import local_aac  # noqa: E402
 
 
 def _embed_all(texts: list[str]) -> np.ndarray:
     out: list[list[float]] = []
     for i in range(0, len(texts), 256):
-        out.extend(llm.embed_texts(texts[i:i + 256], timeout=60))
+        out.extend(embeddings.embed_texts(texts[i:i + 256], timeout=60))
     vecs = np.asarray(out, dtype=np.float32)
     return vecs / np.linalg.norm(vecs, axis=1, keepdims=True)
 
@@ -67,21 +70,23 @@ def main() -> None:
         print("최신입니다.")
         return
 
-    if not llm.llm_available():
-        raise SystemExit("OPENAI_API_KEY가 없습니다(.env 또는 환경변수).")
+    if not embeddings.provider_ready():
+        raise SystemExit("AAC_EMBED_PROVIDER=openai인데 OPENAI_API_KEY가 없습니다.")
 
+    model, dims = embeddings.active_model()
     ids, labels, fulls = embeddings._current_texts()
-    print(f"자산 {len(ids)}개 · 모델 {llm.EMBED_MODEL} · {llm.EMBED_DIMS}차원")
+    print(f"자산 {len(ids)}개 · 제공자 {embeddings.provider()} · 모델 {model} · {dims}차원")
+    started = time.monotonic()
     np.savez_compressed(
         path,
         ids=np.array(ids),
         label_vecs=_embed_all(labels),
         full_vecs=_embed_all(fulls),
         digest=np.array(digest),
-        model=np.array(llm.EMBED_MODEL),
-        dims=np.array(llm.EMBED_DIMS),
+        model=np.array(model),
+        dims=np.array(dims),
     )
-    print(f"저장: {path} ({path.stat().st_size / 1024:.0f} KB)")
+    print(f"저장: {path} ({path.stat().st_size / 1024:.0f} KB, {time.monotonic() - started:.1f}초)")
 
 
 if __name__ == "__main__":

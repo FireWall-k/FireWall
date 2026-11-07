@@ -22,12 +22,18 @@ services:
       AAC_MATCH_MIN_REL_MARGIN: "0.06"
       # 직무만 다르고 라벨·frame이 같은 그림을 여유 판정에서 한 묶음으로 볼지. 복장·배경이 달라 기본 off
       AAC_MATCH_CROSS_JOB_TWINS: "off"
-      # 임베딩 가산 항(data/aac/aac_embeddings.npz + 질의 임베딩 호출). 점수 척도가 올라가서
-      # 임베딩을 쓴 검색은 위 기본 임계값 대신 아래 값으로 판정한다. 키가 없거나 호출이
-      # 실패하면 자동으로 임베딩 없이(위 임계값으로) 동작한다. "off"로 끌 수 있다.
-      AAC_EMBEDDINGS: "auto"
-      AAC_EMBED_MATCH_THRESHOLD: "0.35"
-      AAC_EMBED_MATCH_MIN_MARGIN: "0.02"
+      # 임베딩 가산 항(data/aac/aac_embeddings.npz + 질의 임베딩). 기본 제공자는 local — 이미지에 구운
+      # 무료 다국어 모델(paraphrase-multilingual-MiniLM-L12-v2, ONNX)이라 키·네트워크가 필요 없다.
+      # openai로 바꾸면 text-embedding-3-large를 쓰고(키 필요), 자산 파일도 그 모델로 다시 만들어야 한다.
+      # 임베딩을 쓴 검색은 위 기본 임계값 대신 제공자별 임베딩 임계값으로 판정한다(local 0.24/0.015,
+      # openai 0.35/0.02 — local_aac._EMBED_DEFAULTS). 비워 두면 그 기본값, 값을 주면 그 값이 이긴다.
+      # 파일이 낡았거나 모델 로딩이 실패하면 자동으로 임베딩 없이(위 임계값으로) 동작한다. "off"로 끌 수 있다.
+      AAC_EMBEDDINGS: "${AAC_EMBEDDINGS:-auto}"
+      AAC_EMBED_PROVIDER: "${AAC_EMBED_PROVIDER:-local}"
+      AAC_EMBED_MATCH_THRESHOLD: "${AAC_EMBED_MATCH_THRESHOLD:-}"
+      AAC_EMBED_MATCH_MIN_MARGIN: "${AAC_EMBED_MATCH_MIN_MARGIN:-}"
+      AAC_EMBED_WEIGHT: "${AAC_EMBED_WEIGHT:-}"
+      AAC_EMBED_BASE: "${AAC_EMBED_BASE:-}"
       AAC_EMBED_TIMEOUT: "3"
       # OpenAI(LLM) — 키가 있으면 맥락적응 분해 + AI 코칭이 켜지고, 없으면 규칙 기반 폴백.
       # 키는 Docker secret 파일(./secrets/openai_api_key.txt → /run/secrets/openai_api_key)로 받는다.

@@ -34,8 +34,7 @@ PACKAGING_165~, RETAIL_093~, DELIVERY_049~). 기존 그림 2장을 참조로 넣
 판정자가 참조 그림과 나란히 놓고 캐릭터·유니폼·동작·글자 유무·안전을 검수해 통과한 것만 넣었다(118장 중 111장).
 `source_file`은 설계 단계 id(`<JOB>_NEW_<번호>.png`)다. enrich 규칙 필드는 새 카드에만 적용했고(기존 자산은 그대로),
 `aac_index.json` 항목은 build_aac_index.py와 같은 규칙·검증 함수로 만들었다.
-**임베딩(`aac_embeddings.npz`)은 아직 다시 만들지 않았다** — 서비스는 digest 불일치를 감지해 임베딩 없이 동작하고,
-임베딩 최신 여부 테스트 6개가 실패한다. `scripts/build_aac_embeddings.py`를 돌리면 해소된다(1센트 미만).
+임베딩(`aac_embeddings.npz`)은 새 카드를 포함한 1,160장 전체를 로컬 모델로 다시 만들었다(아래 절).
 
 ## 메타데이터
 
@@ -174,11 +173,19 @@ ASCII 기반의 안정적인 내부 ID로 다시 저장합니다.
 
 ## aac_embeddings.npz — 임베딩 가산 항용 자산 벡터
 
-자산마다 두 벡터(라벨, 라벨+`keywords_ko/en`)를 `text-embedding-3-large` 256차원으로 임베딩해 저장한다.
-질의 시점에 질의를 같은 모델로 임베딩해 코사인 유사도를 규칙 점수에 더한다(`ai_service/embeddings.py`).
-파일에 텍스트 digest가 들어 있어, `aac_index.json`의 라벨·검색어를 고치고 다시 만들지 않으면 서비스가
-어긋난 벡터를 쓰지 않고 임베딩을 끈다.
+자산마다 두 벡터(라벨, 라벨+`keywords_ko/en`)를 임베딩해 저장한다. 질의 시점에 질의를 **같은 모델**로
+임베딩해 코사인 유사도를 규칙 점수에 더한다(`ai_service/embeddings.py`, `local_aac._EMBED_DEFAULTS`).
+
+- **모델(기본, `AAC_EMBED_PROVIDER=local`)**: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
+  (384차원, 50여 개 언어·한국어 포함). fastembed가 받는 양자화 ONNX(약 230MB)를 CPU로 돌린다 — torch·키·
+  네트워크가 필요 없고 무료다. 질의 하나 ≈ 10ms, 모델 로딩 ≈ 3초(서비스 시작 때 미리 불러 둔다).
+  도커 이미지는 빌드 때 모델을 `/opt/embed-models`(`AAC_EMBED_CACHE_DIR`)에 받아 두고 실행 중에는 내려받지 않는다.
+- **OpenAI(`AAC_EMBED_PROVIDER=openai`)**: `text-embedding-3-large` 256차원(키 필요). 이 제공자로 바꾸면 파일도
+  그 제공자로 다시 만들어야 한다.
+
+파일에 모델·차원과 텍스트 digest가 들어 있어, 지금 제공자의 모델과 다르거나 `aac_index.json`의 라벨·검색어를 고치고
+다시 만들지 않으면 서비스가 어긋난 벡터를 쓰지 않고 임베딩을 끈다(규칙 점수와 임베딩 없는 임계값으로 동작).
 
     cd ai_service
-    python ../scripts/build_aac_embeddings.py           # 만들기(≈ 요청 2번, 1센트 미만)
-    python ../scripts/build_aac_embeddings.py --check   # 낡았는지 확인(API 호출 없음)
+    python ../scripts/build_aac_embeddings.py           # 만들기(로컬 모델, 1,160장 ≈ 35초. 처음 한 번 모델 내려받기)
+    python ../scripts/build_aac_embeddings.py --check   # 낡았는지 확인(모델 호출 없음)

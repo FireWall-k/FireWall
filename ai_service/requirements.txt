@@ -3,3 +3,6 @@ uvicorn[standard]==0.30.6
 pydantic==2.9.2
 httpx==0.27.2
 numpy==2.1.3
+# 로컬 임베딩(AAC_EMBED_PROVIDER=local, 기본) — ONNX 런타임, torch 없음. 모델은 Dockerfile이 빌드 때 받는다.
+fastembed==0.9.1
+onnxruntime==1.31.1

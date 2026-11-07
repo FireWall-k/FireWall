@@ -134,9 +134,27 @@ def test_plain_defaults_after_recalibration():
     assert decide(m017)["reason"] == "low_margin"
 
 
-def test_embedding_thresholds_unchanged():
-    """임베딩 경로는 키 없는 환경에서 잴 수 없으므로 이번 재보정 범위 밖이다(0.35 / 0.02)."""
+def test_embedding_thresholds_unchanged(monkeypatch):
+    """OpenAI 임베딩 경로는 키 없는 환경에서 잴 수 없으므로 이번 재보정 범위 밖이다(0.35 / 0.02)."""
+    monkeypatch.setenv("AAC_EMBED_PROVIDER", "openai")
+    for key in ("AAC_EMBED_MATCH_THRESHOLD", "AAC_EMBED_MATCH_MIN_MARGIN"):
+        monkeypatch.delenv(key, raising=False)
     assert decide([{"asset_id": "A", "score": 0.34}, {"asset_id": "B", "score": 0.1}],
                   embedding=True)["reason"] == "low_score"
     assert decide([{"asset_id": "A", "score": 0.50}, {"asset_id": "B", "score": 0.4815}],
                   embedding=True)["reason"] == "low_margin"
+
+
+def test_local_embedding_thresholds(monkeypatch):
+    """로컬 임베딩 경로(기본 제공자)는 0.24 / 0.015 — 개발셋 full·sentence 스윕(eval/README.md)."""
+    monkeypatch.setenv("AAC_EMBED_PROVIDER", "local")
+    for key in ("AAC_EMBED_MATCH_THRESHOLD", "AAC_EMBED_MATCH_MIN_MARGIN"):
+        monkeypatch.delenv(key, raising=False)
+    assert decide([{"asset_id": "A", "score": 0.239}, {"asset_id": "B", "score": 0.1}],
+                  embedding=True)["reason"] == "low_score"
+    assert decide([{"asset_id": "A", "score": 0.24}, {"asset_id": "B", "score": 0.1}],
+                  embedding=True)["reason"] == "accepted"
+    assert decide([{"asset_id": "A", "score": 0.50}, {"asset_id": "B", "score": 0.4855}],
+                  embedding=True)["reason"] == "low_margin"
+    assert decide([{"asset_id": "A", "score": 0.50}, {"asset_id": "B", "score": 0.484}],
+                  embedding=True)["reason"] == "accepted"

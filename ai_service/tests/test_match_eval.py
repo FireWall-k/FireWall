@@ -217,6 +217,7 @@ def test_cached_mode_misses_raise_instead_of_calling_api(tmp_path, monkeypatch):
     def forbidden(*a, **k):
         raise AssertionError("cached 모드에서 API를 부르면 안 된다")
 
+    monkeypatch.setattr(embeddings, "embed_texts", forbidden)
     monkeypatch.setattr(embeddings.llm, "embed_texts", forbidden)
     case_id = _load("golden")["cases"][0]["id"]
     with pytest.raises(EmbeddingCacheMiss):
@@ -238,14 +239,58 @@ def test_cached_mode_uses_disk_vectors(tmp_path):
     assert all(r["embedding"] for r in report["cases"])
 
 
+def test_local_mode_uses_production_path_with_local_provider(monkeypatch):
+    """--embedding local: 셸에 openai가 있어도 이 동안은 local로 고정, OpenAI는 절대 안 부른다."""
+    store = _store_or_skip()
+    monkeypatch.setenv("AAC_EMBED_PROVIDER", "openai")
+    monkeypatch.setattr(embeddings.llm, "embed_texts", _forbidden_api)
+
+    class Fake:
+        def embed(self, texts, batch_size=64):
+            return [store.full_vecs[0] for _ in texts]
+
+    monkeypatch.setattr(embeddings, "load_local_model", lambda: Fake())
+    embeddings._reset_for_tests()
+    case_id = _load("golden")["cases"][0]["id"]
+    report = run(only_case=case_id, dataset=DATASET_PATH, embedding="local")
+    assert report["embedding_mode"] == "local"
+    assert report["embedding"] is True
+    assert all(r["embedding"] for r in report["cases"])
+    assert os.environ["AAC_EMBED_PROVIDER"] == "openai"  # 끝나면 원래대로
+    embeddings._reset_for_tests()
+
+
+def test_local_mode_failure_is_not_mixed(monkeypatch):
+    """로컬 모델이 실패하면 일부만 임베딩 없이 채점되지 않고 멈춘다."""
+    _store_or_skip()
+
+    def broken():
+        raise OSError("no model")
+
+    monkeypatch.setattr(embeddings, "load_local_model", broken)
+    embeddings._reset_for_tests()
+    case_id = _load("golden")["cases"][0]["id"]
+    with pytest.raises(MixedEmbeddingError):
+        run(only_case=case_id, dataset=DATASET_PATH, embedding="local")
+    embeddings._reset_for_tests()
+
+
+def _forbidden_api(*a, **k):
+    raise AssertionError("OpenAI API를 부르면 안 된다")
+
+
 def test_cache_key_depends_on_model_dims_and_query(tmp_path, monkeypatch):
     a = query_cache_path(tmp_path, "앞치마를 입으세요.")
     assert a != query_cache_path(tmp_path, "앞치마를 벗으세요.")
-    monkeypatch.setattr(embeddings.llm, "EMBED_DIMS", 1024)
+    monkeypatch.setenv("AAC_LOCAL_EMBED_DIMS", "1024")
+    assert a != query_cache_path(tmp_path, "앞치마를 입으세요.")
+    monkeypatch.delenv("AAC_LOCAL_EMBED_DIMS")
+    monkeypatch.setenv("AAC_EMBED_PROVIDER", "openai")  # 제공자가 바뀌면 모델 이름이 다르다
     assert a != query_cache_path(tmp_path, "앞치마를 입으세요.")
 
 
 def test_fill_cache_requires_api_key(tmp_path, monkeypatch):
+    monkeypatch.setenv("AAC_EMBED_PROVIDER", "openai")
     monkeypatch.setattr(embeddings.llm, "llm_available", lambda: False)
     with pytest.raises(SystemExit):
         rme.fill_embed_cache([DATASET_PATH], ["full"], tmp_path)

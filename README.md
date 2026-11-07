@@ -158,9 +158,10 @@ docker compose up -d
 
 1. 단계 문장 + LLM이 뽑은 구체 명사(symbol_query)로 질의를 만든다.
 2. 라벨/검색어 텍스트 유사도(자카드·바이그램) + 동사 원형 일치 + 직무 맥락 보정으로 점수를
-   매긴다. 선택적으로 임베딩 유사도(`AAC_EMBEDDINGS=auto`, OpenAI `text-embedding-3-large`)를
-   가산 항으로 더한다(키·자산 임베딩 파일이 없거나 호출이 실패하면 자동으로 임베딩 없이
-   동작 — 서비스가 멈추지 않는다).
+   매긴다. 여기에 임베딩 유사도를 가산 항으로 더한다(`AAC_EMBEDDINGS=auto`, 기본 제공자
+   `local` — 무료 다국어 모델 `paraphrase-multilingual-MiniLM-L12-v2`를 CPU(ONNX)로 돌린다.
+   키·네트워크가 필요 없고 도커 이미지에 모델이 들어 있다). 자산 임베딩 파일이 낡았거나
+   모델 로딩이 실패하면 자동으로 임베딩 없이 동작한다 — 서비스가 멈추지 않는다.
 3. 1위 점수가 임계값 이상이고, 2위와의 점수 차(여유)가 충분해야 자동 채택한다. 둘 중
    하나라도 부족하면 자동 채택하지 않고, 근거(그림 없음/점수 미달/후보 경합)를 구분해
    돌려준다 — 후보 경합이면 검토 화면에서 사람이 고른다.
@@ -175,9 +176,10 @@ AAC_MATCH_THRESHOLD=0.215         # 임베딩 없을 때 채택 점수 임계값
 AAC_MATCH_MIN_MARGIN=0.018        # 임베딩 없을 때 1위와 경쟁 후보(같은 그림 묶음 제외)의 점수 차 최소값
 AAC_MATCH_MARGIN_MODE=absolute    # relative면 (s1−s2)/s1 ≥ AAC_MATCH_MIN_REL_MARGIN(기본 0.06)으로 판정
 AAC_EMBEDDINGS=auto               # off로 끌 수 있음
-AAC_EMBED_MATCH_THRESHOLD=0.35    # 임베딩 사용 시 임계값(척도가 올라가 더 높다)
-AAC_EMBED_MATCH_MIN_MARGIN=0.02   # 임베딩 사용 시 여유
-AAC_EMBED_TIMEOUT=3               # 질의 임베딩 호출 타임아웃(초)
+AAC_EMBED_PROVIDER=local          # local(무료 로컬 모델, 기본) | openai(text-embedding-3-large, 키 필요)
+AAC_EMBED_MATCH_THRESHOLD=        # 임베딩 사용 시 임계값. 비우면 제공자별 기본(local 0.24, openai 0.35)
+AAC_EMBED_MATCH_MIN_MARGIN=       # 임베딩 사용 시 여유. 비우면 제공자별 기본(local 0.015, openai 0.02)
+AAC_EMBED_TIMEOUT=3               # 질의 임베딩 호출 타임아웃(초, openai)
 ```
 
 자산을 추가·수정하면 `scripts/enrich_aac_metadata.py` → `scripts/build_aac_index.py` →
