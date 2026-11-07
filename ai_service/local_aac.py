@@ -8,6 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import embeddings
+import korean_verbs
 from taxonomy import ALIAS_WEIGHT, JOB_ALIASES
 
 _TOKEN_RE = re.compile(r"[0-9A-Za-z가-힣]+")
@@ -72,44 +73,26 @@ def _jaccard(a: set[str], b: set[str]) -> float:
     return len(a & b) / len(a | b)
 
 
-# 어간 끝 모음이 어미와 만나 줄어드는 형태. '세우-'+'어' → '세워', '하-'+'여' → '해'.
-_STEM_CONTRACTIONS = {"우": "워", "오": "와", "이": "여", "하": "해", "리": "려", "기": "겨"}
+# ---- 동사 원형 -------------------------------------------------------------------
+# 활용 규칙은 korean_verbs에 있다. 여기서는 '어떤 동사를 아는가'(닫힌 사전)를 정한다.
 
-_HANGUL_BASE = 0xAC00
-_HANGUL_LAST = 0xD7A3
-_RIEUL_FINAL_INDEX = 8  # 종성 28개 중 ㄹ의 순번(없음=0, ㄱ=1, ... ㄹ=8)
-
-
-def _drop_rieul_final(char: str) -> str | None:
-    """받침 ㄹ을 뗀 글자를 돌려준다. ㄹ받침이 아니면 None.
-
-    ㄹ받침 어간(열다/만들다/쓸다/갈다 등)은 '-세요/-ㅂ니다/-는' 앞에서 받침이
-    탈락한다: 열다→여세요, 만들다→만드세요, 쓸다→쓰세요, 갈다→가세요.
-    이 규칙이 없으면 "창문을 여세요"에서 '열다'를 못 알아낸다.
-    """
-    if len(char) != 1:
-        return None
-    code = ord(char)
-    if not (_HANGUL_BASE <= code <= _HANGUL_LAST):
-        return None
-    if (code - _HANGUL_BASE) % 28 != _RIEUL_FINAL_INDEX:
-        return None
-    return chr(code - _RIEUL_FINAL_INDEX)
-
-
-def _stem_variants(stem: str) -> tuple[str, ...]:
-    """어간의 표면형 후보. 활용형에서 어간을 찾아내기 위한 것이다."""
-    if not stem:
-        return ()
-    variants = [stem]
-    contracted = _STEM_CONTRACTIONS.get(stem[-1])
-    if contracted:
-        variants.append(stem[:-1] + contracted)
-    dropped = _drop_rieul_final(stem[-1])
-    if dropped:
-        variants.append(stem[:-1] + dropped)
-    return tuple(variants)
-
+# 인덱스에는 없지만 흔해서, 모르면 다른 동사로 잘못 읽히는 동사들. 그림과 맞을 일은 없고
+# (자산 원형에 없다) '이 어절은 저 동사가 아니다'를 알려 주는 용도다.
+#   - 들어오다/들어가다 → 모르면 '들다', 떨어지다 → '떨다', 여쭈다 → '열다'(여-)로 읽힌다.
+#   - 개다·두르다·빨다처럼 인덱스 검색어에 활용형('갠다'·'빤다')으로만 들어 있는 원형.
+#   - 하다는 '체크를 해요'처럼 앞 절의 범위(조건절인지)를 정하는 데 필요하다.
+_EXTRA_VERBS = frozenset({
+    "들어오다", "들어가다", "나오다", "나가다", "다가오다", "떨어지다", "흩어지다", "쏟아지다",
+    "넘어지다", "차다", "비다", "남다", "남기다", "먹다", "마시다", "앉다", "여쭈다", "걷다",
+    "끝나다", "울리다", "타다", "두르다", "개다", "빨다", "뜯다", "묻다", "있다", "되다",
+    "맞다", "나다", "하다", "꽂히다", "적히다", "걸리다", "붙다", "쌓이다", "묻히다",
+    "부르다", "쉬다",
+    # 반대말 벌점(_VERB_ANTONYMS)에 쓰이는데 인덱스 원형에는 없는 동사. 모르면 "상자를 내려요"에서
+    # 동사를 하나도 못 찾아 '싣다·올리다' 그림을 거르지 못한다.
+    "내리다", "박다", "대다", "재다",
+    # '신다'는 겉모양이 '-ㄴ다' 평서형과 같아('실다'의 활용형으로도 읽힌다) 원형임을 밝혀 둔다.
+    "신다",
+})
 
 # ㄹ탈락으로 만든 표면형이 한 글자가 되면서, 훨씬 흔한 다른 동사의 원형과 우연히
 # 같은 글자가 되는 경우가 있다. '갈다'(갈아주세요로 이미 원래 어간 '갈'이 잡힌다)의
@@ -120,77 +103,124 @@ def _stem_variants(stem: str) -> tuple[str, ...]:
 _RIEUL_DROP_EXCLUDE_LEMMAS = frozenset({"갈다"})
 
 
-@lru_cache(maxsize=1)
-def _verb_stem_map() -> tuple[tuple[str, str], ...]:
-    """(어간 표면형, 원형) 목록. 긴 어간이 먼저 오도록 정렬한다.
-
-    인덱스에 있는 동사만 대상으로 하는 닫힌 사전이다. 일반적인 한국어 형태소 분석
-    없이도, 우리가 실제로 쓰는 300여 개 동사에 대해서는 활용형에서 원형을 되찾을 수 있다.
-    """
-    lemmas: set[str] = set()
+def _raw_index_verbs() -> set[str]:
+    words: set[str] = set()
     for entry in load_index().values():
         verb = (entry.get("frame") or {}).get("verb")
         if verb:
-            lemmas.add(verb)
+            words.add(verb)
         # 검색어에도 '갈다', '비질하다' 같은 원형이 들어 있다('갈다'는 두 글자다).
         for word in entry.get("keywords_ko", []):
-            if isinstance(word, str) and word.endswith("다") and len(word) >= 2:
-                lemmas.add(word)
-
-    pairs: set[tuple[str, str]] = set()
-    for lemma in lemmas:
-        stem = lemma[:-1]  # '다'를 뗀다
-        if len(stem) < 1:
-            continue
-        for surface in _stem_variants(stem):
-            if surface != stem and lemma in _RIEUL_DROP_EXCLUDE_LEMMAS:
-                continue  # ㄹ탈락형만 제외 — 기본 어간(예: '갈')은 그대로 둔다.
-            pairs.add((surface, lemma))
-    # 긴 어간 우선 — '준비하'가 '준'보다 먼저 걸려야 한다. 길이가 같으면(예: 표면형
-    # '쓰'가 '쓰다'·'쓸다' 둘 다에서 나옴) 원형 문자열로 2차 정렬해 결과가 매 실행마다
-    # 바뀌지 않게 한다.
-    return tuple(sorted(pairs, key=lambda p: (-len(p[0]), p[1])))
+            if isinstance(word, str) and word.endswith("다"):
+                words.add(word)
+    return words
 
 
-# 동사 어간 뒤에 남은 부분이 격조사로 끝나면 그 어절은 명사다("쓰레기를"의 '쓰'는
-# 동사 '쓰다'가 아니다). 동사 활용형은 어미(-세요·-다·-고·-어…)로 끝나지 격조사로
-# 끝나지 않는다. 실측: 개발셋에서 명사 첫 글자가 한 글자 어간과 겹쳐 엉뚱한 원형이
-# 동사 가산(+0.10)을 받아 오답 채택이 났다(쓰레기→쓰다/쓸다 등).
-_NOUN_PARTICLE_ENDINGS = (
-    "을", "를", "에", "에서", "의", "과", "와", "로", "으로", "에게", "까지", "부터", "처럼",
-)
+@lru_cache(maxsize=1)
+def _lemma_normalization() -> dict[str, str]:
+    """인덱스의 '-ㄴ다/-는다' 평서형('갠다'·'건다'·'든다'·'놓는다')을 원형으로 바꾸는 표.
+
+    인덱스 검색어·frame.verb 일부가 원형이 아니라 활용형으로 들어 있다. 질의에서 뽑는 것은
+    원형이라 이대로는 영영 만나지 못한다(예: '이불을 갠다'의 verb가 '갠다'). 데이터를 고치는
+    대신(임베딩 digest가 바뀐다) 읽을 때 원형으로 맞춘다. 원형으로 설명이 안 되면('신다'는
+    '신-+-다'이지 '시-+-ㄴ다'가 아니다) 그대로 둔다.
+    """
+    raw = {w for w in _raw_index_verbs() if korean_verbs.is_plain_lemma(w)} - set(_MISSPELLED_LEMMAS)
+    conjugated = {w for w in raw if korean_verbs.is_conjugated_form(w)}
+    plain = (raw - conjugated) | _EXTRA_VERBS
+    base = korean_verbs.Analyzer(plain, generic_hada=False,
+                                 rieul_drop_exclude=_RIEUL_DROP_EXCLUDE_LEMMAS)
+    table: dict[str, str] = {}
+    for word in conjugated:
+        if word in plain:
+            continue  # 원형으로도 쓰이는 낱말(신다)은 바꾸지 않는다.
+        finals = sorted({p.lemma for p in base.analyze_word(word)
+                         if p.kind == korean_verbs.FINAL and p.lemma != word})
+        if len(finals) == 1:
+            table[word] = finals[0]
+    return table
+
+
+# 인덱스 검색어에 섞인 잘못된 원형. ㄷ 불규칙 동사의 활용형('실어')에서 거꾸로 만든 틀린
+# 원형('실다')이 대표적이다 — 바른 원형('싣다')과 갈라져서, 같은 동작인데 한쪽 그림에만 원형이
+# 하나 더 붙고 질의에서도 두 원형이 나와 토큰만 늘린다. 표준 원형으로 모은다.
+_MISSPELLED_LEMMAS = {"실다": "싣다"}
+
+
+def _normalize_lemma(word: str) -> str:
+    word = _MISSPELLED_LEMMAS.get(word, word)
+    return _lemma_normalization().get(word, word)
+
+
+@lru_cache(maxsize=1)
+def _verb_analyzer() -> korean_verbs.Analyzer:
+    """인덱스 동사(원형으로 맞춘 것) + 보충 동사로 만든 분석기."""
+    lemmas = {_normalize_lemma(w) for w in _raw_index_verbs()} | _EXTRA_VERBS
+    lemmas -= set(_MISSPELLED_LEMMAS)
+    return korean_verbs.Analyzer(lemmas, rieul_drop_exclude=_RIEUL_DROP_EXCLUDE_LEMMAS)
 
 
 def _verb_lemmas(text: str) -> set[str]:
-    """활용형 문장에서 동사 원형을 뽑는다.
+    """지시문에서 '해야 할 동작'의 동사 원형을 뽑는다.
 
     "원두를 갈아주세요" → {'갈다'}. 자산 쪽 검색어는 원형('갈다')이라 이 변환이 없으면
     질의 토큰('갈아주')과 영영 만나지 못한다 — 인덱스를 만들어도 아무 효과가 없다.
+
+    korean_verbs가 어미까지 확인하므로 명사·부사 어절("쓰레기를"·"가지런히")에서 동사를
+    뽑지 않고, 보조 용언("꺼내 오세요"의 '오다', "닦아 주세요"의 '주다")은 본동사로 바꾸고,
+    조건절·관형절("손님이 찾으면"·"다 붙인 박스")의 동사는 뺀다.
 
     한 표면형이 서로 다른 원형에 동시에 걸리는 경우가 있다("쓰"는 '쓰다'(사용/착용)
     와 '쓸다'(쓸기) 둘 다에서 나온다 — "쓰세요"는 한국어 자체가 중의적이다). 같은
     길이로 묶인 원형을 전부 후보로 남긴다 — 최종 판단(직무·명사 겹침)은 이미
     `_score_asset`이 한다: 문맥과 맞는 자산만 가산점의 이득을 본다.
     """
-    found: set[str] = set()
-    for word in _TOKEN_RE.findall(text):
-        best_len: int | None = None
-        for surface, lemma in _verb_stem_map():
-            # 어간만 덜렁 있는 게 아니라 뒤에 어미가 붙어 있어야 동사로 본다.
-            if len(word) <= len(surface) or not word.startswith(surface):
-                continue
-            # 한 글자 어간('갈','개')은 아무 단어에나 걸리기 쉽다. 어미가 두 글자 이상
-            # 붙어 있을 때만 인정한다('갈아주세요'는 통과, '갈색'은 탈락).
-            if len(surface) == 1 and len(word) < 3:
-                continue
-            # 어간 뒤가 격조사로 끝나면 명사 어절이다("쓰레기를" → '쓰'+'레기를').
-            if word[len(surface):].endswith(_NOUN_PARTICLE_ENDINGS):
-                continue
-            if best_len is not None and len(surface) < best_len:
-                break  # 더 짧은 어간은(정렬상 이제부터 전부) 무시 — 가장 긴 것만 본다.
-            best_len = len(surface)
-            found.add(lemma)
-    return found
+    return _verb_analyzer().main_lemmas(text)
+
+
+# 같은 동작을 가리키는 다른 동사. 일상어와 그림 라벨(표준 설명어)이 다른 낱말을 쓰는 쌍만 둔다.
+#   - 훔치다: '걸레로 훔치다'는 물기·먼지를 닦는다는 뜻의 일상어다(표준국어대사전 훔치다②).
+#   - 개다: 빨래·이불을 '갠다'는 것은 접는 동작이다(개다③). 라벨은 '접는다'로 쓴다.
+# 방향이 반대인 쌍은 넣지 않는다(반대말은 _VERB_ANTONYMS). 질의 쪽만 넓힌다 — 자산 원형을
+# 바꾸면 반대말 벌점·대상 게이트가 함께 흔들린다. 그림별 동의 동사 보강은 인덱스 단계(P4) 몫이다.
+_VERB_SYNONYMS: tuple[frozenset[str], ...] = (
+    frozenset({"훔치다", "닦다"}),
+    frozenset({"개다", "접다"}),
+)
+
+
+def _expand_verb_synonyms(lemmas: set[str]) -> set[str]:
+    out = set(lemmas)
+    for group in _VERB_SYNONYMS:
+        if out & group:
+            out |= group
+    return out
+
+
+def _is_verb_word(word: str) -> bool:
+    """어절이 동사 활용형인가(조건·관형형 포함). 대상 명사를 고를 때 동사를 거르는 데 쓴다."""
+    return _verb_analyzer().is_verb_word(word)
+
+
+def _reconcile_frame_verb(verb: str | None, label: str) -> str | None:
+    """frame.verb가 라벨의 동사와 활용형만 같은 다른 동사면 라벨 쪽으로 바로잡는다.
+
+    인덱스를 만든 LLM이 '든다'(들다)를 '듣다'로 적은 경우가 있다 — 두 동사는 '들어'라는
+    활용형이 같다(ㄷ 불규칙). 라벨이 그림의 정의이므로, 라벨에서 읽은 동사에 frame.verb가
+    없고 둘의 '-어' 활용형이 겹칠 때만 라벨의 동사로 바꾼다(그 밖의 불일치는 건드리지 않는다).
+    """
+    if not verb:
+        return verb
+    verb = _normalize_lemma(verb)
+    analyzer = _verb_analyzer()
+    label_lemmas = {p.lemma for _, p in analyzer.analyze_text(label)}
+    if not label_lemmas or verb in label_lemmas or " " in verb:
+        return verb
+    verb_forms = korean_verbs.a_forms(verb[:-1])
+    for lemma in sorted(label_lemmas):
+        if korean_verbs.a_forms(lemma[:-1]) & verb_forms:
+            return lemma
+    return verb
 
 
 # 같은 도구를 부르는 다른 이름. 질의와 자산 라벨이 다른 단어를 쓰면 못 만난다
@@ -326,6 +356,11 @@ def load_assets() -> list[dict]:
         label = str(asset.get("label", ""))
         entry = index.get(asset["id"], {})
         frame = entry.get("frame") or {}
+        # frame.verb를 원형으로 맞추고, 라벨과 활용형만 같은 다른 동사면 바로잡는다
+        # ('든다'를 '듣다'로 적은 인덱스 오류). 인덱스 dict는 공유되므로 복사해서 고친다.
+        fixed_verb = _reconcile_frame_verb(frame.get("verb"), label)
+        if fixed_verb != frame.get("verb"):
+            frame = {**frame, "verb": fixed_verb}
 
         # 라벨과 검색어는 따로 채점한다. 한 바구니에 넣으면 Jaccard 분모가 커져
         # 모든 점수가 희석되고, 검색어가 많은 자산일수록 손해를 본다(실측 top1 -0.18).
@@ -349,6 +384,8 @@ def load_assets() -> list[dict]:
         # 동사 원형은 _tokens의 어미 제거로 뭉개지므로("분쇄하다"→"분쇄하") 따로 넣는다.
         # 질의에서 뽑은 원형과 같은 형태여야 만난다.
         lemmas = {w for w in extra_terms if isinstance(w, str) and w.endswith("다")}
+        # 활용형으로 들어 있는 검색어('갠다'·'건다')는 원형도 함께 넣는다 — 질의 원형과 만나게.
+        lemmas |= {_normalize_lemma(w) for w in lemmas}
         if frame.get("verb"):
             lemmas.add(frame["verb"])
 
@@ -451,6 +488,10 @@ def _text_similarity(q_norm: str, q_tokens: set[str], q_bigrams: set[str],
 # 계산되면 0.05 남짓이다). 동작이 같다는 것은 그림 선택에서 가장 직접적인 근거이므로
 # 따로 더한다.
 _VERB_MATCH_BONUS = 0.10
+# 앞 절 동사("덮고 … 맞추세요"의 '덮다')만 맞을 때. 지시의 중심은 문장 끝 서술어라 그 동사와
+# 맞는 그림이 앞 단계 동사와 맞는 그림보다 위에 와야 한다. 앞 단계도 할 일이므로 0은 아니다.
+# 0.03/0.05/0.07을 재 보니 0.05가 개발 sentence top1이 가장 높고 오답 채택은 같았다.
+_SIDE_VERB_MATCH_BONUS = 0.05
 
 # 도구는 '검색 가능하게'만 하고 '가산점'은 주지 않는다.
 #
@@ -484,16 +525,30 @@ class _QueryFeatures:
     예전에는 자산마다 형태소 추출을 다시 해서 질의 하나에 자산 수만큼 반복해서 돌았다.
     """
 
-    __slots__ = ("norm", "tokens", "bigrams", "lemmas", "tools", "negative")
+    __slots__ = ("norm", "tokens", "bigrams", "lemmas", "head_lemmas", "match_lemmas",
+                 "match_head_lemmas", "tools", "negative")
 
     def __init__(self, query: str) -> None:
         self.norm = _normalize(query)
-        self.lemmas = _verb_lemmas(query)
+        roles = _verb_analyzer().lemma_roles(query)
+        self.lemmas = set(roles)
+        self.head_lemmas = {lemma for lemma, role in roles.items() if role == "head"}
+        # 동사 가산(_relevance)에서만 동의 동사까지 넓힌다. 토큰에 넣으면 Jaccard 분모만 커진다.
+        self.match_head_lemmas = _expand_verb_synonyms(self.head_lemmas)
+        self.match_lemmas = _expand_verb_synonyms(self.lemmas) | self.match_head_lemmas
         # 질의에 도구 이름이 있으면 동의어까지 넓혀 둔다("대걸레" -> {"대걸레","밀대"}).
         self.tools = _expand_tools(_tokens(query) & set(_TOOL_SYNONYM_MAP))
         # 활용형에서 뽑은 원형을 토큰에 더한다. 자산 검색어는 원형이라 이게 없으면
         # "갈아주세요"와 "갈다"가 만나지 못한다.
-        self.tokens = _tokens(query) | self.lemmas | self.tools
+        #
+        # 중심 동사의 원형만 더한다. 앞 절 동사("수량표를 보고 … 확인하세요"의 '보다')까지
+        # 더하면 Jaccard 분모만 커져 정답과 2위의 여유가 줄었다(골든 sentence 정답 자동 채택 −1).
+        # 앞 절 동사는 _relevance의 작은 가산(_SIDE_VERB_MATCH_BONUS)으로만 반영한다.
+        #
+        # 동의 동사(훔치다→닦다)도 토큰에 넣는다. 그림 검색어에 일상어('훔치다')가 우연히 들어 있는
+        # 그림만 Jaccard에서 앞서고, 같은 동작을 표준어('닦다')로 적은 그림은 밀리는 일을 막는다.
+        # 묶음이 두 낱말짜리라 분모는 한 칸만 는다.
+        self.tokens = _tokens(query) | self.match_head_lemmas | self.tools
         self.bigrams = _bigrams(query)
         self.negative = _is_negative_text(query)
 
@@ -522,8 +577,11 @@ def _relevance(asset: dict, qf: _QueryFeatures) -> float:
 
     # 동작이 같으면 직접 가산한다. "원두를 갈아주세요"의 '갈다'가 CAFE_013의 검색어
     # '갈다'와 만나도, Jaccard 안에서는 검색어 7개 중 1개라 묻힌다.
-    if qf.lemmas and qf.lemmas & asset.get("_lemmas", set()):
+    asset_lemmas = asset.get("_lemmas", set())
+    if qf.match_head_lemmas & asset_lemmas:
         score += _VERB_MATCH_BONUS
+    elif qf.match_lemmas & asset_lemmas:
+        score += _SIDE_VERB_MATCH_BONUS
     return score
 
 

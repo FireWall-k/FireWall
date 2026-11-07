@@ -8,23 +8,23 @@
   "n_normal": 114,
   "n_gap": 66,
   "metrics": {
-    "top1_accuracy": 0.395,
-    "recall@3": 0.535,
-    "recall@20": 0.781,
+    "top1_accuracy": 0.474,
+    "recall@3": 0.596,
+    "recall@20": 0.816,
     "wrong_accept_rate": 0.028,
-    "gap_declined_rate": 1.0,
-    "handoff_rate": 0.872,
-    "accept_precision": 0.783,
-    "correct_auto_rate": 0.1,
-    "normal_correct_auto_rate": 0.158
+    "gap_declined_rate": 0.985,
+    "handoff_rate": 0.856,
+    "accept_precision": 0.808,
+    "correct_auto_rate": 0.117,
+    "normal_correct_auto_rate": 0.184
   },
   "counts": {
     "wrong_accept": 5,
-    "wrong_accept_normal": 5,
-    "wrong_accept_gap": 0,
-    "correct_auto": 18,
-    "accepted": 23,
-    "top1_hit": 45
+    "wrong_accept_normal": 4,
+    "wrong_accept_gap": 1,
+    "correct_auto": 21,
+    "accepted": 26,
+    "top1_hit": 54
   },
   "fingerprint": {
     "dataset": "d269b257556c1135",

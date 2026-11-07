@@ -36,7 +36,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from local_aac import (  # noqa: E402
-    _TOKEN_RE, _tokens, _verb_lemmas, load_assets, search_for_step_detailed,
+    _TOKEN_RE, _is_verb_word, _tokens, _verb_lemmas, load_assets, search_for_step_detailed,
 )
 from eval.run_match_eval import (  # noqa: E402
     EMBED_CACHE_DIR, _case_inputs, _embedding_mode, resolve_dataset,
@@ -66,7 +66,7 @@ def _content_nouns(texts: list[str]) -> set[str]:
     nouns: set[str] = set()
     for text in texts:
         for word in _TOKEN_RE.findall(text):
-            if _verb_lemmas(word):
+            if _is_verb_word(word):
                 continue  # "청소하세요"·"쌓으세요" 같은 동사는 대상이 아니다.
             nouns |= {t for t in _tokens(word) if any("가" <= ch <= "힣" for ch in t)}
     return nouns - _verbal_nouns()
