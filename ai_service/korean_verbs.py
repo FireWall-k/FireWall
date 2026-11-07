@@ -216,6 +216,22 @@ _CONJUNCTIVE_ADVERBS = frozenset({
 _CLAUSE_BREAK_RE = re.compile(r"[.!?,;:\n·]")
 # '-어 지다'(떨어지다·흩어지다·쏟아지다)는 상태 변화라 지시 동작이 아니다.
 _PASSIVE_AUX = "지다"
+# 이동·자세 동사. 두 동작 문장에서 끝 서술어가 이것뿐이면 할 일은 앞 절 동작이다(lemma_roles).
+# "상자를 싣고 엘리베이터를 타세요"·"카트를 밀고 가세요"·"앞치마를 입고 계산대 앞에 서세요"에서
+# 그림으로 보여 줄 일은 싣기·밀기·입기이고, 끝의 이동·자리 잡기는 그 일을 마친 뒤의 동선이다.
+# 한국어 지시문의 '끝 서술어가 중심' 규칙(P3)이 이 꼴에서만 거꾸로 된다.
+#   - '타다'는 '커피를 타다'(섞다) 뜻도 있다. 그래도 넣는다 — 역할을 'side'로 바꿀 뿐 원형은 남아
+#     작은 가산(_SIDE_VERB_MATCH_BONUS)은 그대로 받으므로 '커피를 탄다' 그림이 생겨도 사라지지 않는다.
+#   - '걷다'는 넣지 않는다. "접시를 걷어 가요"의 '걷다'는 거두기(일)다.
+#   - 보조 용언으로 붙은 '-어 가다/오다'("꺼내 오세요")는 analyze_text에서 이미 흡수돼 여기 오지 않는다.
+MOTION_VERBS = frozenset({
+    "가다", "오다", "서다", "타다", "이동하다", "다니다",
+    "나가다", "나오다", "들어가다", "들어오다", "올라가다", "내려가다",
+})
+# '-어 달라고 (말)하다'의 '달라-'. 앞 동사는 듣는 사람(손님·동료)에게 바라는 동작이라 근로자의
+# 할 일이 아니다("손님께 창문을 닫아 달라고 말해요"의 일은 말하기). '달다'는 사전에 없어
+# '-어'형(BARE)이 뒤 어절을 보조 용언으로 못 묶고 할 일로 남던 자리다.
+_REQUEST_QUOTE_PREFIXES = ("달라", "달래")
 
 
 @dataclass(frozen=True)
@@ -354,7 +370,9 @@ class Analyzer:
                 if p.lemma in skip_aux.get(idx, ()):
                     continue  # 앞 동사에 흡수된 보조 용언
                 kind = p.kind
-                if kind == BARE and nxt:
+                if kind == BARE and idx + 1 < len(words) and words[idx + 1].startswith(_REQUEST_QUOTE_PREFIXES):
+                    kind = EXCL  # 상대에게 바라는 동작(위 _REQUEST_QUOTE_PREFIXES)
+                elif kind == BARE and nxt:
                     # 본동사는 보조 용언의 어미(종결·조건·관형)를 따른다: "꺼내 오세요"는 지시,
                     # "꺼내 온 상자"는 꾸밈. 보조 용언이 겹치면("빼 놔 주세요") 끝까지 따라간다 —
                     # 가운데 '놔'도 '-어'형이라 그 자리에서 멈추면 마지막 '주세요'가 할 일로 남는다.
@@ -431,6 +449,7 @@ class Analyzer:
         중심은 '맞추다'이고 '덮다'는 앞 단계다. 연결 어미 없이 바로 이어진 '-어' 형태
         ("눌러 맞추세요"·"주워 모으세요")는 뒤 동사와 한 동작을 이루므로 중심에 넣는다.
         문장에 종결 서술어가 없으면(명사구·검색어) 전부 중심으로 본다.
+        끝 서술어가 이동·자세 동사뿐이면 앞 절 동작이 중심이다(_demote_motion_head).
         """
         words = _TOKEN_RE.findall(text or "")
         parsed = self.analyze_text(text)
@@ -475,7 +494,7 @@ class Analyzer:
             for item in (lemma, self.aux_compound_main(lemma)):
                 if item and roles.get(item) != "head":
                     roles[item] = role
-        return roles
+        return _demote_motion_head(roles)
 
     def aux_compound_main(self, lemma: str) -> str | None:
         """사전에 붙여 쓴 '본동사+보조 용언' 원형(눌러주다·뿌려주다·모아두다)의 본동사.
@@ -497,6 +516,18 @@ class Analyzer:
     def is_verb_word(self, word: str) -> bool:
         """어절이 (종류와 상관없이) 동사 활용형인가."""
         return bool(self.analyze_word(word))
+
+
+def _demote_motion_head(roles: dict[str, str]) -> dict[str, str]:
+    """끝 서술어가 이동·자세 동사뿐이고 앞 절에 다른 동작이 있으면 둘의 역할을 바꾼다(MOTION_VERBS 주석).
+
+    이동만 있는 문장("창고에 가세요")·이동이 앞 절인 문장("가서 쉬어요")은 그대로 둔다.
+    """
+    heads = {lemma for lemma, role in roles.items() if role == "head"}
+    tasks = {lemma for lemma, role in roles.items() if role == "side" and lemma not in MOTION_VERBS}
+    if not heads or not heads <= MOTION_VERBS or not tasks:
+        return roles
+    return {lemma: ("head" if lemma in tasks else "side") for lemma in roles}
 
 
 # '갖다/가져다 + 동사'의 앞부분. '가져다'는 '가지다'의 -어다 연결형, '갖다'는 그 준말이다.

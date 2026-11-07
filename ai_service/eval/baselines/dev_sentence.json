@@ -8,8 +8,8 @@
   "n_normal": 114,
   "n_gap": 66,
   "metrics": {
-    "top1_accuracy": 0.456,
-    "recall@3": 0.623,
+    "top1_accuracy": 0.465,
+    "recall@3": 0.64,
     "recall@20": 0.816,
     "wrong_accept_rate": 0.039,
     "gap_declined_rate": 0.985,
@@ -24,7 +24,7 @@
     "wrong_accept_gap": 1,
     "correct_auto": 33,
     "accepted": 40,
-    "top1_hit": 52
+    "top1_hit": 53
   },
   "fingerprint": {
     "dataset": "d269b257556c1135",
