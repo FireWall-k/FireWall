@@ -429,7 +429,8 @@
    ],
    "gap": false,
    "confidence": "low",
-   "disputed": true
+   "disputed": true,
+   "note": "정답지 교정(P1, 2026-11-07): 유지. ASSEMBLY_AUX_043은 공장 작업대 위 탁상 작업등을 켜는 그림이라 간판과 다른 대상을 그린다. AUX_029(벽 스위치 누르기)는 대상을 특정하지 않는 일반 그림이라 근사로 인정. disputed 유지."
   },
   {
    "id": "dev_cafe_03",
@@ -682,7 +683,8 @@
     "SERVING_010"
    ],
    "gap": false,
-   "confidence": "high"
+   "confidence": "high",
+   "note": "정답지 교정(P1, 2026-11-07): 유지. DISPLAY_048은 매장 진열대(선반 달린 매대) 윗면의 먼지를 닦는 그림이라 '카페 테이블의 물기'와 대상이 다르다. 테이블 그림(CAFE_077·SERVING_010)이 따로 있다. dev_retail_08(계산대)에서 DISPLAY_048을 인정한 것은 같은 매장 안의 허리 높이 진열·계산 설비이고 계산대를 닦는 그림이 없어서다(DISPLAY_TOOL_019 계산대는 사물 카드) — 판정 기준: 동작과 대상이 같거나, 대상 그림이 없을 때 같은 장소의 같은 종류 설비면 인정, 다른 종류의 대상을 그린 그림은 불인정."
   },
   {
    "id": "dev_cafe_16",
@@ -1969,11 +1971,13 @@
     "카트"
    ],
    "accept": [
-    "PACKAGING_119"
+    "PACKAGING_119",
+    "DELIVERY_002"
    ],
    "gap": false,
    "confidence": "low",
-   "disputed": true
+   "disputed": true,
+   "note": "정답지 교정(P1, 2026-11-07): DELIVERY_002(택배 직원이 상자를 손수레에 차곡차곡 쌓는 그림) 추가 — 같은 택배 물류센터 직무이고 symbol_query에도 카트·상자 적재가 있다. 무겁고 가벼운 순서는 어느 그림에도 없어 PACKAGING_119와 같은 수준의 근사."
   },
   {
    "id": "dev_delivery_05",
@@ -3435,10 +3439,12 @@
     "dustpan"
    ],
    "accept": [
-    "SERVING_035"
+    "SERVING_035",
+    "CAFE_080"
    ],
    "gap": false,
-   "confidence": "high"
+   "confidence": "high",
+   "note": "정답지 교정(P1, 2026-11-07): CAFE_080(빗자루로 바닥 부스러기를 쓸기) 추가 — 쓰레받기는 없지만 쓰는 동작과 대상(바닥에 떨어진 것)이 같고 틀린 것을 보여 주지 않는다. 쓰레받기까지 있는 SERVING_035가 더 낫다."
   },
   {
    "id": "dev_serving_19",

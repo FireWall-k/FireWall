@@ -55,3 +55,26 @@ def test_breach_is_reported_when_the_system_auto_accepts_a_gap(tmp_path):
     assert row["accepted"] is True
     text = format_report([row])
     assert "ac" in text and "CLEANING_139" in text and "에어컨 필터를 세척한다" in text
+
+
+def test_golden_gap_notes_review_every_suspect():
+    """골든셋 갭 케이스의 의심 자산은 note에 id와 함께 '왜 정답이 아닌지'가 적혀 있어야 한다.
+
+    왜: 의심(동작과 대상이 둘 다 겹치는 그림)은 갭이 낡았다는 신호다. 사람이 그림을 열어 보고
+    갭으로 남기기로 했다면 그 판단을 note에 남겨야, 다음에 그림이 늘었을 때 '새 의심'과 '이미
+    본 의심'이 구분된다. 2026-11-07에 골든 갭 4건이 이렇게 조용히 낡아 있었다(그림 추가 뒤
+    노트의 '자산 0건'이 거짓이 됨). 새 그림이 의심으로 잡히면 이 테스트가 깨져 재점검을 강제한다.
+    개발셋은 note를 요구하지 않으므로(test_match_eval 참고) 골든셋만 본다.
+    """
+    from eval.run_match_eval import resolve_dataset
+
+    data = json.loads(resolve_dataset("golden").read_text(encoding="utf-8"))
+    notes = {c["id"]: c.get("note", "") for c in data["cases"]}
+    unreviewed = {
+        row["id"]: [s["id"] for s in row["suspects"] if s["id"] not in notes[row["id"]]]
+        for row in check_gaps("golden")
+    }
+    unreviewed = {k: v for k, v in unreviewed.items() if v}
+    assert not unreviewed, (
+        f"갭 note에 검토 기록이 없는 의심 자산: {unreviewed} — python -m eval.check_gaps "
+        "--suspects-only로 그림을 열어 보고, 정답이면 갭을 풀고 아니면 note에 id와 사유를 적는다")

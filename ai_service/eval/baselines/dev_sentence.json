@@ -8,8 +8,8 @@
   "n_normal": 114,
   "n_gap": 66,
   "metrics": {
-    "top1_accuracy": 0.404,
-    "recall@3": 0.544,
+    "top1_accuracy": 0.412,
+    "recall@3": 0.553,
     "recall@20": 0.772,
     "wrong_accept_rate": 0.111,
     "gap_declined_rate": 0.924,
@@ -24,10 +24,10 @@
     "wrong_accept_gap": 5,
     "correct_auto": 26,
     "accepted": 46,
-    "top1_hit": 46
+    "top1_hit": 47
   },
   "fingerprint": {
-    "dataset": "1ada60337706365b",
+    "dataset": "d269b257556c1135",
     "aac_assets": "86661a16215f170d",
     "aac_index": "8a889045e69bc5d0"
   }

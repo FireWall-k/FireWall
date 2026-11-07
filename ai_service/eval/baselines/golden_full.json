@@ -5,29 +5,29 @@
   "threshold": 0.22,
   "min_margin": 0.02,
   "n_cases": 115,
-  "n_normal": 88,
-  "n_gap": 27,
+  "n_normal": 92,
+  "n_gap": 23,
   "metrics": {
-    "top1_accuracy": 0.875,
-    "recall@3": 0.977,
+    "top1_accuracy": 0.891,
+    "recall@3": 0.978,
     "recall@20": 1.0,
-    "wrong_accept_rate": 0.139,
-    "gap_declined_rate": 0.63,
+    "wrong_accept_rate": 0.096,
+    "gap_declined_rate": 0.696,
     "handoff_rate": 0.339,
-    "accept_precision": 0.789,
-    "correct_auto_rate": 0.522,
-    "normal_correct_auto_rate": 0.682
+    "accept_precision": 0.855,
+    "correct_auto_rate": 0.565,
+    "normal_correct_auto_rate": 0.707
   },
   "counts": {
-    "wrong_accept": 16,
-    "wrong_accept_normal": 6,
-    "wrong_accept_gap": 10,
-    "correct_auto": 60,
+    "wrong_accept": 11,
+    "wrong_accept_normal": 4,
+    "wrong_accept_gap": 7,
+    "correct_auto": 65,
     "accepted": 76,
-    "top1_hit": 77
+    "top1_hit": 82
   },
   "fingerprint": {
-    "dataset": "1016312339847da5",
+    "dataset": "10e515407f3e325d",
     "aac_assets": "86661a16215f170d",
     "aac_index": "8a889045e69bc5d0"
   }
