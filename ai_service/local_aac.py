@@ -12,6 +12,7 @@ import korean_verbs
 from taxonomy import ALIAS_WEIGHT, JOB_ALIASES
 
 _TOKEN_RE = re.compile(r"[0-9A-Za-z가-힣]+")
+_HANGUL_RE = re.compile(r"[가-힣]")
 
 # 직무 사전은 LLM 분해 검증·규칙 폴백과 같아야 하므로 taxonomy 한 곳에 둔다.
 _JOB_ALIASES = JOB_ALIASES
@@ -526,7 +527,8 @@ class _QueryFeatures:
     """
 
     __slots__ = ("norm", "tokens", "bigrams", "lemmas", "head_lemmas", "match_lemmas",
-                 "match_head_lemmas", "tools", "negative")
+                 "match_head_lemmas", "tools", "negative",
+                 "ko_norm", "ko_tokens", "ko_bigrams", "ko_share")
 
     def __init__(self, query: str) -> None:
         self.norm = _normalize(query)
@@ -552,6 +554,22 @@ class _QueryFeatures:
         self.bigrams = _bigrams(query)
         self.negative = _is_negative_text(query)
 
+        # 라벨 채널용 '한글 부분'. 그림 라벨은 모두 한국어라(영문 토큰 0개) 질의의 영문 낱말은
+        # 라벨과 절대 겹치지 않고 Jaccard 분모만 키운다. 분모에 1을 더하는 효과는 짧은 라벨에
+        # 더 크게 작용해서, 영문이 섞인 질의(LLM symbol_query에 'apron'·'plastic bag' 같은 영어
+        # 명사가 섞여 나온다)에서는 영문 낱말 수가 '어느 그림이 이기는가'를 흔든다.
+        # 검색어(keywords_en)에는 영문이 있으므로 검색어 채널은 질의 전체로 그대로 잰다.
+        # 한글이 하나도 없는 질의는 비울 수 없으니 전체로 잰다.
+        ko_query = " ".join(t for t in _TOKEN_RE.findall(query) if _HANGUL_RE.search(t))
+        if ko_query:
+            self.ko_norm = _normalize(ko_query)
+            self.ko_tokens = {t for t in self.tokens if _HANGUL_RE.search(t)}
+            self.ko_bigrams = _bigrams(ko_query)
+        else:
+            self.ko_norm, self.ko_tokens, self.ko_bigrams = self.norm, self.tokens, self.bigrams
+        # 질의 중 라벨과 대조할 수 있는 몫. 라벨 점수에 곱한다 — 아래 _relevance 주석 참고.
+        self.ko_share = len(self.ko_tokens) / len(self.tokens) if self.tokens else 1.0
+
 
 def _relevance(asset: dict, qf: _QueryFeatures) -> float:
     """질의와 자산의 순수 유사도. 맥락 가중치가 섞이지 않는다.
@@ -564,8 +582,13 @@ def _relevance(asset: dict, qf: _QueryFeatures) -> float:
     if not q_norm:
         return 0.0
 
-    label_score = _text_similarity(
-        q_norm, q_tokens, q_bigrams,
+    # 라벨은 질의의 한글 부분과만 잰다(_QueryFeatures 주석). 그 위에 '한글 토큰 비율'을 곱하는
+    # 이유: 영문 낱말을 그냥 빼면 질의 점수 척도가 올라가 임계값(0.215, 희석된 척도에서 보정)을
+    # 넘는 오답이 늘었다(개발 full 오답 5→8, 골든 full 4→9). 확인 못 한 몫만큼 확신을 낮추되
+    # 모든 그림에 같은 비율로 곱하므로, 영문은 더 이상 그림 사이 순서를 바꾸지 못한다.
+    # 비율 지수를 0.5/0.75/0.85로 재 봤는데 1(그대로 곱하기)만 오답 증가 없이 top1이 올랐다.
+    label_score = qf.ko_share * _text_similarity(
+        qf.ko_norm, qf.ko_tokens, qf.ko_bigrams,
         asset["_norm"], asset["_tokens"], asset["_bigrams"],
     )
     keyword_score = _text_similarity(

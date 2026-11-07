@@ -13,17 +13,17 @@
     "recall@20": 1.0,
     "wrong_accept_rate": 0.035,
     "gap_declined_rate": 0.87,
-    "handoff_rate": 0.357,
-    "accept_precision": 0.946,
-    "correct_auto_rate": 0.609,
-    "normal_correct_auto_rate": 0.761
+    "handoff_rate": 0.339,
+    "accept_precision": 0.947,
+    "correct_auto_rate": 0.626,
+    "normal_correct_auto_rate": 0.783
   },
   "counts": {
     "wrong_accept": 4,
     "wrong_accept_normal": 1,
     "wrong_accept_gap": 3,
-    "correct_auto": 70,
-    "accepted": 74,
+    "correct_auto": 72,
+    "accepted": 76,
     "top1_hit": 83
   },
   "fingerprint": {
