@@ -184,6 +184,20 @@ def test_empty_credentials_file_falls_back_to_adc(tmp_path, monkeypatch):
     tts._reset_state()
 
 
+@pytest.mark.parametrize("content", [b" ", b"\n", b"\r\n", b"  \n\t\n", b"\xef\xbb\xbf\r\n"])
+def test_whitespace_only_credentials_file_falls_back_to_adc(tmp_path, monkeypatch, content):
+    """`echo > google-tts.json`·메모장 저장처럼 개행·공백(·BOM)만 든 파일도 키가 없는 것이다.
+    크기만 보면 0바이트가 아니라서 google-auth에 넘겨 JSON 파싱 오류로 ADC를 막았다."""
+    blank = tmp_path / "google-tts.json"
+    blank.write_bytes(content)
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(blank))
+    tts._reset_state()
+    fake = _FakeTTSModule()
+    tts._get_client(fake)
+    assert fake.seen == [None]
+    tts._reset_state()
+
+
 def test_nonempty_credentials_file_is_kept(tmp_path, monkeypatch):
     cred = tmp_path / "google-tts.json"
     cred.write_text('{"type": "service_account"}', encoding="utf-8")

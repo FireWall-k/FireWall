@@ -2,9 +2,10 @@
 # 기본 규칙(OpenAI·Google 서비스 계정·개인 키·일반 고엔트로피 토큰 등)을 그대로 켜고, 예외는 최소로 둔다.
 # 예외를 늘릴 때는 "왜 진짜 비밀값이 아닌지"를 주석으로 남긴다 — 넓은 경로 예외는 진짜 키를 놓치게 한다.
 #
-# secrets/google-tts.json.example은 일부러 예외로 두지 않았다: 개인 키 형식에 걸리는데, 자리표시자인지
-# 사람이 확인하기 전에 경로째 빼면 진짜 키가 섞여도 못 잡는다. 확인 후 오탐이면 그 지문(fingerprint)만
-# .gitleaksignore에 넣는다(docs/security/secrets.md 5절).
+# 스캔 범위 참고: `gitleaks git`의 기본 log 옵션은 `git log --all`이라 로컬에서 돌리면 refs/stash(그리고
+# 도구가 만든 refs/agents/*, refs/codex/* 같은 체크포인트 ref)까지 본다. CI는 actions/checkout이 브랜치·태그만
+# 받아 오므로 stash는 보지 않는다 — stash에 키를 넣어 두면 CI가 아니라 로컬 스캔에서만 드러난다
+# (docs/security/secrets.md 5절).
 
 [extend]
 useDefault = true
@@ -13,3 +14,11 @@ useDefault = true
 description = "저장소에 적힌 개발 전용 자리표시자(진짜 비밀값 아님)"
 # backend/auth.py의 _DEV_SECRET. 개발에서만 쓰이고, 운영(JOBCARD_ENV=prod)에서는 이 값이면 기동이 실패한다.
 regexes = ['''^dev-insecure-secret-change-me$''']
+
+[[allowlists]]
+description = "Google 서비스 계정 JSON 예시 파일(자리표시자)"
+# 사용자가 복사해 실제 google-tts.json을 만드는 틀이다. private_key 본문은 10자 자리표시자다.
+# 경로째 빼면 누가 여기에 진짜 키를 붙여 넣었을 때 gitleaks가 못 잡는다 — 그래서
+# backend/tests/test_secret_placeholders.py가 "private_key 본문이 100자 미만(= 진짜 RSA 키가 아님)"을
+# 단언해 대신 막는다(진짜 2048비트 키 본문은 약 1,600자). 이 예외를 넓히거나 테스트를 지우지 않는다.
+paths = ['''^secrets/google-tts\.json\.example$''']

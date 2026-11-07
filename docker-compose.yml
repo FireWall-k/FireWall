@@ -28,9 +28,10 @@ services:
       # 키는 Docker secret 파일(./secrets/openai_api_key.txt → /run/secrets/openai_api_key)로 받는다.
       # 환경변수 값은 docker inspect·/proc/<pid>/environ에 그대로 보이기 때문이다(docs/security/secrets.md).
       OPENAI_API_KEY_FILE: "/run/secrets/openai_api_key"
-      # 하위호환: 예전처럼 .env의 OPENAI_API_KEY도 읽지만, 위 파일이 비어 있을 때만 쓴다(secret_env.py).
-      # 파일로 옮긴 뒤 .env에서 지우면 여기는 빈 값이 되어 아무것도 노출되지 않는다. 다음 정리 때 이 줄을 없앤다.
-      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      # OPENAI_API_KEY 환경변수 직접 주입은 없앴다(예전 "${OPENAI_API_KEY:-}" 줄). .env에 키가 남아 있으면 그 값이
+      # 컨테이너 환경(docker inspect)에 그대로 실렸다. .env에 키가 있던 설치본은 scripts/init-secrets.sh(.ps1)가
+      # 그 값을 secrets/openai_api_key.txt로 옮겨 준다(값은 출력하지 않는다). 컨테이너 밖 로컬 실행(uvicorn 직접)은
+      # 여전히 환경변수 OPENAI_API_KEY를 읽는다(secret_env.py 하위호환).
       OPENAI_MODEL: "${OPENAI_MODEL:-gpt-4o-mini}"
       OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://api.openai.com/v1}"
       LLM_TIMEOUT: "${LLM_TIMEOUT:-20}"

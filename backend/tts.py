@@ -60,7 +60,15 @@ def _drop_empty_credentials_path() -> None:
     """
     path = _env("GOOGLE_APPLICATION_CREDENTIALS")
     try:
-        empty = bool(path) and os.path.getsize(path) == 0
+        # 0바이트만 빈 것으로 보면 `echo > google-tts.json`(개행 하나)·메모장 저장(BOM+개행)처럼 공백만 든 파일을
+        # google-auth에 넘겨 JSON 파싱 오류로 ADC를 막는다. 앞의 64KiB만 읽는다 — 진짜 서비스 계정 JSON은
+        # 첫 글자부터 '{'라 바로 판정되고, 큰 파일을 통째로 읽지 않는다.
+        if not path:
+            empty = False
+        else:
+            with open(path, "rb") as fh:
+                head = fh.read(65536)
+            empty = not head.removeprefix(b"\xef\xbb\xbf").strip() and os.path.getsize(path) == len(head)
     except OSError:
         return  # 파일이 없으면 google-auth가 경로를 담은 분명한 오류를 낸다(쿨다운 경고로 남는다).
     if empty:

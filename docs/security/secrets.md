@@ -25,10 +25,17 @@
    (이때 "파일로 옮기라"는 경고를 한 번 남긴다. 값은 로그에 남기지 않는다).
 3. 기본값(`JOBCARD_SECRET`은 개발용 키 — 운영에서는 기동 실패, `OPENAI_API_KEY`는 빈 값 → 규칙 기반 폴백)
 
+compose는 `OPENAI_API_KEY`를 환경변수로 넘기지 않는다(파일로만). 2번(환경변수 직접 값)은 컨테이너 밖 로컬
+실행(`uvicorn` 직접)과 아직 `JOBCARD_SECRET`를 파일로 옮기지 않은 기존 설치본을 위한 것이다.
+
+비밀값은 **프로세스가 기동할 때 한 번** 읽는다(backend `auth._secret()`은 lifespan에서 읽어 캐시, ai_service
+`llm.OPENAI_API_KEY`는 import 시). 요청마다 파일을 다시 열지 않으므로, 파일을 바꾼 뒤에는 컨테이너를 다시
+띄워야 반영된다(3절). 테스트는 `auth.reset_secret_cache()`로 캐시를 비운다(conftest가 매 테스트 앞뒤로 부른다).
+
 `<이름>_FILE`을 줬는데 파일이 **없으면** 예외로 멈춘다. 경로 오타·마운트 누락을 조용히 개발용 키로 덮으면
 운영이 위조 가능한 키로 뜰 수 있기 때문이다.
 
-Google 자격증명 파일이 비어 있으면 `backend/tts.py`가 `GOOGLE_APPLICATION_CREDENTIALS`를 지우고
+Google 자격증명 파일이 비어 있으면(0바이트뿐 아니라 공백·개행·BOM만 있어도) `backend/tts.py`가 `GOOGLE_APPLICATION_CREDENTIALS`를 지우고
 ADC(Application Default Credentials: Workload Identity·메타데이터 서버 등)로 넘어간다. 그것도 없으면
 합성이 실패하고 근로자 화면은 브라우저 음성으로 대체된다(기존 동작).
 
@@ -39,8 +46,11 @@ sh scripts/init-secrets.sh
 # Windows: powershell -ExecutionPolicy Bypass -File scripts\init-secrets.ps1
 ```
 
-세 원본 파일을 **없을 때만** 빈 파일로 만든다(이미 있는 파일은 건드리지 않는다, 권한은 소유자만).
+세 원본 파일을 **없을 때만** 만든다(이미 값이 있는 파일은 건드리지 않는다, 권한은 소유자만).
 compose는 원본 파일이 없으면 `up`을 거부하므로 이 단계가 필요하다. 빈 파일이면 앱은 예전 동작을 한다.
+`.env`에 `OPENAI_API_KEY`·`JOBCARD_SECRET` 값이 있고 대응하는 파일이 없거나 비어 있으면(공백·개행만 포함),
+빈 파일 대신 **그 값을 그대로 옮긴다**. 값은 화면에 출력하지 않고 "옮김"과 경로만 알린다. `.env` 위치는
+`ENV_FILE`(PowerShell: `-EnvFile`)로 바꿀 수 있다.
 
 값 넣기(끝 개행은 앱이 지우므로 `echo`/`print`로 써도 된다):
 
@@ -55,14 +65,19 @@ PowerShell 5에서 `>`/`Out-File`은 UTF-16으로 저장해 앱이 읽지 못한
 
 ### 기존 설치본 옮기기(`.env`에 키를 두던 경우)
 
-1. `.env`의 `JOBCARD_SECRET` 값을 **그대로** `secrets/jobcard_secret.txt`로 옮긴다. 새로 만들면 기존 근로자
-   접속 코드 해시·토큰·서명 URL이 모두 어긋난다.
-2. `.env`의 `OPENAI_API_KEY` 값을 `secrets/openai_api_key.txt`로 옮긴다(이 기회에 3절에 따라 교체 권장).
-3. `.env`에서 두 줄의 값을 지운다(빈 값이면 compose가 빈 문자열을 넘겨 아무것도 노출되지 않는다).
-4. `docker compose up -d` 후 `docker inspect jobcard-api jobcard-ai`의 `Env`에 키 값이 없는지 확인한다.
+1. `sh scripts/init-secrets.sh`(Windows: `scripts\init-secrets.ps1`)를 실행한다. `.env`의 `JOBCARD_SECRET`·
+   `OPENAI_API_KEY` 값을 **그대로** `secrets/jobcard_secret.txt`·`secrets/openai_api_key.txt`로 옮긴다
+   (파일이 없거나 비어 있을 때만, 값은 출력하지 않음). 손으로 옮겨도 된다.
+   - `JOBCARD_SECRET`는 **새로 만들지 않는다.** 새 값이면 기존 근로자 접속 코드 해시·토큰·서명 URL이 모두 어긋난다.
+   - **`OPENAI_API_KEY`는 반드시 옮긴다.** compose가 더 이상 환경변수로 넘기지 않으므로, 옮기지 않으면
+     ai_service가 키 없이(규칙 기반 폴백으로) 뜬다. 이 기회에 3절에 따라 교체를 권장한다.
+2. `.env`에서 두 줄의 값을 지운다.
+3. `docker compose up -d --force-recreate` 후 `docker inspect jobcard-api jobcard-ai`의 `Env`에 키 값이 없는지 확인한다.
 
-compose에는 하위호환을 위해 `OPENAI_API_KEY: "${OPENAI_API_KEY:-}"`, `JOBCARD_SECRET: "${JOBCARD_SECRET:-}"`
-줄이 남아 있다. 파일이 비어 있을 때만 쓰이며, 모든 설치본이 옮긴 뒤 다음 정리 때 없앤다.
+compose에는 하위호환을 위해 `JOBCARD_SECRET: "${JOBCARD_SECRET:-}"` 줄이 남아 있다(파일이 비어 있을 때만 쓰인다).
+키를 `.env`에만 둔 설치본이 업그레이드하자마자 개발용 기본 키로 바뀌어 접속 코드가 전부 어긋나는 일을 막는다.
+모든 설치본이 옮긴 뒤 다음 정리 때 없앤다. `OPENAI_API_KEY` 줄은 없앴다(키가 바뀌어도 데이터가 깨지지 않고
+규칙 기반으로 폴백할 뿐이라, `.env` 값이 `docker inspect`에 보이는 위험을 남겨 둘 이유가 없다).
 
 ### 한계
 
@@ -90,7 +105,8 @@ compose에는 하위호환을 위해 `OPENAI_API_KEY: "${OPENAI_API_KEY:-}"`, `J
 
 1. 공지 후 점검 시간에 새 값을 만든다:
    `python -c "import secrets; print(secrets.token_urlsafe(48))" > secrets/jobcard_secret.txt`
-2. `docker compose up -d --force-recreate backend` (migrate·purge도 같은 파일을 읽는다).
+2. `docker compose up -d --force-recreate backend` (migrate·purge도 같은 파일을 읽는다). backend는 키를
+   기동 시 한 번 읽어 캐시하므로, 파일만 바꾸고 다시 띄우지 않으면 옛 키를 계속 쓴다.
 3. 사업주가 다시 로그인한 뒤, 근로자 관리 화면에서 근로자 접속 코드를 **전부 재발급**해 전달한다.
 4. 유출이 원인이었다면 접근 감사 로그에서 교체 전 이상 접근을 확인한다.
 
@@ -126,8 +142,13 @@ gcloud iam service-accounts keys delete  <옛 KEY_ID> --iam-account="$SA"
 
 ## 5. 비밀값 스캔 (gitleaks)
 
-- 설정: 저장소 루트 `.gitleaks.toml` — 기본 규칙 전체 + 최소 예외(개발용 자리표시자 `_DEV_SECRET` 하나).
-  예외를 늘릴 때는 왜 진짜 비밀값이 아닌지 주석으로 남긴다. 경로째 빼는 예외는 쓰지 않는다.
+- 설정: 저장소 루트 `.gitleaks.toml` — 기본 규칙 전체 + 최소 예외 두 가지.
+  1. 개발용 자리표시자 `_DEV_SECRET`(값 하나).
+  2. `secrets/google-tts.json.example`(경로 하나): 사용자가 복사해 쓰는 서비스 계정 JSON 틀이라 개인 키 형식을 담는다.
+     경로째 빼면 누가 여기에 진짜 키를 붙여 넣어도 gitleaks가 못 잡으므로, `backend/tests/test_secret_placeholders.py`가
+     "private_key 본문이 100자 미만(자리표시자)"과 "예외 경로가 이 파일 하나뿐"을 단언해 대신 막는다
+     (진짜 RSA 2048 키 본문은 약 1,600자 — 들어가면 CI 테스트가 실패한다).
+  예외를 늘릴 때는 왜 진짜 비밀값이 아닌지 주석으로 남긴다. 디렉터리째 빼는 예외는 쓰지 않는다.
 - CI: `.github/workflows/ci.yml`의 `secret-scan` 잡이 히스토리 전체(`fetch-depth: 0`)를 `--redact`로 스캔한다.
   gitleaks 바이너리는 버전과 SHA-256을, checkout 액션은 커밋 SHA를 고정한다.
 - 커밋 전: `.pre-commit-config.yaml`의 gitleaks 훅(같은 버전, 커밋 SHA 고정).
@@ -137,6 +158,21 @@ gcloud iam service-accounts keys delete  <옛 KEY_ID> --iam-account="$SA"
   ```bash
   gitleaks git . --config .gitleaks.toml --redact --verbose     # 히스토리 전체
   gitleaks dir . --config .gitleaks.toml --redact               # 작업 트리(커밋 안 된 파일 포함)
+  # 바이너리 없이 Docker로(버전 고정, 값은 --redact로 가림). Git Bash에서는 MSYS_NO_PATHCONV=1을 앞에 붙인다.
+  docker run --rm -v "$PWD:/repo:ro" --entrypoint sh zricethezav/gitleaks:v8.30.1 -c \
+    'git config --global --add safe.directory /repo && gitleaks git /repo --config /repo/.gitleaks.toml --redact'
+  ```
+
+- **stash는 `gitleaks git`으로 다 보이지 않는다.** 기본 log 옵션이 `git log -p --all`이라 `refs/stash`도 대상에
+  들어가지만, stash의 작업 트리 커밋(W)은 병합 커밋이라 `git log -p`가 diff를 내지 않는다 — 작업 트리에서 고친
+  내용(대개 비밀값이 들어가는 곳)은 스캔되지 않는다(8절 실측). CI는 브랜치·태그만 받아 와 stash를 아예 보지 않는다.
+  stash는 따로 본다:
+
+  ```bash
+  for i in $(git stash list --format=%gd); do
+    git diff "$i^1" "$i" | gitleaks stdin --config .gitleaks.toml --redact      # 작업 트리 변경
+    git diff "$i^1" "$i^2" | gitleaks stdin --config .gitleaks.toml --redact    # 인덱스 변경
+  done
   ```
 
 ### 찾았을 때
@@ -184,15 +220,23 @@ gitleaks와 겹치지만, 로컬 훅을 설치하지 않은 사람의 푸시도 
 4. OpenAI Usage, GCP 결제·감사 로그에서 교체 전 이상 사용이 없었는지 확인한다.
 5. 앞으로 비밀값은 동기화 폴더 밖(또는 OS 자격증명 저장소·비밀번호 관리자)에 두고, 필요할 때 `secrets/`로 복사한다.
 
-## 8. 점검 상태 (Phase 0.5 커밋 시점)
+## 8. 점검 상태
 
-- 로컬에서 gitleaks 자체는 실행하지 못했다(작업 환경에서 외부 바이너리 다운로드·실행이 막힘).
-  **gitleaks 히스토리 전체 스캔 결과는 CI `secret-scan` 잡의 첫 실행에서 확인**해야 한다.
-- 대신 `git grep`으로 모든 ref(117개 커밋, stash 포함)를 대표 패턴(OpenAI `sk-`, PEM 개인 키, Google API 키,
-  GitHub 토큰)으로 훑었다. 값은 출력하지 않고 파일·커밋만 확인했다.
-  - `secrets/google-tts.json.example`: 추가된 커밋(fa08bf3, 17c0059) 이후 모든 커밋에서 **개인 키 형식**에 걸린다.
-    자리표시자인지 진짜 키인지 **사람이 확인해야 한다**. 진짜면 해당 서비스 계정 키를 즉시 폐기(3절)하고
-    히스토리에서 지운다. 자리표시자면 CI 리포트의 지문을 `.gitleaksignore`에 넣는다. 그 전까지 `secret-scan` 잡은 실패할 수 있다.
-  - 로컬 stash `stash@{0}`(커밋 90e77ab, "refactor/mina WIP")의 `.env.example`에 **OpenAI 키 형식**의 값이 있다.
-    어느 브랜치에도 없고 stash는 보통 푸시되지 않지만, 저장소가 OneDrive에 있으므로 7절에 따라 유출로 보고
-    그 키를 교체한 뒤, 필요한 변경을 꺼내고 stash를 지운다(`git stash drop`).
+### Phase 0.5 커밋 시점
+
+gitleaks를 실행하지 못해 `git grep`(모든 ref, 대표 패턴)으로 대신 훑었다. 그때 사람 확인이 필요하다고 남긴 두 건은
+아래 0.5 보완 실측으로 정리됐다.
+
+### Phase 0.5 보완(2026-11-07, gitleaks v8.30.1 Docker 이미지로 로컬 실행, 값은 `--redact`로 가림)
+
+- `gitleaks git`(기본 = `--all`, refs/stash·도구 체크포인트 ref 포함) 히스토리 전체: **104개 커밋, 발견 0건**.
+  브랜치·원격·태그만(`--log-opts="--full-history --branches --remotes --tags"`, CI와 같은 범위): **102개 커밋, 발견 0건**(기본 스캔이 2개 더 많은 것은 브랜치 밖 ref — refs/stash의 인덱스·미추적 커밋, 도구 체크포인트 ref — 때문).
+- `secrets/google-tts.json.example`: 개인 키 규칙에 **걸리지 않는다**(private_key 본문 10자 자리표시자라 규칙의
+  최소 길이에 못 미친다). 그래도 예시 파일 형식이 바뀌면 걸릴 수 있어 5절의 경로 예외 + 자리표시자 테스트로 고정했다.
+- stash: 이 저장소에는 `stash@{0}`(90e77ab, "refactor/mina WIP") 하나가 있다. `--all` 스캔은 refs/stash를
+  대상에 넣지만 작업 트리 커밋의 diff를 보지 않아 **발견 0건으로 나온다**. 5절의 stash 전용 스캔
+  (`git diff stash^1 stash | gitleaks stdin`)으로 보면 **`openai-api-key` 규칙 1건**(`.env.example`)이 나온다.
+  Phase 0.5 커밋 때 git grep으로 찾은 것과 같은 항목이다. 어느 브랜치에도 없고 푸시되지 않지만 저장소가
+  OneDrive에 있으므로 7절에 따라 유출로 보고 **그 키를 교체한 뒤 stash를 지운다**(`git stash drop`, 저장소 주인이 판단).
+  인덱스·미추적 파일 쪽 stash 커밋은 발견 0건.
+- 오탐 allowlist 추가: 없음(위 예시 파일 경로 예외 외).

@@ -15,6 +15,7 @@ import hashlib
 import hmac
 import json
 import os
+import threading
 import time
 
 from fastapi import Depends, Header, HTTPException
@@ -31,7 +32,24 @@ def is_production() -> bool:
     return os.getenv("JOBCARD_ENV", "dev").strip().lower() in {"prod", "production"}
 
 
-def _secret() -> str:
+# 프로세스가 처음 읽은 JOBCARD_SECRET. 예전에는 토큰 검증·접속 코드 해시·서명 URL을 만들 때마다
+# 비밀값 파일(/run/secrets/jobcard_secret)을 다시 열었다 — 요청마다 디스크 I/O가 생기고, 운영자가 파일을
+# 고쳐 쓰는 순간(잠깐 빈 파일)에는 요청마다 다른 키(개발용 기본 키 포함)로 서명할 수 있었다.
+# 그래서 기동 시(lifespan의 check_production_config) 한 번 읽어 둔다. 키 교체는 재시작으로 반영된다
+# (docs/security/secrets.md 3절: `docker compose up -d --force-recreate backend`).
+_secret_cache: str | None = None
+_secret_lock = threading.Lock()
+
+
+def reset_secret_cache() -> None:
+    """캐시를 비워 다음 호출이 다시 읽게 한다. 테스트(환경변수·파일을 바꾸는 경우) 전용 훅이다.
+    운영 코드는 부르지 않는다 — 실행 중 키 교체는 지원하지 않는다(위 주석)."""
+    global _secret_cache
+    with _secret_lock:
+        _secret_cache = None
+
+
+def _load_secret() -> str:
     # docker-compose의 "${JOBCARD_SECRET:-}"처럼 빈 값으로 넘어오면 '설정 안 함'과 같다.
     # 빈 문자열을 그대로 HMAC 키로 쓰면 누구나 토큰을 위조할 수 있다.
     # JOBCARD_SECRET_FILE(/run/secrets/jobcard_secret)이 환경변수보다 우선한다(secret_env.py 참고).
@@ -44,10 +62,24 @@ def _secret() -> str:
     return secret
 
 
+def _secret() -> str:
+    global _secret_cache
+    cached = _secret_cache
+    if cached is not None:
+        return cached
+    with _secret_lock:
+        if _secret_cache is None:
+            # 운영 가드에 걸리면 예외가 나고 캐시하지 않는다 — 다음 호출도 다시 실패한다.
+            _secret_cache = _load_secret()
+        return _secret_cache
+
+
 def check_production_config() -> None:
-    """운영 기동 시 설정을 미리 검사한다(첫 로그인 때가 아니라 서버가 뜰 때 실패하게)."""
-    if is_production():
-        _secret()
+    """기동 시 비밀값을 한 번 읽어 캐시하고 검사한다(첫 로그인 때가 아니라 서버가 뜰 때 실패하게).
+
+    예전에는 운영에서만 불렀다. 개발에서도 여기서 읽어 두어 첫 요청이 파일 I/O·오류를 떠안지 않게 한다.
+    """
+    _secret()
 
 
 TOKEN_TTL_SEC = int(os.getenv("JOBCARD_TOKEN_TTL", "86400"))

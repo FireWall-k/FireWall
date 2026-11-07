@@ -89,6 +89,17 @@ def _reset_login_throttle():
 
 
 @pytest.fixture(autouse=True)
+def _reset_secret_cache():
+    # auth._secret()은 프로세스에서 한 번만 읽어 캐시한다(운영: 키 교체는 재시작). 테스트는 JOBCARD_SECRET·
+    # JOBCARD_ENV를 바꿔 가며 부르므로 앞뒤로 비운다 — 안 비우면 한 테스트가 넣은 키가 다음 테스트의 토큰·
+    # 접속 코드 해시에 쓰여(기본 테스트 키로 만든 데모 근로자 해시와 어긋나) 엉뚱한 곳이 깨진다.
+    import auth as auth_module
+    auth_module.reset_secret_cache()
+    yield
+    auth_module.reset_secret_cache()
+
+
+@pytest.fixture(autouse=True)
 def _patch_ai(monkeypatch):
     # 테스트가 실제 Google TTS를 부르지 않게 한다(느리고 과금되며, CI에는 자격 증명이 없다).
     # TTS 모듈 자체는 test_tts.py가 가짜 google 모듈로 따로 검증한다.

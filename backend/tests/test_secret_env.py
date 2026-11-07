@@ -93,3 +93,54 @@ def test_auth_prod_guard_applies_to_file_value(tmp_path, monkeypatch):
     monkeypatch.setenv("JOBCARD_ENV", "prod")
     with pytest.raises(RuntimeError, match="JOBCARD_SECRET"):
         auth._secret()
+
+
+# --- 비밀값은 프로세스 기동 시 한 번만 읽는다(Phase 0.5 보완) ----------------------
+
+def test_auth_secret_is_read_once_per_process(tmp_path, monkeypatch):
+    """예전 _secret()은 토큰 검증·접속 코드 해시·서명 URL마다 비밀값 파일을 다시 열었다(요청마다 디스크 I/O,
+    파일이 잠깐 비거나 바뀌는 순간 요청마다 다른 키). 이제 처음 한 번 읽어 캐시한다."""
+    f = tmp_path / "jobcard_secret.txt"
+    f.write_text("a" * 48, encoding="utf-8")
+    monkeypatch.setenv("JOBCARD_SECRET_FILE", str(f))
+    calls = []
+    real = auth.read_secret
+    monkeypatch.setattr(auth, "read_secret", lambda *a, **k: calls.append(a) or real(*a, **k))
+    auth.reset_secret_cache()
+    for _ in range(5):
+        assert auth._secret() == "a" * 48
+    auth.make_token("e1", "employer")
+    assert len(calls) == 1
+
+
+def test_secret_rotation_needs_restart_or_reset(tmp_path, monkeypatch):
+    """키 교체는 재시작으로 반영된다(실행 중에 파일만 바꾸면 이전 키를 계속 쓴다). 테스트는 reset 훅으로 다시 읽는다."""
+    f = tmp_path / "jobcard_secret.txt"
+    f.write_text("a" * 48, encoding="utf-8")
+    monkeypatch.setenv("JOBCARD_SECRET_FILE", str(f))
+    auth.reset_secret_cache()
+    assert auth._secret() == "a" * 48
+    f.write_text("b" * 48, encoding="utf-8")
+    assert auth._secret() == "a" * 48
+    auth.reset_secret_cache()
+    assert auth._secret() == "b" * 48
+
+
+def test_weak_prod_secret_is_not_cached(tmp_path, monkeypatch):
+    """운영 가드에 걸린 값은 캐시하지 않는다 — 다음 호출도 다시 실패해야 한다(약한 키로 한 번이라도 서명하지 않게)."""
+    monkeypatch.setenv("JOBCARD_ENV", "prod")
+    monkeypatch.setenv("JOBCARD_SECRET", "too-short")
+    auth.reset_secret_cache()
+    for _ in range(2):
+        with pytest.raises(RuntimeError, match="JOBCARD_SECRET"):
+            auth._secret()
+
+
+def test_lifespan_loads_secret_at_startup(monkeypatch):
+    """개발 모드에서도 기동 시 한 번 읽어 둔다(첫 요청이 파일 I/O·오류를 떠안지 않게)."""
+    calls = []
+    real = auth.read_secret
+    monkeypatch.setattr(auth, "read_secret", lambda *a, **k: calls.append(a) or real(*a, **k))
+    auth.reset_secret_cache()
+    auth.check_production_config()
+    assert len(calls) == 1

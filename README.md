@@ -380,8 +380,11 @@ LLM_TIMEOUT=20
 
 Docker에서는 키를 환경변수가 아니라 Docker secret 파일 `secrets/openai_api_key.txt`에 넣습니다
 (컨테이너에는 `/run/secrets/openai_api_key`로 보이고 `OPENAI_API_KEY_FILE`이 그 경로를 가리킨다).
-환경변수 키는 `docker inspect` 등에 그대로 보이기 때문입니다. 예전처럼 `.env`의 `OPENAI_API_KEY`도
-파일이 비어 있을 때만 하위호환으로 읽습니다 — 자세한 우선순위는 [docs/security/secrets.md](docs/security/secrets.md).
+환경변수 키는 `docker inspect` 등에 그대로 보이기 때문입니다. compose는 이제 `OPENAI_API_KEY` 환경변수를
+**넘기지 않습니다**. `.env`에 키를 두던 설치본은 `sh scripts/init-secrets.sh`(Windows: `scripts\init-secrets.ps1`)를
+한 번 실행하면 그 값을 `secrets/openai_api_key.txt`로 옮겨 줍니다(값은 화면에 출력하지 않음). 옮긴 뒤 `.env`의
+값은 지웁니다. 컨테이너 밖 로컬 실행(`uvicorn` 직접)은 예전처럼 환경변수 `OPENAI_API_KEY`도 읽습니다 —
+자세한 우선순위는 [docs/security/secrets.md](docs/security/secrets.md).
 
 직무 생성(`POST /api/tasks`)은 선택 필드 `business_type`, `work_environment`,
 `worker_note`를 받습니다.
@@ -426,10 +429,18 @@ mp3 기록·해시 캐시·URL 반환·예외 폴백까지 실제 코드를 실�
 
 1. **비밀값 파일 만들기** — `sh scripts/init-secrets.sh` 후 값을 넣는다(비밀값은 `.env`에 두지 않는다,
    [docs/security/secrets.md](docs/security/secrets.md)).
-   ```bash
-   python -c "import secrets; print(secrets.token_urlsafe(48))" > secrets/jobcard_secret.txt
-   printf '%s' 'sk-...' > secrets/openai_api_key.txt      # 없으면 규칙 기반으로 동작
-   ```
+   - **새 설치**: 키를 새로 만든다.
+     ```bash
+     python -c "import secrets; print(secrets.token_urlsafe(48))" > secrets/jobcard_secret.txt
+     printf '%s' 'sk-...' > secrets/openai_api_key.txt      # 없으면 규칙 기반으로 동작
+     ```
+   - **기존 설치본 업그레이드**: `JOBCARD_SECRET`를 **새로 만들지 않는다.** 지금 쓰던 값(`.env`의
+     `JOBCARD_SECRET`)을 그대로 `secrets/jobcard_secret.txt`로 옮긴다 — 값이 바뀌면 발급된 로그인 토큰,
+     근로자 접속 코드 해시, 사진·TTS 서명 URL이 **전부 무효**가 되어 근로자 전원의 접속 코드를 다시 발급해야
+     한다. `.env`에 값이 있으면 `sh scripts/init-secrets.sh`가 파일이 없거나 비어 있을 때 그대로 옮겨 준다
+     (`OPENAI_API_KEY`도 같이, 값은 출력하지 않음). 옮긴 뒤 `.env`의 두 값을 지운다.
+   - 비밀값은 프로세스가 **기동할 때 한 번** 읽는다. 파일을 바꾼 뒤에는
+     `docker compose up -d --force-recreate backend ai_service`로 다시 띄워야 반영된다.
    **`.env` 채우기** (`.env.example` 참고, 비밀값이 아닌 설정만)
    ```env
    JOBCARD_ENV=prod
