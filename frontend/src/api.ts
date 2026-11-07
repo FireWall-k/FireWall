@@ -164,7 +164,27 @@ export const auth = {
     setAuth(state);
     return state;
   },
+  /**
+   * 시연용 데모 계정(로그인 화면 미리 채우기). 데모 계정이 없는 서버(운영)는 404 → null.
+   * req()를 쓰지 않는다: 로그인 전 화면에서 부르는 보조 조회라, 실패해도 저장된 로그인 상태를 지우거나
+   * 오류를 띄우면 안 된다.
+   */
+  async demoCredentials(): Promise<DemoCredentials | null> {
+    try {
+      const res = await fetch(`${BASE}/api/auth/demo`);
+      if (!res.ok) return null;
+      return (await res.json()) as DemoCredentials;
+    } catch {
+      return null; // 백엔드가 아직 안 떴어도 로그인 화면은 그대로 쓸 수 있어야 한다.
+    }
+  },
 };
+
+/** 서버는 공개 기본값이 지금도 맞을 때만 값을 준다(바뀐 비밀번호·코드는 null). */
+export interface DemoCredentials {
+  employer: { login_id: string; password: string } | null;
+  worker: { workplace_code: string; access_code: string } | null;
+}
 
 export interface TaskSummary {
   id: string;

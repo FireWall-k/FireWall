@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { auth, type AuthState } from "../api";
 import { getSavedWorkplaceCode, normalizeWorkplaceCode, saveWorkplaceCode } from "../workerCodes";
 import { cn } from "../cn";
@@ -14,6 +14,30 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
   const [workplaceInput, setWorkplaceInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [demoFilled, setDemoFilled] = useState(false);
+
+  // 시연용 데모 계정을 미리 채워 '로그인'만 누르면 들어가게 한다. 데모 계정이 없는 서버(운영)는 null이라
+  // 아무것도 채우지 않는다. 빈칸에만 채운다 — 응답이 오기 전에 사용자가 입력한 값을 덮어쓰지 않는다.
+  useEffect(() => {
+    let cancelled = false;
+    auth.demoCredentials().then((d) => {
+      if (cancelled || !d) return;
+      if (d.employer) {
+        const { login_id, password: pw } = d.employer;
+        setLoginId((v) => v || login_id);
+        setPassword((v) => v || pw);
+      }
+      if (d.worker) {
+        const { workplace_code, access_code } = d.worker;
+        const saved = getSavedWorkplaceCode();
+        // 이 기기에 다른 사업장이 저장돼 있으면 그 사업장의 근로자용 기기다 — 데모 코드를 넣지 않는다.
+        if (!saved) setWorkplaceInput((v) => v || workplace_code);
+        if (!saved || saved === workplace_code) setCode((v) => v || access_code);
+      }
+      if (d.employer || d.worker) setDemoFilled(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const workplace = editingWorkplace ? normalizeWorkplaceCode(workplaceInput) : savedWorkplace ?? "";
 
@@ -107,6 +131,9 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
         </div>
       )}
 
+      {demoFilled && (
+        <p className="mt-3 text-xs text-slate-500">시연용 데모 계정이 미리 채워져 있어요. 로그인을 누르세요.</p>
+      )}
       {error && <div role="alert" className="mt-3 rounded-lg bg-red-50 p-2 text-sm text-red-800">{error}</div>}
 
       <button onClick={submit} disabled={busy || !ready}

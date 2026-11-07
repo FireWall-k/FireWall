@@ -5,18 +5,77 @@ import LoginPage from "../src/pages/LoginPage";
 
 const loginEmployer = vi.fn();
 const loginWorker = vi.fn();
+const demoCredentials = vi.fn();
 
 vi.mock("../src/api", () => ({
   auth: {
     loginEmployer: (id: string, pw: string) => loginEmployer(id, pw),
     loginWorker: (workplace: string, code: string) => loginWorker(workplace, code),
+    demoCredentials: () => demoCredentials(),
   },
 }));
 
 beforeEach(() => {
   loginEmployer.mockReset();
   loginWorker.mockReset();
+  demoCredentials.mockReset();
+  // 기본은 데모 계정이 없는 서버(운영) — 기존 테스트는 빈 칸에서 시작한다.
+  demoCredentials.mockResolvedValue(null);
   localStorage.clear();
+});
+
+describe("LoginPage 데모 계정 미리 채우기", () => {
+  const demo = {
+    employer: { login_id: "demo", password: "demo1234" },
+    worker: { workplace_code: "HGP2ET", access_code: "1234" },
+  };
+
+  it("사업주: 로그인만 누르면 데모 계정으로 로그인한다", async () => {
+    demoCredentials.mockResolvedValue(demo);
+    loginEmployer.mockResolvedValue({ token: "t", role: "employer", displayName: "데모" });
+    render(<LoginPage onLogin={vi.fn()} />);
+    await waitFor(() => expect(screen.getByLabelText("아이디")).toHaveValue("demo"));
+    expect(screen.getByText(/데모 계정이 미리 채워져/)).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByText("로그인"));
+    await waitFor(() => expect(loginEmployer).toHaveBeenCalledWith("demo", "demo1234"));
+  });
+
+  it("근로자: 사업장 코드와 접속 코드가 채워져 로그인만 누르면 된다", async () => {
+    demoCredentials.mockResolvedValue(demo);
+    loginWorker.mockResolvedValue({ token: "t", role: "worker", displayName: "김근로" });
+    render(<LoginPage onLogin={vi.fn()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByText("근로자"));
+    await waitFor(() => expect(screen.getByLabelText("접속 코드")).toHaveValue("1234"));
+    await user.click(screen.getByText("로그인"));
+    await waitFor(() => expect(loginWorker).toHaveBeenCalledWith("HGP2ET", "1234"));
+  });
+
+  it("데모 계정이 없는 서버(운영)에서는 아무것도 채우지 않는다", async () => {
+    render(<LoginPage onLogin={vi.fn()} />);
+    await waitFor(() => expect(demoCredentials).toHaveBeenCalled());
+    expect(screen.getByLabelText("아이디")).toHaveValue("");
+    expect(screen.queryByText(/데모 계정이 미리 채워져/)).not.toBeInTheDocument();
+  });
+
+  it("응답 전에 입력한 값은 덮어쓰지 않는다", async () => {
+    let resolve: (v: typeof demo) => void = () => {};
+    demoCredentials.mockReturnValue(new Promise((r) => { resolve = r; }));
+    render(<LoginPage onLogin={vi.fn()} />);
+    await userEvent.setup().type(screen.getByLabelText("아이디"), "itda");
+    resolve(demo);
+    await waitFor(() => expect(screen.getByLabelText("비밀번호")).toHaveValue("demo1234"));
+    expect(screen.getByLabelText("아이디")).toHaveValue("itda");
+  });
+
+  it("이 기기에 다른 사업장이 저장돼 있으면 데모 근로자 코드를 넣지 않는다", async () => {
+    localStorage.setItem("jobcard_workplace_code", "OTHER9");
+    demoCredentials.mockResolvedValue(demo);
+    render(<LoginPage onLogin={vi.fn()} />);
+    await userEvent.setup().click(screen.getByText("근로자"));
+    await waitFor(() => expect(screen.getByText(/데모 계정이 미리 채워져/)).toBeInTheDocument());
+    expect(screen.getByLabelText("접속 코드")).toHaveValue("");
+  });
 });
 
 describe("LoginPage", () => {

@@ -208,6 +208,34 @@ def _ensure_seed() -> None:
         db.close()
 
 
+@app.get("/api/auth/demo")
+def demo_credentials(db: Session = Depends(get_db)) -> dict:
+    """로그인 화면이 데모 계정을 미리 채우게 한다('로그인'만 누르면 들어가는 시연용).
+
+    - 운영이거나 데모 시드가 꺼져 있으면 404 — 데모 계정이 없는 서버에서는 아무것도 알려 주지 않는다.
+    - 비밀번호·접속 코드는 '저장소에 공개된 기본값(환경변수)이 지금도 맞을 때만' 돌려준다. 사업주가
+      데모 계정 비밀번호나 근로자 코드를 바꿨다면 그 값은 이제 비밀이므로 null로 둔다(실제 값을 흘리지 않는다).
+    - 사업장 코드는 DB 값을 준다. Alembic 도입 전 설치본의 데모 사업주는 0002 리비전에서 무작위 코드를
+      받았으므로 환경변수 기본값(DEMO01)을 주면 근로자 로그인이 틀린다.
+    """
+    if is_production() or not _demo_seed_enabled():
+        raise HTTPException(status_code=404, detail="Not Found")
+    login_id = os.getenv("DEMO_EMPLOYER_LOGIN", "demo")
+    password = os.getenv("DEMO_EMPLOYER_PASSWORD", "demo1234")
+    worker_code = os.getenv("DEMO_WORKER_CODE", "1234")
+    employer = db.scalar(select(Employer).where(Employer.login_id == login_id))
+    if employer is None:
+        raise HTTPException(status_code=404, detail="Not Found")
+    employer_out = ({"login_id": login_id, "password": password}
+                    if verify_password(password, employer.password_hash) else None)
+    code_hash = hash_access_code(employer.id, worker_code)
+    has_worker = db.scalar(select(Worker.id).where(Worker.employer_id == employer.id,
+                                                   Worker.access_code_hash == code_hash)) is not None
+    worker_out = ({"workplace_code": employer.workplace_code, "access_code": worker_code}
+                  if has_worker and employer.workplace_code else None)
+    return {"employer": employer_out, "worker": worker_out}
+
+
 def _step_to_out(s: Step) -> StepOut:
     # 사진·음성 URL은 저장하지 않고 응답 때마다 서명해 만든다(media.py). 만료되면 화면이 다시 조회해 새 URL을 받는다.
     # 레코드가 지워졌으면(GC) None — 그림 없음 / 브라우저 음성합성으로 대신한다.
