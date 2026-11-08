@@ -1,10 +1,10 @@
 {
  "version": 1,
- "generated_at": "2026-11-07T18:30:08+00:00",
+ "generated_at": "2026-11-08T07:29:19+00:00",
  "model": "gpt-4o-mini + claude (2026-11-08 새 카드)",
- "source_digest": "dd0be9f33f649336",
- "source_count": 1160,
- "entry_count": 1160,
+ "source_digest": "aca20326d4c0aa16",
+ "source_count": 1213,
+ "entry_count": 1213,
  "note": "LLM이 생성한 파생 데이터입니다. 원본은 aac_assets.json이며 이 파일은 재생성 가능합니다. reviewed=false는 사람 검수 전이라는 뜻입니다.",
  "entries": [
   {
@@ -30991,6 +30991,1518 @@
     "put on",
     "vest",
     "uniform"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "ASSEMBLY_195",
+   "label": "지퍼백을 전자저울에 올린다",
+   "job": "assembly",
+   "asset_type": "action",
+   "frame": {
+    "verb": "올리다",
+    "verb_class": "move",
+    "object": "지퍼백",
+    "object_detail": null,
+    "instrument": null,
+    "location": "전자저울",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "무게",
+    "계량",
+    "달다",
+    "저울질",
+    "재다",
+    "비닐봉투"
+   ],
+   "keywords_en": [
+    "weigh",
+    "scale",
+    "zip bag",
+    "put on"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CAFE_109",
+   "label": "냉장고에서 우유를 꺼낸다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "꺼내다",
+    "verb_class": "move",
+    "object": "우유",
+    "object_detail": null,
+    "instrument": null,
+    "location": "냉장고",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "우유팩",
+    "빼다",
+    "가져오다",
+    "냉장실",
+    "재료",
+    "준비하다"
+   ],
+   "keywords_en": [
+    "take out",
+    "milk",
+    "fridge",
+    "refrigerator"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CAFE_110",
+   "label": "출입문이 잠겼는지 확인한다",
+   "job": "cafe",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "출입문",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "문단속",
+    "잠금",
+    "자물쇠",
+    "마감",
+    "퇴근",
+    "당겨보다"
+   ],
+   "keywords_en": [
+    "lock",
+    "door",
+    "check",
+    "closing"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "CLEANING_218",
+   "label": "창문을 연다",
+   "job": "cleaning",
+   "asset_type": "action",
+   "frame": {
+    "verb": "열다",
+    "verb_class": "other",
+    "object": "창문",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "환기",
+    "바람",
+    "창틀",
+    "공기",
+    "유리창",
+    "밀다"
+   ],
+   "keywords_en": [
+    "open",
+    "window",
+    "ventilate",
+    "air"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DELIVERY_060",
+   "label": "무인 택배함에 상자를 넣는다",
+   "job": "delivery",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "move",
+    "object": "상자",
+    "object_detail": null,
+    "instrument": null,
+    "location": "택배함",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "보관함",
+    "락커",
+    "부재중",
+    "소포",
+    "배송",
+    "아파트"
+   ],
+   "keywords_en": [
+    "parcel locker",
+    "package",
+    "deliver",
+    "box"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_055",
+   "label": "매장 전화를 받는다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "받다",
+    "verb_class": "other",
+    "object": "전화",
+    "object_detail": null,
+    "instrument": null,
+    "location": "매장",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "통화",
+    "수화기",
+    "응대",
+    "유선전화",
+    "벨소리"
+   ],
+   "keywords_en": [
+    "answer phone",
+    "call",
+    "telephone"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_056",
+   "label": "출근 단말기에 사원증을 찍는다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "찍다",
+    "verb_class": "other",
+    "object": "사원증",
+    "object_detail": null,
+    "instrument": "단말기",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "출입카드",
+    "태그",
+    "출퇴근기록",
+    "근태",
+    "카드찍기"
+   ],
+   "keywords_en": [
+    "clock in",
+    "badge",
+    "ID card",
+    "time clock"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_057",
+   "label": "빈 상자를 납작하게 접는다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "접다",
+    "verb_class": "pack",
+    "object": "상자",
+    "object_detail": "빈",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "박스",
+    "종이상자",
+    "펴서접기",
+    "분리수거",
+    "골판지"
+   ],
+   "keywords_en": [
+    "flatten",
+    "fold",
+    "cardboard box"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_058",
+   "label": "피팅룸에 남은 옷을 가져온다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "가져오다",
+    "verb_class": "move",
+    "object": "옷",
+    "object_detail": "남은",
+    "instrument": null,
+    "location": "피팅룸",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "탈의실",
+    "의류",
+    "회수",
+    "수거",
+    "두고 간"
+   ],
+   "keywords_en": [
+    "fitting room",
+    "clothes",
+    "collect"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_059",
+   "label": "시든 채소를 골라낸다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "골라내다",
+    "verb_class": "sort",
+    "object": "채소",
+    "object_detail": "시든",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "상추",
+    "야채",
+    "빼다",
+    "불량",
+    "신선도"
+   ],
+   "keywords_en": [
+    "wilted",
+    "vegetable",
+    "remove",
+    "produce"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_060",
+   "label": "창고에서 상자를 들고 나온다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "나오다",
+    "verb_class": "move",
+    "object": "상자",
+    "object_detail": null,
+    "instrument": null,
+    "location": "창고",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "박스",
+    "꺼내오다",
+    "들고오다",
+    "재고",
+    "음료"
+   ],
+   "keywords_en": [
+    "stockroom",
+    "carry",
+    "box"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_061",
+   "label": "다른 직원을 부른다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "부르다",
+    "verb_class": "other",
+    "object": "직원",
+    "object_detail": "다른",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "도움요청",
+    "선배",
+    "호출",
+    "손님질문",
+    "관리자"
+   ],
+   "keywords_en": [
+    "call staff",
+    "ask for help",
+    "colleague"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_062",
+   "label": "관리자에게 말한다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "말하다",
+    "verb_class": "other",
+    "object": "관리자",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "보고",
+    "알리다",
+    "말씀드리다",
+    "매니저",
+    "점장",
+    "사장님"
+   ],
+   "keywords_en": [
+    "tell manager",
+    "report",
+    "supervisor"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_063",
+   "label": "점검표에 적는다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "적다",
+    "verb_class": "other",
+    "object": "점검표",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "체크",
+    "기록",
+    "쓰다",
+    "체크리스트",
+    "일지",
+    "볼펜"
+   ],
+   "keywords_en": [
+    "checklist",
+    "write",
+    "record"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_064",
+   "label": "냉장고 문을 꼭 닫는다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닫다",
+    "verb_class": "operate",
+    "object": "문",
+    "object_detail": null,
+    "instrument": null,
+    "location": "냉장고",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "쇼케이스",
+    "냉동고",
+    "밀다",
+    "문단속",
+    "음료냉장고"
+   ],
+   "keywords_en": [
+    "close door",
+    "fridge",
+    "refrigerator"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_065",
+   "label": "같은 색 상품끼리 고리에 건다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "걸다",
+    "verb_class": "sort",
+    "object": "상품",
+    "object_detail": "같은 색",
+    "instrument": null,
+    "location": "고리",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "후크",
+    "색깔별",
+    "진열",
+    "분류",
+    "걸이"
+   ],
+   "keywords_en": [
+    "hook",
+    "peg",
+    "color",
+    "hang"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_066",
+   "label": "가격표를 인쇄한다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "인쇄하다",
+    "verb_class": "operate",
+    "object": "가격표",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "출력",
+    "라벨",
+    "프린터",
+    "뽑다",
+    "프라이스카드"
+   ],
+   "keywords_en": [
+    "print",
+    "price label",
+    "label printer"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_067",
+   "label": "커터칼로 상자를 뜯는다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "뜯다",
+    "verb_class": "other",
+    "object": "상자",
+    "object_detail": null,
+    "instrument": "커터칼",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "박스",
+    "개봉",
+    "테이프",
+    "칼",
+    "열다"
+   ],
+   "keywords_en": [
+    "box cutter",
+    "open box",
+    "unbox"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_068",
+   "label": "상품에 할인 스티커를 붙인다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "붙이다",
+    "verb_class": "other",
+    "object": "스티커",
+    "object_detail": "할인",
+    "instrument": null,
+    "location": "상품",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "세일",
+    "딱지",
+    "가격인하",
+    "라벨",
+    "특가"
+   ],
+   "keywords_en": [
+    "sale sticker",
+    "discount",
+    "label"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_069",
+   "label": "옷을 개어 매대에 올린다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "올리다",
+    "verb_class": "move",
+    "object": "옷",
+    "object_detail": null,
+    "instrument": null,
+    "location": "매대",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "티셔츠",
+    "개다",
+    "테이블",
+    "진열",
+    "개켜"
+   ],
+   "keywords_en": [
+    "fold clothes",
+    "t-shirt",
+    "table"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_070",
+   "label": "옷을 행거에 건다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "걸다",
+    "verb_class": "move",
+    "object": "옷",
+    "object_detail": null,
+    "instrument": null,
+    "location": "행거",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "옷걸이",
+    "셔츠",
+    "진열",
+    "봉",
+    "사이즈순"
+   ],
+   "keywords_en": [
+    "hang clothes",
+    "hanger",
+    "rack"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_071",
+   "label": "발판에 올라 위 칸에 상품을 놓는다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "상품",
+    "object_detail": null,
+    "instrument": "발판",
+    "location": "칸",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "스텝",
+    "사다리",
+    "높은",
+    "진열",
+    "올려놓다"
+   ],
+   "keywords_en": [
+    "step stool",
+    "top shelf",
+    "reach"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "DISPLAY_072",
+   "label": "휴게실에서 쉰다",
+   "job": "display",
+   "asset_type": "action",
+   "frame": {
+    "verb": "쉬다",
+    "verb_class": "other",
+    "object": "휴게실",
+    "object_detail": null,
+    "instrument": null,
+    "location": "휴게실",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "휴식",
+    "쉬는시간",
+    "브레이크",
+    "물마시기",
+    "숨돌리기"
+   ],
+   "keywords_en": [
+    "break",
+    "rest",
+    "break room"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "GAS_046",
+   "label": "손님에게 사이드미러를 접어 달라고 말한다",
+   "job": "gas",
+   "asset_type": "action",
+   "frame": {
+    "verb": "말하다",
+    "verb_class": "other",
+    "object": "사이드미러",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "부탁하다",
+    "요청하다",
+    "백미러",
+    "세차기",
+    "안내",
+    "미러 접기"
+   ],
+   "keywords_en": [
+    "ask customer",
+    "fold side mirror",
+    "car wash"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "GAS_047",
+   "label": "사무실 전화를 받는다",
+   "job": "gas",
+   "asset_type": "action",
+   "frame": {
+    "verb": "받다",
+    "verb_class": "other",
+    "object": "전화",
+    "object_detail": "사무실",
+    "instrument": null,
+    "location": "사무실",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "통화",
+    "수화기",
+    "응대",
+    "전화응대",
+    "벨소리"
+   ],
+   "keywords_en": [
+    "answer phone",
+    "telephone",
+    "call"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "GAS_048",
+   "label": "출근 단말기에 사원증을 찍는다",
+   "job": "gas",
+   "asset_type": "action",
+   "frame": {
+    "verb": "찍다",
+    "verb_class": "operate",
+    "object": "사원증",
+    "object_detail": null,
+    "instrument": null,
+    "location": "단말기",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "출퇴근 기록기",
+    "태그",
+    "출입카드",
+    "근태",
+    "출근체크"
+   ],
+   "keywords_en": [
+    "time clock",
+    "clock in",
+    "ID card"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "GAS_049",
+   "label": "주유구 뚜껑을 닫는다",
+   "job": "gas",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닫다",
+    "verb_class": "operate",
+    "object": "뚜껑",
+    "object_detail": "주유구",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "주유캡",
+    "덮다",
+    "마감",
+    "주유 끝",
+    "연료 투입구"
+   ],
+   "keywords_en": [
+    "close fuel door",
+    "fuel cap",
+    "shut"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "GAS_050",
+   "label": "손님에게 휘발유인지 경유인지 묻는다",
+   "job": "gas",
+   "asset_type": "action",
+   "frame": {
+    "verb": "묻다",
+    "verb_class": "other",
+    "object": "휘발유",
+    "object_detail": "경유",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "물어보다",
+    "질문하다",
+    "유종",
+    "디젤",
+    "가솔린",
+    "주유 주문"
+   ],
+   "keywords_en": [
+    "ask fuel type",
+    "gasoline",
+    "diesel"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "GAS_051",
+   "label": "손님 카드를 결제 단말기에 꽂는다",
+   "job": "gas",
+   "asset_type": "action",
+   "frame": {
+    "verb": "꽂다",
+    "verb_class": "operate",
+    "object": "카드",
+    "object_detail": "손님",
+    "instrument": "단말기",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "계산",
+    "카드결제",
+    "신용카드",
+    "카드단말기",
+    "넣다"
+   ],
+   "keywords_en": [
+    "card payment",
+    "insert card",
+    "pay"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "GAS_052",
+   "label": "주유기 화면을 마른 천으로 닦는다",
+   "job": "gas",
+   "asset_type": "action",
+   "frame": {
+    "verb": "닦다",
+    "verb_class": "clean",
+    "object": "화면",
+    "object_detail": "주유기",
+    "instrument": "천",
+    "location": "주유기",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "훔치다",
+    "걸레",
+    "행주",
+    "디스플레이",
+    "얼룩",
+    "청소"
+   ],
+   "keywords_en": [
+    "wipe screen",
+    "fuel pump",
+    "cloth"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "GAS_053",
+   "label": "사장님께 오늘 한 일을 말한다",
+   "job": "gas",
+   "asset_type": "action",
+   "frame": {
+    "verb": "말하다",
+    "verb_class": "other",
+    "object": "일",
+    "object_detail": "오늘 한",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "보고하다",
+    "업무보고",
+    "알리다",
+    "퇴근",
+    "관리자",
+    "점장"
+   ],
+   "keywords_en": [
+    "report",
+    "tell boss",
+    "end of shift"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "GAS_054",
+   "label": "공기 주입기로 타이어에 바람을 넣는다",
+   "job": "gas",
+   "asset_type": "action",
+   "frame": {
+    "verb": "넣다",
+    "verb_class": "operate",
+    "object": "바람",
+    "object_detail": null,
+    "instrument": "공기 주입기",
+    "location": "타이어",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "공기압",
+    "에어",
+    "펌프",
+    "바퀴",
+    "꼭지",
+    "밸브"
+   ],
+   "keywords_en": [
+    "inflate tire",
+    "air pump",
+    "tire pressure"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "GAS_055",
+   "label": "주유기의 금액 버튼을 누른다",
+   "job": "gas",
+   "asset_type": "action",
+   "frame": {
+    "verb": "누르다",
+    "verb_class": "operate",
+    "object": "버튼",
+    "object_detail": "금액",
+    "instrument": null,
+    "location": "주유기",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "입력하다",
+    "주유량",
+    "가득",
+    "만원",
+    "설정하다",
+    "키패드"
+   ],
+   "keywords_en": [
+    "press button",
+    "set amount",
+    "fuel pump"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "GAS_056",
+   "label": "들어오는 차에 인사한다",
+   "job": "gas",
+   "asset_type": "action",
+   "frame": {
+    "verb": "인사하다",
+    "verb_class": "other",
+    "object": "차",
+    "object_detail": "들어오는",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "어서오세요",
+    "맞이하다",
+    "환영하다",
+    "손님",
+    "고객",
+    "절"
+   ],
+   "keywords_en": [
+    "greet",
+    "welcome",
+    "bow"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "GAS_057",
+   "label": "워셔액 통에 워셔액을 붓는다",
+   "job": "gas",
+   "asset_type": "action",
+   "frame": {
+    "verb": "붓다",
+    "verb_class": "move",
+    "object": "워셔액",
+    "object_detail": null,
+    "instrument": null,
+    "location": "통",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "보충하다",
+    "채우다",
+    "따르다",
+    "보닛",
+    "엔진룸"
+   ],
+   "keywords_en": [
+    "refill washer fluid",
+    "pour",
+    "windshield fluid"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "RETAIL_113",
+   "label": "계란을 봉투 맨 위에 올린다",
+   "job": "retail",
+   "asset_type": "action",
+   "frame": {
+    "verb": "올리다",
+    "verb_class": "pack",
+    "object": "계란",
+    "object_detail": null,
+    "instrument": null,
+    "location": "봉투",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "달걀",
+    "장바구니",
+    "담다",
+    "조심",
+    "위쪽",
+    "포장"
+   ],
+   "keywords_en": [
+    "eggs",
+    "bagging",
+    "on top",
+    "grocery bag"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_074",
+   "label": "가게 전화를 받는다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "받다",
+    "verb_class": "other",
+    "object": "전화",
+    "object_detail": null,
+    "instrument": null,
+    "location": "가게",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "통화",
+    "수화기",
+    "전화응대",
+    "매장전화",
+    "여보세요"
+   ],
+   "keywords_en": [
+    "answer phone",
+    "telephone",
+    "call"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_075",
+   "label": "양념통을 채운다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "채우다",
+    "verb_class": "move",
+    "object": "양념통",
+    "object_detail": null,
+    "instrument": "숟가락",
+    "location": "테이블",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "새우젓",
+    "리필",
+    "보충",
+    "소스통",
+    "고춧가루",
+    "채워넣다"
+   ],
+   "keywords_en": [
+    "refill",
+    "condiment",
+    "jar"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_076",
+   "label": "출근 단말기에 사원증을 찍는다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "찍다",
+    "verb_class": "operate",
+    "object": "사원증",
+    "object_detail": null,
+    "instrument": null,
+    "location": "출근 단말기",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "출근체크",
+    "태그",
+    "출입카드",
+    "출퇴근기록",
+    "카드찍기"
+   ],
+   "keywords_en": [
+    "clock in",
+    "badge",
+    "time clock"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_077",
+   "label": "집게로 불판을 바꾼다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "바꾸다",
+    "verb_class": "assemble",
+    "object": "불판",
+    "object_detail": null,
+    "instrument": "집게",
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "교체",
+    "석쇠",
+    "탄불판",
+    "고기판",
+    "새불판"
+   ],
+   "keywords_en": [
+    "replace",
+    "grill plate",
+    "tongs"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_078",
+   "label": "숟가락과 젓가락을 나눠 바구니에 담는다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "나누다",
+    "verb_class": "sort",
+    "object": "수저",
+    "object_detail": "숟가락과 젓가락",
+    "instrument": null,
+    "location": "바구니",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "분류",
+    "따로모으다",
+    "수저정리",
+    "식기",
+    "구분"
+   ],
+   "keywords_en": [
+    "sort",
+    "spoon",
+    "chopsticks",
+    "basket"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_079",
+   "label": "주문 메모를 주방 창에 붙인다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "붙이다",
+    "verb_class": "move",
+    "object": "메모",
+    "object_detail": "주문",
+    "instrument": null,
+    "location": "주방 창",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "메모지",
+    "주문서",
+    "포스트잇",
+    "주방전달",
+    "오더"
+   ],
+   "keywords_en": [
+    "order slip",
+    "memo",
+    "kitchen"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_080",
+   "label": "냅킨 위에 포크와 나이프를 놓는다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "포크",
+    "object_detail": null,
+    "instrument": null,
+    "location": "냅킨",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "테이블세팅",
+    "식기",
+    "커트러리",
+    "상차림",
+    "칼"
+   ],
+   "keywords_en": [
+    "table setting",
+    "fork",
+    "knife",
+    "napkin"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_081",
+   "label": "의자를 뒤집어 테이블 위에 올린다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "올리다",
+    "verb_class": "stack",
+    "object": "의자",
+    "object_detail": null,
+    "instrument": null,
+    "location": "테이블",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "마감",
+    "영업끝",
+    "거꾸로",
+    "의자정리",
+    "청소준비"
+   ],
+   "keywords_en": [
+    "chair",
+    "flip",
+    "closing"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_082",
+   "label": "식판을 수레에 싣는다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "싣다",
+    "verb_class": "move",
+    "object": "식판",
+    "object_detail": null,
+    "instrument": null,
+    "location": "수레",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "퇴식구",
+    "카트",
+    "급식판",
+    "반납",
+    "옮기다"
+   ],
+   "keywords_en": [
+    "tray",
+    "cart",
+    "cafeteria"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_083",
+   "label": "매니저에게 말한다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "말하다",
+    "verb_class": "other",
+    "object": "매니저",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "보고",
+    "알리다",
+    "관리자",
+    "사장님",
+    "말씀드리다",
+    "점장"
+   ],
+   "keywords_en": [
+    "tell manager",
+    "report",
+    "speak"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_084",
+   "label": "휴게실에서 쉰다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "쉬다",
+    "verb_class": "other",
+    "object": "휴식",
+    "object_detail": null,
+    "instrument": null,
+    "location": "휴게실",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "쉬는시간",
+    "휴식시간",
+    "물마시기",
+    "브레이크",
+    "대기실"
+   ],
+   "keywords_en": [
+    "break",
+    "rest",
+    "break room"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_085",
+   "label": "출입문이 잠겼는지 확인한다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "확인하다",
+    "verb_class": "observe",
+    "object": "출입문",
+    "object_detail": null,
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "문단속",
+    "자물쇠",
+    "마감",
+    "퇴근",
+    "문잠금"
+   ],
+   "keywords_en": [
+    "lock",
+    "door",
+    "closing"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_086",
+   "label": "들어오는 손님에게 인사한다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "인사하다",
+    "verb_class": "other",
+    "object": "손님",
+    "object_detail": "들어오는",
+    "instrument": null,
+    "location": "입구",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "어서오세요",
+    "맞이하다",
+    "환영",
+    "고객",
+    "안내"
+   ],
+   "keywords_en": [
+    "greet",
+    "welcome",
+    "customer"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_087",
+   "label": "반찬을 테이블에 놓는다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "놓다",
+    "verb_class": "move",
+    "object": "반찬",
+    "object_detail": null,
+    "instrument": null,
+    "location": "테이블",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "밑반찬",
+    "김치",
+    "나물",
+    "내다",
+    "차리다"
+   ],
+   "keywords_en": [
+    "side dish",
+    "banchan",
+    "serve"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_088",
+   "label": "포장 음식을 손님에게 건넨다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "건네다",
+    "verb_class": "move",
+    "object": "음식",
+    "object_detail": "포장",
+    "instrument": null,
+    "location": null,
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "테이크아웃",
+    "도시락",
+    "봉지",
+    "전달",
+    "드리다"
+   ],
+   "keywords_en": [
+    "takeout",
+    "hand over",
+    "bag"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_089",
+   "label": "테이블에 소독제를 뿌린다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "뿌리다",
+    "verb_class": "clean",
+    "object": "소독제",
+    "object_detail": null,
+    "instrument": "분무기",
+    "location": "테이블",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "알코올",
+    "스프레이",
+    "살균",
+    "분사",
+    "방역"
+   ],
+   "keywords_en": [
+    "sanitize",
+    "spray",
+    "disinfect"
+   ],
+   "reviewed": false
+  },
+  {
+   "id": "SERVING_090",
+   "label": "음료 냉장고에 음료를 채운다",
+   "job": "serving",
+   "asset_type": "action",
+   "frame": {
+    "verb": "채우다",
+    "verb_class": "move",
+    "object": "음료",
+    "object_detail": null,
+    "instrument": null,
+    "location": "냉장고",
+    "is_object_card": false
+   },
+   "keywords_ko": [
+    "캔",
+    "보충",
+    "진열",
+    "음료수",
+    "쇼케이스"
+   ],
+   "keywords_en": [
+    "restock",
+    "fridge",
+    "drinks"
    ],
    "reviewed": false
   }

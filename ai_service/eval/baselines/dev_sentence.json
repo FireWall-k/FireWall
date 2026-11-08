@@ -4,31 +4,31 @@
   "embedding": "off",
   "threshold": 0.215,
   "min_margin": 0.018,
-  "n_cases": 180,
-  "n_normal": 167,
-  "n_gap": 13,
+  "n_cases": 209,
+  "n_normal": 180,
+  "n_gap": 29,
   "metrics": {
-    "top1_accuracy": 0.707,
-    "recall@3": 0.778,
-    "recall@20": 0.904,
-    "wrong_accept_rate": 0.017,
-    "gap_declined_rate": 1.0,
-    "handoff_rate": 0.522,
-    "accept_precision": 0.965,
-    "correct_auto_rate": 0.461,
-    "normal_correct_auto_rate": 0.497
+    "top1_accuracy": 0.722,
+    "recall@3": 0.811,
+    "recall@20": 0.917,
+    "wrong_accept_rate": 0.024,
+    "gap_declined_rate": 0.931,
+    "handoff_rate": 0.502,
+    "accept_precision": 0.952,
+    "correct_auto_rate": 0.474,
+    "normal_correct_auto_rate": 0.55
   },
   "counts": {
-    "wrong_accept": 3,
+    "wrong_accept": 5,
     "wrong_accept_normal": 3,
-    "wrong_accept_gap": 0,
-    "correct_auto": 83,
-    "accepted": 86,
-    "top1_hit": 118
+    "wrong_accept_gap": 2,
+    "correct_auto": 99,
+    "accepted": 104,
+    "top1_hit": 130
   },
   "fingerprint": {
-    "dataset": "84b01f4d17ddd15b",
-    "aac_assets": "19402802b0557dc5",
-    "aac_index": "cf255134661b734b"
+    "dataset": "d5731014101b0e5c",
+    "aac_assets": "cedceda9f3e9c548",
+    "aac_index": "fe76a79ed7b24759"
   }
 }
