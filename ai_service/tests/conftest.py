@@ -13,4 +13,7 @@ os.environ["AAC_LLM_RERANK"] = "off"
 os.environ.pop("AAC_LLM_RERANK_CACHE_DB", None)
 # 개발자 셸의 OPENAI_API_KEY_FILE이 실제 키를 읽어 오지 않게 한다(secret_env.py는 파일을 우선한다).
 os.environ.pop("OPENAI_API_KEY_FILE", None)
+# 직접 넣은 OPENAI_API_KEY도 지운다 — 남아 있으면 GPT를 막지 않은 테스트(규칙 경로 검사)가 실제 GPT를 불러
+# 비용이 들고 단언이 흔들린다. GPT 경로를 검사하는 테스트는 llm_available·chat_json을 가짜로 바꾼다.
+os.environ.pop("OPENAI_API_KEY", None)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

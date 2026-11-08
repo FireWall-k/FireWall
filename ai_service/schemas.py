@@ -26,6 +26,14 @@ class Step(BaseModel):
     symbol_query: list[str] = []
     action_type: ActionType = "other"
     safety_flags: list[str] = []
+    # --- 입력 화면 단계 나누기(백엔드·프론트 계약) ---
+    # split_group: 같은 원문 조각(절·문장)에서 나뉘어 나온 단계끼리 같은 번호. 원문 조각이 동작 수 그대로
+    #   한 단계로 남았으면 None.
+    # split_check: 나눈 것(또는 안 나눈 것)이 확실하지 않아 사업주가 봐야 하는 단계(입력 화면 노란 표시).
+    # source_text: 이 단계들이 나온 원문 조각 — [합치기]가 되돌릴 때 쓴다. 나뉘지 않은 단계는 None.
+    split_group: int | None = None
+    split_check: bool = False
+    source_text: str | None = None
 
 
 class DecomposeContext(BaseModel):
@@ -65,6 +73,13 @@ class ClassifyActionRequest(BaseModel):
 
 class ClassifyActionResult(BaseModel):
     action_type: ActionType = "other"
+
+
+class SplitHintResult(BaseModel):
+    """편집기에서 고친 문장 하나에 동작이 둘 이상일 수 있는가(규칙 동작 세기만, LLM 없음).
+    백엔드가 저장할 때 GPT 분해를 부를지 먼저 묻는다."""
+    may_split: bool = False
+    actions: int = 1
 
 
 # --- /ai/map-symbols -------------------------------------------------------

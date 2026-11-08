@@ -96,7 +96,9 @@ def test_decompose_prompt_snapshot_drops_name_fields(prompts):
     })
     assert r.status_code == 200, r.text
     (_, user), = prompts
-    assert user == "직무 지시문:\n근로자 A 씨는 상자를 옮기세요.\n업종: 물류\n작업 환경: 창고"
+    # 원문 조각은 지시문을 규칙으로 자른 것이라 지시문 밖의 글이 들어가지 않는다(단계 나누기 검산용 번호).
+    assert user == ("직무 지시문:\n근로자 A 씨는 상자를 옮기세요.\n원문 조각:\n1) 근로자 A 씨는 상자를 옮기세요"
+                    "\n업종: 물류\n작업 환경: 창고")
 
 
 def test_decompose_note_appears_only_when_sent(prompts):

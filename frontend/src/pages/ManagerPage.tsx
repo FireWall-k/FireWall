@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { IconHide, IconShow } from "../ui/icons";
 import { maskedCode } from "../workerCodes";
@@ -7,6 +7,15 @@ import { ActionChip } from "../actions";
 import { accessCodeText } from "../workerCodes";
 import { mergeStepMedia, useMediaRefresh } from "../media";
 import { cn } from "../cn";
+import SplitPreviewList from "../components/SplitPreviewList";
+import { rowsFromPreview, toConfirmed, type SplitRow } from "../splitRows";
+
+// 문장 칸 높이를 내용에 맞춘다(SplitPreviewList와 같은 방식).
+function fitHeight(el: HTMLTextAreaElement) {
+  el.style.height = "auto";
+  // border-box라 높이에 테두리를 더해야 글 칸(clientHeight)이 글 높이(scrollHeight)와 같아진다.
+  if (el.scrollHeight > 0) el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`;
+}
 
 const SAMPLE =
   "예: 택배 상자를 크기별로 분류하고, 큰 상자는 A구역으로 옮겨주세요. 그리고 5개씩 쌓아주세요. 마지막에 수량을 확인하세요.";
@@ -43,6 +52,25 @@ export default function ManagerPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // 입력 화면 나누기 결과(직무를 만들기 전). 한 줄 = 한 동작 = 그림 1장. [이대로 그림 고르기]를 눌러야
+  // 이 목록으로 초안을 만든다. input은 이 목록을 만든 원문 — 원문을 고치면 다시 나누라고 알려 준다.
+  // initial: 서버가 준 처음 줄 글(사업주가 목록을 고쳤는지 보려고 둔다 — 다시 나누면 고친 것이 사라진다).
+  const [preview, setPreview] = useState<{
+    title: string; job: string; input: string; rows: SplitRow[]; initial: string[];
+  } | null>(null);
+  const [splitting, setSplitting] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  // [이대로 그림 고르기] 실패 이유 — 목록의 확인 버튼 바로 아래에 보인다.
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  // 편집기에서 문장을 고쳐 저장하거나 단계를 추가하며 두 단계로 나눈 경우 [되돌리기]용
+  // (새 단계 id들 + 사업주가 적은 문장 + 나누기 전 동작 종류).
+  const [splitUndo, setSplitUndo] = useState<{ stepIds: string[]; sentence: string; actionType?: string } | null>(null);
+  // 편집기 문장을 저장(나누기 확인 포함)하는 중인 단계. 그동안 다른 문장 칸은 읽기 전용이다 — 응답이 직무 전체를
+  // 바꾸므로, 기다리는 사이 고친 다른 줄이 덮어써지지 않게.
+  const [rewritingId, setRewritingId] = useState<string | null>(null);
+  const errorBox = useRef<HTMLDivElement | null>(null);
+  const editorHeading = useRef<HTMLHeadingElement | null>(null);
 
   // 1:N — 사업주의 근로자 목록 + 배정 대상(여러 명) 선택 + 인라인 추가
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -112,22 +140,105 @@ export default function ManagerPage() {
     && s.symbol_source === "LOCAL_AAC" && !confirmedSteps.has(s.id);
   const unconfirmedCount = task ? task.steps.filter(needsConfirm).length : 0;
 
+  const taskContext = () => ({
+    business_type: businessType.trim() || undefined,
+    work_environment: workEnvironment.trim() || undefined,
+    worker_note: workerNote.trim() || undefined,
+    worker_id: noteWorkerId || undefined,
+  });
+
+  // 위쪽 오류 알림이 생기면 화면 안으로 끌어온다 — 긴 목록을 내려 본 뒤의 실패가 보이지 않던 문제(1차 검증).
+  useEffect(() => {
+    if (error) errorBox.current?.scrollIntoView?.({ block: "nearest" });
+  }, [error]);
+
+  // 편집기를 연 뒤·되돌린 뒤 초점을 둘 곳. 렌더가 끝난 뒤(task가 바뀐 커밋 뒤) 한 번 쓰고 비운다. 예전에는
+  // setTimeout으로 제목에 초점을 줬는데, 누른 버튼이 사라지며 초점이 body로 떨어지고 제목으로 가지 않았다(2차 검증).
+  const focusAfterTask = useRef<{ kind: "heading" } | { kind: "step"; index: number } | null>(null);
+  const stepInputs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
+  useEffect(() => {
+    const want = focusAfterTask.current;
+    if (!want || !task) return;
+    focusAfterTask.current = null;
+    const id = want.kind === "step" ? task.steps[want.index]?.id : undefined;
+    const el = id ? stepInputs.current.get(id) : undefined;
+    if (el) el.focus();
+    else editorHeading.current?.focus();
+  }, [task]);
+  // 편집기 문장 칸은 내용만큼 높이를 늘린다(390px에서 한 줄 칸이 나눈 문장을 잘라 보여 줬다).
+  useLayoutEffect(() => {
+    stepInputs.current.forEach(fitHeight);
+  });
+  useEffect(() => {
+    const onResize = () => stepInputs.current.forEach(fitHeight);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // [되돌리기]는 나눈 단계가 그대로 붙어 있을 때만 뜻이 있다. 보냈거나, 순서를 바꿨거나, 그중 하나를 지웠으면 내린다
+  // (남겨 두면 눌렀을 때 404·409가 나거나 보낸 직무를 바꾸려 든다).
+  const undoIds = task?.steps.map((s) => s.id) ?? [];
+  const undoAt = splitUndo ? undoIds.indexOf(splitUndo.stepIds[0]) : -1;
+  const activeUndo = splitUndo && task && task.status !== "published" && undoAt >= 0
+    && splitUndo.stepIds.every((id, k) => undoIds[undoAt + k] === id)
+    ? splitUndo : null;
+
+  const previewEdited = !!preview
+    && (preview.rows.length !== preview.initial.length || preview.rows.some((r, i) => r.text !== preview.initial[i]));
+  const previewStale = !!preview && rawInput !== preview.input;
+
+  // [단계로 나누기] — 직무는 아직 만들지 않는다. 나눈 결과를 입력칸 바로 아래에 보여 주고 사업주가 그 자리에서 고친다.
+  // 목록을 고쳤으면 다시 나누기 전에 묻는다(새로 나누면 고친 줄이 사라지고 GPT를 다시 부른다).
   async function handleDecompose() {
-    setBusy(true);
+    if (previewEdited && !window.confirm("고친 줄이 있어요. 새로 나눌까요? 고친 내용은 사라져요.")) return;
+    setSplitting(true);
+    setConfirmError(null);
     setError(null);
     setNotice(null);
     try {
-      setConfirmedSteps(new Set());
-      setTask(await api.createTask(rawInput, {
-        business_type: businessType.trim() || undefined,
-        work_environment: workEnvironment.trim() || undefined,
-        worker_note: workerNote.trim() || undefined,
-        worker_id: noteWorkerId || undefined,
-      }));
+      const input = rawInput;
+      const result = await api.splitPreview(input, taskContext());
+      if (!result.steps.length) {
+        setPreview(null);
+        setError("나눌 문장을 찾지 못했어요. 할 일을 조금 더 자세히 적어 주세요.");
+        return;
+      }
+      // 새로 나누면 앞서 열어 둔 편집기는 닫는다(그 초안은 서버에 그대로 남는다).
+      setTask(null);
+      setSplitUndo(null);
+      const rows = rowsFromPreview(result.steps);
+      setPreview({ title: result.task_title, job: result.job, input, rows, initial: rows.map((r) => r.text) });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "분해에 실패했습니다.");
+      setError(e instanceof Error ? e.message : "문장을 나누지 못했어요. 잠시 뒤 다시 눌러 주세요.");
     } finally {
-      setBusy(false);
+      setSplitting(false);
+    }
+  }
+
+  // [이대로 그림 고르기] — 사업주가 확인한 줄로 초안을 만들고(그림·음성은 서버가 붙인다) 편집기를 연다.
+  async function handleConfirmSplit() {
+    if (!preview) return;
+    setConfirming(true);
+    setError(null);
+    setConfirmError(null);
+    setNotice(null);
+    try {
+      setConfirmedSteps(new Set());
+      setStepCandidates({});
+      const created = await api.createTask(preview.input, {
+        ...taskContext(),
+        title: preview.title,
+        job: preview.job || undefined,
+        steps: toConfirmed(preview.rows),
+      });
+      // 편집기 제목으로 초점을 옮겨 화면 읽기 프로그램·키보드 사용자가 다음 할 일로 바로 간다(위 effect).
+      focusAfterTask.current = { kind: "heading" };
+      setTask(created);
+      setPreview(null);
+    } catch (e) {
+      setConfirmError(e instanceof Error ? e.message : "초안을 만들지 못했어요. 잠시 뒤 다시 눌러 주세요.");
+    } finally {
+      setConfirming(false);
     }
   }
 
@@ -168,13 +279,33 @@ export default function ManagerPage() {
     };
   }, [task, stepCandidates]);
 
+  // 편집기에서 문장을 고쳐 저장. 고친 문장에 동작이 둘이면 서버가 경고 없이 두 단계로 나누고, 여기서 [되돌리기]를 띄운다.
   async function handleEditSentence(stepId: string, sentence: string) {
     if (!task) return;
-    const updated = await api.updateStep(task.id, stepId, { sentence });
-    setTask({
-      ...task,
-      steps: task.steps.map((s) => (s.id === stepId ? updated : s)),
-    });
+    const text = sentence.trim();
+    if (!text) {
+      setError("문장이 비어 있어요. 할 일을 적어 주세요.");
+      return;
+    }
+    setError(null);
+    const before = task.steps.find((s) => s.id === stepId);
+    setRewritingId(stepId);
+    try {
+      const result = await api.rewriteStep(task.id, stepId, text);
+      setTask(result.task);
+      setSplitUndo(result.split_step_ids.length >= 2
+        ? { stepIds: result.split_step_ids, sentence: result.sentence, actionType: before?.action_type }
+        : null);
+      // 저장된 문장이 그대로면(앞뒤 빈칸만 다름) 그림 확인·후보를 버리지 않는다(2차 검증 — 칸을 지나갈 때마다
+      // '이 그림이 맞아요' 확인이 풀렸다).
+      const saved = result.task.steps.find((st) => st.id === stepId);
+      if (result.split_step_ids.length < 2 && saved && before && saved.sentence === before.sentence) return;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "문장을 저장하지 못했어요. 잠시 뒤 다시 해 주세요.");
+      return;
+    } finally {
+      setRewritingId(null);
+    }
     // 문장이 바뀌면 그림이 여전히 맞는지 다시 봐야 한다.
     unconfirmStep(stepId);
     // 문장이 바뀌면 후보도 달라진다. 캐시를 버려 다시 받아오게 한다.
@@ -183,6 +314,22 @@ export default function ManagerPage() {
       delete next[stepId];
       return next;
     });
+  }
+
+  // 저장하며 나눈 단계를 사업주가 적은 문장 한 단계로 되돌린다.
+  async function handleUndoSplit() {
+    if (!task || !activeUndo) return;
+    setError(null);
+    const at = undoAt;
+    try {
+      const merged = await api.mergeSteps(task.id, activeUndo.stepIds, activeUndo.sentence, activeUndo.actionType);
+      // [되돌리기] 버튼과 나눈 줄이 사라지므로 합친 단계의 문장 칸으로 초점을 옮긴다.
+      focusAfterTask.current = { kind: "step", index: at };
+      setTask(merged);
+      setSplitUndo(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "되돌리지 못했어요. 잠시 뒤 다시 해 주세요.");
+    }
   }
 
   async function handlePickCandidate(stepId: string, match: AacMatch) {
@@ -252,7 +399,12 @@ export default function ManagerPage() {
     setBusy(true);
     setError(null);
     try {
-      setTask(await api.addStep(task.id, newStepSentence.trim()));
+      const result = await api.addStep(task.id, newStepSentence.trim());
+      setTask(result);
+      // 새 문장에 동작이 둘이라 서버가 두 단계로 넣었으면 문장 고치기와 같이 [되돌리기]를 띄운다.
+      setSplitUndo(result.split_step_ids && result.split_step_ids.length >= 2
+        ? { stepIds: result.split_step_ids, sentence: result.sentence || newStepSentence.trim() }
+        : null);
       setNewStepSentence("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "단계 추가에 실패했습니다.");
@@ -333,6 +485,8 @@ export default function ManagerPage() {
     setError(null);
     setNotice(null);
     setAssignFeedback(null);
+    // 보내면 단계를 합칠 수 없다(서버도 409) — [되돌리기]를 내린다.
+    setSplitUndo(null);
     try {
       if (task.status !== "published") {
         await api.publish(task.id);
@@ -381,7 +535,7 @@ export default function ManagerPage() {
   return (
     <div className="space-y-6">
       {error && (
-        <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
+        <div ref={errorBox} role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
           {error}
         </div>
       )}
@@ -398,10 +552,11 @@ export default function ManagerPage() {
         : "flex flex-col gap-6"}
       >
         <div className="space-y-6">
-      <section>
+      {/* break-keep: 한국어 낱말 중간에서 줄이 바뀌지 않게(390px에서 '붙입 / 니다'로 잘렸다). */}
+      <section className="break-keep">
         <h1 className="text-xl font-bold text-slate-900">오늘 직무 입력</h1>
         <p className="mt-1 text-sm text-slate-600">
-          평소 말하듯 적으면, 각 단계로 나눠 그림과 음성을 붙입니다.
+          평소 말하듯 적어 주세요. 단계는 잡카드가 나눠요. 단계마다 그림과 음성을 붙여요.
         </p>
         <textarea
           className="mt-3 w-full rounded-lg border border-slate-300 p-3 text-base"
@@ -448,11 +603,27 @@ export default function ManagerPage() {
         </p>
         <button
           onClick={handleDecompose}
-          disabled={busy || !rawInput.trim()}
-          className="mt-3 rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white disabled:opacity-50"
+          // 목록이 지금 원문 그대로면(원문도 목록도 안 고침) 다시 나눌 것이 없다 — GPT를 다시 부르지 않는다.
+          disabled={busy || splitting || confirming || !rawInput.trim() || (!!preview && !previewStale && !previewEdited)}
+          className="mt-3 min-h-11 rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:opacity-50"
         >
-          {busy ? "처리 중…" : "단계로 나누기"}
+          단계로 나누기
         </button>
+        {splitting && (
+          <p role="status" className="mt-3 break-keep text-sm font-semibold text-slate-700">
+            문장을 나누고 있어요…
+          </p>
+        )}
+        {preview && !splitting && (
+          <SplitPreviewList
+            rows={preview.rows}
+            onChange={(rows) => setPreview((cur) => (cur ? { ...cur, rows } : cur))}
+            onConfirm={handleConfirmSplit}
+            confirming={confirming}
+            stale={previewStale}
+            confirmError={confirmError}
+          />
+        )}
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4">
@@ -522,12 +693,24 @@ export default function ManagerPage() {
 
       {task && (
         <section>
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 ref={editorHeading} tabIndex={-1} className="text-lg font-bold text-slate-900 focus:outline-none">
             검토 · 수정 <span className="text-sm font-normal text-slate-500">({task.steps.length}단계)</span>
           </h2>
           <p className="mt-1 text-sm text-slate-600">
             근로자가 보게 될 화면과 같은 순서입니다. 손잡이를 끌어 순서를 바꾸고, 문장을 다듬거나 단계를 추가할 수 있습니다.
           </p>
+          {activeUndo && (
+            <div role="status" className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-sm text-slate-700">
+              <span className="break-keep">동작이 둘이라 두 단계로 나눴어요.</span>
+              <button
+                type="button"
+                onClick={handleUndoSplit}
+                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 font-semibold text-slate-800 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+              >
+                되돌리기
+              </button>
+            </div>
+          )}
           <ol className="mt-3 space-y-3">
             {task.steps.map((s, idx) => (
               <li
@@ -538,7 +721,8 @@ export default function ManagerPage() {
                 }}
                 onDrop={() => handleDropOn(idx)}
                 className={cn(
-                  "flex items-start gap-2 rounded-lg border bg-white p-3 transition-colors",
+                  // 좁은 화면(sm 미만)에서는 손잡이·번호·그림 줄 아래로 문장 칸이 전체 폭을 쓴다.
+                  "flex flex-wrap items-start gap-2 rounded-lg border bg-white p-3 transition-colors sm:flex-nowrap",
                   dragOverIndex === idx && dragIndex !== null && dragIndex !== idx
                     ? "border-blue-400 ring-2 ring-blue-200"
                     : "border-slate-200",
@@ -597,21 +781,45 @@ export default function ManagerPage() {
                     </button>
                   )}
                 </div>
-                <div className="flex-1">
-                  <input
-                    className="w-full rounded border border-slate-200 px-2 py-1 text-base"
+                <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
+                  <textarea
+                    rows={1}
+                    // 저장한 문장(앞뒤 빈칸을 뺀 것)이 바뀌면 칸을 새로 만들어 화면 글자를 맞춘다. 안 맞추면 칸을 지나갈
+                    // 때마다 다시 저장을 보냈다(2차 검증).
+                    key={s.sentence}
+                    ref={(el) => {
+                      if (el) stepInputs.current.set(s.id, el);
+                      else stepInputs.current.delete(s.id);
+                    }}
+                    className="block w-full resize-none overflow-hidden break-keep rounded border border-slate-200 px-2 py-1 text-base leading-6 read-only:bg-slate-50"
                     defaultValue={s.sentence}
                     aria-label={`${s.order}단계 문장`}
+                    readOnly={rewritingId !== null}
+                    aria-busy={rewritingId === s.id || undefined}
+                    onInput={(e) => fitHeight(e.currentTarget)}
+                    onKeyDown={(e) => {
+                      // 한 단계 = 한 문장. Enter는 줄바꿈 대신 저장(칸 떠나기)이다.
+                      if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                        e.preventDefault();
+                        e.currentTarget.blur();
+                      }
+                    }}
                     onBlur={(e) => {
-                      if (e.target.value !== s.sentence) handleEditSentence(s.id, e.target.value);
+                      const text = e.target.value.replace(/\s*[\r\n]+\s*/g, " ").trim();
+                      if (rewritingId === null && text !== s.sentence) handleEditSentence(s.id, text);
                     }}
                   />
-                  <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                    <ActionChip action={s.action_type} className="text-xs !px-2 !py-0.5" />
+                  {rewritingId === s.id && (
+                    <p role="status" className="mt-1 break-keep text-sm font-semibold text-slate-700">
+                      저장하는 중… 동작이 둘이면 두 단계로 나눠요.
+                    </p>
+                  )}
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                    <ActionChip action={s.action_type} className="whitespace-nowrap text-xs !px-2 !py-0.5" />
                     {/* 그림이 붙은 단계만 출처를 보여준다. 폴백 상태는 아래 후보 영역이
                         이미 설명하므로 "상징: fallback"은 중복 노이즈였다. */}
                     {s.symbol_url && (
-                      <span>
+                      <span className="whitespace-nowrap">
                         그림: {s.symbol_source === "photo" ? "직접 올린 사진" : "그림 카드"}
                       </span>
                     )}

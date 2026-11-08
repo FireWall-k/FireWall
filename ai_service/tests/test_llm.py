@@ -189,7 +189,9 @@ def test_llm_decompose_keeps_result_when_prohibition_survives(monkeypatch):
                                      {"sentence": "담당 선생님을 부르세요.", "action_type": "other"}],
     })
     result = dec.decompose("빨간 상자는 만지지 말고 담당 선생님을 부르세요.", {})
-    assert [s.sentence for s in result.steps] == ["빨간 상자는 만지지 마세요.", "담당 선생님을 부르세요."]
+    # 금지 문장은 버리지 않는다(부정 검사 통과). 다만 입력 화면 나누기 검산(_reconcile)이 '만지지 말고 부르다'를
+    # 시킬 일 하나(부르기)로 보아 원문 한 단계로 합친다 — 분할 정답셋 dev_cleaning_14도 1단계다.
+    assert [s.sentence for s in result.steps] == ["빨간 상자는 만지지 말고 담당 선생님을 부르세요."]
 
 
 def test_llm_decompose_invented_prohibition_falls_back_to_rules(monkeypatch):

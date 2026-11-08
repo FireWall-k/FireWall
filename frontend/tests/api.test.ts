@@ -49,7 +49,7 @@ describe("req 오류 규칙", () => {
     const err = await req("/api/workers", { method: "POST" }).catch((e) => e);
     expect(err).toBeInstanceOf(ApiError);
     expect(err.detail).toBeNull();
-    expect(err.message).toBe("입력값을 확인해 주세요.");
+    expect(err.message).toBe("입력한 내용을 다시 확인해 주세요.");
   });
 
   it("본문이 없으면 상태 코드를 담은 문구", async () => {

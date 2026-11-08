@@ -99,6 +99,23 @@ worker_wp_day_throttle = LoginThrottle(
 help_throttle = LoginThrottle(max_failures=10, window_sec=60)
 
 
+# 나누기 확인(GPT 분해) 호출 수 — 사업주 계정 단위. 입력 화면 [단계로 나누기]와 편집기 저장 시 나누기 확인이
+# 부를 때마다 센다(실패만 세는 로그인과 달리 모든 호출). 한도를 넘으면 미리보기는 429, 편집기 저장은 나누기 확인
+# 없이 그대로 저장한다.
+ai_split_throttle = LoginThrottle(
+    max_failures=int(os.getenv("AI_SPLIT_MAX_CALLS", "40")),
+    window_sec=float(os.getenv("AI_SPLIT_WINDOW_SEC", "60")),
+)
+
+
+def take_ai_split_call(employer_id: str) -> bool:
+    """나누기 확인 호출 한 번을 쓴다. 한도 안이면 True(세고), 넘었으면 False(세지 않음)."""
+    if ai_split_throttle.retry_after(employer_id):
+        return False
+    ai_split_throttle.fail(employer_id)
+    return True
+
+
 def client_ip(request: Request) -> str:
     """요청자 IP. 리버스 프록시 뒤라면 TRUST_FORWARDED_FOR=1로 X-Forwarded-For를 믿는다.
 
