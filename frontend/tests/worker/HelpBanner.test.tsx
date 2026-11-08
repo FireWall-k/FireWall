@@ -134,6 +134,51 @@ describe("useHelp", () => {
     expect(result.current.phase).toBe("acked");
   });
 
+  it("4차 검증 2회: [다 했어요]를 누르지 않았는데 '단계를 끝내서 닫음'이 보이면(늦게 닿은 옛 완료) 말없이 닫지 않고 '아직 못 불렀어요'", async () => {
+    vi.useFakeTimers();
+    const api = fakeApi({ getHelp: vi.fn().mockResolvedValue(help("resolved", "step_done")) });
+    const { result } = renderHook(() => useHelp({ assignmentId: "a1", stepId: "s1", api }));
+    act(() => result.current.request());
+    await act(async () => {});
+    expect(result.current.phase).toBe("sent");
+    await act(async () => {
+      vi.advanceTimersByTime(HELP_POLL_MS);
+    });
+    expect(result.current.phase).toBe("failed");
+    // [다시 부르기]는 새 누름(닫힌 요청의 키를 다시 쓰지 않는다).
+    const firstKey = api.createHelp.mock.calls[0][0].client_request_id;
+    act(() => result.current.request());
+    await act(async () => {});
+    expect(api.createHelp.mock.calls[1][0].client_request_id).not.toBe(firstKey);
+  });
+
+  it("이 화면에서 [다 했어요]를 누른 뒤 닿은 '단계를 끝내서 닫음'은 띠를 다시 열지 않는다", async () => {
+    vi.useFakeTimers();
+    const api = fakeApi({ getHelp: vi.fn().mockResolvedValue(help("resolved", "step_done")) });
+    const { result } = renderHook(() => useHelp({ assignmentId: "a1", stepId: "s1", api }));
+    act(() => result.current.request());
+    await act(async () => {});
+    act(() => result.current.markStepDone("s1"));
+    await act(async () => {
+      vi.advanceTimersByTime(HELP_POLL_MS * 2);
+    });
+    expect(result.current.phase).toBe("idle");
+  });
+
+  it("새로고침 뒤: 이 탭이 기억한 요청이 '단계를 끝내서 닫음'이면 '아직 못 불렀어요', 목록에서만 본 요청이면 말없이 닫음", async () => {
+    sessionStorage.setItem("jobcard_help_open_v1:a1", "h1");
+    const api = fakeApi({ getHelp: vi.fn().mockResolvedValue(help("resolved", "step_done")) });
+    const first = renderHook(() => useHelp({ assignmentId: "a1", stepId: "s1", api }));
+    await act(async () => {});
+    expect(first.result.current.phase).toBe("failed");
+    first.unmount();
+    sessionStorage.clear();
+    const initial = { id: "h1", step_id: "s1", state: "open" } as unknown as Parameters<typeof useHelp>[0]["initial"];
+    const second = renderHook(() => useHelp({ assignmentId: "a1", stepId: "s1", initial, api }));
+    await act(async () => {});
+    expect(second.result.current.phase).toBe("idle");
+  });
+
   it("[취소]: 바로 닫고 서버에 취소를 보낸다", async () => {
     const api = fakeApi();
     const { result } = renderHook(() => useHelp({ assignmentId: "a1", stepId: "s1", api }));

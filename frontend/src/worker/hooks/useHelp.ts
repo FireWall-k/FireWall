@@ -4,6 +4,7 @@
 // - 도움 요청은 대기열에 넣지 않는다: 닿지 않으면 사람에게 직접 청하라고 알린다(늦게 닿은 요청은 쓸모없다).
 // - 'sent'인 동안 5초마다 상태를 본다(숨은 탭에서는 멈춤). 사업주가 확인·해결하면 acked.
 //   근로자가 누르지 않은 '취소됨'이 보이면(다른 기기 등) 말없이 닫지 않고 '아직 못 불렀어요'로 알린다(2차 검증).
+//   이 화면에서 [다 했어요]를 누르지 않았는데 '단계를 끝내서 닫음'이 보여도 같다(늦게 닿은 옛 완료 기록, 4차 검증 2회).
 // - [다 했어요]를 누르면 서버가 그 단계의 요청을 '해결됨'으로 닫으므로 띠도 닫는다(markStepDone).
 //   서버와 같은 규칙으로, 다른 단계에서 부른 요청은 그대로 둔다(3차 검증: 3단계에서 부르고 [이전]으로 2단계를 끝내면
 //   띠만 사라지고 서버에는 열린 요청이 남아, 선생님이 확인해도 근로자는 '선생님이 확인했어요'를 못 봤다).
@@ -89,6 +90,8 @@ export function useHelp({ assignmentId, stepId, initial, api = workerApi }: Opti
   const openKey = `${OPEN_KEY}${assignmentId}`;
   // 처음 확인할 요청: 서버 목록의 active_help, 없으면 이 탭이 기억한 요청(목록이 아직 옛것일 때).
   const [startId] = useState<string | null>(() => initial?.id ?? sget(openKey));
+  // 이 탭이 그 요청을 아직 '불렀어요'로 기억하고 있었는지(이 탭의 [다 했어요]·[취소]는 기억을 지운다).
+  const [tabRemembered] = useState<boolean>(() => startId !== null && sget(openKey) === startId);
   const [phase, setPhase] = useState<HelpPhase>("idle");
   const helpId = useRef<string | null>(null);
   // 지금 띠의 요청을 부른 단계(서버 HelpOut.step_id). null = 단계 없이 부름.
@@ -144,6 +147,11 @@ export function useHelp({ assignmentId, stepId, initial, api = workerApi }: Opti
         if (gen.current !== my) return;
         if (!isActive(h)) {
           remember(null);
+          // 이 탭이 '불렀어요'로 기억한 요청인데 '단계를 끝내서 닫음'이다 = 옛 완료 기록이 늦게 닿아 닫았다.
+          // 새로고침 전에 기다리던 근로자에게 사실대로 알린다(4차 검증 2회).
+          if (tabRemembered && h.state === "resolved" && h.resolution === "step_done") {
+            setPhase("failed");
+          }
           return;
         }
         remember(h.id, h.step_id);
@@ -284,8 +292,13 @@ export function useHelp({ assignmentId, stepId, initial, api = workerApi }: Opti
             retryRequestId.current = null;
             setPhase("failed");
           } else if (h.state === "resolved") {
+            // 'sent'인 동안 서버가 '단계를 끝내서 닫음'(step_done)으로 닫았다. 이 화면에서 그 단계 [다 했어요]를 눌렀다면
+            // markStepDone이 이미 띠를 닫았다(gen이 바뀌어 여기 오지 않는다). 그러니 이것은 이 도움보다 먼저 끝낸 완료
+            // 기록이 늦게 닿아 닫은 것이다(4차 검증 2회: 보내는 중에 몇 초 머문 기록이 그사이 먼저 닿은 도움을 닫았다).
+            // 선생님에게는 닿지 않으니 말없이 닫지 않고 '아직 못 불렀어요'로 알린다 — [다시 부르기]는 새 누름이다.
             remember(null);
-            setPhase("idle");
+            retryRequestId.current = null;
+            setPhase(h.resolution === "step_done" ? "failed" : "idle");
           }
         })
         .catch(() => {
