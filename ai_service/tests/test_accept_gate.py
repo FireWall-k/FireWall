@@ -194,3 +194,88 @@ def test_frame_mismatch_reaches_api_as_candidate_choice():
     assert s.reason == "low_margin"
     assert s.needs_fallback is True
     assert [c.asset_id for c in s.candidates] == ["CAFE_033"]
+
+
+def test_generic_object_scope_shares_store_and_maker_goods():
+    # '상품'은 가게 직무(소매·진열·카페)가, '제품'은 만드는 직무(포장·조립)가 같이 쓴다.
+    from local_aac import _generic_covers
+    assert _generic_covers("상품", "display", "retail") is True
+    assert _generic_covers("상품", "retail", "display") is True
+    assert _generic_covers("상품", "cafe", "retail") is True
+    assert _generic_covers("제품", "assembly", "packaging") is True
+    # 부품·스티커는 그 일터의 재료라 같은 직무만 덮는다.
+    assert _generic_covers("부품", "assembly", "gas") is False
+    assert _generic_covers("스티커", "assembly", "packaging") is False
+    assert _generic_covers("상품", "retail", "gas") is False
+    assert _generic_covers("상품", "retail", None) is False
+
+
+def test_store_and_packing_instructions_keep_generic_cards():
+    # 같은 물건을 다루는 직무끼리는 '상품/제품' 그림이 구체 대상을 덮는다(소매↔진열, 포장↔조립).
+    from local_aac import search_for_step_detailed
+    cases = [
+        ("컵라면을 매장 선반 위에 올려놓으세요", {"business_type": "편의점"}),
+        ("찌그러진 캔을 선반에서 찾아 주세요", {"business_type": "마트"}),
+        ("유통기한이 지난 우유를 진열대에서 빼세요", {"business_type": "진열"}),
+        ("과자를 진열대에 놓으세요", {"business_type": "마트"}),
+        ("완성된 텀블러를 상자에 넣으세요", {"business_type": "포장"}),
+    ]
+    for s, ctx in cases:
+        r = search_for_step_detailed([], {**ctx, "sentence": s})
+        assert r["reason"] == "accepted", (s, r["reason"])
+        assert by_obj(r["match"]["asset_id"]) in {"상품", "제품"}, s
+    # 조립 그림의 '스티커'는 포장 일의 지퍼백 입구를 덮지 않는다.
+    by = _by_id()
+    sticker = next(a for a in by.values() if a.get("job") == "assembly"
+                   and (a.get("_frame") or {}).get("object") == "스티커")
+    q = "지퍼백 입구를 손가락으로 꾹 눌러 잠그세요."
+    assert _object_conflict(sticker, q, q, job="packaging") is True
+
+
+def by_obj(asset_id: str) -> str:
+    return (_by_id()[asset_id].get("_frame") or {}).get("object")
+
+
+def test_position_noun_head_must_be_a_known_noun():
+    # 부사·관형사·조사 붙은 말은 대상이 아니다 — 대상을 모르는 것으로 둔다.
+    for s in ("먼저 위를 닦고 내려오세요.", "깨끗이 안을 닦으세요.", "다시 위를 닦아요",
+              "그 위를 닦아요", "손으로 위를 털어요"):
+        assert _query_objects(s) == set(), s
+    assert _query_objects("선반을 비우고 그 위를 닦아요") == {"선반"}
+    # 한 글자 명사에도 관형격 '의'를 뗀다.
+    assert _query_objects("컵의 안을 닦아요") == {"컵"}
+
+
+def test_noun_vocab_excludes_modifiers_and_particles():
+    from local_aac import _asset_noun_vocab
+    vocab = _asset_noun_vocab()
+    for word in ("큰", "빈", "한", "맨", "붙은", "손으로", "작업대에서"):
+        assert word not in vocab, word
+    for word in ("매대", "컵", "선반", "줄"):
+        assert word in vocab, word
+
+
+def test_antonym_penalty_skipped_when_sentence_has_the_asset_verb():
+    # '꺼내서 채우다'는 두 동작을 차례로 시킨다 — 꺼내는 그림도 문장이 시키는 동작이다.
+    take_out = {"_frame": {"verb": "꺼내다"}}
+    assert _verb_antonym_penalty(take_out, {"꺼내다", "채우다"}) == 1.0
+    assert _verb_antonym_penalty(take_out, {"채우다"}) < 1.0
+
+
+def test_numerals_are_not_topic_objects():
+    assert _query_topics("하나는 여기에 두세요") == set()
+    assert _query_topics("첫째는 손을 씻어요") == set()
+
+
+def test_nozzle_matches_fuel_gun_card():
+    by = _by_id()
+    s = "노즐은 거치대에 걸어 주세요."
+    assert _object_conflict(by["GAS_005"], s, s, job="gas") is False
+
+
+def test_supervisor_is_not_a_supermarket():
+    from taxonomy import infer_job_text
+    assert infer_job({"business_type": "슈퍼바이저 교육"}) is None
+    assert infer_job_text("슈퍼바이저 교육") == "unknown"
+    assert infer_job({"business_type": "동네 슈퍼"}) == "retail"
+    assert infer_job({"business_type": "슈퍼바이저 교육", "raw_input": "슈퍼 계산대를 닦아요"}) == "retail"

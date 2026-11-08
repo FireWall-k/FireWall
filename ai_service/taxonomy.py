@@ -135,12 +135,29 @@ JOB_ALIASES: dict[str, tuple[str, ...]] = {
 ALIAS_WEIGHT = {"매장": 0.5}
 
 
+# 별칭은 부분 문자열로 맞추므로 다른 낱말 속에 든 별칭도 잡힌다('슈퍼바이저 교육'이 소매로).
+# 그런 낱말을 적어 두고, 그 자리는 별칭으로 세지 않는다.
+ALIAS_FALSE_FRIENDS: dict[str, tuple[str, ...]] = {
+    "슈퍼": ("슈퍼바이저", "슈퍼바이징", "슈퍼비전"),
+}
+
+
+def alias_in(alias: str, text: str) -> bool:
+    """별칭이 (소문자로 바꾼) text에 나오는가. ALIAS_FALSE_FRIENDS의 낱말 속에 든 것은 세지 않는다."""
+    needle = alias.lower()
+    if needle not in text:
+        return False
+    for word in ALIAS_FALSE_FRIENDS.get(alias, ()):
+        text = text.replace(word, " ")
+    return needle in text
+
+
 def infer_job_text(text: str) -> str:
     """업종/환경 텍스트에서 canonical job을 보수적으로 추정한다."""
     norm = str(text or "").lower()
     scored: list[tuple[float, str]] = []
     for job, aliases in JOB_ALIASES.items():
-        count = sum(ALIAS_WEIGHT.get(alias, 1.0) for alias in aliases if alias.lower() in norm)
+        count = sum(ALIAS_WEIGHT.get(alias, 1.0) for alias in aliases if alias_in(alias, norm))
         if count:
             scored.append((count, job))
     if not scored:

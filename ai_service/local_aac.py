@@ -10,7 +10,7 @@ from pathlib import Path
 
 import embeddings
 import korean_verbs
-from taxonomy import ALIAS_WEIGHT, JOB_ALIASES
+from taxonomy import ALIAS_WEIGHT, JOB_ALIASES, alias_in
 
 logger = logging.getLogger("ai_harness.local_aac")
 
@@ -269,7 +269,7 @@ def infer_job(context: dict | None = None, query: str = "") -> str | None:
     norm = _normalize(haystack)
     scores: list[tuple[float, str]] = []
     for job, aliases in _JOB_ALIASES.items():
-        count = sum(_ALIAS_WEIGHT.get(alias, 1.0) for alias in aliases if alias.lower() in norm)
+        count = sum(_ALIAS_WEIGHT.get(alias, 1.0) for alias in aliases if alias_in(alias, norm))
         if count:
             scores.append((count, job))
     return max(scores)[1] if scores else None
@@ -291,7 +291,7 @@ def _canonical_job(value: str) -> str | None:
         longest = 0
         for alias in aliases:
             alias_norm = _normalize(alias)
-            if alias_norm and (norm == alias_norm or alias_norm in norm):
+            if alias_norm and (norm == alias_norm or alias_in(alias_norm, norm)):
                 score += _ALIAS_WEIGHT.get(alias, 1.0)
                 longest = max(longest, len(alias_norm))
         if score and (best is None or (score, longest) > best[:2]):
@@ -680,9 +680,13 @@ _VERB_ANTONYM_PENALTY = 0.4
 
 
 def _verb_antonym_penalty(asset: dict, query_lemmas: set[str]) -> float:
-    """질의 동사와 자산 동사가 진짜 반대말이면 깎는다(동의어·무관한 동사는 안 깎는다)."""
+    """질의 동사와 자산 동사가 진짜 반대말이면 깎는다(동의어·무관한 동사는 안 깎는다).
+
+    문장에 그림의 동사가 이미 있으면 깎지 않는다. '꺼내서 채우다'·'빼고 끼우다'처럼 한 문장에
+    두 동작을 차례로 시키는 지시에서는 반대 방향 동사도 문장이 시키는 동작이다.
+    """
     verb = (asset.get("_frame") or {}).get("verb")
-    if not verb or not query_lemmas:
+    if not verb or not query_lemmas or verb in query_lemmas:
         return 1.0
     for group in _VERB_ANTONYMS:
         if verb in group and (query_lemmas & group) - {verb}:
@@ -952,6 +956,28 @@ _GENERIC_OBJECTS = frozenset({
     "상품", "제품", "물건", "물품", "새상품", "부품", "내용물", "구성품", "비품", "라벨", "스티커",
 })
 
+# 일반 명사가 덮는 직무 범위(_object_conflict). '상품'은 가게에서 파는 물건이라 가게 직무(소매·진열·
+# 카페)가 같이 쓰고, '제품'·'내용물'·'구성품'은 만든 물건이라 만드는 직무(포장·조립)가 같이 쓴다.
+# 부품·스티커·라벨·비품은 그 일터의 재료·도구라 같은 직무의 그림만 덮는다 — 조립 그림의 '부품'이 주유
+# 노즐을, 조립 그림의 '스티커'가 포장 일의 지퍼백 입구를 대신하지 않는다.
+_STORE_JOBS = frozenset({"retail", "display", "cafe"})
+_MAKER_JOBS = frozenset({"packaging", "assembly"})
+_GENERIC_OBJECT_SCOPE: dict[str, frozenset[str]] = {
+    "상품": _STORE_JOBS, "새상품": _STORE_JOBS, "물건": _STORE_JOBS, "물품": _STORE_JOBS,
+    "제품": _MAKER_JOBS, "내용물": _MAKER_JOBS, "구성품": _MAKER_JOBS,
+}
+
+
+def _generic_covers(word: str, asset_job: str | None, job: str | None) -> bool:
+    """일반 명사 그림(대상 word, 직무 asset_job)이 일터 직무 job의 구체 대상을 덮는가."""
+    if not job or not asset_job:
+        return False
+    if asset_job == job:
+        return True
+    scope = _GENERIC_OBJECT_SCOPE.get(word, frozenset())
+    return job in scope and asset_job in scope
+
+
 # 같은 대상을 부르는 다른 이름. 인덱스 검색어에 없어서 대상 게이트가 정답을 막는 것을
 # 줄이려고 코드 쪽에 둔다(인덱스 검색어 보강은 별도 단계). 일상어↔표기어 쌍만 넣는다.
 _OBJECT_SYNONYMS: tuple[frozenset[str], ...] = (
@@ -961,6 +987,8 @@ _OBJECT_SYNONYMS: tuple[frozenset[str], ...] = (
     frozenset({"수건", "천", "행주"}),
     frozenset({"휴지", "화장지"}),
     frozenset({"수저통", "수저함"}),
+    # 주유기 손잡이를 일터에서는 '노즐'이라고 많이 부른다(그림 라벨은 '주유건').
+    frozenset({"노즐", "주유건"}),
 )
 
 
@@ -983,23 +1011,49 @@ _POSITION_NOUNS = frozenset({
 })
 
 
+# 그림 frame 값에서 명사가 아닌 어절을 거르는 데 쓴다. 관형사와 형용사 관형형('빈 접시'·'큰 상자'·
+# '맨 위'의 앞말)은 대상 명사가 아니다. 사전에 없는 형용사도 있어 흔한 것을 적어 둔다.
+_ADNOMINALS = frozenset({"한", "두", "세", "네", "맨", "새", "헌", "각", "모든", "큰", "작은", "다른",
+                         "마른", "젖은", "올바른"})
+# frame 어절 끝에 붙어 나온 조사('손으로'·'작업대에서'·'상자에'·'수건과'·'차량의').
+_FRAME_PARTICLES_LONG = ("으로", "에서")
+_FRAME_PARTICLES_SHORT = ("에", "와", "과", "의", "이")
+
+
 @lru_cache(maxsize=1)
 def _asset_noun_vocab() -> frozenset[str]:
     """그림 인덱스 frame(대상·장소·도구)에 나오는 명사 어절. '매대'처럼 형태소 분석기가 동사
-    활용형('매다'+'-대')으로 잘못 읽는 명사를 명사로 확인하는 데 쓴다."""
-    vocab: set[str] = set()
+    활용형('매다'+'-대')으로 잘못 읽는 명사를 명사로 확인하는 데 쓴다.
+
+    조사가 붙은 어절('손으로')과 관형어('빈'·'큰'·'붙은')는 뺀다. 관형어인지는 frame 값의 마지막
+    어절이 아닌데(뒤 명사를 꾸민다) 분석기가 관형형 용언으로만 읽거나 _ADNOMINALS에 있는 것으로 본다.
+    """
+    heads: set[str] = set()
+    modifiers: set[str] = set()
     for asset in load_assets():
         frame = asset.get("_frame") or {}
         for key in ("object", "location", "instrument"):
             value = frame.get(key)
             if value:
-                vocab.update(str(value).split())
+                tokens = str(value).split()
+                heads.add(tokens[-1])
+                modifiers.update(tokens[:-1])
+    raw = heads | modifiers
+    analyzer = _verb_analyzer()
+    vocab: set[str] = set()
+    for token in raw:
+        if token in _ADNOMINALS:
+            continue
+        if len(token) > 2 and token.endswith(_FRAME_PARTICLES_LONG):
+            continue
+        if any(token.endswith(p) and token[:-1] in raw for p in _FRAME_PARTICLES_SHORT):
+            continue
+        if token not in heads:
+            parses = analyzer.analyze_word(token)
+            if parses and all(p.kind == korean_verbs.EXCL for p in parses):
+                continue
+        vocab.add(token)
     return frozenset(vocab)
-
-
-def _is_noun_word(word: str) -> bool:
-    """대상 자리에 올 수 있는 명사인가. 그림 frame의 명사면 분석기 판정보다 먼저 명사로 본다."""
-    return word in _asset_noun_vocab() or not _is_verb_word(word)
 
 
 def _query_objects(sentence: str) -> set[str]:
@@ -1020,10 +1074,13 @@ def _query_objects(sentence: str) -> set[str]:
         if not prev or before[prev.start() - 1: prev.start()] not in ("", " "):
             continue
         head = prev.group(1)
-        # '매대의 위를' — 관형격 '의'만 떼어 낸다(다른 조사는 위치 명사를 꾸미지 못한다).
-        if head.endswith("의") and len(head) > 2:
+        # '매대의 위를'·'컵의 안을' — 관형격 '의'만 떼어 낸다(다른 조사는 위치 명사를 꾸미지 못한다).
+        if head.endswith("의") and len(head) >= 2:
             head = head[:-1]
-        if head not in _POSITION_NOUNS and _is_noun_word(head):
+        # 앞 어절은 그림 frame의 명사일 때만 대상으로 본다. 형태소 분석기는 명사를 확인해 주지
+        # 못해서, '먼저 위를'·'깨끗이 안을'·'그 위를'·'손으로 위를'의 부사·관형사·조사 붙은 말이
+        # 대상으로 잡혀 맞는 그림을 막았다. 모르는 말이면 대상을 모르는 것으로 둔다.
+        if head not in _POSITION_NOUNS and head in _asset_noun_vocab():
             out.add(head)
     return out
 
@@ -1032,13 +1089,14 @@ def _query_objects(sentence: str) -> set[str]:
 # 목적어가 없어 대상 게이트가 근거 없음으로 넘어갔다. 을/를 목적어가 없을 때만 주제어를 대상으로 본다.
 _QUERY_TOPIC_RE = re.compile(r"([가-힣]+)(?:은|는)(?=\s|$|[.,!?])")
 # 주제어 자리에 오지만 대상이 아닌 말: 때·순서·대명사·전체를 가리키는 말, 경우·차례를 나타내는
-# 형식 명사, 지시를 하는 사람.
+# 형식 명사, 지시를 하는 사람, 수사('하나는 여기에, 둘은 저기에'·'첫째는').
 _TOPIC_STOPWORDS = frozenset({
     "오늘", "내일", "이번", "다음", "처음", "마지막", "먼저", "나중", "지금", "평소", "보통",
     "아침", "점심", "저녁", "오전", "오후", "주말", "평일", "시간", "점심시간", "쉬는시간", "휴식시간",
     "이것", "그것", "저것", "이거", "그거", "여기", "거기", "저기", "우리", "저희", "나머지", "전부",
     "경우", "번째", "때문", "정도", "부분", "방법", "순서", "차례", "일", "저", "나",
     "사장님", "점장님", "매니저", "직원", "선배",
+    "하나", "둘", "셋", "넷", "다섯", "첫째", "둘째", "셋째", "넷째", "첫번째", "두번째", "세번째",
 })
 # 하다가 붙는 동작 명사('청소는 이렇게 해요', '주문은 제가 받을게요')는 동작의 이름이지 그림의
 # 대상이 아니다. 그림 라벨의 'X한다' 꼴에서 뽑은 것과 일터에서 흔한 동작 명사를 함께 본다.
@@ -1111,11 +1169,12 @@ def _object_conflict(asset: dict, sentence: str, query: str, job: str | None = N
     if not obj:
         return False
     obj_norm = _normalize(obj)
-    # 일반 명사('부품'·'스티커'·'상품')는 '이 일터에서 다루는 물건'이라는 뜻이라 같은 직무의
-    # 그림일 때만 문장의 구체 대상을 덮는다. 조립 그림의 '부품'이 주유 노즐을, '스티커'가 지퍼백
-    # 입구를 대신하지는 않는다. 직무를 모르면(job=None) 덮는다고 볼 근거가 없으므로 면제하지
-    # 않는다 — 그래도 아래 검사(문장 대상이 그림 라벨·검색어에 나오는가)는 그대로 한다.
-    if obj_norm.replace(" ", "") in _GENERIC_OBJECTS and job and asset.get("job") == job:
+    # 일반 명사('부품'·'스티커'·'상품')는 '이 일터에서 다루는 물건'이라는 뜻이라 같은 직무(또는
+    # 같은 물건을 다루는 직무 묶음, _GENERIC_OBJECT_SCOPE)의 그림일 때만 문장의 구체 대상을 덮는다.
+    # 직무를 모르면(job=None) 덮는다고 볼 근거가 없으므로 면제하지 않는다 — 그래도 아래 검사(문장
+    # 대상이 그림 라벨·검색어에 나오는가)는 그대로 한다.
+    obj_compact = obj_norm.replace(" ", "")
+    if obj_compact in _GENERIC_OBJECTS and _generic_covers(obj_compact, asset.get("job"), job):
         return False
     q_compact = _normalize(query or sentence).replace(" ", "")
     # 그림 대상(의 낱말 하나라도)이 질의에 나오면 일치.
