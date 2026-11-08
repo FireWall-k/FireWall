@@ -282,6 +282,21 @@ class SplitOutcome:
     # 앞 동작이 이동("가서 쉬다"는 쉬기 하나일 수도, "가서 여쭤보다"는 둘일 수도), 따옴표 속 말("받아서 '…' 하고
     # 말하다"는 전화 받는 장면 하나일 수도).
     soft_boundary: bool = False
+    # 동작 하나라는 판정을 규칙이 꼴로 설명할 수 있는가 — GPT가 나눴는데 규칙이 하나라고 할 때, 이 근거가 있으면
+    # 확인 없이 합친다(입력 화면 나누기 1차 검증): 대상 나열("컵과 접시를 닦다" → 물건별로 나누지 않는다),
+    # 갈라 담기("크기별로 나눠 담다"), 동시 동작 '-며/-면서'("소독하며 닦다").
+    list_object: bool = False
+    sorted_into: bool = False
+    with_joined: bool = False
+    # 초안 문장을 만들 수는 있었지만 앞 절 동사가 일부러 하는 일 목록 밖이거나 앞 절에 '-게' 부사가 있어(not_deliberate·
+    # degree_adverb만 걸림) 제안으로 내지 않은 것. 사업주가 쉼표로 이미 끊어 쓴 문장('~고,')을 쉼표에서 나눌 때 문장 모양으로 쓴다(decompose._comma_cut_ok).
+    comma_draft: list[str] | None = None
+    # 초안을 막은 뜻 위험(_first_verb_blockers: 다른 주어·지시 아님·'X는 빼고'·정도 부사·'다시' …). 부정·세지 않은
+    # 동작 때문에 일찍 돌아간 판정은 None이다.
+    draft_blockers: list[str] | None = None
+    # '-고/-어서'로 이어진 앞 절 중 동작으로 세지 않은 것(방법·사건·사고)의 동사 원형 — 규칙 경로가 "누르고
+    # 기다리다"처럼 방법 동사로 본 앞 동작이 실은 따로 그림이 필요한지 확인을 띄우는 데 쓴다("눌러 뚫다"는 넣지 않는다).
+    hidden_lemmas: frozenset[str] = frozenset()
 
 
 @lru_cache(maxsize=1)
@@ -385,10 +400,13 @@ class _Sentence:
                 rep[i] = (main or ps)[0].kind
         out: dict[int, str] = {}
         following = None
+        # 조건절로 묶인 연결형 어절("맡아 보고 이상하면"의 '보고') — 동작으로 세지 않지만 동작일 수 있다(unseen_verbs).
+        self.cond_absorbed: set[int] = set()
         for i in sorted(rep, reverse=True):
             k = rep[i]
             if k in (kv.CONN, kv.BARE) and following == kv.COND:
                 k = kv.COND
+                self.cond_absorbed.add(i)
             elif (k == kv.CONN and out.get(i + 1) == kv.EXCL
                   and {p.lemma for p in self.parses[i + 1]} & kv.MOTION_VERBS):
                 k = kv.EXCL
@@ -545,14 +563,34 @@ class _Sentence:
             i = end + 1
         # 동시 동작(-며)은 뒤 동작에 합친다.
         merged: list[_Action] = []
+        self.with_joined = False
         for a in out:
             if merged and merged[-1].boundary == "with":
                 merged[-1] = a
+                self.with_joined = True
                 continue
             merged.append(a)
         if merged:
             merged[-1].boundary = None
         return merged
+
+    def unseen_verbs(self) -> int:
+        """동작 찾기(actions)가 세지 않았지만 따로 그림이 필요한 동작일 수 있는 어절 수. "동작 하나" 판정이 낱말 목록에
+        기대고 있다는 표시(hidden_verbs)에 더한다(입력 화면 나누기 1차 검증):
+        - 대상 뒤 형식 동사 '하다'의 연결형("창고 정리를 하고 퇴근하세요") — 동작 찾기는 하다를 건너뛴다.
+        - 조건절로 묶인 연결형("냄새를 맡아 보고 이상하면 버리세요"의 '보고') — '먹고 오면'처럼 조건의 일부일 수도,
+          '보고 / (이상하면) 버리다'처럼 따로 할 일일 수도 있다."""
+        n = 0
+        for i in range(len(self.words) - 1):
+            if self.quoted[i] or not self.parses[i]:
+                continue
+            lemmas = frozenset(p.lemma for p in self.parses[i])
+            if i in self.cond_absorbed:
+                if not lemmas <= kv._LIGHT_VERBS and not all(_is_adjective(lm) for lm in lemmas):
+                    n += 1
+            elif (self.kind.get(i) == kv.CONN and lemmas <= {"하다"} and i > 0 and self.is_object(i - 1)):
+                n += 1
+        return n
 
     def clause_has_event_subject(self, lo: int, hi: int) -> bool:
         """[lo, hi)에 주어(-이/-가)가 있는가. 조건절·관형절("전화가 울리면", "손님이 입어 본 옷")의
@@ -1034,6 +1072,15 @@ def _deictic(s: _Sentence, lo: int, hi: int) -> bool:
                for j in range(lo, hi))
 
 
+_DEPENDENT_OBJECT_RE = re.compile(r"^(?:것|거)(?:을|은|는|이|도|만)?$|^(?:걸|건)$")
+
+
+def _dependent_object(s: _Sentence, lo: int, hi: int) -> bool:
+    """[lo, hi)의 대상이 꾸밈말만 앞에 둔 의존 명사(것·거)인가("유통기한을 확인하고 지난 것은 빼세요"). 떼어 낸
+    단계 "지난 것은 빼세요"는 혼자 읽으면 무엇이 지났는지 모른다 — 자동으로 나누지 않고 제안(노란 줄)으로 둔다."""
+    return any(not s.quoted[j] and _DEPENDENT_OBJECT_RE.match(s.words[j]) for j in range(lo, hi))
+
+
 def _seo_between_ok(s: _Sentence, j: int | None, act: _Action) -> bool:
     """'-어서' 앞 절에서 대상과 동사 사이에 방법 부사·'-씩'·자리 말만 있는가. 다른 말이 있으면 그 절은 까닭·결과일
     수 있다("택배를 늦게 받아서", "물을 너무 많이 넣어서")."""
@@ -1094,6 +1141,8 @@ def _auto_blockers(s: _Sentence, acts: list[_Action]) -> list[str]:
             why.append("seo_between")
         if _deictic(s, nlo, nxt.end + 1):
             why.append("deictic")
+        if _dependent_object(s, nlo, nxt.head):
+            why.append("dependent_object")
         if (not carries[k + 1] and not _own_object(s, nlo, nxt.head) and not (nxt.lemmas & NO_OBJECT_OK)
                 and not s.clause_has_embedded_question(nlo, nxt.head)):
             why.append("next_missing_object")
@@ -1113,30 +1162,47 @@ def split_clause(text: str, question: bool = False) -> SplitOutcome:
     sure: list[_Action] = []
     acts = _counted(s, all_acts, sure)
     # 갈라 담기(_sorts_into)로 세지 않은 동사는 확실한 쪽이라 hidden에 넣지 않는다.
-    hidden = len(all_acts) - len(acts) - len(sure) + sum(1 for a in all_acts if a.compound)
+    hidden = (len(all_acts) - len(acts) - len(sure) + sum(1 for a in all_acts if a.compound)
+              + s.unseen_verbs())
+    hidden_lemmas = frozenset(lm for a in all_acts if a not in acts and a not in sure and a.boundary in ("go", "seo")
+                              for lm in a.lemmas)
     soft = any(a.lemmas & BARE_MOTION for a in acts[:-1]) or any(s.quoted) or any(
         q in original for q in _QUOTE_CHARS)
     if len(acts) < 2:
-        return SplitOutcome(steps=[original], actions=len(acts), hidden_verbs=hidden)
+        return SplitOutcome(steps=[original], actions=len(acts), hidden_verbs=hidden, hidden_lemmas=hidden_lemmas,
+                            list_object=_has_list_object(s), sorted_into=bool(sure), with_joined=s.with_joined)
     if has_negation(original, an):
         return SplitOutcome(steps=[original], suggestion=None, reason="negation", actions=len(acts),
-                            why_not=["negation"], hidden_verbs=hidden, soft_boundary=soft)
+                            why_not=["negation"], hidden_verbs=hidden, hidden_lemmas=hidden_lemmas,
+                            soft_boundary=soft)
     # 세지 않은 동작(방법·사건·사고)이 사이에 있으면 절 경계가 어긋나므로 문장을 만들지 않는다(힌트만).
     if len(all_acts) != len(acts):
         return SplitOutcome(steps=[original], suggestion=None, reason="multi_action", actions=len(acts),
-                            why_not=["uncounted_action"], hidden_verbs=hidden,
+                            why_not=["uncounted_action"], hidden_verbs=hidden, hidden_lemmas=hidden_lemmas,
                             soft_boundary=soft)
     why = _auto_blockers(s, all_acts)
     pieces = _build(s, all_acts)
     if not why and pieces:
         return SplitOutcome(steps=pieces, auto=True, actions=len(acts), source=original, hidden_verbs=hidden,
-                            soft_boundary=soft)
+                            hidden_lemmas=hidden_lemmas, soft_boundary=soft)
     draft_why = _first_verb_blockers(s, all_acts)
     suggestion = pieces if pieces and not draft_why else None
+    comma_draft = pieces if pieces and draft_why and set(draft_why) <= COMMA_OK_BLOCKERS else None
     gaps = _missing_objects(s, all_acts, _carries(s, all_acts)) if suggestion else None
     return SplitOutcome(steps=[original], suggestion=suggestion, reason="multi_action", actions=len(acts),
                         why_not=why or ["grammar"], suggestion_gaps=gaps or None, hidden_verbs=hidden,
-                        soft_boundary=soft)
+                        hidden_lemmas=hidden_lemmas, soft_boundary=soft, comma_draft=comma_draft,
+                        draft_blockers=draft_why)
+
+
+# 쉼표('~고,')로 이미 끊어 쓴 문장이면 이 이유만으로는 쉼표에서 나누기를 막지 않는다 — 앞 동사가 일부러 하는 일
+# 목록 밖(분류하다), 앞 절의 '-게' 부사(빠르게 씻고,).
+COMMA_OK_BLOCKERS = frozenset({"not_deliberate", "degree_adverb"})
+
+
+def _has_list_object(s: _Sentence) -> bool:
+    """대상(-을/-를, 없으면 주제어)이 나열인가("컵과 접시를", "컵 접시 수저를")."""
+    return any((s.is_object(j) or s.is_topic(j)) and _is_list(s, j, 0) for j in range(len(s.words)))
 
 
 def _counted(s: _Sentence, acts: list[_Action], sure: list[_Action] | None = None) -> list[_Action]:

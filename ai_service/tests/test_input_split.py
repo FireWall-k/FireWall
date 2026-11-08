@@ -173,3 +173,105 @@ def test_decompose_http_response_carries_contract_fields(monkeypatch):
     assert steps[0]["source_text"] == "상자를 접고 테이프를 붙이세요."
     assert steps[2]["source_text"] == "그릇을 헹궈서 선반에 올려 두세요."
     assert steps[4]["source_text"] is None
+
+
+# ---- 1차 검증 반영 -----------------------------------------------------------------------------
+
+def _rule(text):
+    return [(s.sentence, s.split_check) for s in decompose._rule_decompose(text, {}).steps]
+
+
+def test_rule_path_comma_fragment_with_negation_is_not_its_own_step():
+    # 쉼표 앞 부정 조각("컵을 씻지 말고.")이 따로 단계가 되면 씻는 그림이 붙을 수 있다 — 한 단계로, 노란 줄.
+    for text in ("컵을 씻지 말고, 바로 버리세요.", "냅킨은 버리지 말고, 모아 두세요.",
+                 "상자를 접고, 테이프는 붙이지 마세요."):
+        steps = _rule(text)
+        assert len(steps) == 1, (text, steps)
+        assert steps[0][1] is True
+        assert "말고." not in steps[0][0]
+
+
+def test_rule_path_comma_fragment_of_another_person_is_not_a_worker_step():
+    steps = _rule("손님이 나가고, 테이블을 치우세요.")
+    assert len(steps) == 1
+    assert steps[0][0].startswith("손님이 나가고, 테이블을 치우세요")
+
+
+def test_rule_path_comma_split_writes_imperatives_not_fragments():
+    assert _rule("물기를 닦은 후, 전원을 켜세요.") == [("물기를 닦으세요", False), ("전원을 켜세요", False)]
+    assert _rule("상자를 접고, 테이프를 붙이세요.") == [("상자를 접으세요", False), ("테이프를 붙이세요", False)]
+    # 지시형 문장을 못 만든 조각은 남기되 노란 줄이다(말없이 "~다음."이 나가지 않게).
+    steps = _rule("컵을 헹군 다음, 건조대에 엎어 두세요.")
+    assert all(check for _, check in steps), steps
+
+
+def test_gpt_sees_the_same_comma_pieces_but_negation_clause_is_checked(monkeypatch):
+    # GPT 입력의 원문 조각은 전과 같다(응답 캐시·측정이 그대로). 검산은 문장 전체(부정) 단위다.
+    seen = []
+    _gpt(monkeypatch, [_step("컵을 씻지 마세요.", "컵 씻다", 1), _step("바로 버리세요.", "컵 버리다", 2)], seen)
+    steps = run("컵을 씻지 말고, 바로 버리세요.", {}).steps
+    assert "1) 컵을 씻지 말고\n2) 바로 버리세요" in seen[0]
+    assert [s.split_check for s in steps] == [True, True]
+
+
+def test_gpt_split_is_flagged_when_rule_misses_a_light_verb_or_conditioned_verb(monkeypatch):
+    # 규칙이 '정리를 하고'·'맡아 보고(이상하면)'를 동작으로 못 세 하나로 본다 — 맞는 GPT 분할을 말없이 합치지 않는다.
+    _gpt(monkeypatch, [_step("창고를 정리하세요.", "창고 정리하다"), _step("4시에 퇴근하세요.", "퇴근하다")])
+    steps = run("오후 3시에 창고 정리를 하고 4시에 퇴근하세요.", {}).steps
+    assert all(s.split_check for s in steps)
+    _gpt(monkeypatch, [_step("냄새를 맡아 보세요.", "냄새 맡다"), _step("이상하면 버리세요.", "버리다")])
+    steps = run("냄새를 맡아 보고 이상하면 버리세요.", {}).steps
+    assert all(s.split_check for s in steps)
+
+
+def test_gpt_extra_verb_without_rule_explanation_is_flagged(monkeypatch):
+    # 동사 하나인 문장에 GPT가 다른 동작을 덧붙임 → 합치되 확인(규칙이 나열·갈라 담기 같은 근거를 못 찾음).
+    _gpt(monkeypatch, [_step("컵을 닦으세요.", "컵 닦다"), _step("컵을 확인하세요.", "컵 확인하다")])
+    steps = run("컵을 닦으세요.", {}).steps
+    assert len(steps) == 1 and steps[0].split_check is True
+    # 갈라 담기는 규칙이 아는 한 동작이라 확인 없이 합친다.
+    _gpt(monkeypatch, [_step("사과를 크기별로 나누세요.", "사과 나누다"), _step("바구니에 담으세요.", "사과 담다")])
+    steps = run("사과를 크기별로 나눠 바구니에 담으세요.", {}).steps
+    assert len(steps) == 1 and steps[0].split_check is False
+
+
+def test_src_that_leaves_a_clause_empty_is_rejected(monkeypatch):
+    # [1, 1]은 범위 안·순서대로지만 2번 조각에 단계가 없다 → 글자 겹침으로 다시 맞춘다(테이프 단계가 사라지지 않게).
+    _gpt(monkeypatch, [_step("상자를 접으세요.", "상자 접다", 1), _step("테이프를 붙이세요.", "테이프 붙이다", 1)])
+    steps = run("상자를 접고, 테이프를 붙이세요.", {}).steps
+    assert [s.sentence for s in steps] == ["상자를 접으세요.", "테이프를 붙이세요."]
+    assert [s.symbol_query for s in steps] == [["상자 접다"], ["테이프 붙이다"]]
+
+
+def test_dropped_clause_flags_its_sentence(monkeypatch):
+    # GPT가 두 원문 조각을 한 단계로 묶었다 → 그 문장의 단계는 노란 줄.
+    _gpt(monkeypatch, [_step("상자를 접고 테이프를 붙이세요.", "상자 접다", 1)])
+    steps = run("상자를 접고, 테이프를 붙이세요.", {}).steps
+    assert len(steps) == 1 and steps[0].split_check is True
+
+
+def test_invented_step_does_not_lend_its_picture_to_a_merged_step(monkeypatch):
+    # GPT가 src 없이 원문에 없는 '바닥 쓸기'를 덧붙였다 → 합친 단계의 검색어는 원문에 기댄 단계 것, 노란 줄.
+    _gpt(monkeypatch, [_step("테이블을 닦으세요.", "테이블 닦다", None), _step("의자를 넣으세요.", "의자 넣다", None),
+                       _step("바닥을 쓰세요.", "바닥 쓸다", None)])
+    steps = run("테이블을 닦으세요. 의자를 넣으세요.", {}).steps
+    assert [s.symbol_query for s in steps] == [["테이블 닦다"], ["의자 넣다"]]
+    assert steps[1].split_check is True
+
+
+def test_rule_path_flags_press_or_pour_hidden_as_manner():
+    assert _rule("도착하면 벨을 누르고 기다리세요.")[0][1] is True
+    assert _rule("물을 두 잔 따라서 손님께 갖다 드리세요.")[0][1] is True
+    # 한 동작 묶음("눌러 뚫다")은 그대로.
+    assert _rule("상자 옆면의 손잡이 구멍을 눌러 뚫어 주세요.")[0][1] is False
+
+
+def test_dependent_noun_object_blocks_auto_split():
+    # "지난 것은 빼세요"는 혼자 읽으면 무엇이 지났는지 모른다 — 자동 분할이 아니라 노란 제안.
+    steps = _rule("유통기한을 확인하고 지난 것은 빼세요.")
+    assert len(steps) == 2 and all(check for _, check in steps)
+
+
+def test_decimal_point_is_not_a_sentence_end():
+    assert _rule("2.5L 생수를 하나씩 꺼내세요.") == [("2.5L 생수를 하나씩 꺼내세요", False)]
+    assert decompose._split_steps("2.5L 생수를 꺼내세요. 상자를 접으세요.") == ["2.5L 생수를 꺼내세요", "상자를 접으세요"]

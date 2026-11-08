@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import llm
 import step_split
@@ -113,10 +113,14 @@ def _split_sequential(clause: str) -> list[str]:
 _CONN_PATTERN = r"\s*(?:%s)[\s,]+" % "|".join(re.escape(c) for c in _SEQ_CONNECTIVES)
 
 
+# 문장 끝 — 숫자 사이의 점("2.5L")은 소수점이라 문장 끝이 아니다.
+_SENTENCE_RE = re.compile(r"(?:[^.!?\n]|(?<=\d)\.(?=\d))+[.!?]*")
+
+
 def _sentence_spans(text: str) -> list[tuple[str, str]]:
     """문장부호로 자른 (문장, 끝 문장부호까지 붙인 원문 문장) 목록. 원문 문장은 [합치기]가 되돌릴 글이다."""
     out: list[tuple[str, str]] = []
-    for m in re.finditer(r"[^.!?\n]+[.!?]*", text):
+    for m in _SENTENCE_RE.finditer(text):
         sentence = m.group().strip().rstrip(".!?").strip()
         if sentence:
             out.append((sentence, m.group().strip()))
@@ -140,30 +144,85 @@ def _split_steps(text: str) -> list[str]:
 
 @dataclass
 class Clause:
-    """원문 조각(_split_steps가 자른 절·문장)과 규칙 동작 세기 결과."""
+    """원문 조각(규칙 동작 세기 단위)과 규칙 판정 결과."""
     text: str
     plan: step_split.SplitOutcome
     sentence: int = 0          # 몇 번째 원문 문장에서 나왔나(0부터) — split_group 단위
     sentence_text: str = ""    # 그 원문 문장(끝 문장부호 포함) — source_text
+    # GPT에 보여 주는 '원문 조각'(src 번호 단위). 대개 [text]다. 쉼표('~고,')에서 자른 조각을 떼어 놓으면 뜻이
+    # 바뀌는 절은 한 Clause로 묶되, GPT에는 전과 같은 쉼표 조각을 보여 준다(같은 입력 → 응답 캐시가 그대로 맞는다).
+    pieces: list[str] = field(default_factory=list)
+    # 규칙 경로에서 이 조각을 보여 줄 지시형 문장("물기를 닦은 후," → "물기를 닦으세요."). None이면 조각 그대로.
+    rule_text: str | None = None
+    rule_check: bool = False   # 규칙 경로에서 이 조각에 노란 줄(쉼표에서 잘랐지만 지시형 문장을 못 만들었다)
+
+
+def _comma_cut_ok(whole: step_split.SplitOutcome, pieces: list[str]) -> tuple[list[str | None], bool] | None:
+    """'~고,' '~(으)ㄴ 다음,' '~후,'에서 자른 조각을 따로 단계로 둬도 되는가. 되면 (조각마다 지시형 문장, 확실한가)를
+    돌려준다. 지시형 문장을 못 만든 조각은 None(조각 그대로 보이고 노란 줄).
+
+    쉼표가 있어도 문장 전체를 규칙 동작 세기에 넣어 본다(입력 화면 나누기 1차 검증). 쉼표 조각을 먼저 떼면
+    "컵을 씻지 말고, 바로 버리세요" → "컵을 씻지 말고." 같은 부정 조각, "손님이 나가고," 같은 다른 사람의 일,
+    "컵을 헹군 다음."처럼 끝나지 않은 조각이 노란 표시 없이 따로 단계가 됐다. 전체 판정이 동작 수 = 조각 수이고
+    지시형 문장을 만들 수 있을 때만(부정·다른 주어·실수·물음이 있으면 문장을 만들지 않는다) 쉼표에서 자른다.
+    앞 동사가 일부러 하는 일 목록 밖(분류하다)이라 제안을 내지 않은 문장도, 사업주가 쉼표로 끊어 썼으므로 자른다
+    (comma_draft).
+    """
+    if whole.actions != len(pieces):
+        return None
+    steps = whole.steps if whole.auto else (whole.suggestion or whole.comma_draft)
+    if steps and len(steps) == len(pieces):
+        return list(steps), True
+    # 문장은 못 만들었지만(문법 검사 실패) 뜻 위험은 없다 — 조각 그대로 나누고 사업주가 한 번 본다.
+    if whole.draft_blockers is not None and set(whole.draft_blockers) <= step_split.COMMA_OK_BLOCKERS:
+        return [None] * len(pieces), False
+    return None
 
 
 def clauses_of(text: str) -> list[Clause]:
     """원문 → 조각마다 규칙 판정(자동 분할·나누기 제안·그대로). 평가 도구도 이 함수를 쓴다.
 
+    문장부호·순서 접속어(그리고·그다음)에서 자르고, '~고,' 같은 쉼표 조각은 _comma_cut_ok가 될 때만 따로 둔다.
     _split_steps는 문장부호를 떼므로, 원문에서 조각 바로 뒤에 물음표가 있었는지 따로 알려 준다 — 물음
     ("상자를 접어서 넣을까요?")을 지시로 바꿔 나누지 않게.
     """
     out: list[Clause] = []
     cursor = 0
+
+    def question_after(chunk: str) -> bool:
+        nonlocal cursor
+        idx = text.find(chunk, cursor)
+        if idx < 0:
+            return False
+        cursor = idx + len(chunk)
+        return text[cursor:cursor + 3].lstrip().startswith(("?", "？"))
+
     for si, (sentence, raw_sentence) in enumerate(_sentence_spans(text)):
-        for chunk in _split_sentence(sentence):
-            idx = text.find(chunk, cursor)
-            question = False
-            if idx >= 0:
-                cursor = idx + len(chunk)
-                question = text[cursor:cursor + 3].lstrip().startswith(("?", "？"))
-            out.append(Clause(chunk, step_split.split_clause(chunk, question=question), si, raw_sentence))
+        for part in re.split(_CONN_PATTERN, sentence):
+            part = part.strip()
+            if not part:
+                continue
+            pieces = _split_sequential(part)
+            asks = [question_after(chunk) for chunk in pieces]
+            if len(pieces) < 2:
+                out.extend(Clause(chunk, step_split.split_clause(chunk, question=ask), si, raw_sentence,
+                                  pieces=[chunk]) for chunk, ask in zip(pieces, asks))
+                continue
+            whole = step_split.split_clause(part, question=asks[-1])
+            cut = _comma_cut_ok(whole, pieces)
+            if cut is None:
+                out.append(Clause(part, whole, si, raw_sentence, pieces=pieces))
+                continue
+            texts, sure = cut
+            out.extend(Clause(chunk, step_split.split_clause(chunk, question=ask), si, raw_sentence,
+                              pieces=[chunk], rule_text=shown, rule_check=not sure)
+                       for chunk, ask, shown in zip(pieces, asks, texts))
     return out
+
+
+def gpt_pieces(clauses: list[Clause]) -> list[str]:
+    """GPT 사용자 메시지의 '원문 조각' 목록(단계마다 src로 이 번호를 받는다)."""
+    return [p for c in clauses for p in (c.pieces or [c.text])]
 
 
 def _assign_groups(steps: list[Step], sentence_of: list[int], clauses: list[Clause]) -> None:
@@ -195,6 +254,11 @@ def _plain(sentence: str) -> str:
     return sentence[:-1] if sentence.endswith("요.") else sentence
 
 
+# 방법 동사로 세지 않지만, 앞 동작이면 그 자체가 따로 손일인 때가 많은 동사(벨을 누르고 기다리다, 물을 따라서
+# 갖다 드리다). 규칙 경로에서 한 단계로 남으면 노란 줄을 켠다.
+_HAND_MANNER = frozenset({"누르다", "따르다"})
+
+
 def _rule_decompose(raw_input: str, context: dict) -> DecomposeResult:
     """규칙 기반 분해(LLM 미사용/실패 시 폴백).
 
@@ -210,12 +274,18 @@ def _rule_decompose(raw_input: str, context: dict) -> DecomposeResult:
     sentence_of: list[int] = []
     for cl in clauses:
         plan = cl.plan
-        if plan.auto and len(plan.steps) >= 2:
+        if cl.rule_text is not None:
+            pieces = [(_plain(cl.rule_text), False)]
+        elif cl.rule_check:
+            pieces = [(cl.text, True)]
+        elif plan.auto and len(plan.steps) >= 2:
             pieces = [(_plain(p), False) for p in plan.steps]
         elif plan.suggestion and len(plan.suggestion) >= 2:
             pieces = [(_plain(p), True) for p in plan.suggestion]
         else:
-            pieces = [(cl.text, plan.actions >= 2)]
+            # 동작이 둘 이상인데 못 나눴거나, 방법 동사로 본 앞 동작이 따로 그림이 필요할 수 있는 동사(누르고 기다리다·
+            # 따라서 갖다 드리다)면 노란 줄로 한 번 보게 한다.
+            pieces = [(cl.text, plan.actions >= 2 or bool(plan.hidden_lemmas & _HAND_MANNER))]
         for chunk, check in pieces:
             steps.append(Step(
                 order=len(steps) + 1,
@@ -283,24 +353,50 @@ def _bigrams(text: str) -> set[str]:
     return {t[i:i + 2] for i in range(len(t) - 1)}
 
 
+# 끝맺음에서 나오는 두 글자 — 어느 문장과도 겹쳐 '같은 일'의 근거가 못 된다("바닥을 쓰세요"와 "의자를 넣으세요").
+_ENDING_GRAMS = frozenset({"세요", "으세", "하세", "주세", "어요", "아요", "해요", "워요", "와요", "하다", "해주", "어주"})
+
+
+def _overlap(st: Step, text: str) -> float:
+    """단계(문장 + 그림 검색어)와 원문 글의 글자 겹침 비율(끝맺음 글자는 빼고)."""
+    g = _bigrams(st.sentence + " " + " ".join(st.symbol_query)) - _ENDING_GRAMS
+    return len(g & _bigrams(text)) / max(1, len(g))
+
+
+# 조사·끝맺음 글자 — 원문에 기댄 단계인지 볼 때 뺀다.
+_FUNCTION_CHARS = frozenset("을를은는이가에의도로고서세요다하으주어아해")
+
+
+def _grounded(st: Step, text: str) -> bool:
+    """단계(문장 + 그림 검색어)가 원문 글과 내용 글자를 하나라도 나누는가. GPT는 조사·어미를 바꿔 쓰므로("옷은 개어서"
+    → "옷을 개세요") 두 글자 겹침이 아니라 글자로 본다. 하나도 없으면 원문에 없는 일이다("바닥을 쓰세요")."""
+    mine = set(re.sub(r"[^가-힣A-Za-z0-9]", "", st.sentence + "".join(st.symbol_query))) - _FUNCTION_CHARS
+    return bool(mine & set(text))
+
+
 def _align(steps: list[Step], srcs: list[object], clauses: list[Clause]) -> list[int]:
-    """GPT 단계마다 원문 조각 번호(0부터). GPT가 준 src(1부터)가 온전하면(범위 안·순서대로) 그대로 쓰고,
-    아니면 글자 겹침이 가장 큰 조각으로 정하되 순서는 되돌아가지 않게 한다."""
+    """GPT 단계마다 원문 조각(Clause) 번호(0부터).
+
+    GPT의 src는 '원문 조각'(gpt_pieces, 1부터) 번호다. src가 온전하면(범위 안·순서대로·모든 조각에 단계가 하나
+    이상) 그대로 쓴다. 범위 안·순서대로여도 단계가 하나도 없는 조각이 있으면 버린다 — "상자를 접고, 테이프를
+    붙이세요"에 [1, 1]을 주면 테이프 단계가 접기 조각 밑에서 합쳐져 사라졌다(1차 검증). 그때는 글자 겹침이 가장 큰
+    Clause로 정하되 순서는 되돌아가지 않게 한다(어디와도 겹치지 않는 단계는 앞 단계와 같은 Clause).
+    """
+    owner = [k for k, c in enumerate(clauses) for _ in (c.pieces or [c.text])]
     n = len(clauses)
     if n == 1:
         return [0] * len(steps)
     try:
         idx = [int(x) - 1 for x in srcs]  # type: ignore[call-overload]
-        if all(0 <= k < n for k in idx) and idx == sorted(idx):
-            return idx
+        if (all(0 <= k < len(owner) for k in idx) and idx == sorted(idx)
+                and set(idx) == set(range(len(owner)))):
+            return [owner[k] for k in idx]
     except (TypeError, ValueError):
         pass
-    grams = [_bigrams(c.text) for c in clauses]
     out: list[int] = []
     prev = 0
     for st in steps:
-        g = _bigrams(st.sentence + " " + " ".join(st.symbol_query))
-        scores = [len(g & cg) / max(1, len(g)) for cg in grams]
+        scores = [_overlap(st, c.text) for c in clauses]
         best = max(range(prev, n), key=lambda k: scores[k])
         if scores[best] == 0:
             best = prev
@@ -309,52 +405,86 @@ def _align(steps: list[Step], srcs: list[object], clauses: list[Clause]) -> list
     return out
 
 
-def _merge(group: list[Step], clause: Clause) -> Step:
+def _merge(group: list[Step], clause: Clause) -> tuple[Step, bool]:
     """GPT가 근거 없이 나눈 단계들을 원문 조각 한 단계로 되돌린다. 문장은 사업주가 쓴 원문 조각이고(입력 화면에서
-    바로 고칠 수 있다), 그림 검색어는 마지막 단계(대개 시킬 일의 본동작) 것을 쓴다."""
-    last = group[-1]
+    바로 고칠 수 있다), 그림 검색어는 마지막 단계(대개 시킬 일의 본동작) 것을 쓰되, 그 단계가 원문 조각과 글자가 전혀
+    겹치지 않으면(GPT가 원문에 없는 일을 덧붙였다) 가장 많이 겹치는 단계 것을 쓴다. 고른 단계도 원문과 겹치지 않으면
+    (그림이 다른 일의 것일 수 있다) 두 번째 값이 False다."""
+    scores = [_overlap(st, clause.text) for st in group]
+    pick = len(group) - 1
+    if not _grounded(group[pick], clause.text):
+        pick = max(range(len(group)), key=lambda i: (_grounded(group[i], clause.text), scores[i], i))
+    best = group[pick]
     flags = list(dict.fromkeys(f for st in group for f in st.safety_flags))
     whole = clause.sentence_text.rstrip(".!?").strip() == clause.text
     sentence = clause.sentence_text if whole else clause.text
     if not sentence.endswith((".", "!", "?")):
         sentence += "."
     return Step(
-        order=1, sentence=sentence, keywords=last.keywords,
-        symbol_query=last.symbol_query, action_type=last.action_type, safety_flags=flags,
-    )
+        order=1, sentence=sentence, keywords=best.keywords,
+        symbol_query=best.symbol_query, action_type=best.action_type, safety_flags=flags,
+    ), _grounded(best, clause.text)
+
+
+def _head_verb(st: Step) -> str:
+    """단계의 동사(그림 검색어 마지막 낱말, 없으면 문장 마지막 낱말의 앞 두 글자)."""
+    q = (st.symbol_query or [st.sentence])[0].split()
+    return q[-1][:2] if q else ""
+
+
+def _merge_is_sure(mine: list[Step], plan: step_split.SplitOutcome, text: str) -> bool:
+    """규칙은 동작 하나, GPT는 여럿일 때 확인 없이 합쳐도 되는가 — 규칙이 GPT의 남는 단계를 꼴로 설명할 때만
+    (입력 화면 나누기 1차 검증: 규칙이 '정리를 하고'·'맡아 보고'를 못 세서 맞는 GPT 분할을 말없이 합쳤다).
+    - 세지 않은 동사(방법·보조 용언·형식 동사 하다·조건절 속 동사)가 있으면 확실하지 않다.
+    - 규칙이 꼴로 알아본 한 동작 — 대상 나열(물건별로 나눴다)·갈라 담기·'-며' 동시 동작·부정("만지지 말고 부르세요"의
+      시킬 일은 하나), 또는 GPT 단계가 모두 같은 동사(같은 일을 물건마다)면 확실하다.
+    - 그 밖(GPT가 다른 동사를 더 냈는데 규칙이 그 근거를 못 찾음)은 확실하지 않다."""
+    if plan.hidden_verbs > 0:
+        return False
+    if plan.list_object or plan.sorted_into or plan.with_joined or step_split.has_negation(text):
+        return True
+    return len({_head_verb(st) for st in mine}) == 1
 
 
 def _reconcile(steps: list[Step], where: list[int], clauses: list[Clause]) -> list[Step]:
     """원문 조각마다 GPT 단계 수(g)와 규칙 동작 수(r)를 맞춰 본다.
 
-    - g == r: 그대로(확실).
+    - g == r: 그대로(확실). 다만 앞 동작이 이동이거나 따옴표 속 말이 있거나(soft_boundary) 부정이 든 문장을 나눴으면
+      split_check.
     - g > r, r ≤ 1: GPT 과분할(대상 나열을 물건별로, 방법·이동 동사를 따로, 원문에 없는 동작 추가). 한 단계로
-      합친다. 규칙이 세지 않고 넘긴 동사(방법·보조 용언 묶음 "채워 넣다")가 있으면 합친 판단이 낱말 목록에
-      기댄 것이라 split_check를 켠다. 동사가 정말 하나뿐이면(나열·추가 동작) 확실하므로 끈다.
+      합친다. 규칙이 그 판단을 꼴로 설명할 때만(_merge_is_sure) 확실하고, 아니면 split_check.
     - g > r ≥ 2: 어디를 합칠지 정할 수 없다 — GPT 분할을 두고 split_check.
     - g < r: GPT가 덜 나눴을 수 있다 — GPT 결과를 두고 split_check(규칙은 조건·방법 절을 더 세는 쪽으로 틀린다).
+    - 단계가 하나도 없는 조각이 있으면(GPT가 원문 일을 빠뜨렸거나 옆 조각과 한 단계로 묶었다) 그 원문 문장의 모든
+      단계에, 원문 조각과 글자가 전혀 겹치지 않는 단계(원문에 없는 일·엉뚱한 그림 검색어)에는 split_check.
     끝으로 원문 문장 단위로 split_group·source_text를 단다(_assign_groups).
     """
     out: list[Step] = []
     sentence_of: list[int] = []
+    dropped: set[int] = set()
     for k, clause in enumerate(clauses):
         mine = [st for st, w in zip(steps, where) if w == k]
         if not mine:
+            dropped.add(clause.sentence)
             continue
         g, r = len(mine), max(1, clause.plan.actions)
         if g > r and r == 1:
-            merged = _merge(mine, clause)
-            merged.split_check = clause.plan.hidden_verbs > 0
+            merged, grounded = _merge(mine, clause)
+            merged.split_check = not (grounded and _merge_is_sure(mine, clause.plan, clause.text))
             mine = [merged]
         else:
-            # 수가 같아도 나눌지가 말뜻에 기대는 꼴(이동 앞 동작·따옴표 속 말)이면 한 번 보게 한다.
+            # 수가 같아도 나눌지가 말뜻에 기대는 꼴(이동 앞 동작·따옴표 속 말·부정)이면 한 번 보게 한다.
             # (g == r == 1인데 규칙이 넘긴 동사가 있는 경우까지 켜면 dev 정답셋에서 노란 문장이 13 → 65로 늘고
             # 잡는 오답은 3개뿐이라 켜지 않는다.)
-            sure = g == r and not (g >= 2 and clause.plan.soft_boundary)
+            soft = clause.plan.soft_boundary or clause.plan.reason == "negation"
+            sure = g == r and not (g >= 2 and soft)
             for st in mine:
-                st.split_check = not sure
+                st.split_check = not sure or not _grounded(st, clause.text)
         out.extend(mine)
         sentence_of.extend([clause.sentence] * len(mine))
+    for st, si in zip(out, sentence_of):
+        if si in dropped:
+            st.split_check = True
     for i, st in enumerate(out, start=1):
         st.order = i
     _assign_groups(out, sentence_of, clauses)
@@ -370,7 +500,7 @@ def decompose(raw_input: str, context: dict) -> DecomposeResult:
     if llm.llm_available():
         try:
             clauses = clauses_of(raw_input.strip())
-            result = _build_from_llm(llm.llm_decompose(raw_input, context, [c.text for c in clauses]),
+            result = _build_from_llm(llm.llm_decompose(raw_input, context, gpt_pieces(clauses)),
                                      clauses)
             logger.info("decompose via LLM: %s steps", len(result.steps))
             return result

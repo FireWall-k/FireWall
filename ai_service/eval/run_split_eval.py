@@ -203,7 +203,8 @@ def evaluate(gold: list[dict], probes: list[dict] | None = None) -> dict:
         sent = item["sentence"]
         steps = item["steps"]
         job = item.get("job", "")
-        plans = decompose.plan_steps(sent)
+        clauses = decompose.clauses_of(sent)
+        plans = [c.plan for c in clauses]
         new = _new_steps(plans)
         legacy = _split_steps_legacy(sent)
         row = {
@@ -212,8 +213,7 @@ def evaluate(gold: list[dict], probes: list[dict] | None = None) -> dict:
             "legacy": legacy, "new": new,
             "auto": len(new) > len(legacy),
             # 부정이 든 조각을 자동으로 나눴으면 뒤집힘 위험(0이어야 한다)
-            "negation_auto": any(p.auto and step_split.has_negation(c)
-                                 for p, c in zip(plans, decompose._split_steps(sent))),
+            "negation_auto": any(c.plan.auto and step_split.has_negation(c.text) for c in clauses),
             "hints": [{"reason": p.reason, "suggestion": p.suggestion, "why_not": p.why_not}
                       for p in plans if p.reason],
         }
