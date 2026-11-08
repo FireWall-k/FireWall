@@ -156,3 +156,37 @@ test("390px 긴 목록: [이대로 그림 고르기]가 실패하면 버튼 아�
   // 목록은 그대로 남아 다시 누를 수 있다
   await expect(page.getByLabel("9단계 문장")).toHaveValue("9번째 일을 천천히 해요.");
 });
+
+test("390px 편집기: 확인 뒤 초점은 편집기 제목, 긴 문장은 잘리지 않고 꼬리표는 한 줄", async ({ page }) => {
+  const long = {
+    ...PREVIEW,
+    steps: [
+      { order: 1, sentence: "컵을 건조대에 올려 두고 물기가 마르면 선반 위 칸에 차례로 넣어요.", action_type: "move",
+        symbol_query: ["컵"], split_group: null, split_check: false, source_text: null },
+      { order: 2, sentence: "손을 씻어요.", action_type: "clean", symbol_query: ["손"],
+        split_group: null, split_check: false, source_text: null },
+    ],
+  };
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockBackend(page, { preview: long });
+  await loginEmployer(page);
+  await splitInput(page);
+  await page.getByRole("button", { name: "이대로 그림 고르기 ›" }).click();
+  const heading = page.getByRole("heading", { name: /검토 · 수정/ });
+  await expect(heading).toBeFocused();
+
+  const field = page.getByLabel("1단계 문장");
+  await expect(field).toHaveValue(long.steps[0].sentence);
+  const fit = await field.evaluate((el) => ({ sh: el.scrollHeight, ch: el.clientHeight, w: el.clientWidth }));
+  expect(fit.sh, "문장 칸이 글을 자르지 않는다").toBeLessThanOrEqual(fit.ch + 1);
+  expect(fit.w, "문장 칸이 좁은 화면 폭을 거의 다 쓴다").toBeGreaterThan(250);
+  const scroll = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(scroll).toBeLessThanOrEqual(390);
+  // '그림: 그림 카드' 꼬리표가 글자마다 줄을 바꾸지 않는다(한 줄 높이)
+  const label = page.getByText("그림: 그림 카드").first();
+  const box = await label.boundingBox();
+  expect(box!.height).toBeLessThan(30);
+  if (process.env.E2E_SHOTS_DIR) {
+    await page.screenshot({ path: `${process.env.E2E_SHOTS_DIR}/editor-390.png`, fullPage: true });
+  }
+});

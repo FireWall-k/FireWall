@@ -140,9 +140,18 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error((body as { detail?: string }).detail ?? `요청 실패 (${res.status})`);
+    throw new Error(errorDetail(body, res.status));
   }
   return res.json() as Promise<T>;
+}
+
+/** 오류 응답의 detail을 화면에 띄울 문장으로. 문자열이 아니면(검증 오류 목록 등) '[object Object]'가 뜨지 않게
+ * 일반 문장을 쓴다(입력 화면 나누기 2차 검증). */
+export function errorDetail(body: unknown, status: number): string {
+  const detail = (body as { detail?: unknown } | null)?.detail;
+  if (typeof detail === "string" && detail.trim()) return detail;
+  if (status === 422) return "입력한 내용을 다시 확인해 주세요.";
+  return `요청 실패 (${status})`;
 }
 
 export const auth = {

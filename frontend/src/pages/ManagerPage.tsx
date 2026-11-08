@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { api, type AacMatch, type Step, type StepSymbolCandidates, type Task, type Worker } from "../api";
 import { ActionChip } from "../actions";
@@ -7,6 +7,13 @@ import { mergeStepMedia, useMediaRefresh } from "../media";
 import { cn } from "../cn";
 import SplitPreviewList from "../components/SplitPreviewList";
 import { rowsFromPreview, toConfirmed, type SplitRow } from "../splitRows";
+
+// 문장 칸 높이를 내용에 맞춘다(SplitPreviewList와 같은 방식).
+function fitHeight(el: HTMLTextAreaElement) {
+  el.style.height = "auto";
+  // border-box라 높이에 테두리를 더해야 글 칸(clientHeight)이 글 높이(scrollHeight)와 같아진다.
+  if (el.scrollHeight > 0) el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`;
+}
 
 const SAMPLE =
   "예: 택배 상자를 크기별로 분류하고, 큰 상자는 A구역으로 옮겨주세요. 그리고 5개씩 쌓아주세요. 마지막에 수량을 확인하세요.";
@@ -143,6 +150,29 @@ export default function ManagerPage() {
     if (error) errorBox.current?.scrollIntoView?.({ block: "nearest" });
   }, [error]);
 
+  // 편집기를 연 뒤·되돌린 뒤 초점을 둘 곳. 렌더가 끝난 뒤(task가 바뀐 커밋 뒤) 한 번 쓰고 비운다. 예전에는
+  // setTimeout으로 제목에 초점을 줬는데, 누른 버튼이 사라지며 초점이 body로 떨어지고 제목으로 가지 않았다(2차 검증).
+  const focusAfterTask = useRef<{ kind: "heading" } | { kind: "step"; index: number } | null>(null);
+  const stepInputs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
+  useEffect(() => {
+    const want = focusAfterTask.current;
+    if (!want || !task) return;
+    focusAfterTask.current = null;
+    const id = want.kind === "step" ? task.steps[want.index]?.id : undefined;
+    const el = id ? stepInputs.current.get(id) : undefined;
+    if (el) el.focus();
+    else editorHeading.current?.focus();
+  }, [task]);
+  // 편집기 문장 칸은 내용만큼 높이를 늘린다(390px에서 한 줄 칸이 나눈 문장을 잘라 보여 줬다).
+  useLayoutEffect(() => {
+    stepInputs.current.forEach(fitHeight);
+  });
+  useEffect(() => {
+    const onResize = () => stepInputs.current.forEach(fitHeight);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   // [되돌리기]는 나눈 단계가 그대로 붙어 있을 때만 뜻이 있다. 보냈거나, 순서를 바꿨거나, 그중 하나를 지웠으면 내린다
   // (남겨 두면 눌렀을 때 404·409가 나거나 보낸 직무를 바꾸려 든다).
   const undoIds = task?.steps.map((s) => s.id) ?? [];
@@ -199,10 +229,10 @@ export default function ManagerPage() {
         job: preview.job || undefined,
         steps: toConfirmed(preview.rows),
       });
+      // 편집기 제목으로 초점을 옮겨 화면 읽기 프로그램·키보드 사용자가 다음 할 일로 바로 간다(위 effect).
+      focusAfterTask.current = { kind: "heading" };
       setTask(created);
       setPreview(null);
-      // 편집기 제목으로 초점을 옮겨 화면 읽기 프로그램·키보드 사용자가 다음 할 일로 바로 간다.
-      setTimeout(() => editorHeading.current?.focus(), 0);
     } catch (e) {
       setConfirmError(e instanceof Error ? e.message : "초안을 만들지 못했어요. 잠시 뒤 다시 눌러 주세요.");
     } finally {
@@ -264,6 +294,10 @@ export default function ManagerPage() {
       setSplitUndo(result.split_step_ids.length >= 2
         ? { stepIds: result.split_step_ids, sentence: result.sentence, actionType: before?.action_type }
         : null);
+      // 저장된 문장이 그대로면(앞뒤 빈칸만 다름) 그림 확인·후보를 버리지 않는다(2차 검증 — 칸을 지나갈 때마다
+      // '이 그림이 맞아요' 확인이 풀렸다).
+      const saved = result.task.steps.find((st) => st.id === stepId);
+      if (result.split_step_ids.length < 2 && saved && before && saved.sentence === before.sentence) return;
     } catch (e) {
       setError(e instanceof Error ? e.message : "문장을 저장하지 못했어요. 잠시 뒤 다시 해 주세요.");
       return;
@@ -284,8 +318,12 @@ export default function ManagerPage() {
   async function handleUndoSplit() {
     if (!task || !activeUndo) return;
     setError(null);
+    const at = undoAt;
     try {
-      setTask(await api.mergeSteps(task.id, activeUndo.stepIds, activeUndo.sentence, activeUndo.actionType));
+      const merged = await api.mergeSteps(task.id, activeUndo.stepIds, activeUndo.sentence, activeUndo.actionType);
+      // [되돌리기] 버튼과 나눈 줄이 사라지므로 합친 단계의 문장 칸으로 초점을 옮긴다.
+      focusAfterTask.current = { kind: "step", index: at };
+      setTask(merged);
       setSplitUndo(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "되돌리지 못했어요. 잠시 뒤 다시 해 주세요.");
@@ -512,10 +550,11 @@ export default function ManagerPage() {
         : "flex flex-col gap-6"}
       >
         <div className="space-y-6">
-      <section>
+      {/* break-keep: 한국어 낱말 중간에서 줄이 바뀌지 않게(390px에서 '붙입 / 니다'로 잘렸다). */}
+      <section className="break-keep">
         <h1 className="text-xl font-bold text-slate-900">오늘 직무 입력</h1>
         <p className="mt-1 text-sm text-slate-600">
-          평소 말하듯 적으면, 각 단계로 나눠 그림과 음성을 붙입니다.
+          평소 말하듯 적어 주세요. 단계는 잡카드가 나눠요. 단계마다 그림과 음성을 붙여요.
         </p>
         <textarea
           className="mt-3 w-full rounded-lg border border-slate-300 p-3 text-base"
@@ -680,7 +719,8 @@ export default function ManagerPage() {
                 }}
                 onDrop={() => handleDropOn(idx)}
                 className={cn(
-                  "flex items-start gap-2 rounded-lg border bg-white p-3 transition-colors",
+                  // 좁은 화면(sm 미만)에서는 손잡이·번호·그림 줄 아래로 문장 칸이 전체 폭을 쓴다.
+                  "flex flex-wrap items-start gap-2 rounded-lg border bg-white p-3 transition-colors sm:flex-nowrap",
                   dragOverIndex === idx && dragIndex !== null && dragIndex !== idx
                     ? "border-blue-400 ring-2 ring-blue-200"
                     : "border-slate-200",
@@ -739,15 +779,32 @@ export default function ManagerPage() {
                     </button>
                   )}
                 </div>
-                <div className="flex-1">
-                  <input
-                    className="w-full rounded border border-slate-200 px-2 py-1 text-base read-only:bg-slate-50"
+                <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
+                  <textarea
+                    rows={1}
+                    // 저장한 문장(앞뒤 빈칸을 뺀 것)이 바뀌면 칸을 새로 만들어 화면 글자를 맞춘다. 안 맞추면 칸을 지나갈
+                    // 때마다 다시 저장을 보냈다(2차 검증).
+                    key={s.sentence}
+                    ref={(el) => {
+                      if (el) stepInputs.current.set(s.id, el);
+                      else stepInputs.current.delete(s.id);
+                    }}
+                    className="block w-full resize-none overflow-hidden break-keep rounded border border-slate-200 px-2 py-1 text-base leading-6 read-only:bg-slate-50"
                     defaultValue={s.sentence}
                     aria-label={`${s.order}단계 문장`}
                     readOnly={rewritingId !== null}
                     aria-busy={rewritingId === s.id || undefined}
+                    onInput={(e) => fitHeight(e.currentTarget)}
+                    onKeyDown={(e) => {
+                      // 한 단계 = 한 문장. Enter는 줄바꿈 대신 저장(칸 떠나기)이다.
+                      if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                        e.preventDefault();
+                        e.currentTarget.blur();
+                      }
+                    }}
                     onBlur={(e) => {
-                      if (rewritingId === null && e.target.value !== s.sentence) handleEditSentence(s.id, e.target.value);
+                      const text = e.target.value.replace(/\s*[\r\n]+\s*/g, " ").trim();
+                      if (rewritingId === null && text !== s.sentence) handleEditSentence(s.id, text);
                     }}
                   />
                   {rewritingId === s.id && (
@@ -755,12 +812,12 @@ export default function ManagerPage() {
                       저장하는 중… 동작이 둘이면 두 단계로 나눠요.
                     </p>
                   )}
-                  <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                    <ActionChip action={s.action_type} className="text-[11px] !px-2 !py-0.5" />
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                    <ActionChip action={s.action_type} className="whitespace-nowrap text-[11px] !px-2 !py-0.5" />
                     {/* 그림이 붙은 단계만 출처를 보여준다. 폴백 상태는 아래 후보 영역이
                         이미 설명하므로 "상징: fallback"은 중복 노이즈였다. */}
                     {s.symbol_url && (
-                      <span>
+                      <span className="whitespace-nowrap">
                         그림: {s.symbol_source === "photo" ? "직접 올린 사진" : "그림 카드"}
                       </span>
                     )}

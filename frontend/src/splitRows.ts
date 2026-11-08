@@ -134,3 +134,25 @@ export function toConfirmed(rows: SplitRow[]): ConfirmedStep[] {
       : { sentence };
   });
 }
+
+// 확인한 단계 목록의 상한 — 서버(backend/schemas.py MAX_CONFIRMED_STEPS·MAX_STEP_SENTENCE·MAX_CONFIRMED_TOTAL)와 같은 값.
+// 넘으면 서버가 422를 돌려주므로 [이대로 그림 고르기] 전에 막는다(2차 검증).
+export const MAX_ROWS = 30;
+export const MAX_ROW_CHARS = 500;
+export const MAX_TOTAL_CHARS = 2500;
+
+/** 상한을 넘었으면 사업주에게 보일 문장, 아니면 null. */
+export function limitError(rows: SplitRow[]): string | null {
+  if (rows.length > MAX_ROWS) {
+    return `단계는 ${MAX_ROWS}줄까지 만들 수 있어요. 지금 ${rows.length}줄이에요. 줄을 합치거나 지워 주세요.`;
+  }
+  const long = rows.flatMap((r, i) => (r.text.trim().length > MAX_ROW_CHARS ? [i] : []));
+  if (long.length) {
+    return `${long.map((i) => `${i + 1}단계`).join(", ")}가 너무 길어요. 한 줄은 ${MAX_ROW_CHARS}자까지예요.`;
+  }
+  const total = rows.reduce((n, r) => n + r.text.trim().length, 0);
+  if (total > MAX_TOTAL_CHARS) {
+    return `단계 문장이 모두 ${total}자예요. ${MAX_TOTAL_CHARS}자까지 쓸 수 있어요. 줄을 줄이거나 지워 주세요.`;
+  }
+  return null;
+}

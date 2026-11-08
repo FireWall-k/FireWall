@@ -109,3 +109,22 @@ describe("splitRows — 입력 화면 나눈 줄", () => {
     ]);
   });
 });
+
+describe("2차 검증 — 상한과 오류 문장", () => {
+  it("줄 수·한 줄 글자 수·합계 상한을 넘으면 한국어로 알려 준다", async () => {
+    const { limitError, MAX_ROWS } = await import("../src/splitRows");
+    const rows = (n: number, text = "컵을 씻어요.") => rowsFromPreview(
+      Array.from({ length: n }, (_, i) => step(i + 1, text)));
+    expect(limitError(rows(MAX_ROWS))).toBeNull();
+    expect(limitError(rows(MAX_ROWS + 1))).toMatch(/30줄까지/);
+    expect(limitError(rows(1, "가".repeat(501)))).toMatch(/1단계가 너무 길어요/);
+    expect(limitError(rows(6, "가".repeat(450)))).toMatch(/2500자까지/);
+  });
+
+  it("오류 응답 detail이 문자열이 아니면 '[object Object]' 대신 한국어 문장을 쓴다", async () => {
+    const { errorDetail } = await import("../src/api");
+    expect(errorDetail({ detail: [{ loc: ["body"], msg: "x" }] }, 422)).toBe("입력한 내용을 다시 확인해 주세요.");
+    expect(errorDetail({ detail: "단계는 30줄까지" }, 422)).toBe("단계는 30줄까지");
+    expect(errorDetail({}, 500)).toBe("요청 실패 (500)");
+  });
+});

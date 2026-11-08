@@ -421,3 +421,88 @@ describe("1차 검증 반영 — 편집기", () => {
     expect(screen.getByLabelText("1단계 문장")).not.toHaveAttribute("readonly");
   });
 });
+
+describe("2차 검증 반영", () => {
+  async function openEditor(user: ReturnType<typeof userEvent.setup>) {
+    splitPreview.mockResolvedValue({ ...PREVIEW, steps: PREVIEW.steps.slice(0, 2) });
+    render(<ManagerPage />);
+    await split(user);
+    await user.click(screen.getByRole("button", { name: "이대로 그림 고르기 ›" }));
+    await screen.findByRole("heading", { name: /검토 · 수정/ });
+  }
+
+  it("[이대로 그림 고르기] 뒤 초점이 편집기 제목으로 간다", async () => {
+    const user = userEvent.setup();
+    await openEditor(user);
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: /검토 · 수정/ })));
+  });
+
+  it("[되돌리기] 뒤 초점이 합친 단계의 문장 칸으로 간다", async () => {
+    const user = userEvent.setup();
+    await openEditor(user);
+    const typed = "손 씻고 수건으로 닦아요";
+    rewriteStep.mockResolvedValue({
+      task: { id: "task-1", title: "출근 준비", status: "draft", steps: [
+        taskStep("s1", 1, "앞치마를 입어요."), taskStep("n1", 2, "손을 씻어요."), taskStep("n2", 3, "손을 수건으로 닦아요."),
+      ] },
+      split_step_ids: ["n1", "n2"], sentence: typed,
+    });
+    mergeSteps.mockResolvedValue({ id: "task-1", title: "출근 준비", status: "draft", steps: [
+      taskStep("s1", 1, "앞치마를 입어요."), taskStep("m1", 2, typed),
+    ] });
+    const input = screen.getByLabelText("2단계 문장");
+    await user.clear(input);
+    await user.type(input, typed);
+    await user.tab();
+    await user.click(await screen.findByRole("button", { name: "되돌리기" }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText("2단계 문장")));
+  });
+
+  it("앞뒤 빈칸만 다른 문장은 칸을 다시 지나가도 또 저장하지 않는다", async () => {
+    const user = userEvent.setup();
+    await openEditor(user);
+    rewriteStep.mockResolvedValue({
+      task: { id: "task-1", title: "출근 준비", status: "draft", steps: [
+        taskStep("s1", 1, "앞치마를 입어요."), taskStep("s2", 2, "우유를 부어요"),
+      ] },
+      split_step_ids: [], sentence: "우유를 부어요",
+    });
+    const input = screen.getByLabelText("2단계 문장");
+    await user.clear(input);
+    await user.type(input, "  우유를 부어요  ");
+    await user.tab();
+    await waitFor(() => expect(rewriteStep).toHaveBeenCalledWith("task-1", "s2", "우유를 부어요"));
+    await waitFor(() => expect((screen.getByLabelText("2단계 문장") as HTMLTextAreaElement).value).toBe("우유를 부어요"));
+    await user.click(screen.getByLabelText("2단계 문장"));
+    await user.tab();
+    expect(rewriteStep).toHaveBeenCalledTimes(1);
+  });
+
+  it("목록을 만든 뒤 직무 내용을 고쳐도 [이대로 그림 고르기]는 목록(과 목록을 만든 글)으로 만든다고 알리고 그렇게 한다", async () => {
+    const user = userEvent.setup();
+    render(<ManagerPage />);
+    await split(user);
+    await user.type(screen.getByLabelText("직무 내용"), " 그리고 바닥을 닦아.");
+    expect(screen.getByText(/아래 목록대로/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "이대로 그림 고르기 ›" }));
+    await waitFor(() => expect(createTask).toHaveBeenCalledTimes(1));
+    expect(createTask.mock.calls[0][0]).toBe(INPUT);
+    expect(createTask.mock.calls[0][1].steps).toHaveLength(4);
+  });
+
+  it("30줄을 넘거나 한 줄이 너무 길면 확인 전에 막는다", async () => {
+    const user = userEvent.setup();
+    splitPreview.mockResolvedValue({
+      ...PREVIEW,
+      steps: Array.from({ length: 30 }, (_, i) => ({
+        order: i + 1, sentence: `컵 ${i + 1}번을 씻어요.`, action_type: "clean", symbol_query: [],
+        split_group: null, split_check: false, source_text: null,
+      })),
+    });
+    render(<ManagerPage />);
+    await split(user);
+    expect(screen.getByRole("button", { name: /한 줄 추가/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "1단계 더 나누기" })).toBeDisabled();
+    expect(screen.getByLabelText("1단계 문장")).toHaveAttribute("maxlength", "500");
+  });
+});

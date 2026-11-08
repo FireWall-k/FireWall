@@ -2,7 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { cn } from "../cn";
 import {
-  addRow, deleteRow, editRow, emptyRows, mergeRows, mergeTarget, splitRow, type SplitRow,
+  addRow, deleteRow, editRow, emptyRows, limitError, MAX_ROW_CHARS, MAX_ROWS, mergeRows, mergeTarget, splitRow,
+  type SplitRow,
 } from "../splitRows";
 
 // 입력 화면에서 [단계로 나누기] 바로 아래에 펼치는 단계 목록(한 줄 = 한 동작 = 그림 1장).
@@ -14,7 +15,8 @@ import {
 // 사업주가 끝까지 읽고 나눌 곳을 고를 수 없었다(LIVE 점검에서 확인). 줄바꿈은 넣지 않는다 — 한 줄 = 한 동작.
 function fitHeight(el: HTMLTextAreaElement) {
   el.style.height = "auto";
-  if (el.scrollHeight > 0) el.style.height = `${el.scrollHeight}px`;
+  // border-box라 높이에 테두리를 더해야 글 칸(clientHeight)이 글 높이(scrollHeight)와 같아진다.
+  if (el.scrollHeight > 0) el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`;
 }
 
 // 사업주 화면 버튼은 44px 이상(min-h-11), 키보드 초점은 파란 테두리로 보인다.
@@ -91,9 +93,16 @@ export default function SplitPreviewList({ rows, onChange, onConfirm, confirming
       inputs.current.get(rows[empty[0]].key)?.focus();
       return;
     }
+    const over = limitError(rows);
+    if (over) {
+      setEmptyError(over);
+      return;
+    }
     setEmptyError(null);
     onConfirm();
   }
+
+  const full = rows.length >= MAX_ROWS;
 
   return (
     <section aria-labelledby="split-preview-title" className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
@@ -109,8 +118,11 @@ export default function SplitPreviewList({ rows, onChange, onConfirm, confirming
         </p>
       )}
       {stale && (
+        // 목록을 만든 뒤 직무 내용을 고쳤다. [이대로 그림 고르기]는 일부러 이 목록(과 목록을 만든 글)으로 초안을 만든다 —
+        // 사업주가 목록을 다듬었을 수 있다. 그 점을 분명히 적는다(2차 검증).
         <p role="status" className="mt-2 break-keep rounded-lg bg-slate-100 p-2 text-sm text-slate-700">
-          직무 내용을 고쳤어요. 새로 나누려면 [단계로 나누기]를 다시 눌러 주세요.
+          직무 내용을 고쳤어요. 아래 목록은 고치기 전 글로 나눈 것이에요. [이대로 그림 고르기]를 누르면 아래 목록대로
+          만들어요. 고친 글로 새로 나누려면 [단계로 나누기]를 다시 눌러 주세요.
         </p>
       )}
 
@@ -150,6 +162,7 @@ export default function SplitPreviewList({ rows, onChange, onConfirm, confirming
                     }}
                     aria-label={`${n}단계 문장`}
                     aria-invalid={!row.text.trim() || undefined}
+                    maxLength={MAX_ROW_CHARS}
                     placeholder="이 단계에서 할 일을 적어 주세요"
                     className={cn(
                       "block min-h-11 w-full min-w-0 resize-none overflow-hidden break-keep rounded-lg border bg-white px-3 py-2 text-base leading-6 text-slate-900",
@@ -172,8 +185,9 @@ export default function SplitPreviewList({ rows, onChange, onConfirm, confirming
                   <button
                     type="button"
                     onClick={() => apply(splitRow(rows, i, inputs.current.get(row.key)?.selectionStart), 0)}
+                    disabled={full}
                     aria-label={`${n}단계 더 나누기`}
-                    title="커서를 둔 곳에서 두 줄로 나눠요. 커서가 없으면 아래에 빈 줄을 만들어요."
+                    title={full ? `단계는 ${MAX_ROWS}줄까지예요` : "커서를 둔 곳에서 두 줄로 나눠요. 커서가 없으면 아래에 빈 줄을 만들어요."}
                     className={cn(BTN, "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50")}
                   >
                     더 나누기
@@ -205,6 +219,8 @@ export default function SplitPreviewList({ rows, onChange, onConfirm, confirming
       <button
         type="button"
         onClick={() => apply(addRow(rows))}
+        disabled={full}
+        title={full ? `단계는 ${MAX_ROWS}줄까지예요` : undefined}
         className={cn(BTN, "mt-2 border border-dashed border-slate-300 bg-white text-slate-700 hover:bg-slate-50")}
       >
         <Plus size={16} aria-hidden="true" /> 한 줄 추가
