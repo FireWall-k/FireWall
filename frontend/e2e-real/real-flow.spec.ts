@@ -390,4 +390,38 @@ test.describe("실제 백엔드 — 사업주", () => {
     await expect(code).toHaveText(`(${w.access_code})`);
     await expect(code).toHaveText("(●●●●)", { timeout: 8_000 });
   });
+
+  // 1차 검증: 전역 버튼 nowrap 때문에 390px 휴대폰에서 직무 편집·근로자 목록이 옆으로 넘쳤다('삭제'·휴지통이 화면 밖).
+  test("390px 휴대폰: 직무 편집(단계 있음)·근로자 목록이 옆으로 넘치지 않는다", async ({ page, request }) => {
+    test.skip(test.info().project.name !== "phone", "휴대폰 폭에서만 본다");
+    const employer = await employerToken(request);
+    await ok(await request.post(`${API}/api/workers`, { headers: auth(employer), data: { display_name: `통합흐름phone${Date.now() % 1000}` } }));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript((t) => {
+      localStorage.setItem("jobcard_token", t);
+      localStorage.setItem("jobcard_role", "employer");
+      localStorage.setItem("jobcard_name", "통합 카페");
+    }, employer);
+    const noSideScroll = async (label: string) => {
+      const r = await page.evaluate(() => {
+        const d = document.documentElement;
+        const off = Array.from(document.querySelectorAll("button, a")).filter((e) => e.getBoundingClientRect().right > window.innerWidth + 1)
+          .map((e) => (e as HTMLElement).innerText.slice(0, 20) || e.getAttribute("aria-label"));
+        return { sw: d.scrollWidth, cw: d.clientWidth, off };
+      });
+      expect(r.sw, `${label}: scrollWidth ${r.sw} > ${r.cw}, 화면 밖 버튼 ${JSON.stringify(r.off)}`).toBeLessThanOrEqual(r.cw);
+      expect(r.off, label).toEqual([]);
+    };
+    await page.goto("/workers");
+    await page.getByRole("button", { name: "삭제" }).first().waitFor();
+    await noSideScroll("근로자 목록");
+    await shot(page, "21-employer-workers-390");
+    await page.goto("/manager");
+    await page.getByLabel("직무 내용").fill(RAW);
+    await page.getByRole("button", { name: "단계로 나누기" }).click();
+    await expect(page.getByLabel("1단계 문장")).toBeVisible({ timeout: 60_000 });
+    await page.waitForTimeout(1000);
+    await noSideScroll("직무 편집");
+    await shot(page, "22-employer-editor-390");
+  });
 });

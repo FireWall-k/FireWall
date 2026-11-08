@@ -303,8 +303,10 @@ export default function WorkersPage() {
           <ul className="divide-y divide-paper-200">
             {workers.map((w) => (
               <li key={w.id} className="py-3">
-                <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                {/* 좁은 휴대폰에서는 이름 줄 아래로 버튼 줄을 내린다(flex-wrap). 한글은 낱말 단위로만 줄을 바꾸므로
+                    (keep-all) 줄이 넘치면 버튼이 화면 밖으로 나갔다(1차 검증: 390px에서 '삭제'가 437px). */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-paper-100 text-ink-500">
                     <UserRound size={17} />
                   </div>
@@ -322,7 +324,7 @@ export default function WorkersPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => reissueCode(w.id, w.display_name)}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-paper-200 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-paper-100"

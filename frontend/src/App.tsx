@@ -9,7 +9,6 @@ import LoginPage from "./pages/LoginPage";
 import ManagerPage from "./pages/ManagerPage";
 import DashboardPage from "./pages/DashboardPage";
 import WorkersPage from "./pages/WorkersPage";
-import WorkerPage from "./pages/WorkerPage";
 import WorkerApp from "./worker/WorkerApp";
 
 /** 근로자 화면 첫 자리. 새 근로자 화면(/w)의 홈이다. */
@@ -43,38 +42,6 @@ function Shell({ auth, onLogout, children }: { auth: AuthState; onLogout: () => 
   function logout() {
     onLogout();
     navigate("/", { replace: true });
-  }
-
-  if (auth.role === "worker") {
-    return (
-      // 낱말 단위 줄바꿈(keep-all + overflow-wrap:anywhere)은 이제 index.css 전역 규칙이다(0차 1번).
-      // 위아래 여백(py-3)·머리글 여백을 줄여 단계 화면의 그림 자리를 늘렸다. 아래 여백 0.75rem은
-      // WorkerPage의 useFillViewport가 쓰는 값과 같아야 한다.
-      // 이 옛 근로자 틀(/worker)은 새 근로자 화면(/w, worker/WorkerApp)으로 옮기는 동안만 남겨 둔다.
-      <div className="min-h-dvh bg-worker-bg px-4 py-3 font-worker text-worker-ink">
-        {/* 휴대폰(sm 미만)에서는 머리글을 한 줄로 둔다: 눈썹 글씨(잡카드)를 숨기고, 아주 좁은 화면(400px 미만)
-            에서는 "님의 오늘 할 일"을 화면에서만 감춘다(화면 읽기 프로그램은 그대로 읽는다). 360px 폭에서
-            "김민수님의 오늘 / 할 일"로 두 줄이 되던 것. 로그아웃 버튼은 그대로 둔다. */}
-        <header className="mx-auto mb-3 flex max-w-3xl items-center justify-between gap-3 rounded-2xl border border-paper-200 bg-white px-4 py-2 shadow-sm wide:max-w-5xl">
-          <div className="min-w-0">
-            {/* 근로자 화면에는 영어를 쓰지 않는다(명세 4.14). 예전 'JOB CARD'. */}
-            <p className="text-xs font-bold tracking-wide text-moss-600 max-sm:hidden">잡카드</p>
-            <h1 className="text-pretty text-lg font-bold">
-              {auth.displayName || "근로자"}님<span className="max-[400px]:sr-only">의 오늘 할 일</span>
-            </h1>
-          </div>
-          {/* 근로자 화면의 모든 버튼은 80px 터치 영역(min-h-touch)을 지킨다. 예전에는 이 버튼만 38px이라
-              작업 버튼보다 훨씬 작았고, e2e도 <main> 안만 재서 놓쳤다(Phase 0.4 보완). */}
-          <button
-            onClick={logout}
-            className="min-h-touch shrink-0 rounded-xl border border-paper-200 px-4 text-worker font-semibold text-ink-700 hover:bg-paper-100"
-          >
-            로그아웃
-          </button>
-        </header>
-        <main className="mx-auto max-w-3xl wide:max-w-5xl">{children}</main>
-      </div>
-    );
   }
 
   return (
@@ -190,17 +157,12 @@ function AppRoutes() {
           </RequireAuth>
         }
       />
-      <Route
-        path="/worker"
-        element={
-          <RequireAuth auth={auth} role="worker">
-            {auth && <Shell auth={auth} onLogout={handleLogout}><WorkerPage /></Shell>}
-          </RequireAuth>
-        }
-      />
+      {/* 옛 근로자 화면(/worker, WorkerPage)은 없앴다. 즐겨찾기한 기기도 새 근로자 화면으로 보낸다 — 옛 화면은
+          [도움]을 단계 기록(stuck)으로 보내 마지막 단계에서 도움만 눌러도 직무가 '다 함'이 됐다(명세 4.5, 1차 검증). */}
+      <Route path="/worker" element={<Navigate to="/w" replace />} />
       <Route path="/admin/tasks" element={<Navigate to="/manager" replace />} />
       <Route path="/admin/dashboard" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/worker/:taskId" element={<Navigate to="/worker" replace />} />
+      <Route path="/worker/*" element={<Navigate to="/w" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

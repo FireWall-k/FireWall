@@ -13,6 +13,9 @@
 | 근로자 | 배정 이력(`assignments`) | 개인정보 | 어느 날 어떤 직무를 받았는지 |
 | 근로자 | 단계별 수행 로그(`performance_logs`) | **민감 가능** | 소요시간·다시듣기·막힘 — 인지 특성을 추정할 수 있다 |
 | 근로자 | 동의 기록(`worker_consents`) | 개인정보 | 동의 종류·주체(당사자/보호자)·방침 버전·일시·철회 일시 |
+| 근로자 | 도움 요청(`help_requests`, 0006) | **민감 가능** | 근로자가 [도와주세요]를 누른 기록: 배정·단계, 상태(열림/취소/확인/해결), 해결 방식, 부른·확인·취소·해결 시각. "언제 어느 단계에서 막혔는지"라 수행 로그와 같은 종류다 |
+| 근로자 | 화면 설정(`workers.a11y_prefs`, 0006) | **민감 가능** | 글자 크기·소리 자동 재생·말 빠르기·고대비·왼손 등. 장애 특성을 짐작할 수 있다 |
+| 근로자 | 마지막 접속(`workers.last_seen_at`, 0006) | 개인정보 | 근로자 기기가 오늘 할 일을 마지막으로 받은 시각(30초보다 자주 갱신하지 않음) |
 | 사업주 | 아이디, 비밀번호 해시(PBKDF2), 사업장명 | 개인정보 | |
 | 사업주 | 접근 감사 로그(`access_audit_logs`) | 접속기록 | actor id, 행위, 근로자 id, 시각, IP. 이름은 담지 않는다 |
 | 사업주 | 직무 원문·단계 문장(`tasks`, `steps`) | 업무 정보 | 사업주가 근로자 이름을 적을 수 있다 → 아래 "별칭" 참고 |
@@ -69,10 +72,12 @@
 | 데이터 | 보존 | 삭제 방법 |
 |---|---|---|
 | 수행 로그 | `PERFORMANCE_LOG_RETENTION_DAYS` (기본 365일, `completed_at` 기준) | scheduler가 매일 `purge` (아래 "삭제 스케줄") |
+| 도움 요청 | 수행 로그와 같은 `PERFORMANCE_LOG_RETENTION_DAYS` (기본 365일, `created_at` 기준) | scheduler가 매일 `purge`(결과의 `help_requests` 개수). 근로자를 지우면 함께 지우고, 직무를 지우면 그 배정의 요청을 지운다. 단계만 지우면 기록은 남기고 `step_id`를 비운다 |
+| 화면 설정·마지막 접속 | 근로자 프로필과 같이(사업주가 삭제할 때까지) | `DELETE /api/workers/{id}` |
 | 접근 감사 로그 | `ACCESS_AUDIT_RETENTION_DAYS` (기본 730일) — 「개인정보의 안전성 확보조치 기준」 제8조: 민감정보 처리 시 접속기록 2년 이상 | scheduler가 매일 `purge` (앱 코드에 다른 삭제·수정 경로 없음) |
 | TTS mp3 | 단계를 지우거나 문장을 고치면 그 단계의 소유 레코드는 바로 지운다. 파일은 어느 레코드도 가리키지 않게 된 뒤 `MEDIA_ORPHAN_GRACE_HOURS`(없으면 `TTS_ORPHAN_GRACE_HOURS`, 기본 24시간) 뒤. 캐시를 다시 쓰면 수정 시각을 갱신하고, 정리는 지우기 직전에 레코드·시각을 다시 확인한다(재사용과의 경합 방지) | `manage.py purge` 또는 `manage.py gc-media` |
 | 단계 사진 | 사진을 교체·되돌리거나 단계·직무를 지우면, 다른 단계가 쓰지 않는 한 레코드와 파일을 **바로** 지운다. 레코드 없는 파일(업로드 중 실패 등)은 유예시간 뒤 | 즉시(API) + scheduler의 매일 `purge`(`gc-media`와 같은 정리) |
-| 근로자 프로필·메모·배정·수행 로그·동의 | 사업주가 삭제할 때까지 | `DELETE /api/workers/{id}` — DB 행 삭제 + `secure_delete` + WAL 체크포인트(아래 "WAL 체크포인트") |
+| 근로자 프로필·메모·배정·수행 로그·동의·도움 요청 | 사업주가 삭제할 때까지 | `DELETE /api/workers/{id}` — DB 행 삭제 + `secure_delete` + WAL 체크포인트(아래 "WAL 체크포인트") |
 | 직무 원문·제목·단계 문장 속 근로자 이름, 그 문장의 TTS mp3 | **근로자를 삭제해도 남는다**(직무는 사업주 데이터) | 직무를 고치거나 지워야 사라진다. 삭제 응답의 `name_mentions`와 삭제 확인 대화상자가 이를 알린다. 문장을 고치면 옛 mp3는 미참조가 되어 purge가 지운다 |
 | 직무·단계·사진 | 사업주가 직무를 삭제할 때까지 | `DELETE /api/tasks/{id}` — 단계 행과 그 사진(다른 직무가 쓰지 않으면)·TTS 레코드를 함께 지운다 |
 | 배정(`assignments`) | 근로자·직무 삭제 때까지 | 보존기간 자동 삭제 없음 — 후속 과제 |
@@ -130,8 +135,9 @@ compose 기본 프로필의 `scheduler` 서비스(backend와 같은 이미지, `
 | `worker.delete` | 근로자 삭제 (이후에도 id만 남는다) |
 | `dashboard.workers` / `dashboard.view` | 대시보드 근로자 목록·근로자별 수행 기록 |
 | `coaching.view` | AI 코칭 조회 |
+| `help.list` | 사업주 화면 도움 알림 띠 조회(띠에 실린 근로자마다 한 줄, 5초 폴링은 묶는다) |
 
-- 화면이 저절로 되풀이하는 조회(`dashboard.view`, `dashboard.workers`, `worker.list`, `worker.history`, `worker.consents`, `coaching.view`)만 같은 사업주·행위·근로자·IP가 `ACCESS_AUDIT_DEDUPE_SECONDS`(기본 60초) 안에 반복되면 한 줄로 합친다(대시보드 3초 폴링). 내보내기·삭제·동의 기록·수정은 매번 남긴다.
+- 화면이 저절로 되풀이하는 조회(`dashboard.view`, `dashboard.workers`, `worker.list`, `worker.history`, `worker.consents`, `coaching.view`, `help.list`)만 같은 사업주·행위·근로자·IP가 `ACCESS_AUDIT_DEDUPE_SECONDS`(기본 60초) 안에 반복되면 한 줄로 합친다(대시보드 3초 폴링). 내보내기·삭제·동의 기록·수정은 매번 남긴다.
 - 근로자 목록(`worker.list`)과 근로자를 고르지 않은 집계 화면(`dashboard.workers`, 근로자 미지정 `dashboard.view`·`coaching.view`)은 화면에 실린 근로자마다 한 줄씩 남긴다(`worker_id=None` 한 줄로는 누구의 기록이 보였는지 알 수 없다). 실린 근로자가 없으면 `worker_id=None` 한 줄만 남긴다.
 - 다른 사업장 근로자 id로 대시보드·코칭을 열면 404이고 감사 행을 남기지 않는다.
 - ORM으로 수정·삭제하면 예외가 난다(`models.py` 매퍼 이벤트). 지우는 코드는 `retention.py`뿐이다(테스트가 확인).
@@ -140,7 +146,7 @@ compose 기본 프로필의 `scheduler` 서비스(backend와 같은 이미지, `
 
 | 요구 | 방법 |
 |---|---|
-| 열람·사본 | 근로자 관리 화면 "내보내기" → `GET /api/workers/{id}/export` (JSON: 프로필, 동의, 배정, 수행 로그) |
+| 열람·사본 | 근로자 관리 화면 "내보내기" → `GET /api/workers/{id}/export` (JSON: 프로필(화면 설정 포함), 동의, 배정, 수행 로그, 도움 요청) |
 | 정정 | 근로자 관리 화면에서 이름·메모 수정 (`PATCH /api/workers/{id}`) |
 | 삭제 | 근로자 관리 화면 "삭제" (확인 후) |
 | 처리 정지(AI) | "동의 철회 기록" → 이후 AI 코칭은 규칙 기반만 |
