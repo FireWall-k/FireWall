@@ -52,7 +52,8 @@ describe("번호 넣기 키패드", () => {
     const keys = screen.getByTestId("keypad").querySelectorAll("button");
     expect([...keys].map((b) => b.textContent)).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "지우기", "0", "비우기"]);
     expect(screen.queryByRole("button", { name: "들어가기" })).toBeNull();
-    expect(screen.getByText("행복카페")).toBeInTheDocument();
+    // 위 띠 + 낮은 화면용 번호 칸 위(둘 중 하나만 CSS로 보인다).
+    expect(screen.getAllByText("행복카페").length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "내 번호를 눌러요" })).toBeInTheDocument();
   });
 

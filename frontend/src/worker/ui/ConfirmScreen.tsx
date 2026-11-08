@@ -14,9 +14,11 @@ export interface ConfirmScreenProps {
   /** 열리면 제목을 소리로 읽는다. */
   speak?: boolean;
   ttsRate?: number;
+  /** 질문 아래 한 줄 알림(예: 아직 못 보낸 기록). */
+  note?: string | null;
 }
 
-export function ConfirmScreen({ kind, onStay, onLeave, speak = false, ttsRate }: ConfirmScreenProps) {
+export function ConfirmScreen({ kind, onStay, onLeave, speak = false, ttsRate, note }: ConfirmScreenProps) {
   const titleId = useId();
   const t = kind === "exit" ? COPY.confirm.exit : COPY.confirm.end;
   const body = kind === "exit" ? COPY.confirm.exit.body : null;
@@ -25,7 +27,7 @@ export function ConfirmScreen({ kind, onStay, onLeave, speak = false, ttsRate }:
   useEffect(() => {
     // 화면 읽기 프로그램·키보드 사용자가 바로 질문과 [계속할래요]를 만나게 첫 버튼에 초점을 둔다.
     rootRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
-    if (speak) speakText(t.title, { rate: ttsRate });
+    if (speak) speakText(note ? `${t.title} ${note}` : t.title, { rate: ttsRate });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind]);
 
@@ -41,6 +43,12 @@ export function ConfirmScreen({ kind, onStay, onLeave, speak = false, ttsRate }:
     >
       <h1 id={titleId} className="text-worker-lg font-bold">{t.title}</h1>
       {body && <p className="mt-3 text-worker text-worker-ink-soft hc:text-black">{body}</p>}
+      {note && (
+        <p role="status" data-testid="confirm-note"
+          className="mt-4 max-w-md rounded-worker-btn border-2 border-worker-caution-ink bg-worker-caution px-4 py-2 text-worker font-semibold text-worker-caution-ink hc:border-black hc:bg-white hc:text-black">
+          {note}
+        </p>
+      )}
       <div className="mt-10 flex w-full max-w-sm flex-col gap-6">
         <PrimaryAction icon={IconPlay} onPress={onStay} className="w-full">
           {t.stay}

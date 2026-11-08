@@ -2,7 +2,7 @@
 // 이 파일이 프론트엔드 <-> 백엔드 경계의 전부다. (인증 토큰 부착 포함)
 
 import { ApiError, AuthError, NetworkError } from "./apiErrors";
-import { saveWorkplaceName } from "./workerCodes";
+import { getDeviceToken, saveDeviceToken, saveWorkplaceName } from "./workerCodes";
 
 export { ApiError, AuthError, NetworkError };
 
@@ -251,10 +251,18 @@ export const auth = {
   },
   /** 접속 코드는 사업장 안에서만 unique라 사업장 코드가 함께 있어야 근로자를 찾을 수 있다. */
   async loginWorker(workplace_code: string, access_code: string): Promise<AuthState> {
-    const r = await req<{ token: string; role: Role; display_name: string; workplace_name?: string | null }>(
+    const device_token = getDeviceToken();
+    const r = await req<{
+      token: string;
+      role: Role;
+      display_name: string;
+      workplace_name?: string | null;
+      device_token?: string | null;
+    }>(
       "/api/auth/worker-login",
-      { method: "POST", body: JSON.stringify({ workplace_code, access_code }) }
+      { method: "POST", body: JSON.stringify(device_token ? { workplace_code, access_code, device_token } : { workplace_code, access_code }) }
     );
+    if (r.device_token) saveDeviceToken(r.device_token);
     const state: AuthState = { token: r.token, role: r.role, displayName: r.display_name };
     setAuth(state);
     // 사업장 이름은 근로자 기기의 번호 넣기 화면 위 띠에 보인다(로그인 전에는 서버가 알려 주지 않는다).

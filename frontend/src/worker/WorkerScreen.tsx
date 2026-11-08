@@ -78,7 +78,18 @@ export function BottomBar({ children, stacked = false, className }: { children: 
 }
 
 /** 띠 공통 모양(64px 이상, 24px 글씨, role=status). */
-export function Band({ tone, children, testId }: { tone: "help" | "offline" | "synced"; children: ReactNode; testId?: string }) {
+export function Band({
+  tone,
+  children,
+  testId,
+  spaced = false,
+}: {
+  tone: "help" | "offline" | "synced";
+  children: ReactNode;
+  testId?: string;
+  /** 버튼이 있는 띠: 위 띠 버튼과 24px 넘게 떨어뜨린다. */
+  spaced?: boolean;
+}) {
   return (
     <div
       role="status"
@@ -91,7 +102,14 @@ export function Band({ tone, children, testId }: { tone: "help" | "offline" | "s
         "hc:border-black hc:bg-white hc:text-black",
       )}
     >
-      <div className="mx-auto flex min-h-16 w-full max-w-[1024px] items-center gap-3 px-4 py-1 text-worker font-semibold small:min-h-14 small:text-worker-caption tablet:px-8">
+      <div
+        className={cn(
+          "mx-auto flex min-h-16 w-full max-w-[1024px] items-center gap-3 px-4 py-1 text-worker font-semibold small:min-h-14 small:text-worker-caption tablet:px-8",
+          // 버튼이 있는 띠([취소]·[다시 부르기])는 위 띠의 [도와주세요]와 24px 넘게 떨어뜨린다(명세 8.1: 다른 행동
+          // 버튼 사이 24px. 2차 검증: 6px 아래라 '불렀어요'를 조금 낮게 누르면 취소됐다).
+          spaced && "pt-6",
+        )}
+      >
         {children}
       </div>
     </div>
@@ -115,12 +133,15 @@ export function SyncNotice() {
   );
 }
 
-/** 도움 띠가 떠 있을 때 위 띠 가운데에 두는 작은 오프라인 표시(20px). 좁은 휴대폰에서는 아이콘만 보인다. */
+/** 도움 띠가 떠 있을 때 위 띠 가운데에 두는 작은 오프라인 표시(20px). 좁은 휴대폰(420 이하)은 아이콘 아래에
+ *  '끊김' 두 글자 — 아이콘만으로는 뜻을 알기 어렵다(2차 검증). 화면 읽기 프로그램은 늘 '인터넷 끊김'을 읽는다. */
 export function OfflineMark() {
   return (
-    <span role="status" className="flex items-center gap-1 text-worker-caption text-worker-caution-ink hc:text-black">
+    <span role="status" data-testid="offline-mark" aria-label={COPY.band.offlineShort}
+      className="flex items-center gap-1 text-worker-caption leading-tight text-worker-caution-ink hc:text-black max-[420px]:flex-col max-[420px]:gap-0">
       <IconOffline size={24} />
-      <span className="whitespace-nowrap max-[420px]:sr-only">{COPY.band.offlineShort}</span>
+      <span aria-hidden="true" className="whitespace-nowrap max-[420px]:hidden">{COPY.band.offlineShort}</span>
+      <span aria-hidden="true" className="hidden whitespace-nowrap max-[420px]:inline">{COPY.band.offlineTiny}</span>
     </span>
   );
 }

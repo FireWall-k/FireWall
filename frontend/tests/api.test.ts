@@ -107,6 +107,19 @@ describe("auth.loginWorker", () => {
     expect(getSavedWorkplaceName()).toBe("행복카페");
   });
 
+  it("믿는 기기 표시를 받아 두고 다음 로그인 때 보낸다(사업장 공용 잠금에 안 막히게)", async () => {
+    fetchMock.mockImplementation(async () =>
+      jsonResponse(200, { token: "w", role: "worker", display_name: "김민수", device_token: "dev.sig" }),
+    );
+    await auth.loginWorker("DEMO01", "1234");
+    expect(JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body))).toEqual({
+      workplace_code: "DEMO01",
+      access_code: "1234",
+    });
+    await auth.loginWorker("DEMO01", "1234");
+    expect(JSON.parse(String((fetchMock.mock.calls[1][1] as RequestInit).body)).device_token).toBe("dev.sig");
+  });
+
   it("사업장 이름이 없는 예전 서버여도 로그인된다", async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { token: "w", role: "worker", display_name: "김민수" }));
     await auth.loginWorker("DEMO01", "1234");

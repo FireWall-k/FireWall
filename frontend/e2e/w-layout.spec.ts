@@ -75,7 +75,8 @@ test.describe("완료 화면: '정말 잘했어요'가 맨 위·가장 크게·�
       const status = el.closest("[role=status]")!;
       return { fs: parseFloat(cs.fontSize), fw: Number(cs.fontWeight), color: cs.color, first: status.firstElementChild === el };
     });
-    expect(st).toMatchObject({ fs: 32, first: true, color: "rgb(31, 99, 64)" });
+    // 근로자 초록 중 진한 pressed(#1E4D33): 바탕 #FFF8EC에서 7:1 넘게(2차 검증: primary는 6.82:1).
+    expect(st).toMatchObject({ fs: 32, first: true, color: "rgb(30, 77, 51)" });
     expect(st.fw).toBeGreaterThanOrEqual(700);
     const title = page.getByRole("heading", { level: 1 });
     await expect(title).toHaveText("매장 바닥 청소를 다 했어요");

@@ -36,6 +36,7 @@ export function clearSavedWorkplaceCode() {
     localStorage.removeItem(WORKPLACE_KEY);
     // 사업장 연결을 끊으면 그 사업장 이름도 지운다(다른 가게 이름이 남아 보이지 않게).
     localStorage.removeItem("jobcard_workplace_name");
+    localStorage.removeItem(DEVICE_TOKEN_KEY);
   } catch {
     /* 무시 */
   }
@@ -81,4 +82,24 @@ export function saveWorkplaceName(name: string) {
 /** 번호를 가린 표시(●●●●). 사업주 목록에서 기본으로 보이는 모양 — 어깨 너머로 번호가 새지 않게(명세 5.6). */
 export function maskedCode(len: number): string {
   return "●".repeat(Math.max(4, Math.min(len || 4, 12)));
+}
+
+// 믿는 기기 표시(서버 TokenOut.device_token). 이 기기에서 한 번 맞게 들어오면 받아 두고 다음 로그인 때 보낸다 —
+// 누군가 사업장 코드로 일부러 많이 틀려 사업장 공용 잠금이 걸려도, 이미 쓰던 기기의 근로자는 계속 들어간다.
+const DEVICE_TOKEN_KEY = "jobcard_worker_device_v1";
+
+export function getDeviceToken(): string | null {
+  try {
+    return localStorage.getItem(DEVICE_TOKEN_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveDeviceToken(token: string) {
+  try {
+    if (token) localStorage.setItem(DEVICE_TOKEN_KEY, token);
+  } catch {
+    /* 저장 못 하면 다음에도 처음 쓰는 기기로 셀 뿐 */
+  }
 }

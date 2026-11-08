@@ -17,7 +17,7 @@ import { BottomBar, OfflineMark, TopBar, WorkerScreen } from "./WorkerScreen";
 
 export default function TodayScreen() {
   const navigate = useNavigate();
-  const { me, jobs, prefs, progressOf, refresh, logout } = useWorkerSession();
+  const { me, jobs, prefs, progressOf, refresh, logout, unsentNote } = useWorkerSession();
   const { band, offlineMark } = useBand();
   const [confirmEnd, setConfirmEnd] = useState(false);
 
@@ -31,8 +31,9 @@ export default function TodayScreen() {
     }
     const fresh = ids.filter((id) => !seen.current!.has(id));
     ids.forEach((id) => seen.current!.add(id));
-    if (fresh.length > 0) speakText(COPY.band.newJob, { rate: prefs.tts_rate });
-  }, [jobs, prefs.tts_rate]);
+    // 소리 자동 재생을 끈 근로자(결정 4)에게는 읽지 않는다(2차 검증: 이것만 설정을 보지 않았다).
+    if (fresh.length > 0 && prefs.autoplay_sound) speakText(COPY.band.newJob, { rate: prefs.tts_rate });
+  }, [jobs, prefs.tts_rate, prefs.autoplay_sound]);
 
   const views = jobs.map((job) => ({ job, p: progressOf(job) }));
   const open = views.filter((v) => v.p.status !== "done");
@@ -43,7 +44,7 @@ export default function TodayScreen() {
   if (confirmEnd) {
     return (
       <ConfirmScreen kind="end" speak={prefs.autoplay_sound} ttsRate={prefs.tts_rate}
-        onStay={() => setConfirmEnd(false)} onLeave={logout} />
+        note={unsentNote} onStay={() => setConfirmEnd(false)} onLeave={logout} />
     );
   }
 

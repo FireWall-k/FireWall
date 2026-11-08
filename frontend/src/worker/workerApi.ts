@@ -99,6 +99,9 @@ export function newId(): string {
   return `${Date.now().toString(16)}-${rnd()}-${rnd()}-${rnd()}-${rnd()}${rnd()}`;
 }
 
+/** 완료 기록 한 건을 기다리는 시간. 넘으면 끊고 대기열에 남긴다. */
+export const LOG_SEND_TIMEOUT_MS = 12_000;
+
 export const workerApi = {
   me: async (): Promise<WorkerMe> => {
     const m = await req<WorkerMe>("/api/worker/me");
@@ -110,14 +113,31 @@ export const workerApi = {
     return list.map(normalizeJob);
   },
   history: () => req<HistoryCard[]>("/api/worker/me/history"),
-  logStep: (body: LogBody) =>
-    req<LogResult>("/api/performance-logs", { method: "POST", body: JSON.stringify(body) }),
+  /**
+   * 완료 기록 보내기. LOG_SEND_TIMEOUT_MS 안에 답이 없으면 끊는다(AbortError) — 대기열은 이것을 '다음에 다시'로
+   * 본다(2차 검증: 끊김 없이 멈춘 요청 하나가 대기열 전체를 붙잡아, 다시 연결·화면 숨김·30초 보내기가 모두 그
+   * 요청을 기다리기만 했다). 늦게라도 서버에 닿았으면 다시 보낸 기록은 client_event_id로 한 번만 센다.
+   */
+  logStep: (body: LogBody, timeoutMs = LOG_SEND_TIMEOUT_MS) => {
+    const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
+    return req<LogResult>("/api/performance-logs", {
+      method: "POST",
+      body: JSON.stringify(body),
+      signal: ctrl?.signal,
+    }).finally(() => {
+      if (timer) clearTimeout(timer);
+    });
+  },
   /** signal로 끊을 수 있다(useHelp가 8초 넘게 답이 없으면 끊고 '아직 못 불렀어요'를 보인다). */
   createHelp: (body: { assignment_id: string; step_id: string | null; client_request_id: string }, signal?: AbortSignal) =>
     req<HelpOut>("/api/worker/help", { method: "POST", body: JSON.stringify(body), signal }),
   getHelp: (id: string) => req<HelpOut>(`/api/worker/help/${encodeURIComponent(id)}`),
   cancelHelp: (id: string) =>
     req<HelpOut>(`/api/worker/help/${encodeURIComponent(id)}/cancel`, { method: "POST" }),
+  /** 답을 못 받은(8초 뒤 끊은) 누름을 키로 닫는다. 아직 서버에 안 닿았으면 서버가 '취소됨'을 먼저 남긴다. */
+  cancelHelpByClient: (body: { assignment_id: string; step_id: string | null; client_request_id: string }) =>
+    req<HelpOut>("/api/worker/help/cancel-by-client", { method: "POST", body: JSON.stringify(body) }),
 };
 
 export type WorkerApi = typeof workerApi;

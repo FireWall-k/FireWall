@@ -120,7 +120,8 @@ test.describe("3. 번호 넣기(/w)", () => {
     await pairedDevice(page);
     await page.goto("/w");
     await expect(page.getByRole("heading", { name: "내 번호를 눌러요" })).toBeVisible();
-    await expect(page.getByText("행복카페")).toBeVisible();
+    // 보통 높이에서는 위 띠에(낮은 화면은 번호 칸 위로 옮긴다).
+    await expect(page.locator("header").getByText("행복카페")).toBeVisible();
     // [들어가기] 키는 없다(창업자 결정 3). 맨 아래 줄 [지우기][0][비우기].
     await expect(page.getByRole("button", { name: "들어가기", exact: true })).toHaveCount(0);
     await expectTouchTargets(page);

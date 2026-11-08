@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { IconEnd, IconHistory, IconHome, IconNext } from "../ui/icons";
+import { cn } from "../cn";
 import { COPY } from "./copy";
 import { Thumb } from "./JobCard";
 import { useBand, useWorkerSession } from "./session";
@@ -18,7 +19,7 @@ import { BottomBar, TopBar, WorkerScreen } from "./WorkerScreen";
 export default function JobDoneScreen() {
   const { aid } = useParams();
   const navigate = useNavigate();
-  const { jobs, prefs, progressOf, logout } = useWorkerSession();
+  const { jobs, prefs, progressOf, logout, unsentNote } = useWorkerSession();
   const { band } = useBand();
   const [confirmEnd, setConfirmEnd] = useState(false);
   const job = jobs.find((j) => j.assignment_id === aid);
@@ -40,7 +41,7 @@ export default function JobDoneScreen() {
   if (confirmEnd) {
     return (
       <ConfirmScreen kind="end" speak={prefs.autoplay_sound} ttsRate={prefs.tts_rate}
-        onStay={() => setConfirmEnd(false)} onLeave={logout} />
+        note={unsentNote} onStay={() => setConfirmEnd(false)} onLeave={logout} />
     );
   }
 
@@ -86,12 +87,18 @@ export default function JobDoneScreen() {
       {/* 명세 4.6: '정말 잘했어요'가 맨 위, 가장 크게(32px 굵게), 근로자 초록. 그 아래 그림, 그 아래 무엇을 다 했는지.
           모두 끝난 날도 같다. 칭찬 '조용히'면 그림 없이 글만. */}
       <div role="status" className="flex flex-col items-center gap-2">
-        <p data-testid="done-praise" className="text-worker-lg font-bold text-worker-primary hc:text-black">
+        {/* primary(#1F6340)는 이 바탕에서 6.82:1이라 7:1 목표(명세 8.1)에 못 미친다 — 더 진한 pressed 초록. */}
+        <p data-testid="done-praise" className="text-worker-lg font-bold text-worker-primary-pressed hc:text-black">
           {COPY.done.praise}
         </p>
         {!quiet && (
           <Illustration kind="praise" size={240}
-            className="max-h-[30dvh] max-w-full small:max-h-[24dvh] land:max-h-[26dvh]" />
+            className={cn(
+              "max-h-[30dvh] max-w-full land:max-h-[26dvh]",
+              // 다음 일이 있으면 미리 보기 카드(다음 일 이름)가 늘 보여야 한다(2차 검증: 작은 휴대폰에서 아래 막대에
+              // 가렸다). 작은 휴대폰은 그림을 더 줄이고, 낮은 화면(620 이하)은 그림을 빼고 글만 둔다.
+              next ? "small:max-h-[14dvh] [@media(max-height:620px)]:hidden" : "small:max-h-[24dvh]",
+            )} />
         )}
         {next ? (
           <h1 className="text-worker-title font-bold">{title}</h1>
@@ -103,7 +110,7 @@ export default function JobDoneScreen() {
         )}
       </div>
       {next && (
-        <div className="mt-2 flex w-full max-w-md items-center gap-4 rounded-worker-card border-2 border-worker-line-soft bg-worker-card p-3 text-left shadow-worker-card">
+        <div data-testid="next-preview" className="mt-2 flex w-full max-w-md items-center gap-4 rounded-worker-card border-2 border-worker-line-soft bg-worker-card p-3 text-left shadow-worker-card small:mt-0 small:gap-3 small:p-2">
           <Thumb url={next.steps[0]?.symbol_url} size={96} />
           <p className="min-w-0 flex-1 text-worker font-semibold">{COPY.done.nextPreview(next.task_title)}</p>
         </div>

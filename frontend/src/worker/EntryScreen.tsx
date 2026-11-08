@@ -168,13 +168,17 @@ export default function EntryScreen({ onLogin }: { onLogin: (a: AuthState) => vo
     <WorkerScreen
       testId="entry-screen"
       top={
-        <TopBar
-          left={
-            workplaceName ? (
-              <p className="truncate text-worker-caption text-worker-ink-soft hc:text-black">{workplaceName}</p>
-            ) : undefined
-          }
-        />
+        // 낮은 화면(620 이하: 360×560, 가로 휴대폰)은 위 띠를 빼고 사업장 이름을 번호 칸 위로 옮긴다 — 키패드 키가
+        // 80px 아래로 줄지 않게(명세 4.0·4.1, 2차 검증: 위 띠가 있으면 69~71px이었다).
+        <div className="contents [@media(max-height:620px)]:hidden">
+          <TopBar
+            left={
+              workplaceName ? (
+                <p className="truncate text-worker-caption text-worker-ink-soft hc:text-black">{workplaceName}</p>
+              ) : undefined
+            }
+          />
+        </div>
       }
       mainClassName="items-center gap-4 overflow-hidden py-4 small:gap-2 small:py-2 land:grid land:grid-cols-2 land:grid-rows-[minmax(0,1fr)_auto] land:items-stretch land:gap-x-6 land:gap-y-2"
     >
@@ -182,6 +186,12 @@ export default function EntryScreen({ onLogin }: { onLogin: (a: AuthState) => vo
         data-testid="entry-slot"
         className="flex min-h-[7.5rem] w-full max-w-sm flex-col items-center justify-center gap-3 small:min-h-[6.25rem] small:gap-2 land:col-start-1 land:row-start-1 land:max-w-none"
       >
+        {workplaceName && (
+          <p data-testid="entry-workplace-inline"
+            className="hidden max-w-full truncate text-worker-caption text-worker-ink-soft hc:text-black [@media(max-height:620px)]:block">
+            {workplaceName}
+          </p>
+        )}
         {!busy && message ? (
           <div role="alert" data-testid="login-notice"
             className="flex w-full items-start gap-2 rounded-worker-btn border-2 border-worker-caution-ink bg-worker-caution px-4 py-2 text-worker font-semibold text-worker-caution-ink small:px-3 small:text-worker-caption hc:border-black hc:bg-white hc:text-black">
@@ -222,7 +232,7 @@ export default function EntryScreen({ onLogin }: { onLogin: (a: AuthState) => vo
         type="button"
         data-teacher-only=""
         onClick={() => navigate("/login?tab=worker")}
-        className="min-h-11 shrink-0 self-center rounded-worker-btn px-4 text-worker-caption text-worker-ink-soft underline underline-offset-4 hc:text-black land:col-start-1 land:row-start-2"
+        className="min-h-11 shrink-0 self-center rounded-worker-btn px-4 text-worker-caption text-worker-ink-soft underline underline-offset-4 hc:text-black land:col-start-1 land:row-start-2 [@media(max-height:620px)]:min-h-9"
       >
         {COPY.btn.teacherLongCode}
       </button>

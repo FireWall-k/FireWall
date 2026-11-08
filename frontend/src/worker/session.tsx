@@ -9,6 +9,8 @@ import { OfflineBanner, SyncNotice } from "./WorkerScreen";
 export const TODAY_POLL_MS = 30_000;
 export const OUTBOX_RETRY_MS = 30_000;
 export const SYNC_NOTICE_MS = 3_000;
+/** 끝내기 전에 남은 기록을 보내 보는 가장 긴 시간. */
+export const LOGOUT_FLUSH_WAIT_MS = 3_000;
 
 
 export interface StepCompletion {
@@ -26,11 +28,14 @@ export interface WorkerSessionValue {
   /** '기록을 다 보냈어요'를 잠깐 보이는 중. */
   synced: boolean;
   pendingCount: number;
+  /** 끝내기 확인 화면의 알림: 못 보낸 기록이 있고 인터넷이 끊겼을 때만 문장, 아니면 null. */
+  unsentNote: string | null;
   refresh: () => Promise<void>;
   progressOf: (job: TodayJob) => JobProgress;
   completeStep: (job: TodayJob, step: Step, info: StepCompletion) => void;
   onMediaError: (url: string | null | undefined) => void;
-  /** 끝내기(로그아웃): 로그인 상태를 지우고 번호 넣기 화면으로. 사업장 코드는 남긴다. */
+  /** 끝내기(로그아웃): 남은 기록을 잠깐(최대 3초) 보내 본 뒤 로그인 상태를 지우고 번호 넣기 화면으로.
+   *  사업장 코드는 남긴다. 못 보낸 기록은 이 기기에 남아 같은 근로자가 다시 들어오면 보낸다. */
   logout: () => void;
   /** 화면에서 받은 오류를 알린다(401이면 다시 들어오기 화면, 네트워크면 오프라인 표시). */
   reportError: (e: unknown) => void;

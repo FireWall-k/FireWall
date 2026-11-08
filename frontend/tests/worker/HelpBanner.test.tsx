@@ -154,11 +154,12 @@ describe("useHelp", () => {
     expect(api.cancelHelp).not.toHaveBeenCalled();
   });
 
-  it("새로고침 뒤 active_help로 띠를 되살린다", () => {
+  it("새로고침 뒤 active_help로 띠를 되살린다(서버에 한 번 확인한 뒤)", async () => {
     const api = fakeApi();
     const { result } = renderHook(() =>
       useHelp({ assignmentId: "a1", stepId: "s1", api, initial: { id: "h1", state: "open", step_id: "s1", created_at: "x" } }),
     );
+    await act(async () => {});
     expect(result.current.phase).toBe("sent");
     act(() => result.current.cancel());
     expect(api.cancelHelp).toHaveBeenCalledWith("h1");

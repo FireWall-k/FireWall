@@ -43,7 +43,7 @@ export function HelpBanner({ phase, onCancel, onRetry }: { phase: HelpPhase; onC
   }
   if (phase === "sent") {
     return (
-      <Band tone="help" testId="help-band">
+      <Band tone="help" testId="help-band" spaced>
         {/* 결정 8: 문장 왼쪽(flex-1, 줄바꿈 가능) · [취소] 오른쪽(줄바꿈 없음, 줄지 않음) 한 줄. */}
         <p data-testid="help-band-text" className="min-w-0 flex-1">{COPY.help.sent}</p>
         <SecondaryAction icon={IconCancel} onPress={onCancel} className="shrink-0 !gap-2 !px-4">
@@ -54,7 +54,7 @@ export function HelpBanner({ phase, onCancel, onRetry }: { phase: HelpPhase; onC
   }
   if (phase === "failed") {
     return (
-      <Band tone="help" testId="help-band">
+      <Band tone="help" testId="help-band" spaced>
         {/* 좁은 휴대폰에서 문장 자리를 넓히려고 왼쪽 아이콘과 버튼 아이콘을 뺐다. */}
         <p data-testid="help-band-text" className="min-w-0 flex-1">{COPY.help.failed}</p>
         <SecondaryAction onPress={onRetry} className="shrink-0 !px-4">

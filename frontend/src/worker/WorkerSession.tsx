@@ -9,13 +9,13 @@ import { useNavigate } from "react-router-dom";
 import { getAuth, type Step } from "../api";
 import { NetworkError } from "../apiErrors";
 import { mergeStepMedia, useMediaRefresh } from "../media";
-import { toWorkerMessage } from "./copy";
+import { COPY, toWorkerMessage } from "./copy";
 import { getOutbox, type Outbox } from "./outbox";
 import { preloadPictures } from "./preload";
 import { jobProgress, mergeDoneIds } from "./resume";
-import { OUTBOX_RETRY_MS, SYNC_NOTICE_MS, SessionContext, TODAY_POLL_MS, type StepCompletion, type WorkerSessionValue } from "./session";
+import { LOGOUT_FLUSH_WAIT_MS, OUTBOX_RETRY_MS, SYNC_NOTICE_MS, SessionContext, TODAY_POLL_MS, type StepCompletion, type WorkerSessionValue } from "./session";
 import { StatusScreen } from "./ui/StatusScreen";
-import { cachedJobs, cachedMe, localDay, ME_CACHE_KEY, noteSentInTodayCache, TODAY_CACHE_PREFIX, writeJson } from "./todayCache";
+import { cachedJobs, cachedMe, ME_CACHE_KEY, noteSentInTodayCache, writeJson, writeTodayCache } from "./todayCache";
 import { workerApi, type TodayJob, type WorkerMe } from "./workerApi";
 
 type Fatal = "expired" | "offline" | "error" | null;
@@ -57,8 +57,7 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
     meRef.current = m;
     setMe(m);
     try {
-      const list = await workerApi.today();
-      writeJson(`${TODAY_CACHE_PREFIX}${m.id}`, { day: localDay(), jobs: list });
+      const list = writeTodayCache(m.id, await workerApi.today());
       setJobs(list);
       setOnline(true);
     } catch (e) {
@@ -90,8 +89,7 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
     const m = meRef.current;
     if (!m) return;
     try {
-      const list = await workerApi.today();
-      writeJson(`${TODAY_CACHE_PREFIX}${m.id}`, { day: localDay(), jobs: list });
+      const list = writeTodayCache(m.id, await workerApi.today());
       setJobs(list);
       setOnline(true);
     } catch (e) {
@@ -110,7 +108,8 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
           return res;
         },
         (e: unknown) => {
-          if (e instanceof NetworkError) setOnline(false);
+          // 끊김(NetworkError)과 답 없음(12초 뒤 끊은 AbortError) 모두 '인터넷 끊김'으로 보인다.
+          if (e instanceof NetworkError || (e instanceof DOMException && e.name === "AbortError")) setOnline(false);
           throw e;
         },
       ),
@@ -223,10 +222,26 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
     [outbox, flush],
   );
 
+  // 2차 검증: 예전에는 못 보낸 기록을 보내 보지도 않고 바로 나갔다. 같은 근로자가 이 기기로 다시 들어와야만 보내져,
+  // 공용 태블릿·다른 기기를 쓰는 날에는 사업주가 끝난 일을 못 봤다. 나가기 전에 한 번(최대 3초) 보내 본다.
+  const leaving = useRef(false);
   const logout = useCallback(() => {
-    onLogout();
-    navigate("/w", { replace: true });
-  }, [onLogout, navigate]);
+    if (leaving.current) return;
+    leaving.current = true;
+    const finish = () => {
+      onLogout();
+      navigate("/w", { replace: true });
+    };
+    if (!outbox || outbox.size === 0) return finish();
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      finish();
+    };
+    window.setTimeout(go, LOGOUT_FLUSH_WAIT_MS);
+    void flush().catch(() => {}).finally(go);
+  }, [onLogout, navigate, outbox, flush]);
 
   if (fatal === "expired") return <StatusScreen kind="expired" speak onAction={logout} />;
   if (fatal === "offline") return <StatusScreen kind="offline" speak onAction={retry} />;
@@ -240,6 +255,7 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
     online,
     synced,
     pendingCount: outbox?.size ?? 0,
+    unsentNote: (outbox?.size ?? 0) > 0 && !online ? COPY.confirm.unsent : null,
     refresh,
     progressOf,
     completeStep,

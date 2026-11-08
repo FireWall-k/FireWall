@@ -37,6 +37,11 @@ export const STUCK_DURATION_SEC = 120;
 /** 서명 URL을 다시 받는 동안 기다리는 시간. 그래도 안 되면 '그림을 못 불러왔어요'. */
 const PICTURE_REFRESH_WAIT_MS = 5_000;
 
+/** 단계 시간 재기용 시계(단조). performance가 없는 환경만 Date.now로. */
+function monotonicNow(): number {
+  return typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
+}
+
 export interface StepDoneInfo {
   step: Step;
   index: number;
@@ -59,6 +64,9 @@ export interface StepPlayerProps {
   band?: ReactNode;
   /** 인터넷이 끊겼는지(도움 띠가 떠 있으면 위 띠 가운데 작은 표시로). */
   offline?: boolean;
+  /** [다 했어요]를 누른 순간(칭찬 전에) 한 번. 기록은 여기서 남긴다 — 칭찬 중 화면이 사라져도 잃지 않게. */
+  onRecord?: (info: StepDoneInfo) => void;
+  /** 칭찬(0.4초)이 끝난 뒤 한 번. 다음 단계로 넘어간다. */
   onDone?: (info: StepDoneInfo) => void;
   onPrev: () => void;
   onNext?: () => void;
@@ -243,6 +251,7 @@ export function StepPlayer({
   help,
   band,
   offline = false,
+  onRecord,
   onDone,
   onPrev,
   onNext,
@@ -258,6 +267,9 @@ export function StepPlayer({
   const wide = useMedia(WIDE_QUERY);
   const { h1Ref, scrollRef, cellRef, px: sentencePx, level: fitLevel } = useSentenceFit(step?.id ?? "", baseSentencePx(tablet, wide, prefs.font_size === "large"), layoutKey);
   const captionMore = useMoreBelow(cellRef, `${step?.id ?? ""}|${sentencePx}|${layoutKey}|${wide}`);
+  // 세로 화면은 가운데 칸 전체가 스크롤한다. 넘치면 아래쪽을 흐리게 해 "더 있다"를 보인다(2차 검증: 작은 휴대폰에서
+  // 도움·끊김 띠가 뜨면 문장과 [듣기]가 줄 가운데서 말없이 잘렸다).
+  const scrollMore = useMoreBelow(scrollRef, `${step?.id ?? ""}|${sentencePx}|${layoutKey}|${wide}`);
   const audio = useStepAudio(step ?? null, {
     autoplay: live && prefs.autoplay_sound,
     rate: prefs.tts_rate,
@@ -270,7 +282,7 @@ export function StepPlayer({
 
   // 단계가 바뀌면: 시간 다시 재기 + 문장으로 초점(화면 읽기 프로그램이 새 문장을 읽는다).
   useEffect(() => {
-    startedAt.current = Date.now();
+    startedAt.current = monotonicNow();
     h1Ref.current?.focus({ preventScroll: true });
     scrollRef.current?.scrollTo?.({ top: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -285,7 +297,8 @@ export function StepPlayer({
 
   const handleDone = useCallback(() => {
     if (!step || praising || !onDone) return;
-    const durationSec = (Date.now() - startedAt.current) / 1000;
+    // 단조 시계로 잰다: 단계 중에 기기 시계가 뒤로 가도(시각 맞춤) 음수가 되지 않는다(2차 검증).
+    const durationSec = Math.max(0, (monotonicNow() - startedAt.current) / 1000);
     const replayCount = audio.replayCount;
     const info: StepDoneInfo = {
       step,
@@ -295,6 +308,7 @@ export function StepPlayer({
       stuck: replayCount >= STUCK_REPLAY_THRESHOLD || durationSec >= STUCK_DURATION_SEC,
     };
     audio.stop();
+    onRecord?.(info);
     setPraising(true);
     playCheckSound(prefs.sfx);
     vibrate(30, prefs.vibration);
@@ -303,7 +317,7 @@ export function StepPlayer({
       setPraising(false);
       onDone(info);
     }, PRAISE_MS);
-  }, [step, praising, onDone, index, audio, prefs.sfx, prefs.vibration]);
+  }, [step, praising, onDone, onRecord, index, audio, prefs.sfx, prefs.vibration]);
 
   if (!step) return null;
 
@@ -347,7 +361,11 @@ export function StepPlayer({
       <div
         ref={scrollRef}
         data-testid="step-scroll"
-        className="mx-auto flex min-h-0 w-full max-w-[1024px] flex-1 flex-col overflow-y-auto px-4 tablet:px-8 wide:contents"
+        data-more={scrollMore && !wide ? "true" : undefined}
+        className={cn(
+          "mx-auto flex min-h-0 w-full max-w-[1024px] flex-1 flex-col overflow-y-auto px-4 tablet:px-8 wide:contents",
+          "data-[more=true]:[mask-image:linear-gradient(to_bottom,#000_calc(100%_-_2.5rem),transparent)]",
+        )}
       >
         <div className="flex h-10 shrink-0 items-center small:h-8 tablet:h-12 wide:col-start-2 wide:row-start-3 wide:px-0 wide:pt-4">
           <ProgressDots total={steps.length} current={index} done={(i) => doneIds.has(steps[i].id)} />
@@ -359,7 +377,10 @@ export function StepPlayer({
           <div
             key={`pic-${step.id}`}
             className={cn(
-              "relative min-h-[240px] flex-1 [container-type:size] small:min-h-[180px]",
+              "relative min-h-[240px] flex-1 [container-type:size]",
+              // 띠(도움·끊김)가 떠 있으면 작은 휴대폰에서 그림 바닥을 180 → 96px로 낮춘다 — 문장과 [듣기]가 먼저다
+              // (2차 검증). 그래도 넘치면 가운데 칸 아래를 흐리게 한다(data-more).
+              shownBand ? "small:min-h-[96px]" : "small:min-h-[180px]",
               "wide:col-start-1 wide:row-span-3 wide:row-start-3 wide:my-4 wide:ml-4 wide:min-h-0 tablet:wide:ml-8",
               "animate-step-in motion-reduce:animate-none",
             )}
@@ -408,7 +429,7 @@ export function StepPlayer({
             icon={IconPrev}
             onPress={onPrev}
             disabled={index === 0 || praising}
-            className="w-[104px] shrink-0 !gap-1 !px-2"
+            className="w-[104px] shrink-0 !gap-1 !px-2 tablet:min-h-[96px]"
           >
             {COPY.btn.prev}
           </SecondaryAction>
@@ -416,7 +437,7 @@ export function StepPlayer({
             <PrimaryAction
               icon={praising ? undefined : IconDone}
               onPress={handleDone}
-              className="min-w-0 flex-1 !px-3"
+              className="min-w-0 flex-1 !px-3 tablet:min-h-[96px]"
               ariaLabel={praising ? COPY.step.praise : COPY.btn.done}
             >
               {praising ? (
@@ -433,7 +454,7 @@ export function StepPlayer({
               icon={IconNext}
               onPress={() => onNext?.()}
               disabled={index >= steps.length - 1}
-              className="min-w-0 flex-1 !px-3"
+              className="min-w-0 flex-1 !px-3 tablet:min-h-[96px]"
             >
               {COPY.btn.next}
             </PrimaryAction>

@@ -28,14 +28,21 @@ function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
   useWakeLock(index != null && String(index + 1) === n);
 
   const base = `/w/job/${job.assignment_id}`;
-  const onDone = useCallback(
+  // [다 했어요]를 누른 순간 기록을 대기열에 넣는다(2차 검증: 예전에는 0.4초 칭찬 뒤에 넣어서, 그 사이 뒤로 가기·
+  // 화면 잠금으로 화면이 사라지면 기록이 영영 없어졌다). 다음 단계로 넘어가는 것만 칭찬 뒤에 한다.
+  const onRecord = useCallback(
     (info: StepDoneInfo) => {
       completeStep(job, info.step, { durationSec: info.durationSec, replayCount: info.replayCount, stuck: info.stuck });
       help.markStepDone();
+    },
+    [completeStep, job, help],
+  );
+  const onDone = useCallback(
+    (info: StepDoneInfo) => {
       if (info.index + 1 >= job.steps.length) navigate(`${base}/done`, { replace: true });
       else navigate(`${base}/step/${info.index + 2}`, { replace: true });
     },
-    [completeStep, job, help, navigate, base],
+    [job, navigate, base],
   );
 
   if (index == null) return <Navigate to={`${base}/done`} replace />;
@@ -54,6 +61,7 @@ function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
       help={help}
       band={band}
       offline={!online}
+      onRecord={onRecord}
       onDone={onDone}
       onPrev={() => navigate(`${base}/step/${Math.max(1, index)}`, { replace: true })}
       onExit={() => navigate("/w/today")}

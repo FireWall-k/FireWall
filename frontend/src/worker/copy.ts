@@ -102,6 +102,8 @@ export const COPY = {
   band: {
     offline: "인터넷이 끊겼어요. 일은 계속해도 돼요.",
     offlineShort: "인터넷 끊김",
+    // 좁은 휴대폰의 위 띠 가운데(도움 띠가 떠 있을 때). 아이콘 아래 두 글자.
+    offlineTiny: "끊김",
     synced: "기록을 다 보냈어요",
     newJob: "새 일이 왔어요",
   },
@@ -141,6 +143,8 @@ export const COPY = {
   confirm: {
     exit: { title: "일을 멈출까요?", body: "나중에 이어서 할 수 있어요.", stay: "계속할래요", leave: "멈출래요" },
     end: { title: "오늘 일을 끝낼까요?", stay: "아니요, 계속할래요", leave: "네, 끝낼래요" },
+    // 끝내기 전에 못 보낸 기록이 남아 있고 인터넷이 끊겼을 때(2차 검증).
+    unsent: "아직 못 보낸 기록이 있어요. 인터넷이 되면 다시 들어와요.",
   },
   history: {
     today: "오늘",
