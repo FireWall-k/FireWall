@@ -49,4 +49,20 @@ describe("근로자 화면 접근성 Tailwind 클래스가 실제 CSS로 생성�
   it("text-worker-lg → 더 큰 글씨 + 줄간격", () => {
     expect(css).toMatch(/\.text-worker-lg\{font-size:[^;}]+;line-height:[^}]+\}/);
   });
+
+  // 근로자 단계 화면 배치(2026-11 UI 진단). 아래 규칙이 빠지면 화면은 그대로 그려지지만 배치가 조용히 무너진다.
+  it("wide 변형(가로로 넓은 화면) → 그림 왼쪽·버튼 오른쪽 격자", () => {
+    expect(css).toContain("@media(orientation:landscape)and(min-width:768px){");
+    expect(css).toContain(".wide\\:grid{display:grid");
+  });
+
+  it("wide 변형을 더해도 max-sm: 변형이 그대로 생성된다(머리글 JOB CARD 숨김)", () => {
+    // theme.screens에 raw 값을 넣으면 Tailwind가 max-* 변형을 만들지 않는다 — 그래서 wide는 플러그인 변형이다.
+    expect(css).toContain(".max-sm\\:hidden{display:none");
+  });
+
+  it("그림 바닥 min(10rem, 20dvh)와 좁은 칸에서 버튼을 쌓는 컨테이너 쿼리", () => {
+    expect(css).toContain("min-height:min(10rem,20dvh)");
+    expect(css).toContain("@container(min-width:19rem){");
+  });
 });

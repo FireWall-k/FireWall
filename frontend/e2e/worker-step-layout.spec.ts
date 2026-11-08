@@ -9,8 +9,14 @@ const PHONE = { width: 390, height: 844 };
 const TABLET = { width: 820, height: 1180 };
 // 그림이 화면의 주인공이어야 한다 — 휴대폰 가로의 60% 이상(수정 전 49%).
 const MIN_PICTURE_RATIO = 0.6;
-// 긴 문장이라도 그림이 이보다 작아지지는 않는다(StepCard의 min-h-40).
-const MIN_PICTURE_PX = 160;
+// 긴 문장이라도 그림이 이보다 작아지지는 않는다(StepCard의 min-h-[min(10rem,20dvh)]) — 작은 휴대폰(667px)에서는 133px.
+const minPicturePx = (vpHeight: number) => Math.min(160, 0.2 * vpHeight) - 1;
+// 작은 휴대폰(2차 검증): 390×844만 맞추면 360×740·375×667(아이폰 SE)에서는 "완료"가 화면 밖이었다.
+const SMALL_PHONES = [
+  ["360×740", { width: 360, height: 740 }],
+  ["360×800", { width: 360, height: 800 }],
+  ["375×667", { width: 375, height: 667 }],
+] as const;
 
 const PNG_1X1 = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
@@ -102,7 +108,7 @@ async function expectStepScreenFits(page: Page, sentence: string, minRatio: numb
   await expectInFirstScreen(page, "완료", done(page));
   const pic = await pictureBox(page);
   expect(Math.abs(pic.width - pic.height), "그림은 정사각형").toBeLessThanOrEqual(1);
-  expect(pic.width).toBeGreaterThanOrEqual(MIN_PICTURE_PX);
+  expect(pic.width).toBeGreaterThanOrEqual(minPicturePx(vp.height));
   if (minRatio != null) {
     expect(pic.width / vp.width, `그림 ${Math.round(pic.width)}px = 화면 가로의 ${Math.round(pic.width / vp.width * 100)}%`)
       .toBeGreaterThanOrEqual(minRatio);
@@ -112,6 +118,40 @@ async function expectStepScreenFits(page: Page, sentence: string, minRatio: numb
     const b = await page.getByRole("button", { name }).boundingBox();
     expect(b!.height).toBeGreaterThanOrEqual(80);
   }
+}
+
+// 낱말 중간에서 줄이 바뀐 곳(앞뒤가 모두 글자인데 줄이 바뀜). 없으면 null.
+async function brokenInsideWord(locator: ReturnType<Page["locator"]>) {
+  return locator.evaluate((root) => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let prevTop: number | null = null;
+    let prevCh = "";
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      const text = node as Text;
+      for (let i = 0; i < text.length; i++) {
+        const range = document.createRange();
+        range.setStart(text, i);
+        range.setEnd(text, i + 1);
+        const r = range.getClientRects()[0];
+        const ch = text.data[i];
+        if (!r) { prevCh = ch; continue; }
+        if (prevTop != null && r.top > prevTop + 4 && /[가-힣]/.test(prevCh) && /[가-힣]/.test(ch)) {
+          return text.data.slice(Math.max(0, i - 3), i) + "|" + text.data.slice(i, i + 3);
+        }
+        prevTop = r.top;
+        prevCh = ch;
+      }
+    }
+    return null;
+  });
+}
+
+// 글자 크기를 125%로 키운 휴대폰(접근성 설정). 처음부터 큰 글씨로 그려지게 문서 시작 때 건다.
+async function useLargeRootFont(page: Page) {
+  await page.addInitScript(() => {
+    document.documentElement.style.fontSize = "125%";
+  });
 }
 
 test.beforeEach(async ({ page }) => {
@@ -209,5 +249,117 @@ test.describe("휴대폰 390×844 표시 규칙", () => {
     await expect(page.getByText("오늘 할 일 2개 중 1개를 마쳤어요.")).toBeVisible();
     const list = page.getByRole("list", { name: "오늘 할 일" });
     await expect(list.getByRole("listitem")).toHaveCount(2);
+  });
+});
+
+for (const [label, viewport] of SMALL_PHONES) {
+  test.describe(`작은 휴대폰 ${label}`, () => {
+    test.use({ viewport });
+
+    test("보통 문장: 그림·문장·다시 듣기·완료가 스크롤 없이 한 화면에 들어간다", async ({ page }) => {
+      await page.goto("/worker");
+      await expect(page.getByText("박스 바닥 덮개를 접으세요")).toBeVisible();
+      await expectStepScreenFits(page, "박스 바닥 덮개를 접으세요", 0.45);
+    });
+
+    test("긴 문장(worker-05)도 글씨를 줄여 한 화면에 들어간다", async ({ page }) => {
+      await page.goto("/worker");
+      await done(page).click();
+      await done(page).click();
+      await expect(page.getByText(LONG)).toBeVisible();
+      await expectStepScreenFits(page, LONG, null);
+      // 줄여도 굵은 20px(WCAG 큰 글씨 기준 18.66px 굵게) 아래로는 내리지 않는다.
+      const size = await page.getByText(LONG).evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+      expect(size).toBeGreaterThanOrEqual(20);
+    });
+
+    test("머리글은 한 줄이다(로그아웃은 그대로, 화면 읽기에는 '오늘 할 일'까지 읽힌다)", async ({ page }) => {
+      await page.goto("/worker");
+      const h1 = page.getByRole("heading", { level: 1 });
+      await expect(h1).toHaveAccessibleName(/오늘 할 일/);
+      const lines = await h1.evaluate((el) => Math.round(el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight)));
+      expect(lines).toBe(1);
+      await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
+    });
+  });
+}
+
+test.describe("휴대폰 390×844 · 글자 크기 125%", () => {
+  test.use({ viewport: PHONE });
+
+  test("보통 문장·긴 문장·도움 요청 뒤에도 완료가 첫 화면 안이다", async ({ page }) => {
+    await useLargeRootFont(page);
+    await page.goto("/worker");
+    await expect(page.getByText("박스 바닥 덮개를 접으세요")).toBeVisible();
+    await expectStepScreenFits(page, "박스 바닥 덮개를 접으세요", null);
+    await page.getByRole("button", { name: /도움이 필요해요/ }).click();
+    await expect(page.getByRole("button", { name: /요청했어요/ })).toBeVisible();
+    await expectInFirstScreen(page, "완료(도움 요청 뒤)", done(page));
+    await done(page).click();
+    await done(page).click();
+    await expect(page.getByText(LONG)).toBeVisible();
+    await expectStepScreenFits(page, LONG, null);
+  });
+
+  test("누른 도움 버튼 글자가 낱말 중간에서 끊기지 않는다", async ({ page }) => {
+    await useLargeRootFont(page);
+    await page.goto("/worker");
+    await page.getByRole("button", { name: /도움이 필요해요/ }).click();
+    const pressed = page.getByRole("button", { name: /요청했어요/ });
+    await expect(pressed).toBeVisible();
+    expect(await brokenInsideWord(pressed)).toBeNull();
+    expect(await brokenInsideWord(page.getByRole("button", { name: /다시 듣기/ }))).toBeNull();
+  });
+});
+
+test.describe("좁은 화면 312×675(휴대폰 125% 확대와 같은 폭)", () => {
+  test.use({ viewport: { width: 312, height: 675 } });
+
+  test("다시 듣기·도움 버튼은 반쪽에 안 들어가면 한 줄에 하나씩 쌓이고 낱말이 쪼개지지 않는다", async ({ page }) => {
+    await page.goto("/worker");
+    await page.getByRole("button", { name: /도움이 필요해요/ }).click();
+    const pressed = page.getByRole("button", { name: /요청했어요/ });
+    const replay = page.getByRole("button", { name: /다시 듣기/ });
+    expect(await brokenInsideWord(pressed)).toBeNull();
+    const [a, b] = [await replay.boundingBox(), await pressed.boundingBox()];
+    expect(b!.y, "쌓였으면 도움 버튼이 다시 듣기 아래에 있다").toBeGreaterThanOrEqual(a!.y + a!.height);
+    expect(b!.height).toBeGreaterThanOrEqual(80);
+  });
+});
+
+test.describe("스크롤해 완료를 누른 뒤", () => {
+  test.use({ viewport: PHONE });
+
+  test("다음 단계와 직무 완료 화면은 맨 위(제목·진행 막대)부터 보인다", async ({ page }) => {
+    await page.goto("/worker");
+    await expect(page.getByText("박스 바닥 덮개를 접으세요")).toBeVisible();
+    // 맨 아래 "지난 일 보기"까지 내려간 채로 완료를 누른다.
+    await page.getByRole("button", { name: "지난 일 보기" }).scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    await done(page).click();
+    await expect(page.getByText("손님께 인사하세요")).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    await expectInFirstScreen(page, "진행 표시", page.getByTestId("step-progress"));
+
+    await done(page).click();
+    await page.getByRole("button", { name: "지난 일 보기" }).scrollIntoViewIfNeeded();
+    await done(page).click();
+    await expect(page.getByRole("button", { name: /다음 일 시작하기/ })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  });
+});
+
+test.describe("가로 태블릿 1024×768", () => {
+  test.use({ viewport: { width: 1024, height: 768 } });
+
+  test("그림을 왼쪽에 크게, 버튼을 오른쪽에 두고 한 화면에 들어간다", async ({ page }) => {
+    await page.goto("/worker");
+    await expect(page.getByText("박스 바닥 덮개를 접으세요")).toBeVisible();
+    await expectStepScreenFits(page, "박스 바닥 덮개를 접으세요", 0.4);
+    const pic = await pictureBox(page);
+    const doneBox = (await done(page).boundingBox())!;
+    expect(doneBox.x, "완료는 그림 오른쪽").toBeGreaterThanOrEqual(pic.x + pic.width);
+    // 예전(세로로 쌓기)에는 그림이 268px(가로의 26%)이었다.
+    expect(pic.height).toBeGreaterThanOrEqual(400);
   });
 });

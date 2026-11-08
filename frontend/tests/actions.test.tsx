@@ -57,6 +57,51 @@ describe("stepActionChip — 근로자 화면 동작 꼬리표", () => {
     expect(stepActionChip("")).toBeNull();
   });
 
+  // 보조 용언(두세요·보세요·놓으세요) 앞의 본동사가 사전에 없으면 보조 용언을 꼬리표로 쓰지 않는다 —
+  // "모아 두세요"에 '두기', "밀어 보세요"에 '보기'가 붙던 문제(평가 문장에서 실제로 나왔다).
+  it("보조 용언 앞 본동사를 모르면 꼬리표를 숨긴다", () => {
+    expect(stepActionChip("빈 박스는 납작하게 접어서 모아 두세요")).toBeNull();
+    expect(stepActionChip("우유팩은 씻어서 따로 모아 두세요")).toBeNull();
+    expect(stepActionChip("배터리를 충전기에 꽂아 두세요")).toBeNull();
+    expect(stepActionChip("인두를 거치대에 꽂아 두세요")).toBeNull();
+    expect(stepActionChip("시든 상추는 골라서 따로 빼 두세요")).toBeNull();
+    expect(stepActionChip("냉동고 문이 안 닫히면 손으로 밀어 보세요")).toBeNull();
+  });
+
+  it("조사 뒤의 두세요·보세요·놓으세요는 본동사로 읽는다", () => {
+    expect(stepActionChip("상자를 바닥에 두세요")?.label).toBe("두기");
+    expect(stepActionChip("선반을 보세요")?.label).toBe("보기");
+    expect(stepActionChip("컵을 쟁반에 놓으세요")?.label).toBe("놓기");
+  });
+
+  it("가다·오다가 붙은 이동 동사를 앞 동사로 읽지 않는다(내려가다 ≠ 내리다)", () => {
+    expect(stepActionChip("계단 난간을 걸레로 닦으며 내려가세요")).toBeNull();
+    expect(stepActionChip("창고로 들어가세요")).toBeNull();
+    expect(stepActionChip("계단을 내려 가세요")).toBeNull();
+  });
+
+  it("내려놓다는 내리기가 아니라 내려놓기다(붙여 쓴 것·띄어 쓴 것)", () => {
+    expect(stepActionChip("택배를 내려놓으세요")?.label).toBe("내려놓기");
+    expect(stepActionChip("트레이를 내려 놓으세요")?.label).toBe("내려놓기");
+  });
+
+  // 한 단계가 서로 다른 동작 둘을 시키면 마지막 동사만 보여 주는 꼬리표는 틀린 꼬리표다
+  // (ai_service decompose._guess_action도 이때 other를 돌려준다).
+  it("서로 다른 동작 둘을 시키는 문장에는 꼬리표를 붙이지 않는다", () => {
+    expect(stepActionChip("손을 씻고 장갑을 끼세요")).toBeNull();
+    expect(stepActionChip("그릇을 세제로 씻으세요. 그 다음 헹구세요")).toBeNull();
+    expect(stepActionChip("상자를 접은 뒤 테이프를 붙이세요")).toBeNull();
+    expect(stepActionChip("상자를 접어서 카트에 실으세요")).toBeNull();
+    expect(stepActionChip("바닥을 닦으며 쓰레기를 치우세요")).toBeNull();
+  });
+
+  it("같은 동작을 되풀이하는 문장은 그 동작 꼬리표를 붙인다", () => {
+    expect(stepActionChip("포장된 상자를 카트에 놓으세요. 큰 상자는 아래쪽에, 작은 상자는 위쪽에 놓으세요")?.label)
+      .toBe("놓기");
+    // '창고'·'냉장고'처럼 '-고'로 끝나는 명사는 연결형 동사가 아니다.
+    expect(stepActionChip("냉장고 문을 열어 보세요")?.label).toBe("열기");
+  });
+
   it("WorkerActionChip은 확실하지 않으면 아무것도 그리지 않는다", () => {
     const { container } = render(<WorkerActionChip sentence="손님께 인사하세요" />);
     expect(container).toBeEmptyDOMElement();

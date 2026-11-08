@@ -71,7 +71,7 @@ describe("WorkerPage stuck 수집", () => {
     fireEvent.click(screen.getByText("🙋 도움이 필요해요"));
     await waitFor(() => expect(logStep).toHaveBeenCalledTimes(1));
     expect(screen.getByText("상자를 옮기세요")).toBeInTheDocument();
-    expect(screen.getByText("🙋 도움을 요청했어요")).toBeInTheDocument();
+    expect(screen.getByText("🙋 요청했어요")).toBeInTheDocument();
   });
 
   it("도움 요청 후 완료를 누르면 같은 단계가 한 번 더(최종 상태로) 보고되고 다음 단계로 넘어간다", async () => {
@@ -89,7 +89,7 @@ describe("WorkerPage stuck 수집", () => {
     const help = screen.getByText("🙋 도움이 필요해요");
     fireEvent.click(help);
     await waitFor(() => expect(logStep).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByText("🙋 도움을 요청했어요"));
+    fireEvent.click(screen.getByText("🙋 요청했어요"));
     await new Promise((r) => setTimeout(r, 0));
     expect(logStep).toHaveBeenCalledTimes(1);
   });

@@ -9,6 +9,7 @@
     python -m eval.run_match_eval                  # 골든셋 전체 채점(LLM 경로, 임베딩 off)
     python -m eval.run_match_eval --dataset dev    # 개발셋(eval/dev_set.json). 경로를 줘도 된다
     python -m eval.run_match_eval --query-mode sentence  # 규칙 폴백 경로
+    python -m eval.run_match_eval --query-mode sentence --action-source guess  # 동작 계열도 규칙 분해(_guess_action) 추정값으로
     python -m eval.run_match_eval --case cafe_sweep    # 특정 케이스만
     python -m eval.run_match_eval --job cleaning       # 특정 직무만
     python -m eval.run_match_eval --verbose            # 케이스별 상위 후보까지 출력
@@ -147,14 +148,27 @@ def _expand_accept(accept: list[str], id_to_group: dict, group_to_ids: dict) -> 
 
 # --- 케이스 실행 --------------------------------------------------------------
 
-def _case_inputs(case: dict, query_mode: str) -> tuple[list[str], dict]:
+ACTION_SOURCES = ("label", "guess")
+
+
+def _case_action(case: dict, action_source: str) -> str:
+    """케이스에 넣을 action_type. label=데이터셋에 적힌 정답 계열, guess=규칙 분해가 문장에서 추정한 계열
+    (decompose._guess_action — LLM 없이 분해할 때 실제로 저장되는 값). 분류기를 바꿨을 때 그림 매칭에
+    미치는 영향을 재현 가능하게 재려면 guess로 돌린다(label로 돌리면 분류기 변경이 결과에 안 보인다)."""
+    if action_source == "guess":
+        from decompose import _guess_action  # 분해 모듈은 guess일 때만 불러온다
+        return _guess_action(case["sentence"])
+    return case.get("action_type", "other")
+
+
+def _case_inputs(case: dict, query_mode: str, action_source: str = "label") -> tuple[list[str], dict]:
     """프로덕션 경로와 동일하게 문장을 context['sentence']에, action_type을
     context['action_type']에 넣고 symbol_query를 키워드로 넘긴다
     (backend/main.py의 _pick_symbol과 같은 형태).
     query_mode='sentence'면 symbol_query를 비워 규칙 폴백 경로를 재현한다."""
     ctx = dict(case.get("context") or {})
     ctx["sentence"] = case["sentence"]
-    ctx["action_type"] = case.get("action_type", "other")
+    ctx["action_type"] = _case_action(case, action_source)
     keywords = list(case.get("symbol_query") or []) if query_mode == "full" else []
     return keywords, ctx
 
@@ -166,7 +180,7 @@ def case_query(case: dict, query_mode: str) -> str:
 
 
 def eval_case(case: dict, accept: set[str], recall_depth: int, shortlist: int,
-              query_mode: str = "full") -> dict:
+              query_mode: str = "full", action_source: str = "label") -> dict:
     """한 케이스를 실행해 순위·판정 결과를 낸다.
 
     검색은 한 번만 한다. 예전에는 순위용(search_assets, limit=20)과 판정용
@@ -174,7 +188,7 @@ def eval_case(case: dict, accept: set[str], recall_depth: int, shortlist: int,
     달라 순위와 판정이 서로 다른 질의에서 나올 여지가 있었다. 이제 프로덕션 판정 함수에
     limit만 늘려 넘기고, 판정이 돌려주는 후보 목록을 그대로 순위로 쓴다.
     """
-    keywords, ctx = _case_inputs(case, query_mode)
+    keywords, ctx = _case_inputs(case, query_mode, action_source)
     decision = search_for_step_detailed(keywords, ctx, limit=recall_depth)
     ranked = decision["candidates"]
     ranked_ids = [r["asset_id"] for r in ranked]
@@ -190,6 +204,7 @@ def eval_case(case: dict, accept: set[str], recall_depth: int, shortlist: int,
         "job": case.get("job", ""),
         "gap": is_gap,
         "sentence": case["sentence"],
+        "action_type": ctx["action_type"],
         "reason": decision["reason"],
         "embedding": decision.get("embedding", False),
         "top1_hit": top1_hit,
@@ -349,7 +364,8 @@ def fill_embed_cache(datasets: list[Path], query_modes: list[str],
 
 def run(only_case: str | None = None, only_job: str | None = None,
         query_mode: str = "full", dataset: str | os.PathLike = DATASET_PATH,
-        embedding: str = "off", cache_dir: Path = EMBED_CACHE_DIR) -> dict:
+        embedding: str = "off", cache_dir: Path = EMBED_CACHE_DIR,
+        action_source: str = "label") -> dict:
     dataset_path = resolve_dataset(dataset)
     data = json.loads(dataset_path.read_text(encoding="utf-8"))
     decision = data.get("decision", {})
@@ -370,7 +386,7 @@ def run(only_case: str | None = None, only_job: str | None = None,
     with _embedding_mode(embedding, cache_dir):
         for case in cases:
             accept = _expand_accept(case.get("accept", []), id_to_group, group_to_ids)
-            rows.append(eval_case(case, accept, recall_depth, shortlist, query_mode))
+            rows.append(eval_case(case, accept, recall_depth, shortlist, query_mode, action_source))
     check_embedding_consistency(rows, embedding)
 
     normal = [r for r in rows if not r["gap"]]
@@ -408,6 +424,7 @@ def run(only_case: str | None = None, only_job: str | None = None,
     return {
         "dataset": dataset_name(dataset_path),
         "query_mode": query_mode,
+        "action_source": action_source,
         "embedding_mode": embedding,
         "embedding": used_embedding,
         # 기본값을 여기 따로 적지 않고 판정 함수와 같은 곳에서 읽는다 — 기본값을 바꿀 때
@@ -493,7 +510,8 @@ def _print_report(report: dict, verbose: bool) -> None:
     print(f"\n매칭 평가 — 케이스 {report['n_cases']}개"
           f"(일반 {report['n_normal']} / 커버리지갭 {report['n_gap']}), "
           f"채택 기준 점수≥{report['threshold']} 및 여유≥{report['min_margin']}")
-    print(f"데이터셋: {report['dataset']}   질의 모드: {mode_label}")
+    print(f"데이터셋: {report['dataset']}   질의 모드: {mode_label}   "
+          f"동작 계열: {'규칙 분해 추정(_guess_action)' if report.get('action_source') == 'guess' else '케이스 정답'}")
     print("임베딩: " + ({"cached": "cached (디스크 캐시 질의 벡터, 임베딩용 임계값)",
                         "local": "local (로컬 모델 질의 벡터, 임베딩용 임계값)"}
                        .get(report["embedding_mode"], "off (기존 규칙 점수, 기존 임계값)")))
@@ -663,6 +681,9 @@ def main() -> None:
                     help="임계값 × 여유(margin) 2차원 스윕")
     ap.add_argument("--margin-mode", choices=["absolute", "relative"], default="absolute",
                     help="--sweep-margin 의 여유 방식: absolute=s1−s2, relative=(s1−s2)/s1")
+    ap.add_argument("--action-source", choices=ACTION_SOURCES, default="label",
+                    help="label=케이스에 적힌 action_type(기본), guess=decompose._guess_action이 문장에서 "
+                         "추정한 값(규칙 분해 경로 — 동작 분류기 변경의 영향을 잴 때)")
     ap.add_argument("--json", help="결과를 JSON 파일로 저장(수정 전/후 비교용)")
     ap.add_argument("--write-baseline", action="store_true",
                     help="eval/baselines/{golden,dev}_{full,sentence}.json 을 임베딩 off로 갱신")
@@ -705,7 +726,8 @@ def main() -> None:
             print(f"결과 저장: {args.json}")
         return
 
-    report = run(args.case, args.job, args.query_mode, dataset=dataset, embedding=embedding)
+    report = run(args.case, args.job, args.query_mode, dataset=dataset, embedding=embedding,
+                 action_source=args.action_source)
     _print_report(report, args.verbose)
     if args.json:
         Path(args.json).write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")

@@ -121,7 +121,8 @@ const VERBS: VerbEntry[] = [
   v("덮기", "pack", "덮으", "덮어"), v("포장하기", "pack", "포장하", "포장해"), v("밀봉하기", "pack", "밀봉하", "밀봉해"),
   v("놓기", "move", "놓으", "놓아", "놔"), v("두기", "move", "두", "둬", "두어"), v("옮기기", "move", "옮기", "옮겨"),
   v("꺼내기", "move", "꺼내", "꺼내"), v("가져오기", "move", "가져오", "가져와"), v("가져가기", "move", "가져가", "가져가"),
-  v("올리기", "move", "올리", "올려"), v("내리기", "move", "내리", "내려"), v("붓기", "move", "부으", "부어"),
+  // 내려놓기는 내리기보다 앞에 둔다 — "내려놓으세요"를 '내려'+'놓으세요'(내리기)로 읽지 않게.
+  v("올리기", "move", "올리", "올려"), v("내려놓기", "move", "내려놓으", "내려놓아", "내려놔"), v("내리기", "move", "내리", "내려"), v("붓기", "move", "부으", "부어"),
   v("싣기", "move", "실으", "실어"), v("채우기", "move", "채우", "채워"), v("건네기", "move", "건네", "건네"),
   v("전달하기", "move", "전달하", "전달해"),
   v("쌓기", "stack", "쌓으", "쌓아"),
@@ -142,11 +143,18 @@ const VERBS: VerbEntry[] = [
 ];
 
 // '-어' 모양 뒤에 붙는 보조 용언("닦아 주세요"·"넣어 두세요"·"확인해 보세요"). 본동사는 앞 낱말이다.
+// 가다·오다는 넣지 않는다: "내려가세요"·"들어가세요"·"내려 가세요"는 '내리다'가 아니라 따로 된 이동 동사다.
 const AUX_WORDS = new Set([
   "주세요", "주십시오", "줘요", "줘", "드리세요", "드려요", "두세요", "둬요", "놓으세요", "놔요", "놓아요",
-  "보세요", "봐요", "오세요", "와요", "가세요", "가요",
+  "보세요", "봐요",
 ]);
 const HON_ENDINGS = ["세요", "십시오", "시오", "셔요"];
+
+// 보조 용언으로도, 본동사로도 쓰이는 말(두세요·놓으세요·보세요) 앞에 이 조사로 끝나는 낱말이 오면
+// 본동사다("바닥에 두세요" → 두기, "선반을 보세요" → 보기). '이·가·와·과'는 넣지 않는다 — "들어가"처럼
+// '-아/-어' 모양과 겹친다.
+const PARTICLES = ["을", "를", "에", "에서", "에게", "께", "한테", "로", "으로", "은", "는", "도", "만"];
+const endsWithParticle = (w: string) => w.length >= 2 && PARTICLES.some((p) => w.endsWith(p) && w.length > p.length);
 
 function matchWord(word: string, allowFusedAux: boolean): VerbEntry | null {
   for (const e of VERBS) {
@@ -161,18 +169,64 @@ function matchWord(word: string, allowFusedAux: boolean): VerbEntry | null {
   return null;
 }
 
-/** 문장 서술어의 동사로 만든 꼬리표. 사전에 없는 동사로 끝나면 null(꼬리표를 보여 주지 않는다). */
-export function stepActionChip(sentence: string): { label: string; action: string } | null {
-  const words = sentence.match(/[가-힣]+/g);
-  if (!words?.length) return null;
+// 한 문장(마침표로 끝나는 한 덩어리)의 서술어 동사. 확실하지 않으면 null.
+function predicateVerb(words: string[]): VerbEntry | null {
   const last = words[words.length - 1];
   if (AUX_WORDS.has(last) && words.length >= 2) {
     const prev = words[words.length - 2];
+    // "내려 놓으세요"처럼 띄어 쓴 합성 동사(내려놓다)가 사전에 따로 있으면 그것으로 읽는다.
+    const joined = matchWord(prev + last, false);
+    if (joined) return joined;
     const main = VERBS.find((e) => e.a.includes(prev));
-    if (main) return { label: main.label, action: main.action };
+    if (main) return main;
+    // 앞말이 사전에 없는 '-아/-어' 모양이면("모아 두세요"·"꽂아 두세요"·"밀어 보세요") 진짜 동작은 그 앞말인데
+    // 무엇인지 모른다 — 보조 용언(두기·보기)을 꼬리표로 보여 주면 틀린 말이 된다. 앞말이 조사로 끝날 때만
+    // 보조 용언이 아니라 본동사로 읽는다.
+    if (!endsWithParticle(prev)) return null;
+    return matchWord(last, false);
   }
-  const e = matchWord(last, true);
-  return e ? { label: e.label, action: e.action } : null;
+  return matchWord(last, true);
+}
+
+// 한글 음절 끝에 받침 ㄴ을 붙인다("접으" → "접은", "옮기" → "옮긴"). 받침이 이미 있으면 null.
+function withNieun(stem: string): string | null {
+  const code = stem.charCodeAt(stem.length - 1) - 0xac00;
+  if (code < 0 || code > 11171 || code % 28 !== 0) return null;
+  return stem.slice(0, -1) + String.fromCharCode(0xac00 + code + 4);
+}
+
+// 서술어 앞에서 다른 동작을 시키는 연결형("씻고"·"접어서"·"닦으며"·"접은 뒤")의 동사.
+function connectiveVerb(word: string, next: string | undefined): VerbEntry | null {
+  for (const e of VERBS) {
+    const root = e.label.slice(0, -1); // 접기 → 접, 옮기기 → 옮기
+    if (word === `${root}고`) return e;
+    if (e.a.some((a) => word === `${a}서`)) return e;
+    if (e.stem && (word === `${e.stem}며` || word === `${e.stem}면서`)) return e;
+    if (e.stem && (next === "뒤" || next === "후" || next === "다음") && word === withNieun(e.stem)) return e;
+  }
+  return null;
+}
+
+/** 문장 서술어의 동사로 만든 꼬리표. 사전에 없는 동사로 끝나면 null(꼬리표를 보여 주지 않는다).
+ *
+ * 한 단계가 서로 다른 동작 둘을 시키면("손을 씻고 장갑을 끼세요"·"그릇을 씻으세요. 그 다음 헹구세요")
+ * 마지막 동사 하나만 보여 주는 꼬리표는 나머지 동작을 빠뜨린 틀린 꼬리표다 — 이때도 null이다
+ * (ai_service decompose._guess_action도 같은 규칙으로 other를 돌려준다). */
+export function stepActionChip(sentence: string): { label: string; action: string } | null {
+  const sentences = sentence.split(/[.!?。\n]+/).map((s) => s.match(/[가-힣]+/g) ?? []).filter((w) => w.length);
+  if (!sentences.length) return null;
+  let chosen: VerbEntry | null = null;
+  for (const words of sentences) {
+    const verb = predicateVerb(words);
+    // 문장마다 서술어가 같은 동사여야 한다("…놓으세요. 큰 상자는 아래쪽에 … 놓으세요"는 놓기 하나).
+    if (!verb || (chosen && verb.label !== chosen.label)) return null;
+    chosen = verb;
+    for (let i = 0; i < words.length - 1; i++) {
+      const other = connectiveVerb(words[i], words[i + 1]);
+      if (other && other.label !== verb.label) return null;
+    }
+  }
+  return chosen ? { label: chosen.label, action: chosen.action } : null;
 }
 
 /** 근로자 단계 화면의 동작 꼬리표. 문장에서 동사를 확실히 못 읽으면 아무것도 그리지 않는다. */

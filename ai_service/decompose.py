@@ -124,14 +124,39 @@ def _lemma_classes() -> dict[str, str]:
     return table
 
 
+# 도구에 따라 동작이 갈리는 동사. "카트를 밀어 주세요"는 옮기기(move)지만 "청소기로 바닥을 밀어주세요"·
+# "대걸레로 미세요"는 청소다 — 인덱스에서 밀다는 move로 모여 있어 청소 문장에 move가 붙고, 맞는 청소 그림이
+# 동사 계열 벌점을 받았다. 문장에 청소 도구가 있으면 그 도구의 계열로 본다.
+_TOOL_DEPENDENT_LEMMAS = frozenset({"밀다", "돌리다"})
+_TOOL_CLASSES = {
+    "청소기": "clean", "걸레": "clean", "밀대": "clean", "빗자루": "clean", "청소포": "clean",
+}
+_TOOL_PARTICLES = ("으로", "로", "를", "을", "는", "은", "도", "가", "이", "와", "과")
+
+
+def _tool_class(words: list[str]) -> str | None:
+    """문장에 든 청소 도구의 계열("대걸레로" → 대걸레 → 걸레 → clean). 없으면 None."""
+    for word in words:
+        stems = {word} | {word[: -len(p)] for p in _TOOL_PARTICLES if word.endswith(p) and len(word) > len(p)}
+        for stem in stems:
+            for tool, cls in _TOOL_CLASSES.items():
+                if stem.endswith(tool):
+                    return cls
+    return None
+
+
 def _guess_action(sentence: str) -> str:
     """지시문이 시키는 동작의 계열. 모르는·갈리는 동사가 있거나 동사들의 계열이 다르면 other."""
     lemmas = local_aac._verb_lemmas(sentence)
     table = _lemma_classes()
+    words = re.findall(r"[가-힣]+", sentence)
+    tool_cls = _tool_class(words)
     # 모르는 동사는 other로 센다. 아는 동사만 보고 정하면 "손을 씻고 장갑을 끼세요"가 '씻다'만 보고
     # clean이 된다 — 두 동작 중 하나만 맞는 꼬리표도 근로자에게는 틀린 꼬리표다.
-    classes = {table.get(l, "other") for l in lemmas if l not in _LIGHT_LEMMAS}
-    words = re.findall(r"[가-힣]+", sentence)
+    classes = {
+        tool_cls if (l in _TOOL_DEPENDENT_LEMMAS and tool_cls) else table.get(l, "other")
+        for l in lemmas if l not in _LIGHT_LEMMAS
+    }
     if not classes and words and words[-1].startswith(("하", "해")):
         # 분석기는 '하다'를 할 일로 세지 않는다(빈 집합). 서술어가 '하다'면 동작은 앞의 명사에 있다.
         classes = {cls for w in words for noun, cls in _HADA_NOUN_CLASSES.items() if w.startswith(noun)}

@@ -150,3 +150,12 @@ def test_common_actions_are_classified():
 def test_hada_with_action_noun():
     # "청소를 하세요"는 동사가 '하다'뿐이라 동작이 명사에 있다.
     assert _action("청소를 하세요") == "clean"
+
+
+def test_push_with_cleaning_tool_is_clean():
+    # 밀다는 인덱스에서 move지만, 청소 도구로 미는 것은 청소다(맞는 청소 그림이 계열 벌점을 받던 문제).
+    assert _action("차 안 바닥을 청소기로 밀어주세요") == "clean"
+    assert _action("대걸레로 바닥을 미세요") == "clean"
+    assert _action("청소기를 돌리세요") == "clean"
+    # 도구가 없으면 그대로 옮기기다.
+    assert _action("카트를 밀어 주세요") == "move"

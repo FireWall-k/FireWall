@@ -42,13 +42,14 @@ export default function WorkerPage() {
 
   // 위쪽 탭(오늘 할 일 / 지난 일 보기)은 없앴다. 휴대폰에서 그 줄(96px)이 그림 자리를 먹어 "완료"가 첫 화면
   // 밖으로 밀렸다. "지난 일 보기"는 오늘 할 일 화면 맨 아래로, 돌아오기는 지난 일 화면 맨 위로 옮겼다.
+  // wide:!max-w-5xl — wide 변형의 CSS가 md: 보다 앞에 나와 md:max-w-2xl에 덮이므로 !important로 이긴다.
   return (
-    <div className="mx-auto w-full max-w-md md:max-w-2xl">
+    <div className="mx-auto w-full max-w-md md:max-w-2xl wide:!max-w-5xl">
       {mode === "today" ? (
         <>
           <TodayView cards={cards} onMediaError={onMediaError} />
           <button onClick={() => setMode("history")}
-            className="mt-6 min-h-touch w-full rounded-2xl border-2 border-slate-200 bg-white text-worker font-semibold text-slate-700">
+            className="mx-auto mt-6 block min-h-touch w-full rounded-2xl border-2 border-slate-200 bg-white text-worker font-semibold text-slate-700 wide:max-w-2xl">
             지난 일 보기
           </button>
         </>
@@ -61,32 +62,67 @@ export default function WorkerPage() {
 
 // ---------- 단계 화면 공통 ----------
 
-// 단계 화면이 휴대폰 한 화면(머리글 아래 남은 높이)을 꼭 채우게 한다. 그림 칸이 flex-1이라 남는 높이를 그림이
-// 다 가져가고, 문장이 길면 그림이 줄어 "완료"까지 스크롤 없이 보인다. 머리글 높이는 이름 길이·글꼴에 따라
-// 달라질 수 있어 상수로 빼지 않고 실제 위치를 잰다. 아래 여백 0.75rem은 근로자 Shell의 py-3(App.tsx)과 같다.
-function useFillViewport() {
+// 단계 화면이 휴대폰 한 화면(머리글 아래 남은 높이)을 꼭 채우게 하고, 넘치면 글씨를 한 단계씩 줄인다.
+//
+// 1) 채우기: 그림 칸이 flex-1이라 남는 높이를 그림이 다 가져간다. 머리글 높이는 이름 길이·글꼴에 따라
+//    달라질 수 있어 상수로 빼지 않고 실제 위치를 잰다. 아래 여백 0.75rem은 근로자 Shell의 py-3(App.tsx)과 같다.
+// 2) 맞추기: 그림이 바닥(min-h)까지 줄었는데도 "완료"가 화면 아래로 넘치면(작은 휴대폰 360×740·375×667,
+//    긴 문장, 글자 크기를 키운 휴대폰) 문장 글씨를 32px → 24px → 20px(굵게)로 낮추고, 그래도 넘치면 동작
+//    꼬리표를 접는다. 터치 영역(80px)은 줄이지 않는다. 단계가 바뀌거나 화면 크기가 바뀌면 큰 글씨부터 다시 잰다.
+//    useLayoutEffect 안에서 고치므로 줄이는 과정이 화면에 깜빡이지 않는다.
+const FIT_MAX = 3;
+type FitLevel = 0 | 1 | 2 | 3;
+
+function useStepScreenFit(stepKey: string) {
   // 콜백 ref로 받는다: 직무 완료 화면 → 다음 직무처럼 단계 화면이 다시 그려지면 새 요소에서 다시 잰다.
   const [el, setEl] = useState<HTMLDivElement | null>(null);
   const [top, setTop] = useState<number | null>(null);
+  const [tick, setTick] = useState(0);
+  const [fit, setFit] = useState<{ key: string; level: FitLevel }>({ key: "", level: 0 });
+  const key = `${stepKey}#${tick}`;
+  const level: FitLevel = fit.key === key ? fit.level : 0;
+
   useLayoutEffect(() => {
     if (!el) return;
-    const measure = () => setTop(Math.max(0, Math.round(el.getBoundingClientRect().top + window.scrollY)));
+    const measure = () => {
+      setTop(Math.max(0, Math.round(el.getBoundingClientRect().top + window.scrollY)));
+      setTick((t) => t + 1);
+    };
     measure();
     window.addEventListener("resize", measure);
-    // 웹폰트가 늦게 들어오면 머리글 높이가 바뀔 수 있다.
+    // 웹폰트가 늦게 들어오면 머리글·문장 높이가 바뀔 수 있다.
     document.fonts?.ready.then(measure).catch(() => {});
     return () => window.removeEventListener("resize", measure);
   }, [el]);
+
+  // 그린 결과를 재서 한 단계 줄이는 것이라 렌더 중에는 알 수 없다(레이아웃 측정 → 다시 그리기). 단계는
+  // 최대 FIT_MAX번만 올라가므로 되풀이가 끝없이 이어지지 않는다.
+  useLayoutEffect(() => {
+    if (!el || level >= FIT_MAX) return;
+    const shrinkIfCrowded = () => {
+      // ① 단계 화면 전체(그림·문장·버튼)의 아래 끝이 첫 화면 밖이면 줄인다. 0.5px은 반올림 여유.
+      const bottom = el.getBoundingClientRect().bottom + window.scrollY;
+      const overflowing = bottom > window.innerHeight + 0.5;
+      // ② 다 들어와도 그림이 10rem(160px)보다 작으면 글씨를 줄여 그림 자리를 늘린다 — 작은 휴대폰(375×667)에서
+      //    32px 문장이 두 줄을 먹고 그림이 133px로 줄던 것. 꼬리표까지 접는 마지막 단계는 넘칠 때만 쓴다.
+      const pic = el.querySelector("[data-testid='step-picture']")?.getBoundingClientRect();
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const pictureSmall = !!pic && Math.min(pic.width, pic.height) < 10 * rem - 0.5 && level < FIT_MAX - 1;
+      if (overflowing || pictureSmall) setFit({ key, level: (level + 1) as FitLevel });
+    };
+    shrinkIfCrowded();
+  }, [el, key, level]);
+
   const style: CSSProperties | undefined =
     top == null ? undefined : { minHeight: `calc(100dvh - ${top}px - 0.75rem)` };
-  return [setEl, style] as const;
+  return [setEl, style, level] as const;
 }
 
 // 진행 표시는 하나만 둔다: 이 일의 이름 + "1 / 4" + 칸 막대. 예전에는 "오늘 할 일 2개 중 1번째"가 같이 떠서
 // 숫자가 두 벌이었다 — 몇 번째 일인지는 일과 일 사이 화면(직무 완료 화면)에서 목록으로 보여 준다.
 function StepProgress({ title, current, total }: { title: string; current: number; total: number }) {
   return (
-    <div data-testid="step-progress" className="mb-2">
+    <div data-testid="step-progress" className="mb-2 wide:col-span-2">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-balance text-xl font-bold text-slate-800">{title}</h2>
         <span className="shrink-0 text-xl font-bold text-slate-700">{current} / {total}</span>
@@ -104,16 +140,18 @@ function StepProgress({ title, current, total }: { title: string; current: numbe
 
 // 단계 카드: 그림 한 장 + 동작 꼬리표 + 문장. 그림이 화면의 주인공이다.
 // 그림 칸은 남은 높이를 다 가져가고(flex-1), 그 안에서 칸의 가로·세로 중 짧은 쪽에 맞춘 정사각형으로 그린다
-// (100cqmin). 그래서 휴대폰에서는 가로를 거의 다 쓰고, 문장이 길면 잘리지 않고 작아진다. 아무리 줄어도
-// 160px(min-h-40) 아래로는 안 내려간다 — 그보다 작으면 그림을 알아보기 어렵다.
-function StepCard({ step, onMediaError, children }: {
+// (100cqmin). 그래서 휴대폰에서는 가로를 거의 다 쓰고, 문장이 길면 잘리지 않고 작아진다. 바닥은
+// min(160px, 화면 높이의 20%) — 그보다 작으면 그림을 알아보기 어렵고, 작은 휴대폰(667px)에서는 160px을
+// 고집하면 "완료"가 화면 밖으로 밀린다.
+function StepCard({ step, level, onMediaError, children }: {
   step: Step;
+  level: FitLevel;
   onMediaError: (url: string | null | undefined) => void;
   children?: ReactNode;
 }) {
   return (
-    <div className="flex flex-1 flex-col rounded-2xl border border-slate-200 bg-white p-3 text-center">
-      <div className="relative max-h-[100cqw] min-h-40 flex-1">
+    <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-slate-200 bg-white p-3 text-center">
+      <div className="relative max-h-[100cqw] min-h-[min(10rem,20dvh)] flex-1">
         <div data-testid="step-picture" className="absolute inset-0 flex items-center justify-center [container-type:size]">
           {step.symbol_url ? (
             <img src={step.symbol_url} alt={step.sentence}
@@ -127,11 +165,43 @@ function StepCard({ step, onMediaError, children }: {
           )}
         </div>
       </div>
-      <div className="mt-2 flex justify-center empty:hidden">
-        <WorkerActionChip sentence={step.sentence} className="text-worker" />
-      </div>
-      <p className="mt-2 text-pretty text-worker-lg font-bold leading-snug text-slate-900">{step.sentence}</p>
+      {level < 3 && (
+        <div className="mt-2 flex justify-center empty:hidden">
+          <WorkerActionChip sentence={step.sentence} className={level === 0 ? "text-worker" : "text-lg"} />
+        </div>
+      )}
+      <p data-testid="step-sentence" data-fit={level}
+        className={cn("mt-2 text-pretty font-bold text-slate-900",
+          level === 0 ? "text-worker-lg leading-snug" : level === 1 ? "text-worker leading-snug" : "text-xl")}>
+        {step.sentence}
+      </p>
       {children}
+    </div>
+  );
+}
+
+// 단계 화면 배치. 휴대폰·세로 태블릿은 위에서 아래로(진행 → 그림·문장 → 버튼), 가로로 넓은 화면
+// (wide: 가로 방향·폭 768px 이상)은 왼쪽에 그림·문장, 오른쪽에 버튼을 둬 그림이 화면 높이를 다 쓰게 한다.
+function StepScreen({ title, current, total, step, onMediaError, note, children }: {
+  title: string;
+  current: number;
+  total: number;
+  step: Step;
+  onMediaError: (url: string | null | undefined) => void;
+  note?: ReactNode;
+  children: ReactNode;
+}) {
+  const [fillEl, fillStyle, fitLevel] = useStepScreenFit(step.id);
+  // 넘쳐서 스크롤해 "완료"를 누른 경우, 다음 단계는 제목·진행 막대부터 보이게 맨 위에서 시작한다.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [step.id]);
+  return (
+    <div ref={fillEl} style={fillStyle}
+      className="flex flex-col [container-type:inline-size] wide:grid wide:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)] wide:grid-rows-[auto_minmax(0,1fr)] wide:gap-x-4">
+      <StepProgress title={title} current={current} total={total} />
+      <StepCard step={step} level={fitLevel} onMediaError={onMediaError}>{note}</StepCard>
+      <div className="flex flex-col [container-type:inline-size] wide:justify-end">{children}</div>
     </div>
   );
 }
@@ -159,7 +229,10 @@ function TodayView({ cards, onMediaError }: {
   const step = card?.steps[stepIdx] ?? null;
   const total = card?.steps.length ?? 0;
 
-  const [fillRef, fillStyle] = useFillViewport();
+  // 직무 완료·전체 완료 화면은 맨 위에서 시작한다(스크롤해 "완료"를 누른 채로 넘어오면 축하 문구가 화면 밖이다).
+  useEffect(() => {
+    if (jobDone || allDone) window.scrollTo({ top: 0 });
+  }, [jobDone, allDone]);
 
   // 실제 음성 재생만 담당(다시듣기 카운트와 분리 → 자동재생이 stuck 신호를 오염시키지 않음).
   function playStep() {
@@ -263,14 +336,14 @@ function TodayView({ cards, onMediaError }: {
 
   if (!card)
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-slate-600">
+      <div className="mx-auto rounded-lg border border-slate-200 bg-white p-8 text-center text-slate-600 wide:max-w-2xl">
         오늘 받은 일이 아직 없어요. 사업주가 일을 보내면 여기에 나타납니다.
       </div>
     );
 
   if (jobDone)
     return (
-      <div className="rounded-2xl border-2 border-green-600 bg-green-50 p-8 text-center">
+      <div className="mx-auto rounded-2xl border-2 border-green-600 bg-green-50 p-8 text-center wide:max-w-2xl">
         <div className="text-6xl">👏</div>
         <p className="mt-4 text-balance text-worker-lg font-bold text-green-800">"{card.task_title}" 일을 마쳤어요!</p>
         {/* 오늘 받은 일 중 몇 번째인지는 단계 화면이 아니라 여기(일과 일 사이)에서 목록으로 보여 준다. */}
@@ -294,7 +367,7 @@ function TodayView({ cards, onMediaError }: {
 
   if (allDone)
     return (
-      <div className="rounded-2xl border-2 border-green-600 bg-green-50 p-10 text-center">
+      <div className="mx-auto rounded-2xl border-2 border-green-600 bg-green-50 p-10 text-center wide:max-w-2xl">
         <div className="text-6xl">🎉</div>
         <p className="mt-4 text-balance text-worker-lg font-bold text-green-800">오늘 일을 모두 마쳤어요!</p>
         <p className="mt-2 text-worker text-green-700">정말 잘했어요.</p>
@@ -305,14 +378,13 @@ function TodayView({ cards, onMediaError }: {
   if (!step) return null;
 
   return (
-    <div ref={fillRef} style={fillStyle} className="flex flex-col [container-type:inline-size]">
-      <StepProgress title={card.task_title} current={stepIdx + 1} total={total} />
-      <StepCard step={step} onMediaError={onMediaError} />
-
+    <StepScreen title={card.task_title} current={stepIdx + 1} total={total} step={step} onMediaError={onMediaError}>
       {/* 도움 요청: 누르는 즉시 이 단계가 '막힘'으로 기록되어 사업주 대시보드에 바로 표시된다.
           단계는 넘기지 않는다 — 다음 단계로 가려면 "완료"를 따로 눌러야 한다.
-          다시 듣기와 한 줄에 둬서 "완료"가 휴대폰 첫 화면 안에 들어오게 한다. */}
-      <div className="mt-3 grid grid-cols-2 gap-3">
+          다시 듣기와 한 줄에 둬서 "완료"가 휴대폰 첫 화면 안에 들어오게 한다. 다만 칸이 좁으면(19rem 미만:
+          화면 확대·큰 글자 설정) 반쪽 버튼에 "요청했어요"가 다 안 들어가 "요청했어 / 요"처럼 낱말이 쪼개지므로
+          한 줄에 하나씩 쌓는다. rem 기준이라 글자 크기를 키우면 그만큼 일찍 쌓인다. */}
+      <div className="mt-3 grid grid-cols-1 gap-3 [@container(min-width:19rem)]:grid-cols-2">
         <button onClick={playTts}
           className="inline-flex min-h-touch items-center justify-center gap-2 rounded-2xl border-2 border-blue-200 bg-blue-50 px-2 text-worker font-semibold text-blue-800">
           🔊 다시 듣기
@@ -322,7 +394,8 @@ function TodayView({ cards, onMediaError }: {
             needHelp
               ? "border-amber-500 bg-amber-100 text-amber-900"
               : "border-amber-300 bg-amber-50 text-amber-800")}>
-          {needHelp ? "🙋 도움을 요청했어요" : "🙋 도움이 필요해요"}
+          {/* 누른 뒤 글자는 짧게 둔다("도움을 요청했어요"는 반쪽 버튼에서 낱말이 쪼개졌다). */}
+          {needHelp ? "🙋 요청했어요" : "🙋 도움이 필요해요"}
         </button>
       </div>
 
@@ -330,7 +403,7 @@ function TodayView({ cards, onMediaError }: {
         className="mt-3 min-h-touch w-full rounded-2xl bg-green-700 text-worker-lg font-bold text-white">
         ✓ 완료
       </button>
-    </div>
+    </StepScreen>
   );
 }
 
@@ -365,21 +438,24 @@ function HistoryView({ onToday }: { onToday: () => void }) {
     </button>
   );
 
-  if (error) return <>{backToToday}<div role="alert" className="rounded-lg bg-red-50 p-4 text-red-800">{error}</div></>;
-  if (!items) return <>{backToToday}<p className="text-slate-500">불러오는 중…</p></>;
+  // 목록 화면은 가로로 넓은 화면(wide)에서도 단계 화면처럼 넓히지 않는다 — 한 줄이 너무 길어진다.
+  const narrow = (children: ReactNode) => <div className="mx-auto space-y-3 wide:max-w-2xl">{children}</div>;
+
+  if (error) return narrow(<>{backToToday}<div role="alert" className="rounded-lg bg-red-50 p-4 text-red-800">{error}</div></>);
+  if (!items) return narrow(<>{backToToday}<p className="text-slate-500">불러오는 중…</p></>);
 
   if (items.length === 0)
-    return (
+    return narrow(
       <>
         {backToToday}
         <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-slate-600">
           아직 받은 일이 없어요.
         </div>
-      </>
+      </>,
     );
 
-  return (
-    <div className="space-y-3">
+  return narrow(
+    <>
       {backToToday}
       {items.map((c) => {
         const doneCount = c.steps.filter((s) => s.completed).length;
@@ -400,7 +476,7 @@ function HistoryView({ onToday }: { onToday: () => void }) {
           </button>
         );
       })}
-    </div>
+    </>,
   );
 }
 
@@ -428,7 +504,6 @@ function HistoryDetail({ card, onBack, onMediaError }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step?.id]);
 
-  const [fillRef, fillStyle] = useFillViewport();
   if (!step) return null;
 
   return (
@@ -438,14 +513,8 @@ function HistoryDetail({ card, onBack, onMediaError }: {
         ← 목록으로
       </button>
 
-      <div ref={fillRef} style={fillStyle} className="flex flex-col [container-type:inline-size]">
-        <StepProgress title={card.task_title} current={stepIdx + 1} total={total} />
-        <StepCard step={step} onMediaError={onMediaError}>
-          {step.completed && (
-            <p className="mt-2 text-sm font-semibold text-green-700">✓ 완료했어요</p>
-          )}
-        </StepCard>
-
+      <StepScreen title={card.task_title} current={stepIdx + 1} total={total} step={step} onMediaError={onMediaError}
+        note={step.completed && <p className="mt-2 text-sm font-semibold text-green-700">✓ 완료했어요</p>}>
         <button onClick={() => {
           const url = step.tts_audio_url;
           if (url) new Audio(url).play().catch(() => {
@@ -468,7 +537,7 @@ function HistoryDetail({ card, onBack, onMediaError }: {
             다음 →
           </button>
         </div>
-      </div>
+      </StepScreen>
     </div>
   );
 }

@@ -113,6 +113,7 @@ cd ai_service
 python -m eval.run_match_eval                       # 골든셋 전체 채점(임베딩 off)
 python -m eval.run_match_eval --dataset dev         # 개발셋(eval/dev_set.json). 파일 경로도 된다
 python -m eval.run_match_eval --query-mode sentence # 규칙 폴백 경로
+python -m eval.run_match_eval --query-mode sentence --action-source guess  # 동작 계열도 규칙 분해(_guess_action) 추정값으로
 python -m eval.run_match_eval --job cleaning        # 특정 직무만
 python -m eval.run_match_eval --case cafe_sweep     # 특정 케이스만
 python -m eval.run_match_eval --verbose             # 케이스별 상위 후보까지
