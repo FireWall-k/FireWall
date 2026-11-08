@@ -10,7 +10,7 @@ import pytest
 
 import ratelimit
 from auth import hash_password, make_token
-from conftest import auth
+from conftest import auth, publish
 from database import SessionLocal
 from models import Employer, Worker
 
@@ -137,7 +137,7 @@ def test_owner_employer_sees_full_code(client, employer_token):
 
         task = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"},
                            headers=auth(employer_token)).json()
-        client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token))
+        publish(client, employer_token, task["id"])
         assigned = client.post(f"/api/tasks/{task['id']}/assignments",
                                json={"worker_ids": [w["id"]]}, headers=auth(employer_token))
         assert assigned.status_code == 200
@@ -165,7 +165,7 @@ def test_owner_employer_sees_full_code(client, employer_token):
 
         reissued = client.post(f"/api/workers/{w['id']}/access-code", headers=auth(employer_token))
         new_code = reissued.json()["access_code"]
-        assert len(new_code) == 6 and new_code.isdigit()
+        assert len(new_code) == 4 and new_code.isdigit()
         relisted = next(x for x in client.get("/api/workers", headers=auth(employer_token)).json()
                         if x["id"] == w["id"])
         assert relisted["access_code"] == new_code

@@ -1,7 +1,8 @@
 """보존기간이 지난 데이터 삭제(purge) — `python manage.py purge`로 실행한다.
 
 보존기간(환경변수, 일 단위):
-- PERFORMANCE_LOG_RETENTION_DAYS (기본 365): 근로자 단계별 수행 로그(소요시간·다시듣기·막힘).
+- PERFORMANCE_LOG_RETENTION_DAYS (기본 365): 근로자 단계별 수행 로그(소요시간·다시듣기·막힘)와
+  도움 요청(help_requests, 0006). 도움 요청도 "언제 어느 단계에서 막혔는지"라는 같은 종류의 행동 기록이다.
   코칭·대시보드는 최근 기록만 쓰고, 1년 넘은 수행 기록은 개선 제안에 거의 쓰이지 않는다. 오래 둘수록
   장애 특성을 추정할 수 있는 행동 기록만 쌓이므로 기본 1년으로 자른다.
 - ACCESS_AUDIT_RETENTION_DAYS (기본 730): 접근 감사 로그. 「개인정보의 안전성 확보조치 기준」
@@ -26,7 +27,7 @@ from sqlalchemy.orm import Session
 
 import media
 from database import checkpoint_wal
-from models import AccessAuditLog, PerformanceLog
+from models import AccessAuditLog, HelpRequest, PerformanceLog
 
 
 def _positive_days(name: str, default: int) -> int:
@@ -59,16 +60,18 @@ def _utcnow_naive() -> datetime:
 
 
 def purge(db: Session, *, dry_run: bool = False, now: datetime | None = None) -> dict:
-    """보존기간이 지난 수행 로그·접근 감사 로그와 고아 사진·TTS(media.gc)를 지운다. 지운(지울) 개수를 돌려준다."""
+    """보존기간이 지난 수행 로그·도움 요청·접근 감사 로그와 고아 사진·TTS(media.gc)를 지운다. 지운(지울) 개수를 돌려준다."""
     now = now or _utcnow_naive()
     log_cutoff = now - timedelta(days=performance_log_retention_days())
     audit_cutoff = now - timedelta(days=access_audit_retention_days())
 
     log_filter = PerformanceLog.completed_at < log_cutoff
+    help_filter = HelpRequest.created_at < log_cutoff
     audit_filter = AccessAuditLog.at < audit_cutoff
     report = {
         "performance_logs": db.scalar(select(func.count()).select_from(PerformanceLog).where(log_filter)) or 0,
         "access_audit_logs": db.scalar(select(func.count()).select_from(AccessAuditLog).where(audit_filter)) or 0,
+        "help_requests": db.scalar(select(func.count()).select_from(HelpRequest).where(help_filter)) or 0,
     }
     report["dry_run"] = dry_run
     if dry_run:
@@ -76,6 +79,7 @@ def purge(db: Session, *, dry_run: bool = False, now: datetime | None = None) ->
         return report
 
     db.execute(delete(PerformanceLog).where(log_filter))
+    db.execute(delete(HelpRequest).where(help_filter))
     db.execute(delete(AccessAuditLog).where(audit_filter))
     db.commit()
 

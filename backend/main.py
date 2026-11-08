@@ -12,6 +12,9 @@
 - /api/performance-logs: (assignment, step) 업서트 + 완료 집계
 - (Phase 0.2) AI 하네스로 보내는 요청의 근로자 실명은 별칭으로 바꾸고(privacy.Pseudonymizer), 메모는 허용·동의가
   있을 때만 보낸다. 근로자 개인 데이터 열람은 접근 감사 로그에 남긴다. 동의 기록·내보내기·삭제 API.
+- (근로자 화면 0·1차, 0006) 그림 없는 단계가 있으면 보내기(publish) 422, 그림 4상태(picture_state),
+  자동 접속 코드 4자리 + 사업장 단위 로그인 제한, 근로자 화면 설정(a11y_prefs), 오늘 할 일 이어서 하기 정보,
+  도움 요청 API(help_requests). 도움 요청은 수행 로그와 따로 두어 단계 완료로 세지 않는다.
 """
 from __future__ import annotations
 
@@ -27,11 +30,13 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from urllib.parse import unquote
 
-from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from typing import Literal
+
+from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
@@ -54,7 +59,17 @@ from auth import (
 import db_migrate
 from codes import normalize_workplace_code
 from database import checkpoint_wal, get_db
-from models import Assignment, Employer, MediaFile, PerformanceLog, Step, Task, Worker, WorkerConsent
+from models import (
+    Assignment,
+    Employer,
+    HelpRequest,
+    MediaFile,
+    PerformanceLog,
+    Step,
+    Task,
+    Worker,
+    WorkerConsent,
+)
 from privacy import (
     employer_pseudonymizer,
     has_active_consent,
@@ -77,9 +92,14 @@ from schemas import (
     ConsentOut,
     DashboardOut,
     DashboardWorkerOut,
+    ActiveHelpOut,
+    EmployerHelpOut,
     EmployerLogin,
+    HelpCreate,
+    HelpOut,
     HistoryCardOut,
     HistoryStepOut,
+    LogResultOut,
     PerformanceLogCreate,
     StepCreate,
     StepOut,
@@ -94,12 +114,22 @@ from schemas import (
     TokenOut,
     WorkerCreate,
     WorkerLogin,
+    WorkerMeOut,
     WorkerOut,
     WorkerUpdate,
     WorkerWithCodeOut,
     WorkplaceOut,
+    merge_a11y_prefs,
+    parse_a11y_prefs,
 )
-from ratelimit import client_ip, employer_throttle, ensure_not_blocked, worker_throttle
+from ratelimit import (
+    client_ip,
+    employer_throttle,
+    ensure_not_blocked,
+    help_throttle,
+    worker_throttle,
+    worker_wp_throttle,
+)
 import maintenance
 import media
 from photos import MAX_PHOTO_BYTES, ImageRejected, sanitize_image, save_photo, sniff_image
@@ -256,6 +286,33 @@ def demo_credentials(db: Session = Depends(get_db)) -> dict:
     return {"employer": employer_out, "worker": worker_out}
 
 
+def _utcnow() -> datetime:
+    """DB에 저장하는 시각(naive UTC). SQLite DateTime은 시간대를 저장하지 않아, 비교는 naive UTC끼리 한다."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _naive_utc(dt: datetime | None) -> datetime | None:
+    if dt is None or dt.tzinfo is None:
+        return dt
+    return dt.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def picture_state(s: Step) -> str:
+    """단계 그림 4상태(스펙 5.5).
+
+    none(그림 없음) → confirmed(사업주가 고름·올림·확인) → auto_high(자동 채택, 확인 전) → choose(그림은 있으나
+    자동 채택 못 함, 사업주가 골라야 함) 순서로 판정한다. 사진 레코드가 지워졌으면(GC) 그림 없음이다.
+    """
+    has_picture = s.symbol_media is not None or bool((s.symbol_url or "").strip())
+    if not has_picture:
+        return "none"
+    if s.picture_confirmed:
+        return "confirmed"
+    if not s.needs_fallback:
+        return "auto_high"
+    return "choose"
+
+
 def _step_to_out(s: Step) -> StepOut:
     # 사진·음성 URL은 저장하지 않고 응답 때마다 서명해 만든다(media.py). 만료되면 화면이 다시 조회해 새 URL을 받는다.
     # 레코드가 지워졌으면(GC) None — 그림 없음 / 브라우저 음성합성으로 대신한다.
@@ -265,7 +322,7 @@ def _step_to_out(s: Step) -> StepOut:
         id=s.id, order=s.order_index, sentence=s.sentence,
         action_type=s.action_type, symbol_url=symbol_url,
         symbol_source=s.symbol_source, needs_fallback=s.needs_fallback,
-        tts_audio_url=tts_url,
+        tts_audio_url=tts_url, picture_state=picture_state(s),
     )
 
 
@@ -328,8 +385,12 @@ def worker_login(payload: WorkerLogin, request: Request,
                  db: Session = Depends(get_db)) -> TokenOut:
     # 성공해도 IP 카운터를 비우지 않는다. 비우면 공격자가 자기 코드로 한 번씩 로그인해
     # 카운터를 계속 초기화하며 대입할 수 있다. 창(window)이 지나면 저절로 풀린다.
+    # 자동 코드는 4자리라(창업자 결정 3) 시도 제한이 방어선이다. IP 키에 더해 사업장 키로도 센다 — IP를 바꿔 가며
+    # 한 사업장의 1만 개를 훑는 대입을 막는다. 없는 사업장 코드도 같은 키 규칙으로 센다(존재 오라클 방지).
     key = f"ip:{client_ip(request)}"
+    wp_key = f"wp:{normalize_workplace_code(payload.workplace_code)}"
     ensure_not_blocked(worker_throttle, key)
+    ensure_not_blocked(worker_wp_throttle, wp_key)
     # 접속 코드는 사업장 안에서만 unique다. 사업장 코드로 사업장을 먼저 정하고, 그 사업장 기준
     # 해시로만 찾는다 — 다른 사업장 근로자의 코드는 여기서 절대 맞지 않는다.
     employer = db.scalar(select(Employer).where(
@@ -346,6 +407,7 @@ def worker_login(payload: WorkerLogin, request: Request,
         worker = None
     if worker is None:
         worker_throttle.fail(key)
+        worker_wp_throttle.fail(wp_key)
         # 사업장 코드가 틀린 경우와 접속 코드가 틀린 경우를 같은 응답으로 돌려준다.
         # 다르게 답하면 사업장 코드가 존재하는지를 이 엔드포인트로 탐지할 수 있다.
         raise HTTPException(status_code=401, detail="사업장 코드 또는 접속 코드가 올바르지 않습니다.")
@@ -357,7 +419,9 @@ def worker_login(payload: WorkerLogin, request: Request,
     return TokenOut(token=make_token(worker.id, "worker",
                                      extra={"cf": code_fingerprint(worker.access_code_hash)}),
                     role="worker",
-                    display_name=worker.display_name)
+                    display_name=worker.display_name,
+                    # 근로자 기기가 키패드 위 띠에 보여 줄 사업장 이름(로그인한 뒤에만 알려 준다).
+                    workplace_name=employer.org_name or employer.name)
 
 
 def current_worker(user: dict = Depends(require_worker), db: Session = Depends(get_db)) -> dict:
@@ -397,7 +461,8 @@ def _worker_out(w: Worker, ai_consent: bool = False, personal_info_consent: bool
                      access_code_hint=w.access_code_hint, access_code_length=w.access_code_length,
                      note=w.note or "", ai_note_allowed=bool(w.ai_note_allowed), ai_consent=ai_consent,
                      personal_info_consent=personal_info_consent,
-                     name_ambiguous=is_ambiguous_name(w.display_name))
+                     name_ambiguous=is_ambiguous_name(w.display_name),
+                     a11y_prefs=parse_a11y_prefs(w.a11y_prefs))
 
 
 def _owned_worker(worker_id: str, employer_id: str, db: Session) -> Worker:
@@ -462,8 +527,11 @@ def create_worker(payload: WorkerCreate, db: Session = Depends(get_db),
     raise HTTPException(status_code=503, detail="접속 코드를 만들지 못했습니다. 다시 시도해 주세요.")
 
 
-ACCESS_CODE_DIGITS = 6
-# 서버가 만든 코드가 확인과 저장 사이에 동시 요청과 겹쳤을 때 다시 뽑는 횟수. 6자리라 거의 일어나지 않는다.
+# 창업자 결정 3: 근로자 키패드는 4자리를 누르면 바로 들어간다. 그래서 자동 코드도 4자리(1만 개)다.
+# 사업장 안에서만 겹치지 않으면 된다(_new_access_code가 확인). 대입 방어는 로그인 시도 제한(ratelimit.py)이 한다.
+# 사업주가 직접 정한 코드(4~12자리)와 예전에 만든 6자리 코드는 그대로 로그인된다(해시 비교라 길이와 무관).
+ACCESS_CODE_DIGITS = 4
+# 서버가 만든 코드가 확인과 저장 사이에 동시 요청과 겹쳤을 때 다시 뽑는 횟수.
 _CODE_COMMIT_ATTEMPTS = 5
 
 
@@ -475,7 +543,10 @@ def _access_code_taken(db: Session, employer_id: str, code: str) -> bool:
 
 
 def _new_access_code(db: Session, employer_id: str) -> str:
-    """사업장 안에서 겹치지 않는 6자리 무작위 숫자 코드. 근로자가 누르기 쉽게 숫자만 쓴다."""
+    """사업장 안에서 겹치지 않는 4자리 무작위 숫자 코드. 근로자가 누르기 쉽게 숫자만 쓴다.
+
+    1만 개 중 50번 뽑는다. 사업장 근로자가 수천 명이 아닌 한 겹치지 않는 코드를 찾는다.
+    """
     for _ in range(50):
         code = "".join(secrets.choice("0123456789") for _ in range(ACCESS_CODE_DIGITS))
         if not _access_code_taken(db, employer_id, code):
@@ -486,7 +557,7 @@ def _new_access_code(db: Session, employer_id: str) -> str:
 @app.post("/api/workers/{worker_id}/access-code", response_model=WorkerWithCodeOut)
 def reissue_access_code(worker_id: str, db: Session = Depends(get_db),
                         user: dict = Depends(require_employer)) -> WorkerWithCodeOut:
-    """접속 코드를 새 6자리 무작위 코드로 바꾼다(예전 짧은 코드 교체·코드 유출 시).
+    """접속 코드를 새 4자리 무작위 코드로 바꾼다(예전 긴 코드 교체·코드 유출 시).
 
     이미 발급된 로그인 토큰도 함께 무효가 된다. 토큰의 cf 지문은 저장된 코드 해시에서 만들므로,
     코드가 바뀌면 지문이 맞지 않아 current_worker에서 401이 된다(새 코드로 다시 로그인해야 한다).
@@ -513,7 +584,7 @@ def reissue_access_code(worker_id: str, db: Session = Depends(get_db),
 def update_worker(worker_id: str, payload: WorkerUpdate, request: Request,
                   db: Session = Depends(get_db),
                   user: dict = Depends(require_employer)) -> WorkerOut:
-    """근로자 이름·메모·"AI 코칭에 메모 사용" 허용을 바꾼다. 보낸 필드만 바꾼다."""
+    """근로자 이름·메모·"AI 코칭에 메모 사용" 허용·화면 설정(a11y_prefs)을 바꾼다. 보낸 필드만 바꾼다."""
     worker = _owned_worker(worker_id, user["sub"], db)
     if payload.display_name is not None and payload.display_name.strip():
         worker.display_name = payload.display_name.strip()
@@ -521,6 +592,9 @@ def update_worker(worker_id: str, payload: WorkerUpdate, request: Request,
         worker.note = payload.note.strip()
     if payload.ai_note_allowed is not None:
         worker.ai_note_allowed = payload.ai_note_allowed
+    if payload.a11y_prefs is not None:
+        # 보낸 키만 병합한다(예: 소리 자동 재생만 끄기). 결과는 항상 8개 키를 다 채운 JSON이다.
+        worker.a11y_prefs = merge_a11y_prefs(worker.a11y_prefs, payload.a11y_prefs)
     record_access(db, request, user, "worker.update", worker.id, commit=False)
     db.commit()
     db.refresh(worker)
@@ -590,7 +664,7 @@ def _iso(dt: datetime | None) -> str | None:
 @app.get("/api/workers/{worker_id}/export")
 def export_worker(worker_id: str, request: Request, db: Session = Depends(get_db),
                   user: dict = Depends(require_employer)) -> JSONResponse:
-    """근로자 한 명의 데이터(프로필·동의·배정·수행 로그)를 JSON 파일로 내려준다.
+    """근로자 한 명의 데이터(프로필·동의·배정·수행 로그·도움 요청)를 JSON 파일로 내려준다.
 
     접속 코드 해시는 인증 비밀이라 넣지 않는다. 서버에 사본을 만들지 않고 응답으로만 보낸다
     (내보낸 파일이 서버 디스크에 남으면 그것도 파기 대상이 된다).
@@ -605,8 +679,11 @@ def export_worker(worker_id: str, request: Request, db: Session = Depends(get_db
     logs = db.scalars(select(PerformanceLog).where(
         PerformanceLog.assignment_id.in_([a.id for a in assignments]))
         .order_by(PerformanceLog.completed_at)).all()
+    helps = db.scalars(select(HelpRequest).where(HelpRequest.worker_id == worker_id)
+                       .order_by(HelpRequest.created_at)).all()
     steps = {s.id: s for s in db.scalars(
-        select(Step).where(Step.id.in_({log.step_id for log in logs}))).all()}
+        select(Step).where(Step.id.in_({log.step_id for log in logs}
+                                       | {h.step_id for h in helps if h.step_id}))).all()}
 
     data = {
         "exported_at": datetime.now(timezone.utc).isoformat(),
@@ -628,7 +705,15 @@ def export_worker(worker_id: str, request: Request, db: Session = Depends(get_db
             "sentence": steps[log.step_id].sentence if log.step_id in steps else "",
             "completed_at": _iso(log.completed_at), "duration_sec": log.duration_sec,
             "replay_count": log.replay_count, "stuck": bool(log.stuck),
+            "completed": bool(log.completed),
         } for log in logs],
+        "help_requests": [{
+            "assignment_id": h.assignment_id,
+            "step_order": steps[h.step_id].order_index if h.step_id in steps else None,
+            "state": h.state, "resolution": h.resolution,
+            "created_at": _iso(h.created_at), "acknowledged_at": _iso(h.acknowledged_at),
+            "cancelled_at": _iso(h.cancelled_at), "resolved_at": _iso(h.resolved_at),
+        } for h in helps],
     }
     record_access(db, request, user, "worker.export", worker_id)
     # 파일명에 이름을 넣지 않는다(다운로드 폴더·브라우저 기록에 남는다). id 앞부분으로 구분한다.
@@ -700,6 +785,8 @@ def delete_worker(worker_id: str, request: Request, db: Session = Depends(get_db
     assignment_ids = [a.id for a in db.scalars(
         select(Assignment).where(Assignment.worker_id == worker_id)
     ).all()]
+    # 도움 요청은 배정·근로자를 가리키므로 먼저 지운다(남기면 FK 고아 + 근로자 기록이 남는다).
+    db.execute(delete(HelpRequest).where(HelpRequest.worker_id == worker_id))
     if assignment_ids:
         db.execute(delete(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids)))
         db.execute(delete(Assignment).where(Assignment.worker_id == worker_id))
@@ -959,12 +1046,13 @@ def get_task(task_id: str, db: Session = Depends(get_db),
 @app.delete("/api/tasks/{task_id}")
 def delete_task(task_id: str, db: Session = Depends(get_db),
                 user: dict = Depends(require_employer)) -> dict:
-    """직무를 삭제한다. 단계는 cascade로 함께 지워지고, 배정/수행 로그는 명시적으로 정리한다."""
+    """직무를 삭제한다. 단계는 cascade로 함께 지워지고, 배정/수행 로그/도움 요청은 명시적으로 정리한다."""
     task = _owned_task(task_id, user["sub"], db)
     assignment_ids = [a.id for a in db.scalars(
         select(Assignment).where(Assignment.task_id == task_id)
     ).all()]
     if assignment_ids:
+        db.execute(delete(HelpRequest).where(HelpRequest.assignment_id.in_(assignment_ids)))
         db.execute(delete(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids)))
         db.execute(delete(Assignment).where(Assignment.task_id == task_id))
     media_ids = _step_media_ids(task.steps)
@@ -1098,6 +1186,8 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
             # (예전에는 무조건 fallback으로 적어 어디서 온 그림인지 알 수 없었다.)
             step.symbol_source = payload.symbol_source or "fallback"
         step.needs_fallback = False
+        # 사업주가 후보를 고르거나 검색 결과를 붙였다 = 이 그림을 확인했다.
+        step.picture_confirmed = True
     if payload.sentence is not None:
         step_sentence_before = step.sentence
         step.sentence = payload.sentence
@@ -1128,6 +1218,7 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
         step.symbol_url = None
         step.symbol_source = "fallback"
         step.needs_fallback = True
+        step.picture_confirmed = False
         db.commit()
         raise HTTPException(status_code=409, detail=_MEDIA_GONE)
     return _step_to_out(step)
@@ -1196,6 +1287,8 @@ def delete_step(task_id: str, step_id: str, db: Session = Depends(get_db),
         )
     # 이 단계를 참조하는 수행 로그를 먼저 정리한다(게시 후 삭제 대비).
     db.execute(delete(PerformanceLog).where(PerformanceLog.step_id == step_id))
+    # 도움 요청 기록은 남기고 단계만 끊는다(언제 도움을 불렀는지는 단계가 없어도 의미가 있다).
+    db.execute(update(HelpRequest).where(HelpRequest.step_id == step_id).values(step_id=None))
     media_ids = _step_media_ids([step])
     db.delete(step)
     db.flush()
@@ -1214,11 +1307,45 @@ def delete_step(task_id: str, step_id: str, db: Session = Depends(get_db),
 @app.post("/api/tasks/{task_id}/publish", response_model=TaskOut)
 def publish_task(task_id: str, db: Session = Depends(get_db),
                  user: dict = Depends(require_employer)) -> TaskOut:
+    """직무를 근로자에게 보낼 수 있게 한다(0차 7번: 그림 없는 단계가 있으면 막는다).
+
+    창업자 결정 9: 단계마다 그림 1장. 그림 없는 단계가 근로자 화면에 빈 칸으로 나가면 그 단계를 따라 할 수 없다.
+    이미 보낸 직무를 다시 보낼 때도 같은 검사를 한다(보낸 뒤 사진을 지운 경우).
+    """
     task = _owned_task(task_id, user["sub"], db)
+    if not task.steps:
+        raise HTTPException(status_code=422, detail="단계가 없는 직무는 보낼 수 없어요.")
+    missing = [s.order_index for s in sorted(task.steps, key=lambda x: x.order_index)
+               if picture_state(s) == "none"]
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail=f"그림이 없는 단계가 있어요({', '.join(str(n) for n in missing)}단계). "
+                   "그림을 고르거나 사진을 올린 뒤 보내 주세요.",
+        )
+    # TODO(2차 편집기): 확인 안 한 자동 그림(auto_high/choose)도 서버에서 막는다. 지금 사업주 화면은 확인을
+    # 서버에 저장하지 않고(클라이언트 상태) 화면에서만 막는다. 편집기가 picture/confirm API를 쓰기 시작하면 바꾼다.
     task.status = "published"
     db.commit()
     db.refresh(task)
     return _task_out(task)
+
+
+@app.post("/api/tasks/{task_id}/steps/{step_id}/picture/confirm", response_model=StepOut)
+def confirm_step_picture(task_id: str, step_id: str, db: Session = Depends(get_db),
+                         user: dict = Depends(require_employer)) -> StepOut:
+    """자동으로 붙은 그림을 사업주가 보고 "이 그림이 맞다"고 확인한다(그림 4상태의 '확인함'). 2차 편집기용."""
+    _owned_task(task_id, user["sub"], db)
+    step = db.get(Step, step_id)
+    if step is None or step.task_id != task_id:
+        raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
+    if picture_state(step) == "none":
+        raise HTTPException(status_code=422,
+                            detail="그림이 없는 단계는 확인할 수 없어요. 먼저 그림을 골라 주세요.")
+    step.picture_confirmed = True
+    db.commit()
+    db.refresh(step)
+    return _step_to_out(step)
 
 
 @app.post("/api/aac/search", response_model=AacSearchResult)
@@ -1312,26 +1439,97 @@ def assign_task(task_id: str, payload: AssignRequest = AssignRequest(),
     return out
 
 
+# --- 근로자: 내 정보·화면 설정 ---
+@app.get("/api/worker/me", response_model=WorkerMeOut)
+def worker_me(db: Session = Depends(get_db),
+              user: dict = Depends(current_worker)) -> WorkerMeOut:
+    """근로자 화면이 시작할 때 부르는 내 정보(이름·사업장 이름·호칭·화면 설정)."""
+    worker = db.get(Worker, user["sub"])
+    employer = db.get(Employer, worker.employer_id)
+    return WorkerMeOut(
+        id=worker.id, display_name=worker.display_name,
+        workplace_name=(employer.org_name or employer.name) if employer is not None else "",
+        # 창업자 결정 1: 근로자 화면에서 사업주는 '선생님'. 사업장별 호칭 설정은 2차.
+        teacher_title="선생님",
+        a11y_prefs=parse_a11y_prefs(worker.a11y_prefs),
+    )
+
+
+ACTIVE_HELP_STATES = ("open", "acknowledged")
+# 오늘 할 일 폴링마다 쓰지 않도록, 마지막 조회 시각은 이 간격보다 오래됐을 때만 갱신한다(SQLite 쓰기 줄이기).
+_LAST_SEEN_MIN_INTERVAL = timedelta(seconds=30)
+
+
+def _touch_last_seen(db: Session, worker_id: str) -> None:
+    worker = db.get(Worker, worker_id)
+    if worker is None:
+        return
+    now = _utcnow()
+    last = _naive_utc(worker.last_seen_at)
+    if last is not None and now - last < _LAST_SEEN_MIN_INTERVAL:
+        return
+    worker.last_seen_at = now
+    db.commit()
+
+
+def _active_help(db: Session, assignment_id: str) -> HelpRequest | None:
+    return db.scalar(
+        select(HelpRequest).where(HelpRequest.assignment_id == assignment_id,
+                                  HelpRequest.state.in_(ACTIVE_HELP_STATES))
+        .order_by(HelpRequest.created_at.desc()).limit(1)
+    )
+
+
 # --- 근로자: 오늘의 카드 ---
 @app.get("/api/worker/me/today", response_model=list[TodayCardOut])
-def worker_today(db: Session = Depends(get_db),
+def worker_today(include_done: bool = False, db: Session = Depends(get_db),
                  user: dict = Depends(current_worker)) -> list[TodayCardOut]:
-    start_of_day = local_day_start_utc()
-    assignments = db.scalars(
-        select(Assignment).where(
-            Assignment.worker_id == user["sub"],
-            Assignment.status != "done",
-            Assignment.assigned_date >= start_of_day,
-        )
-    ).all()
+    """오늘 받은 일. 사업주가 보낸 순서(창업자 결정 7)대로, 카드마다 이어서 하기 정보를 붙인다.
+
+    include_done=false(기본)는 예전처럼 끝낸 일을 뺀다. 새 근로자 화면은 true로 불러 끝낸 일도 아래에 보여 준다.
+    TODO(2차, 결정 5): 보낸 직무를 고치면 다음 배정부터 적용 — assignments.task_version_id로 단계를 고정한다.
+    지금은 배정이 직무의 현재 단계를 본다. 대신 done_step_ids·완료 판정을 현재 단계 기준으로 해 깨지지 않게 한다.
+    """
+    _touch_last_seen(db, user["sub"])
+    query = select(Assignment).where(
+        Assignment.worker_id == user["sub"],
+        Assignment.assigned_date >= local_day_start_utc(),
+    )
+    if not include_done:
+        query = query.where(Assignment.status != "done")
+    assignments = db.scalars(query.order_by(Assignment.assigned_date, Assignment.id)).all()
     out: list[TodayCardOut] = []
+    next_marked = False
     for a in assignments:
         task = db.get(Task, a.task_id)
         if task is None:
             continue
+        logs = db.scalars(select(PerformanceLog).where(PerformanceLog.assignment_id == a.id,
+                                                       PerformanceLog.completed.is_(True))).all()
+        done_set = {log.step_id for log in logs}
+        steps = list(task.steps)
+        done_step_ids = [s.id for s in steps if s.id in done_set]
+        resume = next((i for i, s in enumerate(steps) if s.id not in done_set), len(steps))
+        if a.status == "done":
+            status = "done"
+        elif done_step_ids:
+            status = "in_progress"
+        else:
+            status = "new"
+        is_next = status != "done" and not next_marked
+        next_marked = next_marked or is_next
+        completed_at = None
+        if status == "done" and logs:
+            completed_at = max(_naive_utc(log.completed_at) for log in logs)
+        help_row = _active_help(db, a.id)
         out.append(TodayCardOut(
             assignment_id=a.id, task_id=task.id, task_title=task.title,
-            steps=[_step_to_out(s) for s in task.steps],
+            steps=[_step_to_out(s) for s in steps],
+            status=status, done_step_ids=done_step_ids, resume_step_index=resume,
+            is_next=is_next, assigned_at=_naive_utc(a.assigned_date), completed_at=completed_at,
+            active_help=(ActiveHelpOut(id=help_row.id, state=help_row.state, step_id=help_row.step_id,
+                                       created_at=help_row.created_at)
+                         if help_row is not None else None),
         ))
     return out
 
@@ -1356,8 +1554,10 @@ def worker_history(db: Session = Depends(get_db),
         task = db.get(Task, a.task_id)
         if task is None:
             continue
+        # 어려움 신호만 남긴 기록(completed=false)은 '한 단계'로 세지 않는다.
         completed_step_ids = set(db.scalars(
-            select(PerformanceLog.step_id).where(PerformanceLog.assignment_id == a.id)
+            select(PerformanceLog.step_id).where(PerformanceLog.assignment_id == a.id,
+                                                 PerformanceLog.completed.is_(True))
         ).all())
         out.append(HistoryCardOut(
             assignment_id=a.id, task_id=task.id, task_title=task.title,
@@ -1373,9 +1573,30 @@ def worker_history(db: Session = Depends(get_db),
 
 
 # --- 근로자: 단계 완료 로그(업서트) ---
-@app.post("/api/performance-logs", status_code=201)
-def create_log(payload: PerformanceLogCreate, db: Session = Depends(get_db),
-               user: dict = Depends(current_worker)) -> dict:
+# 기기 시각이 서버보다 이만큼 넘게 앞서면 믿지 않는다(시계가 틀린 기기).
+_CLIENT_CLOCK_SKEW = timedelta(minutes=5)
+
+
+def _clamp_client_time(value: datetime | None, now: datetime, floor: datetime | None) -> datetime:
+    """기기가 보낸 완료 시각을 [배정 시각, 서버 now + 5분] 안으로 자른다. 없으면 서버 now."""
+    if value is None:
+        return now
+    value = _naive_utc(value)
+    if value > now + _CLIENT_CLOCK_SKEW:
+        return now
+    floor = _naive_utc(floor)
+    if floor is not None and value < floor:
+        return floor
+    return value
+
+
+@app.post("/api/performance-logs", status_code=201, response_model=LogResultOut)
+def create_log(payload: PerformanceLogCreate, response: Response, db: Session = Depends(get_db),
+               user: dict = Depends(current_worker)) -> LogResultOut:
+    """단계 완료(또는 어려움 신호) 기록. 새로 적용하면 201, 중복·늦게 온 옛 기록은 바꾸지 않고 200.
+
+    근로자 기기의 오프라인 대기열은 2xx면 지우고, 400·404·422는 버리고, 401·429·5xx는 다시 보낸다.
+    """
     a = db.get(Assignment, payload.assignment_id)
     if a is None or a.worker_id != user["sub"]:
         raise HTTPException(status_code=404, detail="배정을 찾을 수 없습니다.")
@@ -1384,6 +1605,9 @@ def create_log(payload: PerformanceLogCreate, db: Session = Depends(get_db),
     if step is None or step.task_id != a.task_id:
         raise HTTPException(status_code=400, detail="이 배정에 속하지 않는 단계입니다.")
 
+    now = _utcnow()
+    at = _clamp_client_time(payload.client_completed_at, now, a.assigned_date)
+
     # (assignment, step) 업서트: 같은 단계를 다시 끝내면 마지막 기록으로 갱신한다.
     log = db.scalar(
         select(PerformanceLog).where(
@@ -1391,20 +1615,39 @@ def create_log(payload: PerformanceLogCreate, db: Session = Depends(get_db),
             PerformanceLog.step_id == payload.step_id,
         )
     )
-    if log is None:
-        log = PerformanceLog(assignment_id=a.id, step_id=payload.step_id)
+    if log is not None:
+        if payload.client_event_id and log.client_event_id == payload.client_event_id:
+            # 대기열이 같은 기록을 다시 보냈다(응답을 못 받고 끊긴 경우 등). 한 번만 센다.
+            response.status_code = 200
+            return LogResultOut(assignment_status=a.status, duplicate=True, applied=False)
+        if log.completed_at is not None and at < _naive_utc(log.completed_at):
+            # 대기열 순서가 뒤섞여 옛 기록이 늦게 왔다. [이전]으로 돌아가 다시 한 새 값을 옛 값으로 덮지 않는다.
+            response.status_code = 200
+            return LogResultOut(assignment_status=a.status, duplicate=False, applied=False)
+    else:
+        log = PerformanceLog(assignment_id=a.id, step_id=payload.step_id, completed=False)
         db.add(log)
     log.duration_sec = payload.duration_sec
     log.replay_count = payload.replay_count
     log.stuck = payload.stuck
+    log.completed_at = at
+    log.client_event_id = payload.client_event_id
+    # 완료는 올리기만 한다. 끝낸 단계에 나중에 어려움 신호(completed=false)가 와도 '안 함'으로 돌아가지 않는다.
+    log.completed = bool(log.completed) or payload.completed
 
+    # 완료 판정(버그 수정): 예전에는 "기록이 있는 단계 수 >= 전체 단계 수"였다. 도움 요청이 stuck 기록으로
+    # 들어와 마지막 단계에서 [도와주세요]만 눌러도 '다 함'이 됐다. 이제 완료 기록(completed=true)이 지금 직무의
+    # 모든 단계를 덮을 때만 done이다. 진행 중에 단계가 지워지거나 더해져도 지금 단계 기준으로 본다.
     task = db.get(Task, a.task_id)
-    total = len(task.steps)
-    logged_ids = set(db.scalars(
-        select(PerformanceLog.step_id).where(PerformanceLog.assignment_id == a.id)
-    ).all()) | {payload.step_id}
-    if total and len(logged_ids) >= total:
-        a.status = "done"
+    step_ids = {s.id for s in task.steps}
+    done_ids = set(db.scalars(
+        select(PerformanceLog.step_id).where(PerformanceLog.assignment_id == a.id,
+                                             PerformanceLog.completed.is_(True))
+    ).all())
+    if log.completed:
+        done_ids.add(payload.step_id)
+    if step_ids and step_ids <= done_ids:
+        a.status = "done"  # done → 미완료로 되돌리는 일은 없다
 
     # 근로자 삭제와 겹치는 경우를 막는다. 위의 배정 조회는 쓰기 트랜잭션 밖에서 읽은 것이라, 그 사이에
     # delete_worker가 커밋하면 근로자와 이어지지 않는 고아 수행 로그가 들어가거나(SQLite는 외래 키를
@@ -1420,8 +1663,189 @@ def create_log(payload: PerformanceLogCreate, db: Session = Depends(get_db),
     if db.scalar(select(Assignment.id).where(Assignment.id == a.id)) is None:
         db.rollback()
         raise gone
+    if log.completed:
+        # 근로자가 [다 했어요]를 눌렀다 = 막혔던 일을 해결했다. 열린 도움 요청을 닫는다(스펙 4.5).
+        db.execute(update(HelpRequest).where(
+            HelpRequest.assignment_id == a.id, HelpRequest.state.in_(ACTIVE_HELP_STATES),
+        ).values(state="resolved", resolution="step_done", resolved_at=now))
     db.commit()
-    return {"ok": True, "assignment_status": a.status}
+    return LogResultOut(assignment_status=a.status, duplicate=False, applied=True)
+
+
+# --- 도움 요청(근로자 [도와주세요] → 사업주 화면 알림 띠) ---
+_HELP_NOT_FOUND = "도움 요청을 찾을 수 없습니다."
+_HELP_FINISHED = "이미 끝난 도움 요청이에요."
+_HELP_CANCELLED = "근로자가 이미 취소한 요청이에요."
+
+
+def notify_help_opened(db: Session, help_request: HelpRequest) -> None:
+    """새 도움 요청이 생겼을 때 사업주에게 알린다. 지금은 사업주 화면이 GET /api/employer/help를 폴링한다."""
+    # TODO(결정 6): 웹 푸시 — 사업주 구독 기기로 알림
+    return None
+
+
+def _help_out(db: Session, h: HelpRequest) -> HelpOut:
+    step = db.get(Step, h.step_id) if h.step_id else None
+    return HelpOut(id=h.id, assignment_id=h.assignment_id, step_id=h.step_id,
+                   step_order=step.order_index if step is not None else None,
+                   state=h.state, resolution=h.resolution, created_at=h.created_at,
+                   acknowledged_at=h.acknowledged_at, cancelled_at=h.cancelled_at,
+                   resolved_at=h.resolved_at)
+
+
+def _workers_help(help_id: str, worker_id: str, db: Session) -> HelpRequest:
+    h = db.get(HelpRequest, help_id)
+    if h is None or h.worker_id != worker_id:
+        raise HTTPException(status_code=404, detail=_HELP_NOT_FOUND)
+    return h
+
+
+def _employers_help(help_id: str, employer_id: str, db: Session) -> HelpRequest:
+    h = db.get(HelpRequest, help_id)
+    if h is None or h.employer_id != employer_id:
+        # 남의 사업장 요청도 404(존재 여부를 숨긴다).
+        raise HTTPException(status_code=404, detail=_HELP_NOT_FOUND)
+    return h
+
+
+@app.post("/api/worker/help", status_code=201, response_model=HelpOut)
+def create_help(payload: HelpCreate, response: Response, db: Session = Depends(get_db),
+                user: dict = Depends(current_worker)) -> HelpOut:
+    """근로자가 [도와주세요]를 눌렀다. 단계 완료로 세지 않는다(수행 로그에 쓰지 않는다).
+
+    같은 배정에 열린 요청이 있으면 새로 만들지 않고 그 요청을 200으로 돌려준다(여러 번 눌러도 한 건).
+    """
+    a = db.get(Assignment, payload.assignment_id)
+    if a is None or a.worker_id != user["sub"]:
+        raise HTTPException(status_code=404, detail="배정을 찾을 수 없습니다.")
+    step_id = payload.step_id or None
+    if step_id is not None:
+        step = db.get(Step, step_id)
+        if step is None or step.task_id != a.task_id:
+            raise HTTPException(status_code=400, detail="이 배정에 속하지 않는 단계입니다.")
+    if payload.client_request_id:
+        same = db.scalar(select(HelpRequest).where(
+            HelpRequest.assignment_id == a.id,
+            HelpRequest.client_request_id == payload.client_request_id,
+        ).limit(1))
+        if same is not None:
+            response.status_code = 200
+            return _help_out(db, same)
+    active = _active_help(db, a.id)
+    if active is not None:
+        if step_id is not None and active.step_id != step_id:
+            active.step_id = step_id  # 다른 단계에서 다시 불렀다 — 사업주가 지금 단계를 보게 한다
+            db.commit()
+            db.refresh(active)
+        response.status_code = 200
+        return _help_out(db, active)
+    key = f"help:{user['sub']}"
+    wait = help_throttle.retry_after(key)
+    if wait:
+        raise HTTPException(status_code=429, detail="잠깐 기다렸다가 다시 불러 주세요.",
+                            headers={"Retry-After": str(wait)})
+    worker = db.get(Worker, user["sub"])
+    h = HelpRequest(employer_id=worker.employer_id, worker_id=worker.id, assignment_id=a.id,
+                    step_id=step_id, state="open", client_request_id=payload.client_request_id,
+                    created_at=_utcnow())
+    db.add(h)
+    db.commit()
+    db.refresh(h)
+    help_throttle.fail(key)  # 실패가 아니라 "새 요청 한 건"을 센다
+    notify_help_opened(db, h)
+    return _help_out(db, h)
+
+
+@app.get("/api/worker/help/{help_id}", response_model=HelpOut)
+def get_help(help_id: str, db: Session = Depends(get_db),
+             user: dict = Depends(current_worker)) -> HelpOut:
+    """근로자 화면이 '불렀어요' 띠를 보이는 동안 5초마다 불러, 선생님이 확인했는지 본다."""
+    return _help_out(db, _workers_help(help_id, user["sub"], db))
+
+
+@app.post("/api/worker/help/{help_id}/cancel", response_model=HelpOut)
+def cancel_help(help_id: str, db: Session = Depends(get_db),
+                user: dict = Depends(current_worker)) -> HelpOut:
+    """근로자 [취소]. 단계 완료로 세지 않는다. 이미 취소했으면 그대로 200, 이미 해결됐으면 409."""
+    h = _workers_help(help_id, user["sub"], db)
+    if h.state == "resolved":
+        raise HTTPException(status_code=409, detail=_HELP_FINISHED)
+    if h.state in ACTIVE_HELP_STATES:
+        h.state = "cancelled"
+        h.cancelled_at = _utcnow()
+        db.commit()
+        db.refresh(h)
+    return _help_out(db, h)
+
+
+@app.get("/api/employer/help", response_model=list[EmployerHelpOut])
+def employer_help(request: Request, state: Literal["active", "open", "today"] = "active",
+                  db: Session = Depends(get_db),
+                  user: dict = Depends(require_employer)) -> list[EmployerHelpOut]:
+    """사업주 화면 도움 알림 띠. active(기본: open+acknowledged) / open / today(오늘 생긴 전부). 최신순 50건."""
+    query = select(HelpRequest).where(HelpRequest.employer_id == user["sub"])
+    if state == "active":
+        query = query.where(HelpRequest.state.in_(ACTIVE_HELP_STATES))
+    elif state == "open":
+        query = query.where(HelpRequest.state == "open")
+    else:
+        query = query.where(HelpRequest.created_at >= local_day_start_utc().replace(tzinfo=None))
+    rows = db.scalars(query.order_by(HelpRequest.created_at.desc()).limit(50)).all()
+    out: list[EmployerHelpOut] = []
+    for h in rows:
+        worker = db.get(Worker, h.worker_id)
+        assignment = db.get(Assignment, h.assignment_id)
+        if worker is None or assignment is None:
+            continue
+        task = db.get(Task, assignment.task_id)
+        step = db.get(Step, h.step_id) if h.step_id else None
+        step_out = _step_to_out(step) if step is not None else None
+        out.append(EmployerHelpOut(
+            id=h.id, state=h.state, created_at=h.created_at, acknowledged_at=h.acknowledged_at,
+            worker_id=worker.id, worker_name=worker.display_name,
+            assignment_id=assignment.id, task_id=assignment.task_id,
+            task_title=task.title if task is not None else "",
+            step_id=step.id if step is not None else None,
+            step_order=step.order_index if step is not None else None,
+            step_sentence=step.sentence if step is not None else None,
+            step_symbol_url=step_out.symbol_url if step_out is not None else None,
+        ))
+    # 근로자 이름이 실리므로 근로자마다 열람 기록을 남긴다(5초 폴링은 privacy.DEDUPED_ACTIONS가 묶는다).
+    record_access_for_workers(db, request, user, "help.list", [o.worker_id for o in out])
+    return out
+
+
+@app.post("/api/employer/help/{help_id}/acknowledge", response_model=HelpOut)
+def acknowledge_help(help_id: str, db: Session = Depends(get_db),
+                     user: dict = Depends(require_employer)) -> HelpOut:
+    """사업주 [확인했어요]. 근로자 화면 띠가 '선생님이 확인했어요'로 바뀐다."""
+    h = _employers_help(help_id, user["sub"], db)
+    if h.state == "cancelled":
+        raise HTTPException(status_code=409, detail=_HELP_CANCELLED)
+    if h.state == "resolved":
+        raise HTTPException(status_code=409, detail=_HELP_FINISHED)
+    if h.state == "open":
+        h.state = "acknowledged"
+        h.acknowledged_at = _utcnow()
+        db.commit()
+        db.refresh(h)
+    return _help_out(db, h)
+
+
+@app.post("/api/employer/help/{help_id}/resolve", response_model=HelpOut)
+def resolve_help(help_id: str, db: Session = Depends(get_db),
+                 user: dict = Depends(require_employer)) -> HelpOut:
+    """사업주 [도와줬어요]. 이미 해결됐으면 그대로 200, 근로자가 취소했으면 409."""
+    h = _employers_help(help_id, user["sub"], db)
+    if h.state == "cancelled":
+        raise HTTPException(status_code=409, detail=_HELP_CANCELLED)
+    if h.state in ACTIVE_HELP_STATES:
+        h.state = "resolved"
+        h.resolution = "employer"
+        h.resolved_at = _utcnow()
+        db.commit()
+        db.refresh(h)
+    return _help_out(db, h)
 
 
 # --- 사업주: 대시보드 집계 ---
@@ -1452,6 +1876,23 @@ def _logs_by_step(task_id: str, worker_id: str | None, db: Session) -> dict[str,
         select(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids))
     ).all()
     return {log.step_id: log for log in logs}
+
+
+def _help_step_ids(task_id: str, worker_id: str | None, db: Session) -> set[str]:
+    """도움 요청이 한 번이라도 있었던 단계 id. 대시보드·코칭의 '막힘'에 더한다.
+
+    예전에는 [도와주세요]가 stuck=true 수행 로그였다. 도움 요청을 따로 두면서도 사업주 화면에는 지금처럼 보이게 한다.
+    """
+    query = (select(HelpRequest.step_id)
+             .join(Assignment, Assignment.id == HelpRequest.assignment_id)
+             .where(Assignment.task_id == task_id, HelpRequest.step_id.is_not(None)))
+    if worker_id:
+        query = query.where(Assignment.worker_id == worker_id)
+    return set(db.scalars(query).all())
+
+
+def _log_done(log: PerformanceLog | None) -> bool:
+    return log is not None and bool(log.completed)
 
 
 @app.get("/api/dashboard/tasks/{task_id}/workers", response_model=list[DashboardWorkerOut])
@@ -1499,20 +1940,23 @@ def dashboard(task_id: str, request: Request, worker_id: str | None = None,
         record_access_for_workers(db, request, user, "dashboard.view",
                                   _log_worker_ids(logs_by_step.values(), db))
 
+    help_steps = _help_step_ids(task_id, worker_id, db)
     step_stats: list[StepStat] = []
     stuck_steps: list[int] = []
     completed = 0
     for s in task.steps:
         log = logs_by_step.get(s.id)
-        if log is not None:
+        done = _log_done(log)
+        if done:
             completed += 1
-        if log and log.stuck:
+        stuck = bool(log and log.stuck) or s.id in help_steps
+        if stuck:
             stuck_steps.append(s.order_index)
         step_stats.append(StepStat(
-            order=s.order_index, sentence=s.sentence, completed=log is not None,
+            order=s.order_index, sentence=s.sentence, completed=done,
             duration_sec=log.duration_sec if log else 0.0,
             replay_count=log.replay_count if log else 0,
-            stuck=log.stuck if log else False,
+            stuck=stuck,
         ))
 
     total = len(task.steps)
@@ -1550,6 +1994,7 @@ def task_coaching(task_id: str, request: Request, worker_id: str | None = None,
     allow_llm = all(w in consented for w in included)
 
     masker = employer_pseudonymizer(db, user["sub"])
+    help_steps = _help_step_ids(task_id, worker_id, db)
     steps_payload = []
     for s in task.steps:
         log = logs_by_step.get(s.id)
@@ -1557,8 +2002,8 @@ def task_coaching(task_id: str, request: Request, worker_id: str | None = None,
             "order": s.order_index,
             "sentence": masker.mask(s.sentence),
             "action_type": s.action_type,
-            "completed": log is not None,
-            "stuck": bool(log.stuck) if log else False,
+            "completed": _log_done(log),
+            "stuck": bool(log and log.stuck) or s.id in help_steps,
             "replay_count": log.replay_count if log else 0,
             "duration_sec": log.duration_sec if log else 0.0,
         })
@@ -1650,6 +2095,7 @@ async def upload_step_photo(task_id: str, step_id: str,
     step.symbol_url = None
     step.symbol_source = "photo"
     step.needs_fallback = False
+    step.picture_confirmed = True  # 사업주가 직접 올린 사진
     db.commit()
     # 교체된 옛 사진은 다른 단계가 쓰지 않으면 바로 지운다(커밋 실패로 남은 새 파일은 gc-media가 지운다).
     media.release(db, [previous])
@@ -1671,6 +2117,7 @@ def remove_step_photo(task_id: str, step_id: str,
     step.symbol_url = None
     step.symbol_source = "fallback"
     step.needs_fallback = True
+    step.picture_confirmed = False
     db.commit()
     media.release(db, [previous])
     db.refresh(step)

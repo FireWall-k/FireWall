@@ -12,6 +12,9 @@
   개인정보 보호(Phase 0.2) — docs/privacy/data-map.md 참고.
 - (0004) MediaFile(사진·TTS 소유 레코드), Step.symbol_media_id/tts_media_id, Step.tts_audio_url 제거.
   파일은 단기 서명 URL로만 나간다(media.py). DB에는 URL이 아니라 media id와 상대 키만 둔다.
+- (0006) 근로자 화면 0·1차: Step.picture_confirmed(사업주가 그림을 확인함), PerformanceLog.completed·client_event_id
+  (어려움 신호와 완료를 나누고 오프라인 재전송을 묶는다), Worker.a11y_prefs·last_seen_at, HelpRequest(도움 요청).
+  예전에는 [도와주세요]가 stuck=true 수행 로그로 저장돼, 마지막 단계에서 도움만 눌러도 직무가 '다 함'이 됐다.
 """
 from __future__ import annotations
 
@@ -23,6 +26,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -86,6 +90,11 @@ class Worker(Base):
     # AI 처리 동의(WorkerConsent)가 살아 있을 때만 보낸다(main._sendable_note).
     note: Mapped[str] = mapped_column(Text, default="", server_default="")
     ai_note_allowed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    # (0006) 근로자 화면 설정(JSON 문자열). 빈 객체 = 모두 기본값. 읽을 때 모르는 키·잘못된 값은 기본값으로
+    # 바꾼다(schemas.parse_a11y_prefs). 소리 자동 재생은 기본 켬(창업자 결정 4), 근로자마다 끌 수 있다.
+    a11y_prefs: Mapped[str] = mapped_column(Text, default="{}", server_default="{}")
+    # (0006) 근로자 기기가 마지막으로 오늘 할 일을 불러온 시각(UTC). 2차 '연결 끊김' 표시용.
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
     employer: Mapped["Employer"] = relationship(back_populates="workers")
@@ -148,6 +157,9 @@ class Step(Base):
                                                         index=True)
     tts_media_id: Mapped[str | None] = mapped_column(ForeignKey("media_files.id"), nullable=True,
                                                      index=True)
+    # (0006) 사업주가 이 그림을 직접 고르거나 올리거나 확인했는지. 그림 4상태(main.picture_state)의 '확인함'.
+    # 문장만 고치면 그대로 두고, 사진을 지우거나 사진이 사라지면 False로 되돌린다.
+    picture_confirmed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
 
     task: Mapped["Task"] = relationship(back_populates="steps")
     # 레코드가 GC로 지워졌으면 None이 된다 — 응답은 그림/음성 없음으로 나가고,
@@ -196,6 +208,38 @@ class PerformanceLog(Base):
     duration_sec: Mapped[float] = mapped_column(Float, default=0.0)
     replay_count: Mapped[int] = mapped_column(Integer, default=0)
     stuck: Mapped[bool] = mapped_column(Boolean, default=False)
+    # (0006) stuck은 이제 '어려움 신호'(다시 듣기 과다·시간 초과)만 뜻한다. completed=False 행은 신호만 남기고
+    # 완료로 세지 않는다. 0006 이전 행은 완료로 본다(server_default 1). 도움 요청은 HelpRequest에 따로 둔다.
+    completed: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+    # 근로자 기기 오프라인 대기열의 재전송 묶기 키. 같은 값이 다시 오면 아무것도 바꾸지 않는다.
+    client_event_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+
+class HelpRequest(Base):
+    """근로자의 [도와주세요] 요청(0006).
+
+    상태: open → acknowledged(사업주 [확인했어요]) → resolved(사업주 [도와줬어요] 또는 근로자 [다 했어요]),
+    open/acknowledged → cancelled(근로자 [취소]). cancelled·resolved는 끝 상태다.
+    수행 로그와 따로 두어, 도움 요청이 단계 완료로 세지지 않게 한다.
+    """
+    __tablename__ = "help_requests"
+    __table_args__ = (
+        Index("ix_help_requests_assignment_state", "assignment_id", "state"),
+    )
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    employer_id: Mapped[str] = mapped_column(ForeignKey("employers.id"), index=True)
+    worker_id: Mapped[str] = mapped_column(ForeignKey("workers.id"), index=True)
+    assignment_id: Mapped[str] = mapped_column(ForeignKey("assignments.id"), index=True)
+    # 단계가 지워지면 NULL로 바꾼다(요청 기록은 남긴다). 직무 시작·완료 화면에서 부르면 처음부터 NULL.
+    step_id: Mapped[str | None] = mapped_column(ForeignKey("steps.id"), nullable=True, index=True)
+    state: Mapped[str] = mapped_column(String, default="open")
+    # employer(사업주 [도와줬어요]) | step_done(근로자가 [다 했어요])
+    resolution: Mapped[str | None] = mapped_column(String, nullable=True)
+    client_request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now, index=True)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class WorkerConsent(Base):
