@@ -581,8 +581,12 @@ def sweep(query_mode: str, thresholds: list[float],
     """
     # margin_mode="relative"면 margins를 상대 여유 (s1−s2)/s1 값으로 쓴다(local_aac._margin_settings).
     suffix = "MIN_REL_MARGIN" if margin_mode == "relative" else "MIN_MARGIN"
+    # 임베딩 임계값 이름은 제공자별(local_aac.embed_env_name). 상대 여유는 두 제공자가 함께 쓴다.
+    local_margin = ("AAC_LOCAL_EMBED_MATCH_MIN_MARGIN" if suffix == "MIN_MARGIN"
+                    else "AAC_EMBED_MATCH_MIN_REL_MARGIN")
     pairs = (("AAC_MATCH_THRESHOLD", f"AAC_MATCH_{suffix}"),
-             ("AAC_EMBED_MATCH_THRESHOLD", f"AAC_EMBED_MATCH_{suffix}"))
+             ("AAC_EMBED_MATCH_THRESHOLD", f"AAC_EMBED_MATCH_{suffix}"),
+             ("AAC_LOCAL_EMBED_MATCH_THRESHOLD", local_margin))
     mode_keys = ("AAC_MATCH_MARGIN_MODE", "AAC_EMBED_MATCH_MARGIN_MODE")
     saved = {k: os.environ.get(k) for pair in pairs for k in pair}
     saved.update({k: os.environ.get(k) for k in mode_keys})

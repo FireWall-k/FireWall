@@ -38,6 +38,8 @@ STORE_FILENAME = "aac_embeddings.npz"
 
 # 질의 호출이 느리거나 실패하면 이 시간 동안은 시도조차 하지 않는다(요청마다 타임아웃을
 # 기다리게 되는 걸 막는다). 짧은 타임아웃 + 쿨다운이 함께 있어야 장애가 번지지 않는다.
+# 타임아웃은 openai 제공자(네트워크 호출)에만 적용된다. local은 요청 안에서 바로 추론하고(질의 하나
+# 7~14ms) 타임아웃이 없다 — 모델 로딩·추론이 예외를 내면 쿨다운만 걸린다.
 _QUERY_TIMEOUT = float(os.getenv("AAC_EMBED_TIMEOUT", "3"))
 _COOLDOWN_SEC = float(os.getenv("AAC_EMBED_COOLDOWN", "60"))
 _CACHE_SIZE = 512

@@ -148,7 +148,7 @@ def test_embedding_thresholds_unchanged(monkeypatch):
 def test_local_embedding_thresholds(monkeypatch):
     """로컬 임베딩 경로(기본 제공자)는 0.24 / 0.015 — 개발셋 full·sentence 스윕(eval/README.md)."""
     monkeypatch.setenv("AAC_EMBED_PROVIDER", "local")
-    for key in ("AAC_EMBED_MATCH_THRESHOLD", "AAC_EMBED_MATCH_MIN_MARGIN"):
+    for key in ("AAC_LOCAL_EMBED_MATCH_THRESHOLD", "AAC_LOCAL_EMBED_MATCH_MIN_MARGIN"):
         monkeypatch.delenv(key, raising=False)
     assert decide([{"asset_id": "A", "score": 0.239}, {"asset_id": "B", "score": 0.1}],
                   embedding=True)["reason"] == "low_score"

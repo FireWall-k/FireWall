@@ -1112,13 +1112,15 @@ dCA = 네 측정 중 정답 자동 채택이 가장 많이 줄어든 값):
 | **paraphrase-multilingual-MiniLM-L12-v2** (384, 양자화) | **≈ 230MB** | **34초** | 4 / 76 / 118 | 7 / 82 / 119 |
 | intfloat/multilingual-e5-small (384, fp32) | ≈ 465MB | 85초 | 5 / 75 / 118 | 9 / 85 / 119 |
 
-두 모델의 운영점 성능은 거의 같아(차이 1~3건, 잡음 수준) 절반 크기·2.5배 빠른 MiniLM을 골랐다. 질의 하나
-≈ 10ms, 모델 로딩 ≈ 3초(서비스 시작 때 뒤에서 미리 불러 둔다 — `embeddings.warm_up`). e5는 코사인이
+두 모델의 운영점 성능은 거의 같아(차이 1~3건, 잡음 수준) 절반 크기·2.5배 빠른 MiniLM을 골랐다. 질의 임베딩
+하나 중앙값 7.4ms(최대 14ms), 검색 한 번 전체로는 임베딩 off 대비 **+15~20ms**(호스트 CPU 중앙값 55ms → 71ms,
+p90 88ms. 컨테이너 70~98ms). 모델 로딩 ≈ 2.4초(서비스 시작 때 뒤에서 미리 불러 둔다 — `embeddings.warm_up`). e5는 코사인이
 0.8~0.9에 몰려 기준(BASE)을 0.75~0.85로 올려야 했다. `AAC_LOCAL_EMBED_MODEL=intfloat/multilingual-e5-small`로
 바꿀 수는 있지만(자산 파일도 다시 만들고 아래 네 값도 다시 스윕해야 한다) 기본은 MiniLM이다.
 
-**보정(개발셋만, 골든은 확인용)** — `AAC_EMBED_WEIGHT`(가산 가중치) × `AAC_EMBED_BASE`(기준) ×
-`AAC_EMBED_MATCH_THRESHOLD` × `AAC_EMBED_MATCH_MIN_MARGIN`. 채택 규칙: 개발 full·sentence 둘 다 오답 채택이
+**보정(개발셋만, 골든은 확인용)** — `AAC_LOCAL_EMBED_WEIGHT`(가산 가중치) × `AAC_LOCAL_EMBED_BASE`(기준) ×
+`AAC_LOCAL_EMBED_MATCH_THRESHOLD` × `AAC_LOCAL_EMBED_MATCH_MIN_MARGIN`(로컬 제공자 이름. OpenAI 제공자는
+`AAC_EMBED_*` — 아래 "환경변수 이름" 참고). 채택 규칙: 개발 full·sentence 둘 다 오답 채택이
 임베딩 off(7, 9)보다 늘지 않고, 정답 자동 채택이나 top1이 늘어야 한다. 골든 오답 채택은 1건 넘게 늘면 안 된다.
 OpenAI 때의 값(0.5 / 0.4 / 0.35 / 0.02)을 MiniLM에 그대로 쓰면 개발 full 6/77/114, sentence 10/77/114로
 top1이 오히려 떨어진다 — MiniLM은 무관한 문장끼리도 유사도 0.3~0.5가 흔하고, 가산 폭이 크면 규칙 순서를 흔든다.
@@ -1164,5 +1166,31 @@ top1이 오히려 떨어진다 — MiniLM은 무관한 문장끼리도 유사도
 `--network none` 컨테이너에서 모델 로딩 3.0초, 첫 검색 83ms, 임베딩 사용으로 판정되는 것을 확인했다. 이미지는
 압축 기준 79MB → 348MB(패키지 +140MB: onnxruntime·tokenizers·fastembed 의존성, 모델 +250MB, 압축 전 기준)로 커졌다.
 제공자별 기본값은 `local_aac._EMBED_DEFAULTS` 한 곳에 있고, 환경변수를 주면(빈 값이 아니면) 그 값이 이긴다.
+질의 타임아웃(`AAC_EMBED_TIMEOUT`)은 openai 제공자(네트워크 호출)에만 적용된다 — 로컬 추론은 요청 안에서
+바로 돌고 타임아웃이 없다(예외가 나면 쿨다운만 걸린다).
+
+**환경변수 이름(보정값은 제공자별)** — local은 `AAC_LOCAL_EMBED_WEIGHT/BASE/MATCH_THRESHOLD/MATCH_MIN_MARGIN`,
+openai는 예전 이름 `AAC_EMBED_WEIGHT/BASE/MATCH_THRESHOLD/MATCH_MIN_MARGIN`. 예전 `.env.example`(3068dd2~)이
+OpenAI 값(0.5 / 0.4 / 0.35 / 0.02)을 `AAC_EMBED_*`에 적어 두었고, compose가 그 이름을 `.env`에서 읽으므로
+같은 이름을 썼다면 오래된 `.env`가 OpenAI 값을 MiniLM에 조용히 붙였을 것이다(검증에서 재현: 개발 full 6/77/114,
+sentence 10/77/114 — off(7/73/116, 9/83/116)보다 sentence 오답이 늘고 top1이 준다). 이름을 나눈 뒤에는 그 네 값을
+`AAC_EMBED_*`에 넣고 local로 돌려도 기본값 그대로 4/76/118, 7/82/119가 나온다. 기동할 때
+`AAC 임베딩 보정값: 제공자=… 가중치=… 기준=… 임계값=… 여유=…`를 로그로 남기고, local인데 `AAC_EMBED_*` 보정값이
+있으면 "쓰지 않는다"고 경고한다. **기존 `.env`를 옮길 때**: 그 네 줄은 지우거나 비워 두면 된다(남아 있어도 local에는
+영향이 없고 경고만 뜬다). 여유 방식(`AAC_EMBED_MATCH_MARGIN_MODE`, `..._MIN_REL_MARGIN`)은 척도와 무관해 함께 쓴다.
+
+**시도하고 버린 것 — 가산이 없는 1위는 임베딩 없는 임계값으로**: 1위 후보의 유사도가 기준(0.65) 이하라 점수가
+그대로인데 임계값만 0.215 → 0.24로 올라 정답이 거절되는 경우가 있다(검증자 문장 GAS_005 0.2366, CAFE_013 0.2376.
+개발 sentence 정답 자동 채택 −1의 원인). 그래서 "1위에 가산이 안 붙었으면 0.215 / 0.018로 판정"을 재 봤다:
+
+| 측정 | 지금(0.24 / 0.015) | 가산 없는 1위만 0.215 / 0.018 |
+|------|------|------|
+| 개발 full | 4 / 76 / 118 | 7 / 77 / 118 |
+| 개발 sentence | 7 / 82 / 119 | 9 / 81 / 119 |
+| 골든 full | 2 / 91 / 102 | 2 / 92 / 102 |
+| 골든 sentence | 3 / 91 / 100 | 3 / 91 / 100 |
+
+개발 오답 채택이 4→7, 7→9로 off 수준까지 되돌아가 버렸다. 임계값을 올린 효과의 상당 부분이 바로 '가산 없는 애매한
+1위'를 거르는 데서 나오는 셈이라 지금 규칙을 유지한다.
 모델을 못 불러오면(모델 파일 없음·깨짐) 60초 쿨다운과 함께 임베딩 없는 방식(0.215 / 0.018)으로 물러난다.
 

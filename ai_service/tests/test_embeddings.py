@@ -222,8 +222,8 @@ def test_model_load_failure_falls_back(emb_on, monkeypatch):
 @pytest.mark.parametrize("provider", ["local", "openai"])
 def test_embedding_term_is_additive_only(monkeypatch, provider):
     monkeypatch.setenv("AAC_EMBED_PROVIDER", provider)
-    monkeypatch.delenv("AAC_EMBED_WEIGHT", raising=False)
-    monkeypatch.delenv("AAC_EMBED_BASE", raising=False)
+    monkeypatch.delenv(local_aac.embed_env_name("WEIGHT", provider), raising=False)
+    monkeypatch.delenv(local_aac.embed_env_name("BASE", provider), raising=False)
     weight, emb_base, _, _ = local_aac._EMBED_DEFAULTS[provider]
     asset = _asset("CAFE_078")
     qf = _QueryFeatures("의자를 정리하세요")
@@ -238,11 +238,37 @@ def test_embedding_term_is_additive_only(monkeypatch, provider):
 
 def test_embedding_term_env_overrides_provider_defaults(monkeypatch):
     monkeypatch.setenv("AAC_EMBED_PROVIDER", "local")
-    monkeypatch.setenv("AAC_EMBED_WEIGHT", "0.5")
-    monkeypatch.setenv("AAC_EMBED_BASE", "0.4")
-    assert local_aac._embed_term_params() == (0.5, 0.4)
-    monkeypatch.setenv("AAC_EMBED_WEIGHT", "")  # compose가 넘기는 빈 값은 기본값
+    monkeypatch.setenv("AAC_LOCAL_EMBED_WEIGHT", "0.2")
+    monkeypatch.setenv("AAC_LOCAL_EMBED_BASE", "0.7")
+    assert local_aac._embed_term_params() == (0.2, 0.7)
+    monkeypatch.setenv("AAC_LOCAL_EMBED_WEIGHT", "")  # compose가 넘기는 빈 값은 기본값
     assert local_aac._embed_term_params()[0] == local_aac._EMBED_DEFAULTS["local"][0]
+
+
+_OPENAI_ERA_ENV = {"AAC_EMBED_WEIGHT": "0.5", "AAC_EMBED_BASE": "0.4",
+                   "AAC_EMBED_MATCH_THRESHOLD": "0.35", "AAC_EMBED_MATCH_MIN_MARGIN": "0.02"}
+
+
+def test_old_openai_env_values_do_not_reach_local_provider(monkeypatch, caplog):
+    """예전 .env.example(3068dd2~)이 적어 둔 OpenAI 보정값이 남아 있어도 로컬 제공자는 자기 기본값을 쓴다.
+    (그 값을 MiniLM에 쓰면 개발 sentence 오답 채택 9→10, top1 116→114로 나빠졌다.) 기동 로그는 경고한다."""
+    import logging
+    for key in ("WEIGHT", "BASE", "MATCH_THRESHOLD", "MATCH_MIN_MARGIN"):
+        monkeypatch.delenv("AAC_LOCAL_EMBED_" + key, raising=False)
+    for key, value in _OPENAI_ERA_ENV.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setenv("AAC_EMBED_PROVIDER", "local")
+    weight, base, threshold, margin = local_aac._EMBED_DEFAULTS["local"]
+    assert local_aac.embed_settings() == {"provider": "local", "weight": weight, "base": base,
+                                          "threshold": threshold, "min_margin": margin}
+    with caplog.at_level(logging.INFO, logger="ai_harness.local_aac"):
+        local_aac.log_embed_settings()
+    assert any(r.levelno == logging.WARNING and "AAC_EMBED_WEIGHT" in r.getMessage()
+               for r in caplog.records)
+    # openai 제공자는 같은 이름을 그대로 쓴다.
+    monkeypatch.setenv("AAC_EMBED_PROVIDER", "openai")
+    assert local_aac.embed_settings() == {"provider": "openai", "weight": 0.5, "base": 0.4,
+                                          "threshold": 0.35, "min_margin": 0.02}
 
 
 def test_score_never_exceeds_one():
@@ -254,7 +280,8 @@ def test_score_never_exceeds_one():
 # ---------- 이중 임계값 ----------
 
 def test_decide_uses_embedding_thresholds_only_when_flagged(monkeypatch):
-    for key in ("AAC_EMBED_MATCH_THRESHOLD", "AAC_EMBED_MATCH_MIN_MARGIN"):
+    for key in ("AAC_EMBED_MATCH_THRESHOLD", "AAC_EMBED_MATCH_MIN_MARGIN",
+                "AAC_LOCAL_EMBED_MATCH_THRESHOLD", "AAC_LOCAL_EMBED_MATCH_MIN_MARGIN"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("AAC_EMBED_PROVIDER", "local")
     # 임베딩 없음: 0.215/0.018(P5 재보정) — 0.23은 임계값을 넘고 여유도 충분 → 채택
@@ -280,8 +307,13 @@ def test_decide_uses_embedding_thresholds_only_when_flagged(monkeypatch):
     wide = [{"asset_id": "A", "score": 0.50}, {"asset_id": "B", "score": 0.47}]  # 여유 0.03
     assert decide(wide)["reason"] == "accepted"
     assert decide(wide, embedding=True)["reason"] == "accepted"
-    # 환경변수가 제공자 기본값을 이긴다.
+    # 그 제공자의 환경변수가 기본값을 이긴다(local은 AAC_LOCAL_EMBED_*, OpenAI용 이름은 무시).
     monkeypatch.setenv("AAC_EMBED_MATCH_THRESHOLD", "0.6")
+    assert decide(wide, embedding=True)["reason"] == "accepted"
+    monkeypatch.setenv("AAC_LOCAL_EMBED_MATCH_THRESHOLD", "0.6")
+    assert decide(wide, embedding=True)["reason"] == "low_score"
+    monkeypatch.setenv("AAC_EMBED_PROVIDER", "openai")
+    monkeypatch.delenv("AAC_LOCAL_EMBED_MATCH_THRESHOLD")
     assert decide(wide, embedding=True)["reason"] == "low_score"
 
 
@@ -320,7 +352,7 @@ def test_local_embedding_breaks_close_rule_ties(monkeypatch):
     """로컬 기본값(가중치 0.3, 기준 0.65)은 가산 폭이 작다 — 규칙 점수가 근소하게 갈린 후보끼리만
     뒤집는다. 규칙 2위가 뜻이 같고(유사도 1.0) 1위가 기준 이하면 2위가 1위로 올라온다."""
     monkeypatch.setenv("AAC_EMBED_PROVIDER", "local")
-    for key in ("AAC_EMBED_WEIGHT", "AAC_EMBED_BASE"):
+    for key in ("AAC_LOCAL_EMBED_WEIGHT", "AAC_LOCAL_EMBED_BASE"):
         monkeypatch.delenv(key, raising=False)
     weight, emb_base, _, _ = local_aac._EMBED_DEFAULTS["local"]
     ctx = {"business_type": "청소", "sentence": "의자들을 정리하세요.", "action_type": "sort"}

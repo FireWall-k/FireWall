@@ -16,6 +16,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 
 import embeddings
+import local_aac
 import llm
 from local_aac import search_assets
 from decompose import decompose
@@ -42,6 +43,10 @@ logger = logging.getLogger("ai_harness")
 async def _lifespan(_app: FastAPI):
     # 로컬 임베딩 모델 로딩(~3초)을 시작과 함께 뒤에서 한다. 그동안 들어온 요청은 로딩이 끝나기를
     # 기다릴 뿐 실패하지 않는다(embeddings.load_local_model의 잠금).
+    try:
+        local_aac.log_embed_settings()
+    except Exception:  # 진단 로그 실패가 기동을 막으면 안 된다
+        logger.exception("임베딩 보정값 로그 실패")
     threading.Thread(target=embeddings.warm_up, name="embed-warmup", daemon=True).start()
     yield
 
