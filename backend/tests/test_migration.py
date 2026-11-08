@@ -674,3 +674,86 @@ def test_0004_downgrade_restores_static_urls(monkeypatch, tmp_path):
     assert url.endswith(f"/api/tts/{'e' * 32}.mp3")
     db_migrate.upgrade_to_head(engine)
     assert db_migrate.is_at_head(engine)
+
+
+# --- 0006 근로자 화면 0·1차 ------------------------------------------------------
+
+def _seed_0005_rows(engine):
+    """0005 모양의 DB에 사업주·근로자·직무(보냄/초안)·단계·배정·수행 로그를 넣는다."""
+    with engine.begin() as conn:
+        conn.execute(text(
+            "INSERT INTO employers (id, name, org_name, login_id, password_hash, workplace_code, created_at) "
+            "VALUES ('e6', 'n', 'o', 'l6', 'h', 'WP0006', '2026-01-01 00:00:00')"))
+        conn.execute(text(
+            "INSERT INTO workers (id, employer_id, display_name, access_code_hash, access_code_hint, "
+            "access_code_length, note, ai_note_allowed, created_at) "
+            "VALUES ('w6', 'e6', '근로자', 'hash', '34', 4, '', 0, '2026-01-01 00:00:00')"))
+        for tid, status in (("tp", "published"), ("td", "draft")):
+            conn.execute(text(
+                "INSERT INTO tasks (id, employer_id, title, raw_input, business_type, work_environment, job, "
+                "status, created_at) VALUES (:id, 'e6', 't', '', '', '', '', :st, '2026-01-01 00:00:00')"),
+                {"id": tid, "st": status})
+        rows = [
+            # (id, task, symbol_url, symbol_source) — 보낸 직무의 그림 있는 단계 / 보낸 직무의 그림 없는 단계 /
+            # 초안의 자동 그림 / 초안의 사진(소스가 photo면 사업주가 올린 것)
+            ("sp1", "tp", "http://localhost:8000/api/aac/images/x.webp", "LOCAL_AAC"),
+            ("sp2", "tp", None, "fallback"),
+            ("sd1", "td", "http://localhost:8000/api/aac/images/y.webp", "LOCAL_AAC"),
+            ("sd2", "td", None, "photo"),
+        ]
+        for i, (sid, tid, url, src) in enumerate(rows, start=1):
+            conn.execute(text(
+                "INSERT INTO steps (id, task_id, order_index, sentence, action_type, symbol_query, symbol_url, "
+                "symbol_source, needs_fallback) VALUES (:id, :t, :o, '문장', 'other', '', :u, :s, 0)"),
+                {"id": sid, "t": tid, "o": i, "u": url, "s": src})
+        conn.execute(text(
+            "INSERT INTO assignments (id, task_id, worker_id, assigned_date, status) "
+            "VALUES ('a6', 'tp', 'w6', '2026-01-01 00:00:00', 'assigned')"))
+        conn.execute(text(
+            "INSERT INTO performance_logs (id, assignment_id, step_id, completed_at, duration_sec, replay_count, "
+            "stuck) VALUES ('l6', 'a6', 'sp1', '2026-01-01 00:00:00', 1.0, 0, 1)"))
+
+
+def test_0006_backfills_and_downgrades():
+    engine = _new_engine("worker_phase1")
+    db_migrate.upgrade_to_head(engine)
+    db_migrate.downgrade(engine, "0005_access_code_cipher")
+    assert "help_requests" not in inspect(engine).get_table_names()
+    assert "picture_confirmed" not in {c["name"] for c in inspect(engine).get_columns("steps")}
+    _seed_0005_rows(engine)
+
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []
+    with engine.connect() as conn:
+        confirmed = dict(conn.execute(text("SELECT id, picture_confirmed FROM steps")).all())
+        log = conn.execute(text("SELECT completed, client_event_id FROM performance_logs WHERE id='l6'")).one()
+        worker = conn.execute(text("SELECT a11y_prefs, last_seen_at FROM workers WHERE id='w6'")).one()
+    assert confirmed == {"sp1": 1, "sp2": 0, "sd1": 0, "sd2": 1}
+    assert tuple(log) == (1, None)  # 0006 이전 기록은 완료로 본다
+    assert tuple(worker) == ("{}", None)
+    names = {i["name"] for i in inspect(engine).get_indexes("help_requests")}
+    assert "ix_help_requests_assignment_state" in names
+
+    # 되돌리면 데이터는 남고 새 컬럼·테이블만 빠진다. 다시 올려도 head.
+    db_migrate.downgrade(engine, "0005_access_code_cipher")
+    assert "help_requests" not in inspect(engine).get_table_names()
+    assert "completed" not in {c["name"] for c in inspect(engine).get_columns("performance_logs")}
+    assert "a11y_prefs" not in {c["name"] for c in inspect(engine).get_columns("workers")}
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT count(*) FROM performance_logs")).scalar() == 1
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+
+
+def test_0006_resumes_when_some_columns_already_added():
+    """SQLite ALTER TABLE은 롤백되지 않는다. 일부 컬럼만 붙은 채 멈춘 상태에서 다시 돌려도 head에 도달한다."""
+    engine = _new_engine("worker_phase1_resume")
+    db_migrate.upgrade_to_head(engine)
+    db_migrate.downgrade(engine, "0005_access_code_cipher")
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE steps ADD COLUMN picture_confirmed BOOLEAN NOT NULL DEFAULT 0"))
+        conn.execute(text("ALTER TABLE workers ADD COLUMN last_seen_at DATETIME"))
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []
