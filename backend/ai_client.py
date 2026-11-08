@@ -25,11 +25,13 @@ _http = httpx.Client(
 )
 
 
-def decompose(raw_input: str, context: dict | None = None) -> dict:
-    """원문 -> {task_title, steps[]}. 실패 시 예외를 올린다(상위에서 처리)."""
+def decompose(raw_input: str, context: dict | None = None, *, timeout: float | None = None) -> dict:
+    """원문 -> {task_title, steps[]}. 실패 시 예외를 올린다(상위에서 처리).
+    timeout: 이 호출만 짧게 기다릴 때(편집기 저장 시 나누기 확인). 없으면 AI_TIMEOUT."""
     resp = _http.post(
         f"{AI_BASE_URL}/ai/decompose",
         json={"raw_input": raw_input, "context": context or {}},
+        **({"timeout": timeout} if timeout is not None else {}),
     )
     resp.raise_for_status()
     return resp.json()
@@ -47,6 +49,19 @@ def classify_action(sentence: str) -> str:
     except Exception as e:  # noqa: BLE001
         logger.warning("classify_action fallback: %s", e)
         return "other"
+
+
+def split_hint(sentence: str) -> bool | None:
+    """고친 단계 문장 하나에 동작이 둘 이상일 수 있는가(AI 하네스의 규칙 동작 세기, LLM 없음).
+    하네스가 답하지 못하면(장애·옛 버전) None — 부르는 쪽이 겉모양 검사로 대신한다."""
+    try:
+        resp = _http.post(f"{AI_BASE_URL}/ai/split-hint", json={"sentence": sentence}, timeout=3)
+        resp.raise_for_status()
+        value = resp.json().get("may_split")
+        return value if isinstance(value, bool) else None
+    except Exception as e:  # noqa: BLE001
+        logger.warning("split_hint fallback: %s", e)
+        return None
 
 
 def map_symbols(keywords: list[str], context: dict | None = None) -> dict:

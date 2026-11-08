@@ -28,6 +28,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import unquote
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -81,9 +82,15 @@ from schemas import (
     HistoryCardOut,
     HistoryStepOut,
     PerformanceLogCreate,
+    SplitPreviewOut,
+    SplitPreviewStep,
+    StepAddOut,
     StepCreate,
+    StepMerge,
     StepOut,
     StepReorder,
+    StepRewrite,
+    StepRewriteOut,
     StepStat,
     StepSymbolCandidates,
     StepUpdate,
@@ -99,7 +106,8 @@ from schemas import (
     WorkerWithCodeOut,
     WorkplaceOut,
 )
-from ratelimit import client_ip, employer_throttle, ensure_not_blocked, worker_throttle
+from schemas import MAX_CONFIRMED_STEPS, MAX_RAW_INPUT, MAX_STEP_SENTENCE
+from ratelimit import client_ip, employer_throttle, ensure_not_blocked, take_ai_split_call, worker_throttle
 import maintenance
 import media
 from photos import MAX_PHOTO_BYTES, ImageRejected, sanitize_image, save_photo, sniff_image
@@ -122,6 +130,35 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="JOB CARD - Backend", version="0.3.0", lifespan=lifespan)
+
+
+def _validation_message(errors: list) -> str:
+    """요청 검증 실패(422)를 화면에 그대로 띄울 한국어 한 문장으로. FastAPI 기본값은 detail이 목록이라
+    프런트 오류 칸에 '[object Object]'가 떴다(입력 화면 나누기 2차 검증)."""
+    for err in errors:
+        loc = [str(x) for x in err.get("loc") or []]
+        kind = str(err.get("type") or "")
+        if kind == "value_error":
+            msg = str(err.get("msg") or "")
+            return msg.removeprefix("Value error, ").strip() or "입력한 내용을 다시 확인해 주세요."
+        if "steps" in loc and loc[-1] == "steps" and kind == "too_long":
+            return f"단계는 {MAX_CONFIRMED_STEPS}줄까지 만들 수 있어요. 줄을 합치거나 지워 주세요."
+        if "steps" in loc and loc[-1] == "steps" and kind == "too_short":
+            return "단계가 한 줄 이상 있어야 해요."
+        if loc and loc[-1] == "sentence" and kind == "string_too_long":
+            return f"한 줄은 {MAX_STEP_SENTENCE}자까지 쓸 수 있어요. 줄을 나눠 주세요."
+        if loc and loc[-1] == "sentence" and kind == "string_too_short":
+            return "빈 단계 문장이 있습니다."
+        if loc and loc[-1] == "raw_input" and kind == "string_too_long":
+            return f"직무 내용은 {MAX_RAW_INPUT}자까지 쓸 수 있어요."
+        if loc and loc[-1] == "raw_input" and kind in ("string_too_short", "missing"):
+            return "직무 내용을 입력해 주세요."
+    return "입력한 내용을 다시 확인해 주세요."
+
+
+@app.exception_handler(RequestValidationError)
+async def _korean_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
+    return JSONResponse(status_code=422, content={"detail": _validation_message(exc.errors())})
 
 # 정적 파일의 Content-Type은 운영체제 MIME 표를 따른다. python:3.12-slim 이미지에는 .webp가 없어
 # AAC 그림이 text/plain으로 나갔다(Windows 개발 환경에서는 레지스트리 덕에 정상이라 몰랐다).
@@ -818,14 +855,14 @@ def _sendable_note(db: Session, worker: Worker | None, note: str | None) -> str:
     return (note if note is not None and note.strip() else worker.note or "").strip()
 
 
-@app.post("/api/tasks", response_model=TaskOut, status_code=201)
-def create_task(payload: TaskCreate, db: Session = Depends(get_db),
-                user: dict = Depends(require_employer)) -> TaskOut:
-    target = _owned_worker(payload.worker_id, user["sub"], db) if payload.worker_id else None
-    # AI 하네스로 보내는 글(원문·맥락)에서 근로자 실명을 별칭으로 바꾼다. 하네스는 이 글을 해외 LLM과
-    # 임베딩 API로 보낸다. 응답(제목·문장)은 아래에서 실명으로 되돌려 저장한다 — 근로자 화면과 음성은
-    # 사업주가 쓴 그대로여야 한다.
-    masker = employer_pseudonymizer(db, user["sub"])
+def _decompose_inputs(db: Session, payload: TaskCreate, employer_id: str):
+    """AI 하네스로 보낼 원문·맥락(근로자 실명은 별칭으로)과 되돌릴 masker를 만든다.
+
+    AI 하네스는 이 글을 해외 LLM과 임베딩 API로 보낸다. 응답(제목·문장)은 masker로 실명으로 되돌려 저장·표시한다 —
+    근로자 화면과 음성은 사업주가 쓴 그대로여야 한다.
+    """
+    target = _owned_worker(payload.worker_id, employer_id, db) if payload.worker_id else None
+    masker = employer_pseudonymizer(db, employer_id)
     raw_masked = masker.mask(payload.raw_input)
     context = {
         "business_type": masker.mask(payload.business_type or ""),
@@ -834,15 +871,99 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
         # _task_context()와 같은 이유로 넣는다 — 업종 미입력 시 직무 추론의 보조 신호.
         "raw_input": raw_masked,
     }
-    # 그림 검색에는 메모가 필요 없다. 검색 질의도 임베딩 API로 나갈 수 있으므로 빼고 보낸다.
-    symbol_context = {k: v for k, v in context.items() if k != "worker_note"}
+    return masker, raw_masked, context
+
+
+def _decompose_or_502(raw_masked: str, context: dict) -> dict:
     try:
-        decomposed = ai_client.decompose(raw_masked, context)
+        return ai_client.decompose(raw_masked, context)
     except Exception:  # noqa: BLE001 - AI 하네스 장애는 502로 전달한다
         # 예외 원문(내부 호스트명·연결 오류 등)은 사용자 화면에 나가면 안 된다. 로그에만 남긴다.
         logger.exception("직무 분해 호출 실패")
         raise HTTPException(status_code=502,
                             detail="직무를 단계로 나누지 못했습니다. 잠시 뒤 다시 시도해 주세요.")
+
+
+def _split_fields(step: dict, masker) -> dict:
+    """AI 분해 응답의 나누기 정보(split_group·split_check·source_text)를 모양을 확인해 옮긴다.
+    AI 하네스가 아직 이 칸을 안 주거나 모양이 다르면 '확실·원문 그대로'로 본다."""
+    group = step.get("split_group")
+    source = step.get("source_text")
+    return {
+        "split_group": group if isinstance(group, int) and not isinstance(group, bool) else None,
+        "split_check": step.get("split_check") is True,
+        "source_text": masker.unmask(source) if isinstance(source, str) and source.strip() else None,
+    }
+
+
+def _step_terms(step: dict) -> list:
+    """AI 분해 응답 단계의 그림 검색어(symbol_query, 없으면 keywords의 term)."""
+    query = step.get("symbol_query") or [k.get("term") for k in step.get("keywords") or []
+                                         if isinstance(k, dict)]
+    return [str(t) for t in query if str(t or "").strip()]
+
+
+@app.post("/api/tasks/split-preview", response_model=SplitPreviewOut)
+def split_preview(payload: TaskCreate, db: Session = Depends(get_db),
+                  user: dict = Depends(require_employer)) -> SplitPreviewOut:
+    """입력 화면의 [단계로 나누기] — 직무를 만들지 않고 나눈 결과만 돌려준다(한 줄 = 한 동작 = 그림 1장).
+
+    사업주가 이 목록을 그 자리에서 고치고 [이대로 그림 고르기]를 누르면 POST /api/tasks에 steps로 보내
+    그때 초안을 만든다. 그림 검색·음성 합성은 여기서 하지 않는다(확인 전에 비용을 쓰지 않는다).
+    """
+    if not take_ai_split_call(user["sub"]):
+        raise HTTPException(status_code=429, detail="나누기를 너무 자주 눌렀어요. 1분 뒤에 다시 눌러 주세요.")
+    masker, raw_masked, context = _decompose_inputs(db, payload, user["sub"])
+    decomposed = _decompose_or_502(raw_masked, context)
+    steps: list[SplitPreviewStep] = []
+    for step in decomposed.get("steps") or []:
+        if not isinstance(step, dict):
+            continue
+        sentence = str(step.get("sentence") or "").strip()
+        if not sentence:
+            continue
+        steps.append(SplitPreviewStep(
+            order=len(steps) + 1,
+            sentence=masker.unmask(sentence),
+            action_type=str(step.get("action_type") or "other")[:20],
+            symbol_query=[masker.unmask(t) for t in _step_terms(step)][:8],
+            **_split_fields(step, masker),
+        ))
+    if len(steps) > MAX_CONFIRMED_STEPS:
+        # 확인하면 반드시 실패하는 목록을 보여 주지 않는다(GPT가 안 될 때 쓰는 규칙 경로는 단계 수를 자르지 않는다).
+        raise HTTPException(status_code=422, detail=(
+            f"단계가 {len(steps)}개로 나뉘었어요. 한 직무는 {MAX_CONFIRMED_STEPS}단계까지예요. "
+            "직무를 둘로 나눠 입력해 주세요."))
+    return SplitPreviewOut(task_title=masker.unmask(str(decomposed.get("task_title") or "직무")),
+                           job=str(decomposed.get("job") or "").strip(), steps=steps)
+
+
+@app.post("/api/tasks", response_model=TaskOut, status_code=201)
+def create_task(payload: TaskCreate, db: Session = Depends(get_db),
+                user: dict = Depends(require_employer)) -> TaskOut:
+    masker, raw_masked, context = _decompose_inputs(db, payload, user["sub"])
+    # 그림 검색에는 메모가 필요 없다. 검색 질의도 임베딩 API로 나갈 수 있으므로 빼고 보낸다.
+    symbol_context = {k: v for k, v in context.items() if k != "worker_note"}
+    if payload.steps:
+        # 입력 화면에서 사업주가 확인한 단계 — 다시 나누지 않는다(AI 분해 호출 없음).
+        # 아래 prepare()가 그림 검색에는 별칭 문장을, 저장·음성에는 실명 문장을 쓰므로 여기서 별칭으로 바꿔 둔다.
+        decomposed = {
+            "task_title": masker.mask((payload.title or "").strip() or "직무"),
+            "job": (payload.job or "").strip(),
+            "steps": [
+                {
+                    "order": i,
+                    "sentence": masker.mask(cs.sentence),
+                    # 보내지 않은 줄(고친·합친·새 줄)은 규칙 분류기로 매긴다(LLM 없음). 실패하면 other.
+                    "action_type": cs.action_type or ai_client.classify_action(masker.mask(cs.sentence)),
+                    "symbol_query": masker.mask_obj(
+                        cs.symbol_query or re.findall(r"[가-힣A-Za-z]+", cs.sentence)[:4]),
+                }
+                for i, cs in enumerate(payload.steps, start=1)
+            ],
+        }
+    else:
+        decomposed = _decompose_or_502(raw_masked, context)
 
     job = str(decomposed.get("job") or "").strip()
     explicit_business_type = bool(
@@ -975,33 +1096,221 @@ def delete_task(task_id: str, db: Session = Depends(get_db),
     return {"ok": True}
 
 
-@app.post("/api/tasks/{task_id}/steps", response_model=TaskOut, status_code=201)
+@app.post("/api/tasks/{task_id}/steps", response_model=StepAddOut, status_code=201)
 def add_step(task_id: str, payload: StepCreate, db: Session = Depends(get_db),
-             user: dict = Depends(require_employer)) -> TaskOut:
+             user: dict = Depends(require_employer)) -> StepAddOut:
     """검토 화면에서 사업주가 단계를 직접 추가한다.
 
     맨 끝에 붙이며(순서는 이후 드래그로 조정), 상징/TTS는 서버가 생성한다.
     LLM symbol_query가 없으므로 문장에서 한글/영문 단어를 뽑아 상징 후보로 쓴다.
+    새 문장에 동작이 둘이면(초안일 때만) 문장 고치기와 같이 경고 없이 두 단계로 나눠 넣고 split_step_ids를
+    돌려준다 — 화면이 [되돌리기]를 띄운다(한 단계 = 한 동작 = 그림 1장, 설계 5.5).
     """
     task = _owned_task(task_id, user["sub"], db)
     sentence = payload.sentence.strip()
     action_type = payload.action_type or "other"
-    terms = re.findall(r"[가-힣A-Za-z]+", sentence) or [sentence[:12]]
-    # 직무 생성 때와 같은 맥락으로 검색해야 나중에 추가한 단계만 다른 그림이 붙지 않는다.
-    # 검색어·맥락은 AI 하네스(→ 임베딩 API)로 가므로 근로자 실명을 별칭으로 바꿔 보낸다.
-    masker = employer_pseudonymizer(db, user["sub"])
-    sym = _pick_symbol(masker.mask_obj(terms),
-                       context=masker.mask_obj(_task_context(task, sentence, action_type)))
     next_order = max((s.order_index for s in task.steps), default=0) + 1
-    db.add(Step(
-        task_id=task.id, order_index=next_order, sentence=sentence,
-        action_type=action_type,
-        symbol_url=sym.get("image_url"),
+    parts = _detect_split(db, task, user["sub"], sentence) if task.status != "published" else []
+    prepared = ([_prepare_new_step(db, task, user["sub"], part["sentence"], part["action_type"], part["terms"])
+                 for part in parts]
+                or [_prepare_new_step(db, task, user["sub"], sentence, action_type)])
+    new_steps = [_insert_step(db, task, user["sub"], prep, next_order + i) for i, prep in enumerate(prepared)]
+    db.commit()
+    db.refresh(task)
+    out = _task_out(task)
+    return StepAddOut(**out.model_dump(), sentence=sentence,
+                      split_step_ids=[s.id for s in new_steps] if parts else [])
+
+
+def _prepare_new_step(db: Session, task: Task, employer_id: str, sentence: str,
+                      action_type: str = "other", terms: list[str] | None = None,
+                      photo_media_id: str | None = None) -> dict:
+    """사업주가 쓴 문장의 그림·음성을 준비한다(네트워크 호출만, DB는 건드리지 않는다).
+
+    직무 생성 때와 같은 맥락으로 검색해야 나중에 만든 단계만 다른 그림이 붙지 않는다.
+    검색어·맥락은 AI 하네스(→ 임베딩 API)로 가므로 근로자 실명을 별칭으로 바꿔 보낸다.
+    terms(AI가 준 검색어)가 있으면 저장해 두고 후보 재조회도 같은 질의로 한다. 없으면 문장에서 뽑는다.
+    add_step·rewrite_step·merge_steps가 함께 쓴다.
+    photo_media_id: 원래 단계에 사업주가 올린 사진 — 그림을 새로 찾지 않고 그 사진을 그대로 붙인다
+    (나누거나 되돌릴 때 사진이 사라지지 않게).
+    """
+    query = [t for t in (terms or []) if str(t).strip()][:4]
+    if photo_media_id:
+        sym = {"photo_media_id": photo_media_id, "source": "photo", "needs_fallback": False}
+    else:
+        search = query or re.findall(r"[가-힣A-Za-z]+", sentence) or [sentence[:12]]
+        masker = employer_pseudonymizer(db, employer_id)
+        sym = _pick_symbol(masker.mask_obj(search[:4]),
+                           context=masker.mask_obj(_task_context(task, sentence, action_type)))
+    return {"sentence": sentence, "action_type": action_type, "sym": sym,
+            "symbol_query": ",".join(str(t).strip() for t in query),
+            "tts": synthesize_tts(sentence, employer_id)}
+
+
+def _insert_step(db: Session, task: Task, employer_id: str, prepared: dict, order_index: int) -> Step:
+    sym = prepared["sym"]
+    step = Step(
+        task_id=task.id, order_index=order_index, sentence=prepared["sentence"],
+        action_type=prepared["action_type"],
+        symbol_query=prepared.get("symbol_query") or "",
+        symbol_url=None if sym.get("photo_media_id") else sym.get("image_url"),
+        symbol_media_id=sym.get("photo_media_id"),
         symbol_source=sym.get("source", "fallback"),
         needs_fallback=sym.get("needs_fallback", True),
-        tts_media_id=_tts_media_id(db, user["sub"], synthesize_tts(sentence, user["sub"])),
-    ))
+        tts_media_id=_tts_media_id(db, employer_id, prepared["tts"]),
+    )
+    db.add(step)
+    return step
+
+
+def _replace_steps(db: Session, task: Task, employer_id: str, old: list[Step],
+                   prepared: list[dict]) -> tuple[list[Step], list[str]]:
+    """연속한 단계들(old)을 새 단계들로 같은 자리에서 바꾸고 순서를 1..N으로 다시 매긴다(커밋은 부르는 쪽).
+    지운 단계의 수행 로그를 정리하고, 놓아줄 사진·음성 레코드 id를 돌려준다(커밋 뒤 media.release).
+    새 단계로 넘긴 사진(prepared의 photo_media_id)은 놓아주지 않는다."""
+    position = min(s.order_index for s in old)
+    ids = {s.id for s in old}
+    others = sorted((s for s in task.steps if s.id not in ids), key=lambda s: s.order_index)
+    db.execute(delete(PerformanceLog).where(PerformanceLog.step_id.in_(ids)))
+    kept = {p["sym"].get("photo_media_id") for p in prepared} - {None}
+    media_ids = [m for m in _step_media_ids(old) if m not in kept]
+    for s in old:
+        db.delete(s)
+    db.flush()
+    new_steps = [_insert_step(db, task, employer_id, p, 0) for p in prepared]
+    ordered = ([s for s in others if s.order_index < position] + new_steps
+               + [s for s in others if s.order_index > position])
+    for i, s in enumerate(ordered, start=1):
+        s.order_index = i
+    db.flush()
+    return new_steps, media_ids
+
+
+# 편집기 저장 시 나누기 확인의 AI 시간 제한(초). 저장을 오래 붙잡지 않게 직무 생성(AI_TIMEOUT)보다 짧다.
+_SPLIT_CHECK_TIMEOUT = float(os.getenv("AI_SPLIT_CHECK_TIMEOUT", "8"))
+# 동작이 둘일 수 있는 겉모양: 쉼표·순서 접속어, 또는 마지막이 아닌 어절의 연결 꼴(-고·-서·-며·-다가), '-어' 꼴
+# (집어·올려·꺼내), '-(으)ㄴ 다음/후/뒤'. 하나도 없으면 동작 하나다("컵을 깨끗이 닦으세요") — GPT를 부르지 않는다.
+_SPLIT_HINT_RE = re.compile(r"[,，]|그리고|그다음|그 다음")
+_CONNECTIVE_TAIL_RE = re.compile(
+    r"(?:고|서|며|면서|다가|다음|다음에|후|후에|뒤|뒤에)$|[아어여워와해봐줘놔둬려겨켜쳐혀펴껴내빼대새개매]$")
+
+
+def _may_have_two_actions(sentence: str) -> bool:
+    if _SPLIT_HINT_RE.search(sentence):
+        return True
+    words = re.findall(r"[가-힣A-Za-z0-9]+", sentence)
+    return any(_CONNECTIVE_TAIL_RE.search(w) for w in words[:-1])
+
+
+# 편집기에서 고친 문장 하나를 나눌 때 받아들이는 최대 단계 수. 이보다 많으면 문장이 아니라 직무 하나를
+# 통째로 적은 것이라 저장하며 몰래 나누지 않는다(그대로 저장하고 사업주가 단계 추가로 나눈다).
+_MAX_REWRITE_PARTS = 4
+
+
+def _detect_split(db: Session, task: Task, employer_id: str, sentence: str) -> list[dict]:
+    """고친 문장 하나를 AI 분해에 다시 넣어 동작이 둘 이상인지 본다. 확실히 나눈 경우에만 나눈 단계를 돌려준다.
+
+    - AI가 '애매하다'(split_check)고 한 줄이 하나라도 있으면 나누지 않는다. GPT는 한 동작 문장도 나누는
+      경향이 있어(개발셋 한 단계 문장 92개 중 30개), 확실한 것만 저장하는 순간 나눈다. 틀려도 [되돌리기]가 있다.
+    - AI 하네스 장애·시간 초과(_SPLIT_CHECK_TIMEOUT)면 나누지 않고 그대로 저장한다(편집을 막지 않는다).
+    - 동작이 하나뿐인 문장은 AI 분해(GPT)를 부르지 않는다 — 오타 고치기마다 GPT를 부르면 저장이 느리고 비용이
+      든다. 먼저 AI 하네스의 규칙 동작 세기(/ai/split-hint, LLM 없음)에 묻고, 하네스가 답하지 못하면 겉모양 검사
+      (_may_have_two_actions)로 대신한다. 겉모양 검사만 쓰면 '냉장고 문을 닫으세요'처럼 명사 끝 글자에도 걸렸다(2차 검증).
+      사업주별 호출 한도(ratelimit.ai_split_throttle)를 넘어도 부르지 않는다.
+    - 근로자 특성 메모는 보내지 않는다. 문장·맥락의 근로자 실명은 별칭으로 바꿔 보낸다.
+    """
+    masker = employer_pseudonymizer(db, employer_id)
+    masked = masker.mask(sentence)
+    hint = ai_client.split_hint(masked)
+    if hint is None:
+        hint = _may_have_two_actions(sentence)
+    if not hint or not take_ai_split_call(employer_id):
+        return []
+    context = {
+        "business_type": masker.mask(task.business_type or ""),
+        "work_environment": masker.mask(task.work_environment or ""),
+        "worker_note": "",
+        "raw_input": masked,
+    }
+    try:
+        result = ai_client.decompose(masked, context, timeout=_SPLIT_CHECK_TIMEOUT)
+    except Exception:  # noqa: BLE001
+        logger.warning("편집 문장 나누기 확인 실패 — 나누지 않고 저장한다", exc_info=True)
+        return []
+    steps = [st for st in result.get("steps") or []
+             if isinstance(st, dict) and str(st.get("sentence") or "").strip()]
+    if not 2 <= len(steps) <= _MAX_REWRITE_PARTS or any(st.get("split_check") is True for st in steps):
+        return []
+    return [{
+        "sentence": masker.unmask(str(st["sentence"]).strip())[:500],
+        "action_type": str(st.get("action_type") or "other")[:20],
+        "terms": [masker.unmask(t) for t in _step_terms(st)][:4],
+    } for st in steps]
+
+
+@app.post("/api/tasks/{task_id}/steps/{step_id}/rewrite", response_model=StepRewriteOut)
+def rewrite_step(task_id: str, step_id: str, payload: StepRewrite, db: Session = Depends(get_db),
+                 user: dict = Depends(require_employer)) -> StepRewriteOut:
+    """편집기에서 단계 문장을 고쳐 저장한다. 고친 문장에 동작이 둘이면 경고 대신 그 자리에서 두 단계로 나눈다.
+
+    나눈 경우 응답의 split_step_ids로 화면이 [되돌리기]를 띄우고, 되돌리기는 POST …/steps/merge로
+    사업주가 적은 문장(sentence) 한 단계로 합친다. 게시한 직무는 나누지 않는다 — 단계 id가 바뀌면
+    이미 받은 근로자의 진행 기록이 끊긴다(보낸 직무 고치기는 버전 고정으로 따로 다룬다).
+    """
+    task = _owned_task(task_id, user["sub"], db)
+    step = db.get(Step, step_id)
+    if step is None or step.task_id != task_id:
+        raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
+    sentence = payload.sentence
+    if sentence == step.sentence:
+        return StepRewriteOut(task=_task_out(task), sentence=sentence)
+    parts = _detect_split(db, task, user["sub"], sentence) if task.status != "published" else []
+    if not parts:
+        update_step(task_id, step_id, StepUpdate(sentence=sentence), db, user)
+        db.refresh(task)
+        return StepRewriteOut(task=_task_out(task), sentence=sentence)
+    # 네트워크 호출(그림·음성)을 먼저 끝낸다 — SQLite 쓰기 잠금을 오래 쥐지 않게(직무 생성과 같은 이유).
+    # 사업주가 올린 사진은 첫 단계로 넘긴다(지우지 않는다) — [되돌리기]하면 합친 단계로 다시 돌아온다.
+    photo = step.symbol_media_id if step.symbol_source == "photo" else None
+    prepared = [_prepare_new_step(db, task, user["sub"], part["sentence"], part["action_type"], part["terms"],
+                                  photo_media_id=photo if i == 0 else None)
+                for i, part in enumerate(parts)]
+    new_steps, media_ids = _replace_steps(db, task, user["sub"], [step], prepared)
     db.commit()
+    media.release(db, media_ids)
+    db.refresh(task)
+    return StepRewriteOut(task=_task_out(task), split_step_ids=[s.id for s in new_steps], sentence=sentence)
+
+
+@app.post("/api/tasks/{task_id}/steps/merge", response_model=TaskOut)
+def merge_steps(task_id: str, payload: StepMerge, db: Session = Depends(get_db),
+                user: dict = Depends(require_employer)) -> TaskOut:
+    """이어진 단계들을 sentence 한 단계로 합친다 — 편집기에서 저장하며 나눈 것을 [되돌리기]할 때 쓴다.
+    합치는 단계에 사업주가 올린 사진이 있으면 그 사진을 붙이고(나눌 때 첫 단계로 넘긴 사진이 돌아온다), 없으면
+    그림은 단계 추가와 같은 방법으로 새로 찾는다. 동작 종류는 화면이 기억한 나누기 전 값(action_type)을 쓰고, 없으면
+    규칙 분류기(classify_action)로 매긴다.
+    게시한 직무는 합치지 않는다(409) — 단계 id가 바뀌면 받은 근로자의 진행 기록이 지워지고, 그림 확인을 마친 뒤
+    새 그림이 붙는다(rewrite_step이 게시한 직무를 나누지 않는 것과 같은 이유)."""
+    task = _owned_task(task_id, user["sub"], db)
+    if task.status == "published":
+        raise HTTPException(status_code=409, detail="보낸 직무는 단계를 합칠 수 없어요.")
+    if len(set(payload.step_ids)) != len(payload.step_ids):
+        raise HTTPException(status_code=400, detail="같은 단계가 두 번 들어 있습니다.")
+    by_id = {s.id: s for s in task.steps}
+    if any(sid not in by_id for sid in payload.step_ids):
+        raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
+    run = sorted((by_id[sid] for sid in payload.step_ids), key=lambda s: s.order_index)
+    orders = [s.order_index for s in run]
+    if orders != list(range(orders[0], orders[0] + len(orders))):
+        raise HTTPException(status_code=409, detail="합칠 단계가 붙어 있지 않습니다. 순서가 바뀌었는지 확인해 주세요.")
+    photo = next((s.symbol_media_id for s in run if s.symbol_source == "photo" and s.symbol_media_id), None)
+    # 화면이 나누기 전 동작 종류를 모르면(단계 추가를 되돌림) 문장 고치기와 같은 규칙 분류기로 다시 매긴다.
+    action_type = payload.action_type or ai_client.classify_action(
+        employer_pseudonymizer(db, user["sub"]).mask(payload.sentence))
+    prepared = [_prepare_new_step(db, task, user["sub"], payload.sentence, action_type, photo_media_id=photo)]
+    _, media_ids = _replace_steps(db, task, user["sub"], run, prepared)
+    db.commit()
+    media.release(db, media_ids)
     db.refresh(task)
     return _task_out(task)
 

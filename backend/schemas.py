@@ -4,9 +4,15 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 MAX_RAW_INPUT = 2000
+# 입력 화면에서 확인한 단계 문장 합계의 상한. 단계마다 그림 검색(임베딩 API)·음성 합성을 하므로 원문 상한과 같은
+# 이유로 막는다. 사업주가 줄을 고치거나 더하면 원문보다 조금 길어질 수 있어 여유를 둔다.
+MAX_CONFIRMED_TOTAL = MAX_RAW_INPUT + 500
+# 입력 화면에서 확인한 단계 줄 수·한 줄 글자 수의 상한(프런트 SplitPreviewList도 같은 값으로 미리 막는다).
+MAX_CONFIRMED_STEPS = 30
+MAX_STEP_SENTENCE = 500
 
 
 # --- 인증 ---
@@ -29,6 +35,33 @@ class TokenOut(BaseModel):
 
 
 # --- 요청 ---
+class ConfirmedStep(BaseModel):
+    """입력 화면에서 사업주가 확인한 단계 한 줄(한 줄 = 한 동작 = 그림 1장)."""
+    sentence: str = Field(min_length=1, max_length=MAX_STEP_SENTENCE)
+    # 미리보기가 준 동작 계열. 사업주가 고치거나 합치거나 새로 쓴 줄은 보내지 않는다(None) — 서버가 규칙 분류기로
+    # 다시 매긴다(2차 검증: 'other'로 저장돼 근로자 화면 동작 꼬리표가 숨고 그림 검색이 동작 맥락을 못 썼다).
+    action_type: str | None = Field(default=None, max_length=20)
+    # 나누기 미리보기가 준 그림 검색어. 사업주가 문장을 고치지 않은 줄만 그대로 돌려보낸다
+    # (고친 줄은 비워 보내고, 서버가 문장에서 검색어를 다시 뽑는다).
+    symbol_query: list[str] | None = Field(default=None, max_length=8)
+
+    @field_validator("sentence")
+    @classmethod
+    def _sentence_not_blank(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("빈 단계 문장이 있습니다.")
+        return v
+
+    @field_validator("symbol_query")
+    @classmethod
+    def _query_terms(cls, v: list[str] | None) -> list[str] | None:
+        if v is None:
+            return None
+        out = [t.strip()[:50] for t in v if isinstance(t, str) and t.strip()]
+        return out or None
+
+
 class TaskCreate(BaseModel):
     # 입력 길이 가드: 빈 입력 거부 + 과도한 입력으로 인한 TTS/AI 비용·DoS 방지
     raw_input: str = Field(min_length=1, max_length=MAX_RAW_INPUT)
@@ -39,6 +72,12 @@ class TaskCreate(BaseModel):
     # 맞춤 대상 근로자(선택). 근로자 특성 메모는 이 근로자가 "AI에 메모 사용"을 허용했고 AI 처리 동의가
     # 살아 있을 때만 AI로 보낸다. 근로자를 지정하지 않으면 누구의 허용인지 알 수 없어 메모를 보내지 않는다.
     worker_id: str | None = Field(default=None, max_length=64)
+    # 입력 화면에서 확인한 단계 목록(POST /api/tasks/split-preview 결과를 사업주가 다듬은 것).
+    # 있으면 다시 나누지 않고 이 문장들 그대로 그림·음성을 붙인다. 없으면 예전처럼 서버가 나눈다.
+    steps: list[ConfirmedStep] | None = Field(default=None, min_length=1, max_length=MAX_CONFIRMED_STEPS)
+    # 미리보기가 준 직무 제목·직무 추정값. steps와 함께 온다(없으면 기본값).
+    title: str | None = Field(default=None, max_length=100)
+    job: str | None = Field(default=None, max_length=50)
 
     @field_validator("raw_input")
     @classmethod
@@ -47,12 +86,47 @@ class TaskCreate(BaseModel):
             raise ValueError("직무 내용을 입력해 주세요.")
         return v
 
+    @model_validator(mode="after")
+    def _confirmed_total(self) -> "TaskCreate":
+        if self.steps and sum(len(s.sentence) for s in self.steps) > MAX_CONFIRMED_TOTAL:
+            raise ValueError("단계 문장이 너무 길어요. 줄을 줄이거나 나눠 주세요.")
+        return self
+
 
 class StepUpdate(BaseModel):
     sentence: str | None = Field(default=None, max_length=500)
     symbol_url: str | None = Field(default=None, max_length=2000)
     # 검토 화면에서 AAC 후보를 직접 고른 경우 "LOCAL_AAC". 생략하면 기존처럼 fallback.
     symbol_source: Literal["LOCAL_AAC", "fallback"] | None = None
+
+
+class StepRewrite(BaseModel):
+    """편집기에서 단계 문장을 고쳐 저장. 동작이 둘이면 서버가 두 단계로 나눈다(되돌리기 가능)."""
+    sentence: str = Field(min_length=1, max_length=500)
+
+    @field_validator("sentence")
+    @classmethod
+    def _not_blank(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("문장을 입력해 주세요.")
+        return v
+
+
+class StepMerge(BaseModel):
+    """이어진 단계들을 한 단계로 합친다(편집기의 [되돌리기]). sentence가 합친 단계의 문장이다."""
+    step_ids: list[str] = Field(min_length=2, max_length=10)
+    sentence: str = Field(min_length=1, max_length=500)
+    # 나누기 전 단계의 동작 종류(되돌리기가 원래 단계를 되살리도록 화면이 기억해 보낸다). 없으면 "other".
+    action_type: str | None = Field(default=None, max_length=20)
+
+    @field_validator("sentence")
+    @classmethod
+    def _not_blank(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("문장을 입력해 주세요.")
+        return v
 
 
 class StepCreate(BaseModel):
@@ -143,6 +217,40 @@ class TaskOut(BaseModel):
     title: str
     status: str
     steps: list[StepOut]
+
+
+class SplitPreviewStep(BaseModel):
+    """나누기 미리보기의 한 줄. split_*·source_text는 ai_service 분해 응답 계약을 그대로 옮긴다."""
+    order: int
+    sentence: str
+    action_type: str = "other"
+    symbol_query: list[str] = []
+    # 같은 원래 절(문장)에서 나온 줄끼리 같은 번호. 원문 그대로인 줄은 None.
+    split_group: int | None = None
+    # 나눈 것(또는 안 나눈 것)이 애매해 사업주가 봐야 하는 줄 — 입력 화면에서 노랗게 칠한다.
+    split_check: bool = False
+    # 이 줄들이 나온 원래 절 — [합치기]가 되돌릴 문장.
+    source_text: str | None = None
+
+
+class SplitPreviewOut(BaseModel):
+    task_title: str
+    job: str = ""
+    steps: list[SplitPreviewStep]
+
+
+class StepAddOut(TaskOut):
+    """단계 추가 결과(직무 전체). 새 문장에 동작이 둘이라 두 단계로 나눠 넣었으면 그 id들(되돌리기용)."""
+    split_step_ids: list[str] = []
+    sentence: str = ""
+
+
+class StepRewriteOut(BaseModel):
+    task: TaskOut
+    # 저장하면서 나눈 경우 새 단계 id들(되돌리기용). 안 나눴으면 빈 목록.
+    split_step_ids: list[str] = []
+    # 사업주가 적은 문장 그대로 — [되돌리기]가 이 문장 한 단계로 합친다.
+    sentence: str
 
 
 class TaskSummaryOut(BaseModel):

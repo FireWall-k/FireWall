@@ -113,7 +113,10 @@ def test_fallback_job_inference_uses_business_type_names():
 # 상자 덮개를 접는 그림 밑에 '확인하기'·'담기' 같은 틀린 꼬리표가 붙던 원인이다.
 
 def _action(sentence: str) -> str:
-    return decompose(sentence, {}).steps[0].action_type
+    # 문장 하나의 동작 계열. 규칙 경로는 이제 두 동작 문장을 나누므로(step_split) 분해 결과 첫 단계가 아니라
+    # 분류기(_guess_action)를 직접 본다 — classify-action 엔드포인트와 같은 입력이다.
+    import decompose as _dec
+    return _dec._guess_action(sentence)
 
 
 def test_seyo_ending_is_not_read_as_counting():

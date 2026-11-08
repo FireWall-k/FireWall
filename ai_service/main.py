@@ -19,7 +19,7 @@ import embeddings
 import local_aac
 import llm
 from local_aac import search_assets
-from decompose import _guess_action, decompose
+from decompose import _guess_action, decompose, may_split
 from schemas import (
     AacMatch,
     AacSearchRequest,
@@ -29,6 +29,7 @@ from schemas import (
     CoachingStepInput,
     ClassifyActionRequest,
     ClassifyActionResult,
+    SplitHintResult,
     CoachingSuggestion,
     DecomposeRequest,
     DecomposeResult,
@@ -100,6 +101,17 @@ def ai_classify_action(req: ClassifyActionRequest) -> ClassifyActionResult:
     결정론적 규칙만 쓴다 — LLM·임베딩 호출이 없어 비용이 들지 않고 문장이 밖으로 나가지 않는다.
     """
     return ClassifyActionResult(action_type=_guess_action(req.sentence))
+
+
+@app.post("/ai/split-hint", response_model=SplitHintResult)
+def ai_split_hint(req: ClassifyActionRequest) -> SplitHintResult:
+    """고친 단계 문장 하나에 동작이 둘 이상일 수 있는가 — 규칙 동작 세기(step_split)만 쓴다(LLM·외부 API 없음).
+
+    백엔드는 편집기 저장 때 이것이 True일 때만 GPT 분해를 부른다. 겉모양 정규식은 '냉장고'·'계산대'처럼 명사
+    끝 글자에도 걸려 동작 하나짜리 문장의 오타 고치기마다 GPT를 불렀다(입력 화면 나누기 2차 검증).
+    """
+    hint = may_split(req.sentence)
+    return SplitHintResult(**hint)
 
 
 @app.post("/ai/map-symbols", response_model=MapSymbolsResult)
