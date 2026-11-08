@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ManagerPage from "../src/pages/ManagerPage";
 
@@ -50,6 +50,11 @@ const baseStep = {
   id: "s1", order: 1, sentence: "상자를 옮기세요", action_type: "move",
   symbol_url: null as string | null, symbol_source: "fallback", needs_fallback: true,
   tts_audio_url: null as string | null,
+};
+// 그림(현장 사진)이 붙은 단계 — 보내기 테스트용(그림 없는 단계는 보내기가 막힌다).
+const photoStep = {
+  ...baseStep, symbol_url: "http://localhost:8000/api/media/p1?sig=x", symbol_source: "photo", needs_fallback: false,
+  picture_state: "confirmed",
 };
 
 beforeEach(() => {
@@ -127,14 +132,76 @@ describe("ManagerPage — 인라인 근로자 추가", () => {
     expect(addButton.parentElement?.nextElementSibling).toBe(msgs[0]);
   });
 
-  it("목록에는 전체 접속 코드가 보인다", async () => {
+  it("보내기 목록에는 이름만, 등록된 근로자 목록은 번호를 가리고 눈 단추를 누르면 보인다(명세 5.6)", async () => {
     const user = userEvent.setup();
     listWorkers.mockResolvedValue([
       { id: "w1", display_name: "김근로", access_code: "1234", access_code_hint: "34", access_code_length: 4 },
     ]);
     render(<ManagerPage />);
     await typeAndDecompose(user);
-    expect(await screen.findByRole("checkbox", { name: /김근로 \(코드 1234\)/ })).toBeInTheDocument();
+    const box = await screen.findByRole("checkbox", { name: "김근로" });
+    expect(box.closest("label")).not.toHaveTextContent("1234");
+    expect(document.body).not.toHaveTextContent("1234");
+    expect(screen.getByTestId("code-w1")).toHaveTextContent("●●●●");
+
+    await user.click(screen.getByRole("button", { name: "김근로 번호 보기" }));
+    expect(screen.getByTestId("code-w1")).toHaveTextContent("1234");
+    await user.click(screen.getByRole("button", { name: "김근로 번호 가리기" }));
+    expect(screen.getByTestId("code-w1")).toHaveTextContent("●●●●");
+  });
+
+  it("번호를 보이게 해도 5초 뒤에는 다시 가린다", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      listWorkers.mockResolvedValue([
+        { id: "w1", display_name: "김근로", access_code: "1234", access_code_hint: "34", access_code_length: 4 },
+      ]);
+      render(<ManagerPage />);
+      await typeAndDecompose(user);
+      await user.click(await screen.findByRole("button", { name: "김근로 번호 보기" }));
+      expect(screen.getByTestId("code-w1")).toHaveTextContent("1234");
+      await act(async () => {
+        vi.advanceTimersByTime(5_100);
+      });
+      expect(screen.getByTestId("code-w1")).toHaveTextContent("●●●●");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("ManagerPage — 그림 없는 단계는 보낼 수 없다(0차)", () => {
+  beforeEach(() => {
+    listWorkers.mockResolvedValue([{ id: "w1", display_name: "김근로", access_code_hint: "11", access_code_length: 4 }]);
+  });
+
+  it("그림 없는 단계가 있으면 보내기 버튼이 막히고 몇 단계인지 알려 준다", async () => {
+    const user = userEvent.setup();
+    createTask.mockResolvedValue({
+      id: "task-1", title: "직무", status: "draft",
+      steps: [
+        { ...photoStep, id: "s1", order: 1 },
+        { ...baseStep, id: "s2", order: 2 },
+        { ...baseStep, id: "s3", order: 3, picture_state: "none" },
+      ],
+    });
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+    expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeDisabled();
+    expect(screen.getByText("그림이 없는 단계가 있어요(2, 3단계). 그림을 고른 뒤 보내 주세요.")).toBeInTheDocument();
+  });
+
+  it("서버가 그림 없음을 422로 막으면 그 문장을 그대로 보인다", async () => {
+    const user = userEvent.setup();
+    createTask.mockResolvedValue({ id: "task-1", title: "직무", status: "draft", steps: [photoStep] });
+    publish.mockRejectedValue(new Error("그림이 없는 단계가 있어요(1단계). 그림을 고르거나 사진을 올린 뒤 보내 주세요."));
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+    await user.click(screen.getByRole("button", { name: /게시하고 보내기/ }));
+    expect((await screen.findAllByText(/그림을 고르거나 사진을 올린 뒤 보내 주세요/)).length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -148,7 +215,8 @@ const workers = [
 describe("ManagerPage — 근로자 여러 명에게 보내기", () => {
   beforeEach(() => {
     listWorkers.mockResolvedValue(workers);
-    publish.mockResolvedValue({ id: "task-1", title: "직무", status: "published", steps: [baseStep] });
+    createTask.mockResolvedValue({ id: "task-1", title: "직무", status: "draft", steps: [photoStep] });
+    publish.mockResolvedValue({ id: "task-1", title: "직무", status: "published", steps: [photoStep] });
   });
 
   it("근로자를 여러 명 체크하면 보내기 버튼에 인원수가 표시된다", async () => {

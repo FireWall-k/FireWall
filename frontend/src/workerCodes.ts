@@ -34,6 +34,9 @@ export function saveWorkplaceCode(code: string) {
 export function clearSavedWorkplaceCode() {
   try {
     localStorage.removeItem(WORKPLACE_KEY);
+    // 사업장 연결을 끊으면 그 사업장 이름도 지운다(다른 가게 이름이 남아 보이지 않게).
+    localStorage.removeItem("jobcard_workplace_name");
+    localStorage.removeItem(DEVICE_TOKEN_KEY);
   } catch {
     /* 무시 */
   }
@@ -53,3 +56,50 @@ export function accessCodeText(w: { access_code?: string | null; access_code_hin
 }
 
 export const ACCESS_CODE_UNKNOWN_HINT = "근로자가 한 번 로그인하거나 코드를 새로 만들면 전체 번호가 보여요";
+
+// 사업장 이름(예: ○○카페). 근로자 로그인 응답(workplace_name)으로 받아 기기에 저장해 두고,
+// 번호 넣기 화면 위 띠에 보인다 — "이 기기가 어느 가게 것인지"를 근로자가 알아보게.
+// 로그인 전에 사업장 이름을 알려 주는 공개 API는 없다(사업장 코드가 있는지 엿보는 데 쓰일 수 있어서).
+const WORKPLACE_NAME_KEY = "jobcard_workplace_name";
+
+export function getSavedWorkplaceName(): string | null {
+  try {
+    return localStorage.getItem(WORKPLACE_NAME_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveWorkplaceName(name: string) {
+  try {
+    const trimmed = name.trim();
+    if (trimmed) localStorage.setItem(WORKPLACE_NAME_KEY, trimmed);
+  } catch {
+    /* 저장 실패는 무시한다(화면에 이름이 안 보일 뿐) */
+  }
+}
+
+/** 번호를 가린 표시(●●●●). 사업주 목록에서 기본으로 보이는 모양 — 어깨 너머로 번호가 새지 않게(명세 5.6). */
+export function maskedCode(len: number): string {
+  return "●".repeat(Math.max(4, Math.min(len || 4, 12)));
+}
+
+// 믿는 기기 표시(서버 TokenOut.device_token). 이 기기에서 한 번 맞게 들어오면 받아 두고 다음 로그인 때 보낸다 —
+// 누군가 사업장 코드로 일부러 많이 틀려 사업장 공용 잠금이 걸려도, 이미 쓰던 기기의 근로자는 계속 들어간다.
+const DEVICE_TOKEN_KEY = "jobcard_worker_device_v1";
+
+export function getDeviceToken(): string | null {
+  try {
+    return localStorage.getItem(DEVICE_TOKEN_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveDeviceToken(token: string) {
+  try {
+    if (token) localStorage.setItem(DEVICE_TOKEN_KEY, token);
+  } catch {
+    /* 저장 못 하면 다음에도 처음 쓰는 기기로 셀 뿐 */
+  }
+}

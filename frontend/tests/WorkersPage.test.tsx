@@ -90,19 +90,20 @@ describe("WorkersPage — 접속 코드", () => {
     await waitFor(() => expect(createWorker).toHaveBeenCalledWith("이근무", "5678"));
   });
 
-  it("예전 짧은 코드는 경고하고, 새로 만들면 새 코드로 바뀐다", async () => {
+  // 창업자 결정 3: 4자리가 기본 번호다. 4자리 코드를 '짧은 코드'로 경고하지 않는다(대입은 서버 시도 제한이 막는다).
+  it("4자리 코드는 경고하지 않고, 새로 만들면 새 코드로 바뀐다", async () => {
     const user = userEvent.setup();
     reissueAccessCode.mockResolvedValue({
-      id: "w1", display_name: "김근로", access_code: "730514", access_code_hint: "14", access_code_length: 6,
+      id: "w1", display_name: "김근로", access_code: "7305", access_code_hint: "05", access_code_length: 4,
     });
     render(<WorkersPage />);
-    expect(await screen.findByText(/짧은 코드예요/)).toBeInTheDocument();
+    await screen.findByText("김근로");
+    expect(screen.queryByText(/짧은 코드예요/)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "근로자 김근로 접속 코드 새로 만들기" }));
 
     await waitFor(() => expect(reissueAccessCode).toHaveBeenCalledWith("w1"));
-    expect(await screen.findByText(/새 접속 코드: 730514/)).toBeInTheDocument();
-    expect(screen.queryByText(/짧은 코드예요/)).not.toBeInTheDocument();
+    expect(await screen.findByText(/새 접속 코드: 7305/)).toBeInTheDocument();
   });
 
   // 2026-11-07 사용자 요청: 사업주 화면에서는 접속 코드를 가리지 않고 전체를 보여 준다(근로자에게 다시 알려 줄 수 있게).
@@ -296,6 +297,22 @@ describe("WorkersPage — 개인정보(동의·메모·내보내기·삭제)", (
     await waitFor(() => expect(revokeConsent).toHaveBeenCalledTimes(1));
     expect(revokeConsent).toHaveBeenCalledWith("w1", "c-ai");
     expect(await screen.findByText("없음")).toBeInTheDocument();
+  });
+
+  it("'소리 자동 재생'은 기본 켬이고, 끄면 a11y_prefs.autoplay_sound만 서버에 보낸다(창업자 결정 4)", async () => {
+    const user = userEvent.setup();
+    updateWorker.mockResolvedValue({
+      id: "w1", display_name: "김근로", access_code_hint: "34", access_code_length: 4,
+      a11y_prefs: { font_size: "normal", autoplay_sound: false, tts_rate: 0.9, sfx: true, vibration: false, praise: "normal", hand: "right", contrast: "normal" },
+    });
+    render(<WorkersPage />);
+    const sw = await screen.findByRole("switch", { name: "근로자 김근로 소리 자동 재생" });
+    expect(sw).toBeChecked();
+
+    await user.click(sw);
+
+    await waitFor(() => expect(updateWorker).toHaveBeenCalledWith("w1", { a11y_prefs: { autoplay_sound: false } }));
+    await waitFor(() => expect(screen.getByRole("switch", { name: "근로자 김근로 소리 자동 재생" })).not.toBeChecked());
   });
 
   it("'AI 코칭에 메모 사용'은 기본 꺼짐이고, 켜면 서버에 저장한다", async () => {

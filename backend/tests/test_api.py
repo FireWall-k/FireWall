@@ -4,7 +4,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from conftest import auth  # noqa: E402
+from conftest import auth, publish  # noqa: E402
 from auth import make_token, verify_password, hash_password, verify_token  # noqa: E402
 import ai_client  # noqa: E402
 
@@ -61,7 +61,7 @@ def _make_published_task(client, employer_token):
     assert r.status_code == 201, r.text
     task = r.json()
     assert len(task["steps"]) == 2
-    client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token))
+    publish(client, employer_token, task["id"])
     a = client.post(f"/api/tasks/{task['id']}/assignments", headers=auth(employer_token))
     assert a.status_code == 200, a.text
     return task, a.json()[0]
@@ -101,7 +101,7 @@ def test_assign_task_to_multiple_workers_at_once(client, employer_token):
     r = client.post("/api/tasks", json={"raw_input": "상자를 옮기고 수량을 확인하세요"},
                     headers=auth(employer_token))
     task = r.json()
-    client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token))
+    publish(client, employer_token, task["id"])
 
     w1 = client.post("/api/workers", json={"display_name": "박근로", "access_code": "567701"},
                      headers=auth(employer_token)).json()

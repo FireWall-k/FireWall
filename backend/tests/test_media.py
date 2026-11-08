@@ -23,7 +23,7 @@ import manage
 import media
 import photos
 import tts
-from conftest import auth
+from conftest import auth, publish
 from database import SessionLocal
 from models import MediaFile, Step
 
@@ -208,7 +208,7 @@ def test_signed_url_bucket_is_stable_and_expires(monkeypatch):
 def test_worker_today_returns_fresh_signed_urls(client, employer_token, worker_token):
     task = _task(client, employer_token)
     _upload(client, employer_token, task)
-    client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token))
+    publish(client, employer_token, task["id"])
     client.post(f"/api/tasks/{task['id']}/assignments", json={"worker_ids": ["wrk-demo"]},
                 headers=auth(employer_token))
     cards = client.get("/api/worker/me/today", headers=auth(worker_token)).json()

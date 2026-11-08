@@ -3,7 +3,7 @@
 AI 하네스(ai_client)는 conftest가 목으로 바꾼다. 네트워크는 부르지 않는다.
 """
 import ai_client
-from conftest import auth
+from conftest import auth, publish
 
 
 def _preview_response(raw_input, context=None, **kw):
@@ -227,7 +227,8 @@ def test_rewrite_does_not_split_uncertain_or_on_ai_failure(client, employer_toke
 
 def test_rewrite_does_not_split_published_task(client, employer_token, monkeypatch):
     task = _make_task(client, employer_token, ["컵을 씻어요."])
-    assert client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token)).status_code == 200
+    # 그림 없는 단계는 보낼 수 없다(0차) — 그림을 붙이고 보낸다.
+    assert publish(client, employer_token, task["id"]).status_code == 200
     monkeypatch.setattr(ai_client, "decompose", _two_actions)
     sid = task["steps"][0]["id"]
     r = client.post(f"/api/tasks/{task['id']}/steps/{sid}/rewrite", headers=auth(employer_token),
@@ -285,7 +286,7 @@ def test_merge_is_refused_after_publish(client, employer_token, monkeypatch):
     split = client.post(f"/api/tasks/{task['id']}/steps/{sid}/rewrite", headers=auth(employer_token),
                         json={"sentence": "컵 씻어서 건조대에 올려요"}).json()
     assert len(split["split_step_ids"]) == 2
-    assert client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token)).status_code == 200
+    assert publish(client, employer_token, task["id"]).status_code == 200
     r = client.post(f"/api/tasks/{task['id']}/steps/merge", headers=auth(employer_token),
                     json={"step_ids": split["split_step_ids"], "sentence": split["sentence"]})
     assert r.status_code == 409

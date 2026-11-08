@@ -315,6 +315,8 @@ AUDIT_DEDUPE_SECONDS = int(os.getenv("ACCESS_AUDIT_DEDUPE_SECONDS", "60"))
 DEDUPED_ACTIONS = frozenset({
     "dashboard.view", "dashboard.workers", "worker.list", "worker.history", "worker.consents",
     "coaching.view",
+    # 사업주 화면 도움 알림 띠가 5초마다 부른다(근로자 이름이 실린다).
+    "help.list",
 })
 
 

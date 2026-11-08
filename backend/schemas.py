@@ -1,10 +1,11 @@
 """백엔드 API 입출력 스키마 (프론트엔드 대면 계약)."""
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 MAX_RAW_INPUT = 2000
 # 입력 화면에서 확인한 단계 문장 합계의 상한. 단계마다 그림 검색(임베딩 API)·음성 합성을 하므로 원문 상한과 같은
@@ -26,12 +27,105 @@ class WorkerLogin(BaseModel):
     # 프론트는 사업장 코드를 기기에 한 번 저장해 두고 근로자는 자기 접속 코드만 누른다.
     workplace_code: str = Field(min_length=1, max_length=32)
     access_code: str = Field(min_length=1, max_length=32)
+    # 이 기기가 전에 맞게 들어왔을 때 받은 표시(TokenOut.device_token). 있으면 사업장 공용 잠금 대신 근로자 몫의
+    # 잠금만 본다(main.worker_login). 없거나 틀리면 그냥 믿지 않는 기기로 본다.
+    device_token: str | None = Field(default=None, max_length=512)
 
 
 class TokenOut(BaseModel):
     token: str
     role: str
     display_name: str
+    # 근로자 로그인 응답에만 싣는 사업장 이름(키패드 위 띠에 보여 준다). 사업주 로그인은 None.
+    # 로그인 전에 사업장 이름을 알려 주는 공개 API는 두지 않는다(사업장 코드 존재 오라클이 된다).
+    workplace_name: str | None = None
+    # 근로자 로그인 응답에만: 믿는 기기 표시. 근로자 기기가 저장해 두고 다음 로그인 때 보낸다.
+    device_token: str | None = None
+
+
+# --- 근로자 화면 설정(0006 a11y_prefs) ---
+TTS_RATES = (0.8, 0.9, 1.0)
+
+
+class A11yPrefs(BaseModel):
+    """근로자 화면 설정. 응답은 항상 8개 키를 모두 채운다(기본값 포함)."""
+    font_size: Literal["normal", "large"] = "normal"
+    # 단계에 들어갈 때 문장 소리를 저절로 들려줄지(창업자 결정 4: 기본 켬, 근로자마다 끌 수 있다).
+    autoplay_sound: bool = True
+    # 서버 mp3는 0.9로 합성돼 있다. 프론트는 audio.playbackRate = tts_rate / 0.9로 맞춘다.
+    tts_rate: float = 0.9
+    sfx: bool = True
+    vibration: bool = False
+    praise: Literal["normal", "quiet"] = "normal"
+    hand: Literal["right", "left"] = "right"
+    contrast: Literal["normal", "high"] = "normal"
+
+    @field_validator("tts_rate")
+    @classmethod
+    def _rate(cls, v: float) -> float:
+        if v not in TTS_RATES:
+            raise ValueError("tts_rate는 0.8, 0.9, 1.0 중 하나여야 합니다.")
+        return v
+
+
+class A11yPrefsPatch(BaseModel):
+    """사업주가 근로자 화면 설정을 부분 변경한다. 보낸 키만 바꾼다. 쓰기는 엄격하다(모르는 키·허용 밖 값은 422).
+
+    strict: 타입도 바꿔 주지 않는다(2차 검증: 예전에는 tts_rate true → 1.0, autoplay_sound 'off' → false로 받았다).
+    JSON 숫자 1은 tts_rate 1.0으로 받는다(strict float도 정수는 받는다).
+    """
+    model_config = ConfigDict(extra="forbid", strict=True)
+    font_size: Literal["normal", "large"] | None = None
+    autoplay_sound: bool | None = None
+    tts_rate: float | None = None
+    sfx: bool | None = None
+    vibration: bool | None = None
+    praise: Literal["normal", "quiet"] | None = None
+    hand: Literal["right", "left"] | None = None
+    contrast: Literal["normal", "high"] | None = None
+
+    @field_validator("tts_rate")
+    @classmethod
+    def _rate(cls, v: float | None) -> float | None:
+        if v is not None and v not in TTS_RATES:
+            raise ValueError("tts_rate는 0.8, 0.9, 1.0 중 하나여야 합니다.")
+        return v
+
+
+def parse_a11y_prefs(raw: str | None) -> A11yPrefs:
+    """DB에 저장된 JSON을 읽는다. 읽기는 관용: 깨진 JSON·모르는 키는 버리고, 잘못된 값은 그 키만 기본값으로 둔다."""
+    try:
+        data = json.loads(raw or "{}")
+    except (TypeError, ValueError):
+        data = {}
+    if not isinstance(data, dict):
+        data = {}
+    kept: dict = {}
+    for key in A11yPrefs.model_fields:
+        if key not in data:
+            continue
+        try:
+            A11yPrefs(**{key: data[key]})
+        except ValidationError:
+            continue
+        kept[key] = data[key]
+    return A11yPrefs(**kept)
+
+
+def merge_a11y_prefs(raw: str | None, patch: A11yPrefsPatch) -> str:
+    """저장된 설정에 보낸 키만 덮어써 JSON 문자열로 돌려준다."""
+    merged = parse_a11y_prefs(raw).model_dump()
+    merged.update(patch.model_dump(exclude_unset=True, exclude_none=True))
+    return json.dumps(A11yPrefs(**merged).model_dump(), ensure_ascii=False)
+
+
+class WorkerMeOut(BaseModel):
+    id: str
+    display_name: str
+    workplace_name: str
+    # 근로자 화면에서 사업주를 부르는 호칭(창업자 결정 1). 사업장별 설정은 2차.
+    teacher_title: str = "선생님"
+    a11y_prefs: A11yPrefs
 
 
 # --- 요청 ---
@@ -156,9 +250,9 @@ class AssignRequest(BaseModel):
 
 class WorkerCreate(BaseModel):
     display_name: str = Field(min_length=1, max_length=50)
-    # 접속 코드는 근로자 로그인 키. 비워 두면 서버가 6자리 무작위 코드를 만든다.
-    # 직접 정할 때는 4자리 이상 숫자만 받는다. 4자리(1만 개)는 6자리보다 대입에 약하므로
-    # 로그인 시도 제한(ratelimit.py)이 실제 방어선이다 — 코드 자릿수만으로 안전하다고 보지 않는다.
+    # 접속 코드는 근로자 로그인 키. 비워 두면 서버가 사업장 안에서 겹치지 않는 4자리 무작위 코드를 만든다
+    # (창업자 결정 3: 근로자 키패드는 4자리를 누르면 바로 들어간다). 직접 정할 때는 4~12자리 숫자.
+    # 4자리(1만 개)는 대입에 약하므로 로그인 시도 제한(ratelimit.py: IP·사업장 두 키)이 실제 방어선이다.
     # (예전에 만든 짧은 코드는 WorkerLogin이 그대로 받아 주므로 기존 근로자는 계속 로그인된다.)
     access_code: str | None = Field(default=None, pattern=r"^\d{4,12}$")
 
@@ -175,6 +269,8 @@ class WorkerUpdate(BaseModel):
     note: str | None = Field(default=None, max_length=300)
     # "AI 코칭에 메모 사용" — 사업주가 명시적으로 켜야 한다(기본 false).
     ai_note_allowed: bool | None = None
+    # 근로자 화면 설정. 보낸 키만 병합한다(별도 /prefs 엔드포인트는 두지 않는다).
+    a11y_prefs: A11yPrefsPatch | None = None
 
 
 ConsentType = Literal["personal_info", "ai_processing"]
@@ -189,9 +285,94 @@ class ConsentCreate(BaseModel):
 class PerformanceLogCreate(BaseModel):
     assignment_id: str
     step_id: str
-    duration_sec: float = Field(default=0.0, ge=0)
+    # 기기 시계가 단계 중에 뒤로 가면(꺼진 채 켠 뒤 시각 맞춤 등) 음수가 올 수 있다. 예전에는 422였고 대기열은 422를
+    # 버리므로 완료 기록이 영영 사라졌다(2차 검증). 검증 오류로 완료를 지우지 않게 0으로 자른다.
+    duration_sec: float = 0.0
     replay_count: int = Field(default=0, ge=0)
+    # '어려움 신호'(다시 듣기 과다·시간 초과)만 뜻한다. 도움 요청은 POST /api/worker/help로 따로 보낸다.
     stuck: bool = False
+    # false면 신호만 남기고 완료로 세지 않는다.
+    completed: bool = True
+    @field_validator("duration_sec")
+    @classmethod
+    def _clamp_duration(cls, v: float) -> float:
+        return v if v > 0 else 0.0
+
+    # 오프라인 대기열 재전송 묶기 키. 같은 값이 다시 오면 아무것도 바꾸지 않고 200(duplicate)을 준다.
+    client_event_id: str | None = Field(default=None, max_length=64)
+    # 기기에서 단계를 끝낸 시각(시간대 포함 ISO). 서버가 범위를 자른다. 없으면 서버 시각.
+    client_completed_at: datetime | None = None
+    # 기기가 이 기록을 보낸 순간의 기기 시각(4차 검증). 서버는 (보낸 시각 - 끝낸 시각)으로 '몇 초 전에 끝냈는지'를
+    # 같은 기기 시계끼리 재고, 서버 시각 기준의 완료 순간을 얻는다. 기기 시계가 서버와 달라도 도움 요청
+    # (서버 시각 created_at)과 순서를 바르게 비교할 수 있다. 없으면 client_completed_at을 그대로 쓴다.
+    client_sent_at: datetime | None = None
+
+    @field_validator("client_completed_at", "client_sent_at")
+    @classmethod
+    def _drop_absurd_time(cls, v: datetime | None) -> datetime | None:
+        # 4차 검증 2회: '0001-01-02'·'9999-12-31T23:00-09:00' 같은 값은 시간대 바꾸기·빼기에서 날짜가 넘쳐(OverflowError)
+        # 500이 났고, 대기열은 5xx를 다시 보내므로 그 기록이 맨 앞에서 뒤 기록까지 막았다. 422로 거절하면 대기열이 완료
+        # 기록을 버리므로(시계가 크게 망가진 기기의 진짜 완료가 사라진다) 거절하지 않고 '모르는 시각'(None)으로 본다.
+        # 그러면 서버 시각을 쓴다. 전원이 나가 1970년으로 돌아간 기기 시계는 그대로 받는다.
+        if v is not None and not (1900 <= v.year <= 2200):
+            return None
+        return v
+
+
+class LogResultOut(BaseModel):
+    ok: bool = True
+    assignment_status: str
+    duplicate: bool = False
+    applied: bool = True
+
+
+# --- 도움 요청(0006) ---
+HelpState = Literal["open", "cancelled", "acknowledged", "resolved"]
+
+
+class HelpCreate(BaseModel):
+    assignment_id: str = Field(min_length=1, max_length=64)
+    # 직무 시작·완료 화면에서 부르면 단계가 없다.
+    step_id: str | None = Field(default=None, max_length=64)
+    # 같은 누름의 재전송 묶기 키.
+    client_request_id: str | None = Field(default=None, max_length=64)
+
+
+class HelpOut(BaseModel):
+    id: str
+    assignment_id: str
+    step_id: str | None
+    step_order: int | None
+    state: HelpState
+    resolution: Literal["employer", "step_done"] | None
+    created_at: datetime
+    acknowledged_at: datetime | None
+    cancelled_at: datetime | None
+    resolved_at: datetime | None
+
+
+class ActiveHelpOut(BaseModel):
+    id: str
+    state: HelpState
+    step_id: str | None
+    created_at: datetime
+
+
+class EmployerHelpOut(BaseModel):
+    """사업주 화면 도움 알림 띠의 한 줄."""
+    id: str
+    state: HelpState
+    created_at: datetime
+    acknowledged_at: datetime | None
+    worker_id: str
+    worker_name: str
+    assignment_id: str
+    task_id: str
+    task_title: str
+    step_id: str | None
+    step_order: int | None
+    step_sentence: str | None
+    step_symbol_url: str | None
 
 
 class AacSearchRequest(BaseModel):
@@ -201,6 +382,10 @@ class AacSearchRequest(BaseModel):
 
 
 # --- 응답 ---
+# 그림 4상태(스펙 5.5): 확인함 / 자동(확인 필요) / 골라 주세요 / 그림 없음. main.picture_state가 정한다.
+PictureState = Literal["confirmed", "auto_high", "choose", "none"]
+
+
 class StepOut(BaseModel):
     id: str
     order: int
@@ -210,6 +395,7 @@ class StepOut(BaseModel):
     symbol_source: str
     needs_fallback: bool
     tts_audio_url: str | None
+    picture_state: PictureState = "none"
 
 
 class TaskOut(BaseModel):
@@ -286,6 +472,8 @@ class WorkerOut(BaseModel):
     # 이름이 일반 낱말("하나"·"보람" 등)과 같아, AI에 보낼 때 호칭("하나 씨")이 붙은 경우만 가릴 수 있다.
     # 사업주 화면에 "직무 문장에는 이름 대신 '근로자'라고 써 달라"는 경고를 띄우는 데 쓴다.
     name_ambiguous: bool = False
+    # 근로자 화면 설정(8개 키 모두).
+    a11y_prefs: A11yPrefs = Field(default_factory=A11yPrefs)
 
 
 class WorkerWithCodeOut(WorkerOut):
@@ -323,6 +511,19 @@ class TodayCardOut(BaseModel):
     task_id: str
     task_title: str
     steps: list[StepOut]
+    # 아래는 0006에서 더한 표시용 필드(기존 화면은 무시해도 된다).
+    # new(완료 기록 0) / in_progress(1개 이상, 배정 미완료) / done(배정 done). 배정 테이블 값과 별개다.
+    status: Literal["new", "in_progress", "done"] = "new"
+    # 이 배정에서 끝낸 단계 id(지금 직무에 있는 단계만, 단계 순서대로).
+    done_step_ids: list[str] = []
+    # 이어서 할 단계 인덱스(0부터). 모두 했으면 len(steps).
+    resume_step_index: int = 0
+    # 배열에서 done이 아닌 첫 카드만 true(창업자 결정 7: 사업주 순서, 다음 카드 강조).
+    is_next: bool = False
+    assigned_at: datetime | None = None
+    completed_at: datetime | None = None
+    # 열린(open/acknowledged) 도움 요청 중 최신 1건. 새로고침 뒤 도움 띠 복원용.
+    active_help: ActiveHelpOut | None = None
 
 
 class HistoryStepOut(StepOut):

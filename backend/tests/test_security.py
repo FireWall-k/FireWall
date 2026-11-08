@@ -16,12 +16,12 @@ def _cleanup(client, token, worker_id):
 
 
 # --- 접속 코드 ---------------------------------------------------------------
-def test_worker_gets_random_six_digit_code_when_blank(client, employer_token):
+def test_worker_gets_random_four_digit_code_when_blank(client, employer_token):
     r = _create_worker(client, employer_token)
     assert r.status_code == 201, r.text
     w = r.json()
     try:
-        assert len(w["access_code"]) == 6 and w["access_code"].isdigit()
+        assert len(w["access_code"]) == 4 and w["access_code"].isdigit()
         login = client.post("/api/auth/worker-login", json={"workplace_code": "DEMO01", "access_code": w["access_code"]})
         assert login.status_code == 200
     finally:
@@ -40,7 +40,7 @@ def test_short_or_non_numeric_codes_are_rejected(client, employer_token, code):
 
 
 def test_four_digit_code_is_now_allowed(client, employer_token):
-    """4자리는 자동 발급(6자리)보다 대입에 약하지만, 사업주가 원하면 쓸 수 있다(요청에 따라 완화)."""
+    """사업주가 직접 4자리를 정할 수 있다(자동 발급도 4자리, 창업자 결정 3)."""
     r = _create_worker(client, employer_token, access_code="4321")
     assert r.status_code == 201, r.text
     w = r.json()
@@ -63,7 +63,7 @@ def test_reissue_replaces_code(client, employer_token):
         r = client.post(f"/api/workers/{w['id']}/access-code", headers=auth(employer_token))
         assert r.status_code == 200, r.text
         new = r.json()["access_code"]
-        assert new != old and len(new) == 6
+        assert new != old and len(new) == 4
         assert client.post("/api/auth/worker-login", json={"workplace_code": "DEMO01", "access_code": old}).status_code == 401
         assert client.post("/api/auth/worker-login", json={"workplace_code": "DEMO01", "access_code": new}).status_code == 200
     finally:

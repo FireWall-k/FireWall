@@ -1,5 +1,17 @@
-@import url('https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css');
+/* Pretendard는 저장소에 넣은 부분 집합 글꼴을 쓴다(명세 6.2). 예전에는 jsdelivr CDN을 불렀는데,
+   현장 와이파이가 느리거나 막히면 글꼴이 늦게 와 글자 폭이 바뀌면서 버튼·문장 배치가 흔들렸다.
+   부분 집합: KS X 1001 한글 2,350자 + 화면 코드에 나오는 한글 + 기본 라틴·숫자·문장부호 + ✦ ✓ › ‹ · … ●.
+   그 밖의 글자(드문 이름 글자 등)는 아래 대체 글꼴로 한 글자씩 나온다. 라이선스: assets/fonts/Pretendard-LICENSE.txt(OFL). */
+@font-face {
+  font-family: 'Pretendard';
+  src: url('./assets/fonts/PretendardVariable-subset.woff2') format('woff2-variations'),
+    url('./assets/fonts/PretendardVariable-subset.woff2') format('woff2');
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+}
 
+/* Gmarket Sans는 로고 전용이라 1차에서는 CDN을 그대로 둔다(실패하면 대체 글꼴). */
 @font-face {
   font-family: 'Gmarket Sans';
   font-weight: 500;
@@ -27,12 +39,50 @@ html, body, #root {
 }
 
 body {
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
   background: #FAF8F3;
   color: #1C2321;
+  /* 한국어를 낱말 단위로 줄바꿈한다(명세 6.2, 0차 1번). "접 / 으세요"처럼 낱말 중간에서 끊기면
+     읽기 어려운 근로자가 다른 낱말로 읽는다. 사업주 화면도 같은 규칙. 아주 긴 낱말(코드·주소)은 넘칠 때만
+     끊는다(break-word). anywhere는 최소 폭 계산까지 바꿔, 사업주 화면의 좁은 flex 칸이 글자 한 자씩 세로로
+     눌렸다(1차 검증: 390px 근로자 목록 이름 '통합/흐름'). 둘 다 상속된다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* 근로자 화면(.font-worker 뿌리: WorkerScreen·StatusScreen·ConfirmScreen) 안에서만:
+   - 긴 낱말이 화면을 넘지 않게 anywhere로 끊는다(근로자 화면은 칸 폭이 고정이라 최소 폭 문제가 없다).
+   - 버튼·탭·배지 글자는 줄을 바꾸지 않는다("다 했 / 어요" 금지). 자리가 모자라면 배치가 바뀌어야지 글자가
+     쪼개지면 안 된다. 여러 줄이 꼭 필요한 큰 버튼은 whitespace-normal로 직접 푼다(:where라 유틸이 이긴다).
+   사업주 화면에는 걸지 않는다: 전역으로 걸었더니 390px 휴대폰에서 직무 편집·근로자 목록이 옆으로 넘쳐
+   '삭제'·휴지통 버튼이 화면 밖으로 나갔다(1차 검증). */
+:where(.font-worker) {
+  overflow-wrap: anywhere;
+}
+:where(.font-worker) :where(button, [role="tab"], .badge) {
+  white-space: nowrap;
+}
+/* 카드처럼 생긴 버튼(직무 카드) 안의 제목·설명 문단은 줄을 바꿔도 된다. 버튼 글자 자체(span)는 그대로 nowrap. */
+:where(.font-worker) :where(button) :where(p, div, h2, h3) {
+  white-space: normal;
 }
 
 :focus-visible {
   outline: 3px solid #C4703E;
-  outline-offset: 2px;
+  outline-offset: 3px;
+}
+
+/* 고대비 모드(근로자 설정): 초점 테두리를 검정 4px로(명세 6.1). */
+[data-contrast="high"] :focus-visible {
+  outline: 4px solid #000000;
+}
+
+/* 움직임 줄이기를 켠 기기에서는 모든 움직임을 0ms로(명세 6.6). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0ms !important;
+    scroll-behavior: auto !important;
+  }
 }

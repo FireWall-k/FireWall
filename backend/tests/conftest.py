@@ -95,6 +95,10 @@ def _reset_login_throttle():
     import ratelimit
     ratelimit.employer_throttle.clear()
     ratelimit.worker_throttle.clear()
+    ratelimit.worker_wp_throttle.clear()
+    ratelimit.worker_day_throttle.clear()
+    ratelimit.worker_wp_day_throttle.clear()
+    ratelimit.help_throttle.clear()
     ratelimit.ai_split_throttle.clear()
     yield
 
@@ -158,3 +162,23 @@ def worker_token(client):
 
 def auth(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
+
+
+# 테스트 목(_fake_map_symbols)은 그림을 붙이지 않는다. 0차부터 그림 없는 단계가 있으면 보내기(publish)가 422라,
+# 보내기 전에 그림 없는 단계에 AAC 그림을 붙인다(사업주가 후보를 고른 것과 같은 경로: PATCH symbol_url).
+TEST_AAC_IMAGE = "/api/aac/images/cafe/CAFE_007.webp"
+
+
+def give_pictures(client, token: str, task_id: str) -> None:
+    task = client.get(f"/api/tasks/{task_id}", headers=auth(token)).json()
+    for step in task["steps"]:
+        if step["picture_state"] == "none":
+            r = client.patch(f"/api/tasks/{task_id}/steps/{step['id']}", headers=auth(token),
+                             json={"symbol_url": TEST_AAC_IMAGE, "symbol_source": "LOCAL_AAC"})
+            assert r.status_code == 200, r.text
+
+
+def publish(client, token: str, task_id: str):
+    """그림 없는 단계에 그림을 붙인 뒤 직무를 보낸다. 응답을 돌려준다."""
+    give_pictures(client, token, task_id)
+    return client.post(f"/api/tasks/{task_id}/publish", headers=auth(token))

@@ -52,18 +52,43 @@ describe("근로자 화면 접근성 Tailwind 클래스가 실제 CSS로 생성�
 
   // 근로자 단계 화면 배치(2026-11 UI 진단). 아래 규칙이 빠지면 화면은 그대로 그려지지만 배치가 조용히 무너진다.
   it("wide 변형(가로로 넓은 화면) → 그림 왼쪽·버튼 오른쪽 격자", () => {
-    expect(css).toContain("@media(orientation:landscape)and(min-width:768px){");
+    expect(css).toContain("@media(orientation:landscape)and(min-width:560px){");
     expect(css).toContain(".wide\\:grid{display:grid");
   });
 
-  it("wide 변형을 더해도 max-sm: 변형이 그대로 생성된다(머리글 JOB CARD 숨김)", () => {
-    // theme.screens에 raw 값을 넣으면 Tailwind가 max-* 변형을 만들지 않는다 — 그래서 wide는 플러그인 변형이다.
-    expect(css).toContain(".max-sm\\:hidden{display:none");
+  // 1차 근로자 토큰(명세 6.1~6.3). 부품(worker/ui, ui/icons)이 쓰는 이름이 실제 CSS로 생기는지.
+  it("근로자 색 토큰: primary #1F6340, ink-soft, line(명세 6.1)", () => {
+    expect(css).toMatch(/\.bg-worker-primary\{[^}]*background-color:rgb\(319964\/var/);
+    expect(css).toMatch(/\.text-worker-ink-soft\{[^}]*color:rgb\(746454\/var/);
+    expect(css).toMatch(/\.border-worker-line\{[^}]*border-color:rgb\(14012399\/var/);
   });
 
-  it("그림 바닥 min(10rem, 20dvh)·맞추기 3단계 바닥 min(8rem, 15dvh)와 아주 좁은 칸에서만 버튼을 쌓는 컨테이너 쿼리", () => {
-    expect(css).toContain("min-height:min(10rem,20dvh)");
-    expect(css).toContain("min-height:min(8rem,15dvh)");
-    expect(css).toContain("@container(min-width:16rem){");
+  it("사업주 ink-500은 #5B675F(대비 4.5:1 이상)", () => {
+    expect(css).toMatch(/\.text-ink-500\{[^}]*color:rgb\(9110395\//);
+  });
+
+  it("근로자 크기 토큰: min-h-touch-lg 88px, text-worker-title 28px 굵게, text-worker-caption 20px, rounded-worker-btn 16px", () => {
+    expect(css).toMatch(/\.min-h-touch-lg\{min-height:88px;?\}/);
+    expect(css).toMatch(/\.text-worker-title\{font-size:1\.75rem;line-height:1\.35;font-weight:700;?\}/);
+    expect(css).toMatch(/\.text-worker-caption\{font-size:1\.25rem;line-height:1\.5;font-weight:500;?\}/);
+    expect(css).toMatch(/\.rounded-worker-btn\{border-radius:16px;?\}/);
+  });
+
+  it("small·hc 변형과 움직임 줄이기 변형이 생성된다", () => {
+    expect(css).toContain("@media(max-width:360px),(max-height:620px){");
+    expect(css).toContain('[data-contrast="high"].hc\\:border-black');
+    expect(css).toContain("@media(prefers-reduced-motion:reduce){.motion-reduce\\:animate-none{animation:none");
+  });
+
+  it("새 단계 화면의 그림 바닥 240px(작은 기기 180px)이 생성된다", () => {
+    expect(css).toContain(".min-h-\\[240px\\]{min-height:240px");
+    expect(css).toContain(".small\\:min-h-\\[180px\\]{min-height:180px");
+  });
+
+  // 1차 검증 반영: 번호 넣기 키패드는 행마다 64px 이상·남는 높이를 나눠 갖고, 가로 휴대폰(land)에서는 두 칸.
+  it("키패드 4줄 격자(행 64px 이상)와 land 변형, safe center가 생성된다", () => {
+    expect(css).toContain("grid-template-rows:repeat(4,minmax(64px,1fr))");
+    expect(css).toContain("@media(orientation:landscape)and(max-height:620px){");
+    expect(css).toContain("justify-content:safecenter");
   });
 });

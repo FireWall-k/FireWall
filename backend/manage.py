@@ -110,6 +110,8 @@ def purge(dry_run: bool) -> None:
     verb = "지울 대상" if dry_run else "지움"
     print(f"수행 로그 {report['performance_logs']}건 {verb} "
           f"(보존 {retention.performance_log_retention_days()}일)")
+    print(f"도움 요청 {report.get('help_requests', 0)}건 {verb} "
+          f"(보존 {retention.performance_log_retention_days()}일)")
     print(f"접근 감사 로그 {report['access_audit_logs']}건 {verb} "
           f"(보존 {retention.access_audit_retention_days()}일)")
     _print_media_report(report, verb)

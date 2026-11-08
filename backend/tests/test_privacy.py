@@ -23,7 +23,7 @@ import manage
 import media
 import retention
 from auth import verify_token
-from conftest import auth
+from conftest import auth, publish
 from database import SessionLocal, engine
 from models import AccessAuditLog, Assignment, PerformanceLog, Step, Worker, WorkerConsent
 
@@ -101,7 +101,7 @@ def capture(monkeypatch):
 
 
 def _publish_assign_log(client, token, task_id, worker_id):
-    assert client.post(f"/api/tasks/{task_id}/publish", headers=auth(token)).status_code == 200
+    assert publish(client, token, task_id).status_code == 200
     r = client.post(f"/api/tasks/{task_id}/assignments", json={"worker_ids": [worker_id]},
                     headers=auth(token))
     assert r.status_code == 200, r.text
@@ -1031,7 +1031,7 @@ def test_log_upload_racing_worker_deletion_leaves_no_orphan(client, employer_tok
 
     r = client.post("/api/tasks", json={"raw_input": "상자를 옮기고 수량을 확인하세요"}, headers=auth(employer_token))
     task = r.json()
-    client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token))
+    publish(client, employer_token, task["id"])
     assignment = client.post(f"/api/tasks/{task['id']}/assignments", headers=auth(employer_token)).json()[0]
     steps = [s["id"] for s in task["steps"]]
     body = {"assignment_id": assignment["id"], "duration_sec": 3.0, "replay_count": 0, "stuck": False}

@@ -10,7 +10,7 @@ import pytest
 
 import ratelimit
 from auth import hash_password, make_token
-from conftest import auth
+from conftest import auth, publish
 from database import SessionLocal
 from models import Employer, Worker
 
@@ -137,7 +137,7 @@ def test_owner_employer_sees_full_code(client, employer_token):
 
         task = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"},
                            headers=auth(employer_token)).json()
-        client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token))
+        publish(client, employer_token, task["id"])
         assigned = client.post(f"/api/tasks/{task['id']}/assignments",
                                json={"worker_ids": [w["id"]]}, headers=auth(employer_token))
         assert assigned.status_code == 200
@@ -165,7 +165,7 @@ def test_owner_employer_sees_full_code(client, employer_token):
 
         reissued = client.post(f"/api/workers/{w['id']}/access-code", headers=auth(employer_token))
         new_code = reissued.json()["access_code"]
-        assert len(new_code) == 6 and new_code.isdigit()
+        assert len(new_code) == 4 and new_code.isdigit()
         relisted = next(x for x in client.get("/api/workers", headers=auth(employer_token)).json()
                         if x["id"] == w["id"])
         assert relisted["access_code"] == new_code
@@ -253,13 +253,13 @@ def test_reissue_invalidates_old_token_with_workplace_login(client, employer_tok
 # 확인 함수/코드 생성기를 바꿔 끼워 "확인은 통과했는데 저장에서 겹친" 상황을 재현한다.
 def _codes(*seq):
     it = iter(seq)
-    return lambda db, employer_id: next(it)
+    return lambda db, employer_id, exclude_worker_id=None: next(it)
 
 
 def test_custom_code_race_is_409_not_500(client, employer_token, monkeypatch):
     import main
 
-    monkeypatch.setattr(main, "_access_code_taken", lambda db, employer_id, code: False)
+    monkeypatch.setattr(main, "_access_code_taken", lambda db, employer_id, code, exclude_worker_id=None: False)
     r = _create(client, employer_token, "경합", "1234")  # 데모 근로자가 이미 1234
     assert r.status_code == 409, r.text
     assert r.json()["detail"] == "이미 사용 중인 접속 코드입니다. 다른 코드를 입력해 주세요."

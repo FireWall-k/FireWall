@@ -17,7 +17,7 @@ export const AdminLayout: React.FC = () => {
               </div>
               <div>
                 <p className="font-display text-lg font-semibold leading-tight text-ink-900">설리번</p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-ink-500">JOB CARD</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-ink-500">잡카드</p>
               </div>
             </div>
           </div>
@@ -45,7 +45,7 @@ export const AdminLayout: React.FC = () => {
 
           <div className="mt-8 border-t border-paper-200 pt-5">
             <a
-              href="/worker"
+              href="/w"
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-sm font-medium text-clay-600 hover:bg-clay-400/10"

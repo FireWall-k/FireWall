@@ -66,13 +66,37 @@ employer_throttle = LoginThrottle(
     max_failures=int(os.getenv("LOGIN_MAX_FAILURES", "10")),
     window_sec=float(os.getenv("LOGIN_WINDOW_SEC", "900")),
 )
-# 근로자: IP 단위. 작업장 공용 IP를 고려해 넉넉하게 잡았다. 자동 발급 기본값(6자리, 100만 개)
-# 기준으로는 대입에 수개월이 걸린다. 사업주가 직접 4자리(1만 개)로 짧게 정하면 이 창의 최대
-# 시도 속도로도 며칠이면 그 코드 하나를 찾아낼 수 있다 — 짧은 코드일수록 이 창이 유일한 방어선이 된다.
+# 근로자: IP 단위. 작업장 공용 IP를 고려해 넉넉하게 잡았다. 자동 발급 코드는 4자리(1만 개, 창업자 결정 3:
+# 근로자가 4자리를 누르면 바로 들어간다)라 코드 자릿수로는 대입을 막지 못한다 — 이 창과 아래 사업장 창이
+# 실제 방어선이다. 한 IP는 10분에 30번까지만 틀릴 수 있다.
 worker_throttle = LoginThrottle(
     max_failures=int(os.getenv("WORKER_LOGIN_MAX_FAILURES", "30")),
     window_sec=float(os.getenv("WORKER_LOGIN_WINDOW_SEC", "600")),
 )
+# 근로자: 사업장 단위(키 "wp:{정규화한 사업장 코드}"). IP를 바꿔 가며 한 사업장의 4자리 코드를 훑는 대입을 막는다.
+# 없는 사업장 코드도 똑같이 센다(세지 않으면 429 여부로 사업장 코드가 있는지 알 수 있다).
+# 대가: 사업장 코드를 아는 사람은 일부러 틀려서 그 사업장 근로자 로그인을 최대 한 창(10분) 막을 수 있다.
+# 사업장 코드는 근로자 기기에만 저장돼 있어 이 위험은 감수한다.
+worker_wp_throttle = LoginThrottle(
+    max_failures=int(os.getenv("WORKER_LOGIN_WP_MAX_FAILURES", "60")),
+    window_sec=float(os.getenv("WORKER_LOGIN_WINDOW_SEC", "600")),
+)
+# 근로자: 하루 창(1차 검증 지적). 10분 창만 있으면 창이 풀릴 때마다 다시 시도해 사업장당 하루 8,640번까지 넣어 볼
+# 수 있었다. 근로자 20명이면 1만 개 중 21개가 맞아 평균 약 476번(80분 안팎)이면 동료 계정 하나가 열린다.
+# 하루 창을 위에 하나 더 둔다: 사업장 하루 100번, IP 하루 100번 틀리면 24시간 막는다. 이 한도로는 같은 계산에서
+# 평균 약 5일이 걸린다. 성공은 세지 않으므로, 근로자 몇 명이 몇 번 잘못 누르는 정도로는 닿지 않는다.
+# TODO(2차): 사업장 하루 한도에 닿으면 사업주 화면에 알림(도움 띠와 같은 폴링).
+_DAY = 24 * 60 * 60
+worker_day_throttle = LoginThrottle(
+    max_failures=int(os.getenv("WORKER_LOGIN_DAILY_MAX_FAILURES", "100")),
+    window_sec=float(os.getenv("WORKER_LOGIN_DAILY_WINDOW_SEC", str(_DAY))),
+)
+worker_wp_day_throttle = LoginThrottle(
+    max_failures=int(os.getenv("WORKER_LOGIN_WP_DAILY_MAX_FAILURES", "100")),
+    window_sec=float(os.getenv("WORKER_LOGIN_DAILY_WINDOW_SEC", str(_DAY))),
+)
+# 도움 요청 도배 방지(키 "help:{worker_id}"). 실패가 아니라 "새 요청"을 센다 — 60초에 10건이 넘으면 429.
+help_throttle = LoginThrottle(max_failures=10, window_sec=60)
 
 
 # 나누기 확인(GPT 분해) 호출 수 — 사업주 계정 단위. 입력 화면 [단계로 나누기]와 편집기 저장 시 나누기 확인이
