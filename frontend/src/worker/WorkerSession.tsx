@@ -11,6 +11,7 @@ import { NetworkError } from "../apiErrors";
 import { mergeStepMedia, useMediaRefresh } from "../media";
 import { toWorkerMessage } from "./copy";
 import { getOutbox, type Outbox } from "./outbox";
+import { preloadPictures } from "./preload";
 import { jobProgress, mergeDoneIds } from "./resume";
 import { OUTBOX_RETRY_MS, SYNC_NOTICE_MS, SessionContext, TODAY_POLL_MS, type StepCompletion, type WorkerSessionValue } from "./session";
 import { StatusScreen } from "./ui/StatusScreen";
@@ -202,6 +203,11 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
       window.removeEventListener("offline", onOffline);
     };
   }, [me, refresh, flush]);
+
+  // 끝나지 않은 일의 그림을 미리 받아 둔다(일하는 중 인터넷이 끊겨도 다음 단계 그림이 보이게, preload.ts).
+  useEffect(() => {
+    for (const j of jobs ?? []) if (j.status !== "done") preloadPictures(j.steps);
+  }, [jobs]);
 
   const onMediaError = useMediaRefresh(async () => {
     const fresh = await workerApi.today();

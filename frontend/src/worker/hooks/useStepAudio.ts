@@ -27,6 +27,11 @@ interface Options {
 /** 서버 mp3는 0.9 속도로 합성돼 있다(contract §4.1). */
 const SERVER_RATE = 0.9;
 
+/** 브라우저 음성이 끝났다는 신호가 오지 않을 때 [멈춤]을 풀 시간: 한 글자 0.4초(속도 반영) + 3초. */
+export function speechGuardMs(text: string, rate: number): number {
+  return Math.round((text.length * 400) / Math.max(rate, 0.5)) + 3_000;
+}
+
 export function useStepAudio(step: Pick<Step, "id" | "sentence" | "tts_audio_url"> | null, opts: Options): StepAudio {
   const [playing, setPlaying] = useState(false);
   const [blocked, setBlocked] = useState(false);
@@ -54,7 +59,7 @@ export function useStepAudio(step: Pick<Step, "id" | "sentence" | "tts_audio_url
     setPlaying(false);
   }, []);
 
-  const speakFallback = useCallback((text: string, my: number) => {
+  const speakFallback = useCallback((text: string, my: number, byUser = true) => {
     try {
       if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") {
         setPlaying(false);
@@ -63,11 +68,21 @@ export function useStepAudio(step: Pick<Step, "id" | "sentence" | "tts_audio_url
       const u = new SpeechSynthesisUtterance(text);
       u.lang = "ko-KR";
       u.rate = optsRef.current.rate;
+      // 통합 시험에서 찾은 문제: 음성이 없는 브라우저·일부 기기는 onend도 onerror도 오지 않아 버튼이 [멈춤]에
+      // 머물렀다(서버 음성 파일이 없을 때 = 브라우저 음성을 쓸 때). 글자 수로 잡은 넉넉한 시간이 지나면 끝난 것으로 본다.
+      const guard = window.setTimeout(() => {
+        if (token.current === my) setPlaying(false);
+      }, speechGuardMs(text, u.rate));
       u.onend = () => {
+        window.clearTimeout(guard);
         if (token.current === my) setPlaying(false);
       };
-      u.onerror = () => {
-        if (token.current === my) setPlaying(false);
+      u.onerror = (e: Event) => {
+        window.clearTimeout(guard);
+        if (token.current !== my) return;
+        setPlaying(false);
+        // 누르지 않은 자동 읽기를 브라우저가 막았다(새로고침 직후 등) → [듣기]에 '눌러서 들어요'.
+        if (!byUser && (e as SpeechSynthesisErrorEvent).error === "not-allowed") setBlocked(true);
       };
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(u);
@@ -84,7 +99,7 @@ export function useStepAudio(step: Pick<Step, "id" | "sentence" | "tts_audio_url
       const my = token.current;
       const url = step.tts_audio_url;
       if (!url) {
-        speakFallback(step.sentence, my);
+        speakFallback(step.sentence, my, byUser);
         if (byUser) setBlocked(false);
         return;
       }
