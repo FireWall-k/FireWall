@@ -158,7 +158,7 @@ docker compose up -d
 
 1. 단계 문장 + LLM이 뽑은 구체 명사(symbol_query)로 질의를 만든다.
 2. 라벨/검색어 텍스트 유사도(자카드·바이그램) + 동사 원형 일치 + 직무 맥락 보정으로 점수를
-   매긴다. 여기에 임베딩 유사도를 가산 항으로 더한다(`AAC_EMBEDDINGS=auto`, 기본 제공자
+   매긴다. `AAC_EMBEDDINGS=auto`로 켜면 임베딩 유사도를 가산 항으로 더한다(기본은 off, 제공자
    `local` — 무료 다국어 모델 `paraphrase-multilingual-MiniLM-L12-v2`를 CPU(ONNX)로 돌린다.
    키·네트워크가 필요 없고 도커 이미지에 모델이 들어 있다). 자산 임베딩 파일이 낡았거나
    모델 로딩이 실패하면 자동으로 임베딩 없이 동작한다 — 서비스가 멈추지 않는다.
@@ -175,10 +175,12 @@ AAC_DATA_DIR=/app/aac
 AAC_MATCH_THRESHOLD=0.215         # 임베딩 없을 때 채택 점수 임계값
 AAC_MATCH_MIN_MARGIN=0.018        # 임베딩 없을 때 1위와 경쟁 후보(같은 그림 묶음 제외)의 점수 차 최소값
 AAC_MATCH_MARGIN_MODE=absolute    # relative면 (s1−s2)/s1 ≥ AAC_MATCH_MIN_REL_MARGIN(기본 0.06)으로 판정
-AAC_EMBEDDINGS=auto               # off로 끌 수 있음
+AAC_EMBEDDINGS=off                # 기본 off. auto로 켬(블라인드셋에서 오답 채택이 늘어 기본으로 켜지 않음)
 AAC_EMBED_PROVIDER=local          # local(무료 로컬 모델, 기본) | openai(text-embedding-3-large, 키 필요)
-AAC_EMBED_MATCH_THRESHOLD=        # 임베딩 사용 시 임계값. 비우면 제공자별 기본(local 0.24, openai 0.35)
-AAC_EMBED_MATCH_MIN_MARGIN=       # 임베딩 사용 시 여유. 비우면 제공자별 기본(local 0.015, openai 0.02)
+AAC_LOCAL_EMBED_MATCH_THRESHOLD=  # local 임베딩 사용 시 임계값. 비우면 0.24
+AAC_LOCAL_EMBED_MATCH_MIN_MARGIN= # local 임베딩 사용 시 여유. 비우면 0.015
+AAC_EMBED_MATCH_THRESHOLD=        # openai 전용 임계값. 비우면 0.35 (local은 이 값을 무시)
+AAC_EMBED_MATCH_MIN_MARGIN=       # openai 전용 여유. 비우면 0.02 (local은 이 값을 무시)
 AAC_EMBED_TIMEOUT=3               # 질의 임베딩 호출 타임아웃(초, openai)
 ```
 

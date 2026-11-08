@@ -50,8 +50,12 @@ _cooldown_until = 0.0
 
 
 def mode() -> str:
-    """AAC_EMBEDDINGS: 'off'면 끈다. 그 외에는 제공자를 쓸 수 있고 자산 파일이 맞으면 켠다."""
-    return os.getenv("AAC_EMBEDDINGS", "auto").strip().lower()
+    """AAC_EMBEDDINGS: 기본 'off'. 'auto'면 제공자를 쓸 수 있고 자산 파일이 맞을 때 켠다.
+
+    기본이 off인 이유: 로컬 모델이 개발셋에서는 오답 채택을 줄였지만 블라인드셋(재판정 후)에서는
+    full 5→7, 문장 5→6으로 늘었다(eval/README.md 2026-11-08 블라인드 확인 절).
+    """
+    return (os.getenv("AAC_EMBEDDINGS") or "off").strip().lower()
 
 
 # --- 제공자 -----------------------------------------------------------------------

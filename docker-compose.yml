@@ -29,8 +29,9 @@ services:
       # openai 0.35/0.02 — local_aac._EMBED_DEFAULTS). 비워 두면 그 기본값, 값을 주면 그 값이 이긴다.
       # 보정값 이름은 제공자마다 다르다: local은 AAC_LOCAL_EMBED_*, openai는 AAC_EMBED_*. 예전 .env에 남은
       # OpenAI 값(AAC_EMBED_WEIGHT=0.5 등)이 로컬 모델에 붙으면 성능이 떨어지기 때문이다(기동 로그에 경고).
-      # 파일이 낡았거나 모델 로딩이 실패하면 자동으로 임베딩 없이(위 임계값으로) 동작한다. "off"로 끌 수 있다.
-      AAC_EMBEDDINGS: "${AAC_EMBEDDINGS:-auto}"
+      # 파일이 낡았거나 모델 로딩이 실패하면 자동으로 임베딩 없이(위 임계값으로) 동작한다. 기본 off,
+      # "auto"로 켠다(블라인드셋에서 오답 채택이 늘어 기본으로 켜지 않는다 — ai_service/eval/README.md).
+      AAC_EMBEDDINGS: "${AAC_EMBEDDINGS:-off}"
       AAC_EMBED_PROVIDER: "${AAC_EMBED_PROVIDER:-local}"
       AAC_LOCAL_EMBED_MATCH_THRESHOLD: "${AAC_LOCAL_EMBED_MATCH_THRESHOLD:-}"
       AAC_LOCAL_EMBED_MATCH_MIN_MARGIN: "${AAC_LOCAL_EMBED_MATCH_MIN_MARGIN:-}"

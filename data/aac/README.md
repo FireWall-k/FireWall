@@ -175,6 +175,8 @@ ASCII 기반의 안정적인 내부 ID로 다시 저장합니다.
 
 자산마다 두 벡터(라벨, 라벨+`keywords_ko/en`)를 임베딩해 저장한다. 질의 시점에 질의를 **같은 모델**로
 임베딩해 코사인 유사도를 규칙 점수에 더한다(`ai_service/embeddings.py`, `local_aac._EMBED_DEFAULTS`).
+**기본은 꺼져 있다**(`AAC_EMBEDDINGS=off`). 로컬 모델이 블라인드셋에서 오답 채택을 늘려서다
+(`ai_service/eval/README.md` 2026-11-08 블라인드셋 확인). `AAC_EMBEDDINGS=auto`로 켠다.
 
 - **모델(기본, `AAC_EMBED_PROVIDER=local`)**: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
   (384차원, 50여 개 언어·한국어 포함). fastembed가 받는 양자화 ONNX(약 230MB)를 CPU로 돌린다 — torch·키·
