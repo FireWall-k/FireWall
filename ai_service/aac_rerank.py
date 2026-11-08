@@ -11,6 +11,10 @@
   5) 키 없음·꺼짐·시간 초과·오류·이상한 응답이면 규칙 판정을 그대로 돌려준다(지금과 같은 동작).
      시간 제한(AAC_LLM_RERANK_TIMEOUT)은 호출 전체의 마감이다 — httpx timeout은 연결·읽기 단계마다 따로
      세므로, 응답이 조금씩 흘러들어오면 넘을 수 있어 호출을 작업 스레드에서 돌리고 결과를 마감까지만 기다린다.
+     마감은 작업 스레드가 호출을 **시작한 때부터** 센다(줄에서 기다린 시간은 넣지 않는다). 작업 스레드 수
+     (AAC_LLM_RERANK_WORKERS, 기본 16)는 백엔드가 동시에 준비하는 단계 수(STEP_PREP_WORKERS=8, 직무 둘이면 16)
+     이상으로 둔다. 마감 안에 빈 작업 스레드를 얻지 못하면 요청 없이 규칙 판정으로 가되 쉬는 시간은 걸지 않는다
+     (GPT가 느린 것이 아니라 이 프로세스가 바쁜 것이다).
   6) 연결·HTTP 오류·시간 초과 뒤, 그리고 이상한 응답이 연달아 _BAD_STREAK_LIMIT번 오면 잠시 GPT를 쉰다
      (장애 중에 단계마다 돈을 내고도 규칙 판정으로 떨어지지 않게).
 
@@ -21,17 +25,23 @@
   같은 결과라면 판정 기준이 하나인 top1을 기본으로 둔다. "규칙 채택 + GPT 확신 일치 추가"는 틀린
   채택이 3→5, 9→12로 늘었고, top3는 블라인드1에서 틀린 채택을 하나 더 만들었다(3→4).
 
-비용: 단계 하나에 한 번(입력 약 250토큰, 출력 약 12토큰) — gpt-4o-mini 기준 단계 100개에 약 $0.005.
-같은 (문장, 검색어, 업종, 후보) 조합은 프로세스 안 LRU 캐시로 다시 부르지 않는다.
+비용: 단계 하나에 한 번(입력 약 254토큰, 출력 약 12토큰) — gpt-4o-mini 기준 단계 100개에 약 $0.0045.
+같은 (문장, 검색어, 업종, 후보) 조합은 다시 부르지 않는다: 프로세스 안 LRU 캐시(AAC_LLM_RERANK_CACHE)와,
+AAC_LLM_RERANK_CACHE_DB를 주면 재시작해도 남는 SQLite 파일(Docker 기본 /app/cache, 이름 있는 볼륨). 파일에는
+조합의 sha256(모델·프롬프트 포함)과 판정(choice, confident)만 남기고 문장은 남기지 않는다. 그래서 검토 화면이 후보를
+다시 불러도 같은 조합이면 직무 생성 때와 같은 판정이 나온다(temperature 0.2라 다시 물으면 달라질 수 있다).
 
 개인정보: 보내는 것은 단계 문장(백엔드가 실명을 별칭으로 바꾼 것)·업종·카드 이름뿐이다 — 직무 분해가
 이미 보내는 것과 같은 범위다. 로그에는 문장을 남기지 않고 판정·선택 번호·지연만 남긴다.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import math
 import os
+import sqlite3
 import threading
 import time
 from collections import OrderedDict
@@ -98,13 +108,28 @@ def _cache_size() -> int:
     return max(0, int(_env_float("AAC_LLM_RERANK_CACHE", 1024)))
 
 
+def _workers() -> int:
+    """AAC_LLM_RERANK_WORKERS(기본 16). 백엔드 STEP_PREP_WORKERS(8) × 동시에 만드는 직무 수 이상으로 둔다."""
+    return max(1, int(_env_float("AAC_LLM_RERANK_WORKERS", 16)))
+
+
+def _cache_db() -> str:
+    """AAC_LLM_RERANK_CACHE_DB: 판정을 재시작 뒤에도 남길 SQLite 파일 경로. 비우면(코드 기본) 프로세스 안에만 둔다."""
+    return (os.getenv("AAC_LLM_RERANK_CACHE_DB") or "").strip()
+
+
+class _Busy(Exception):
+    """마감 안에 빈 작업 스레드를 얻지 못했다(요청은 보내지 않았다). 쉬는 시간을 걸지 않는다."""
+
+
 _lock = threading.Lock()
 _cache: OrderedDict[tuple, tuple[int, bool]] = OrderedDict()
 _down_until = 0.0
 _bad_streak = 0
 # 호출 전체 마감을 지키려고 GPT 호출을 여기서 돌린다. 마감을 넘긴 호출은 버리고(스레드는 httpx 단계별
-# timeout으로 곧 끝난다) 쉬는 시간을 걸어, 장애 중에 멈춘 호출이 쌓이지 않는다.
-_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="aac-rerank")
+# timeout으로 곧 끝난다) 쉬는 시간을 걸어, 장애 중에 멈춘 호출이 쌓이지 않는다. 크기는 백엔드 동시 단계 수 이상
+# (예전 4개는 직무 하나의 8단계 중 5~8번째가 줄에서 기다린 시간까지 마감에 들어가 거짓 시간 초과가 났다).
+_pool = ThreadPoolExecutor(max_workers=_workers(), thread_name_prefix="aac-rerank")
 
 
 def reset_state() -> None:
@@ -158,15 +183,54 @@ def parse_verdict(raw: dict, n_candidates: int) -> tuple[int, bool]:
     return choice, conf is True
 
 
-def _cache_get(key: tuple) -> tuple[int, bool] | None:
-    with _lock:
-        hit = _cache.get(key)
-        if hit is not None:
-            _cache.move_to_end(key)
-        return hit
+def _db_key(key: tuple) -> str:
+    """디스크에 남기는 키: 모델·프롬프트·조합의 sha256. 문장 자체는 남기지 않는다."""
+    sentence, keywords, business_type, ids = key
+    raw = json.dumps([llm.OPENAI_MODEL, RERANK_SYSTEM, sentence, list(keywords), business_type, list(ids)],
+                     ensure_ascii=False)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def _cache_put(key: tuple, value: tuple[int, bool]) -> None:
+def _db_open(path: str) -> sqlite3.Connection:
+    conn = sqlite3.connect(path, timeout=2.0)
+    conn.execute("CREATE TABLE IF NOT EXISTS verdict (k TEXT PRIMARY KEY, choice INTEGER NOT NULL, "
+                 "confident INTEGER NOT NULL, t REAL NOT NULL)")
+    return conn
+
+
+def _db_get(key: tuple) -> tuple[int, bool] | None:
+    path = _cache_db()
+    if not path:
+        return None
+    try:
+        conn = _db_open(path)
+        try:
+            row = conn.execute("SELECT choice, confident FROM verdict WHERE k = ?", (_db_key(key),)).fetchone()
+        finally:
+            conn.close()
+    except (sqlite3.Error, OSError) as e:
+        logger.warning("aac rerank 판정 파일 읽기 실패: %s", type(e).__name__)
+        return None
+    return (int(row[0]), bool(row[1])) if row else None
+
+
+def _db_put(key: tuple, value: tuple[int, bool]) -> None:
+    path = _cache_db()
+    if not path:
+        return
+    try:
+        conn = _db_open(path)
+        try:
+            with conn:
+                conn.execute("INSERT OR REPLACE INTO verdict (k, choice, confident, t) VALUES (?, ?, ?, ?)",
+                             (_db_key(key), int(value[0]), int(bool(value[1])), time.time()))
+        finally:
+            conn.close()
+    except (sqlite3.Error, OSError) as e:
+        logger.warning("aac rerank 판정 파일 쓰기 실패: %s", type(e).__name__)
+
+
+def _mem_put(key: tuple, value: tuple[int, bool]) -> None:
     size = _cache_size()
     if size <= 0:
         return
@@ -175,6 +239,49 @@ def _cache_put(key: tuple, value: tuple[int, bool]) -> None:
         _cache.move_to_end(key)
         while len(_cache) > size:
             _cache.popitem(last=False)
+
+
+def _cache_get(key: tuple) -> tuple[int, bool] | None:
+    with _lock:
+        hit = _cache.get(key)
+        if hit is not None:
+            _cache.move_to_end(key)
+            return hit
+    hit = _db_get(key)
+    if hit is not None:
+        _mem_put(key, hit)
+    return hit
+
+
+def _cache_put(key: tuple, value: tuple[int, bool]) -> None:
+    _mem_put(key, value)
+    _db_put(key, value)
+
+
+def _run_with_deadline(fn, deadline: float):
+    """fn을 작업 스레드에서 돌리고 결과를 기다린다. 마감은 작업 스레드가 fn을 시작한 때부터 센다.
+
+    마감 안에 시작하지 못하면 취소하고 _Busy(요청을 보내지 않았다). 시작한 뒤 마감을 넘기면 _FutureTimeout.
+    """
+    started = threading.Event()
+    begun = [0.0]
+
+    def run():
+        begun[0] = time.monotonic()
+        started.set()
+        return fn()
+
+    future = _pool.submit(run)
+    if not started.wait(timeout=deadline):
+        if future.cancel():
+            raise _Busy("빈 작업 스레드 없음")
+        started.wait()  # 취소 직전에 시작했다 — 시작 시각은 곧 기록된다
+    remaining = deadline - (time.monotonic() - begun[0])
+    try:
+        return future.result(timeout=max(0.0, remaining))
+    except _FutureTimeout:
+        future.cancel()
+        raise
 
 
 def _ask(sentence: str, business_type: str, keywords: list[str], top: list[dict]) -> tuple[tuple[int, bool], bool]:
@@ -187,13 +294,12 @@ def _ask(sentence: str, business_type: str, keywords: list[str], top: list[dict]
     user = build_user_prompt(sentence, business_type, top)
     deadline = timeout()
     try:
-        future = _pool.submit(llm.chat_json, RERANK_SYSTEM, user, max_tokens=MAX_TOKENS, timeout=deadline)
-        try:
-            raw = future.result(timeout=deadline)
-        except _FutureTimeout:
-            future.cancel()
-            raise
+        raw = _run_with_deadline(
+            lambda: llm.chat_json(RERANK_SYSTEM, user, max_tokens=MAX_TOKENS, timeout=deadline), deadline)
         verdict = parse_verdict(raw, len(top))
+    except _Busy:
+        # 요청을 보내지 않았다 — GPT 장애가 아니므로 쉬는 시간·연속 실패 수를 건드리지 않는다.
+        raise
     except (httpx.HTTPError, _FutureTimeout):
         # 연결 실패·시간 초과(전체 마감 포함)·4xx/5xx(키 오류, 한도 초과 포함). 잠시 쉬어 다음 단계들이
         # 기다리지 않게 한다.
@@ -247,12 +353,16 @@ def apply_policy(decision: dict, choice: int, confident: bool, rule_policy: str 
     return out
 
 
-def rerank(decision: dict, *, keywords: list[str], context: dict | None) -> dict:
-    """규칙 판정에 GPT 재순위를 적용한다. 못 쓰면 규칙 판정 그대로(decided_by='rule')."""
+def rerank(decision: dict, *, keywords: list[str], context: dict | None, enabled: bool | None = None) -> dict:
+    """규칙 판정에 GPT 재순위를 적용한다. 못 쓰면 규칙 판정 그대로(decided_by='rule').
+
+    enabled: 부르는 쪽이 검색 limit을 고를 때 이미 본 available() 값. False면 그 사이 쉬는 시간이 끝났어도
+    부르지 않는다 — 후보를 기본 개수만 받았으므로 실측(10장)과 다른 입력을 GPT에 보내지 않기 위해서다.
+    """
     out = dict(decision)
     out["decided_by"] = "rule"
     cands = decision.get("candidates") or []
-    if not cands or not available():
+    if not cands or enabled is False or not available():
         return out
     ctx = context or {}
     sentence = str(ctx.get("sentence") or "").strip() or " ".join(str(k) for k in keywords).strip()

@@ -123,6 +123,29 @@ def make_post(real_post, cache_dir: Path, live: bool, ledger: Path | None, cap: 
     return post
 
 
+def check_cases(cases) -> list[str]:
+    """채점할 수 있는 모양인지 본다. 문제 목록을 돌려준다(비면 통과).
+
+    문항마다 id·sentence가 있어야 하고, 정답 목록 accept(비지 않은 리스트)나 gap=true 중 하나가 있어야 한다.
+    accept가 없는 문항을 그대로 채점하면 모두 '틀림'으로 세어 0.000이 조용히 나온다(다른 모양의 파일을 넣었을 때).
+    """
+    if not isinstance(cases, list) or not cases:
+        return ["문항(cases)이 없음"]
+    problems = []
+    for i, c in enumerate(cases):
+        if not isinstance(c, dict):
+            problems.append(f"#{i}: 객체가 아님")
+            continue
+        cid = c.get("id") or f"#{i}"
+        missing = [k for k in ("id", "sentence") if not c.get(k)]
+        if missing:
+            problems.append(f"{cid}: {', '.join(missing)} 없음")
+        acc = c.get("accept")
+        if not c.get("gap") and not (isinstance(acc, list) and acc):
+            problems.append(f"{cid}: 정답(accept)도 gap도 없음")
+    return problems
+
+
 def _score(shown: list[str], chosen: str | None, accept: set[str], gap: bool) -> dict:
     return {"top1": bool(shown) and shown[0] in accept, "top3": any(a in accept for a in shown[:3]),
             "accepted": chosen is not None, "wrong": chosen is not None and (gap or chosen not in accept),
@@ -181,7 +204,12 @@ def main(argv: list[str] | None = None) -> None:
     sys.stdout.reconfigure(encoding="utf-8")
 
     path = DATASETS.get(args.dataset, Path(args.dataset))
-    cases = json.loads(Path(path).read_text(encoding="utf-8"))["cases"]
+    doc = json.loads(Path(path).read_text(encoding="utf-8"))
+    cases = doc.get("cases") if isinstance(doc, dict) else None
+    problems = check_cases(cases)
+    if problems:
+        raise SystemExit(f"데이터셋 모양이 채점할 수 없음({len(problems)}건): " + "; ".join(problems[:5])
+                         + (" …" if len(problems) > 5 else ""))
     policies = ["top1", "top3"] if args.policy == "both" else [args.policy]
 
     if args.live and (not args.ledger or args.cap <= 0):

@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 
 import httpx
 
@@ -275,31 +276,71 @@ def llm_decompose(raw_input: str, context: dict | None = None) -> dict:
     return raw
 
 
-# 금지·부정 표현. 원문에 있으면 단계 문장 어딘가에 남아야 하고, 원문에 없으면 단계 문장에 생기면 안 된다.
-# '만지지 말고 선생님을 부르세요'가 '선생님을 부르세요'만 남으면 근로자는 '만지지 마'를 듣지 못한다
-# (2026-11-08 분해 프롬프트 수정안에서 실제로 일어났다 — eval/README.md). 반대로 원문에 없는
+# 금지·부정 표현 보존 검사. '만지지 말고 선생님을 부르세요'가 '선생님을 부르세요'만 남으면 근로자는 '만지지 마'를
+# 듣지 못한다(2026-11-08 분해 프롬프트 수정안에서 실제로 일어났다 — eval/README.md). 반대로 원문에 없는
 # '수저통에 넣지 마세요'를 덧붙이면 앞 단계와 정반대 지시가 된다(지금 프롬프트 170문장 중 1건).
-_NEGATION_MARKERS = ("지 말", "지말", "지 마", "지마", "않", "금지", "안 돼", "안돼", "하면 안")
+#
+# 표현마다 '무엇을 하지 말라는가'(동사 어간 또는 '~ 금지' 앞말)를 뽑아 원문과 단계 문장을 맞춘다 — 원문의 금지가
+# 모두 단계 문장에 남아야 하고, 단계 문장의 금지는 모두 원문에 있어야 한다. 그래서 '만지면 안 됩니다'를
+# '만지지 마세요'로 바꿔 쓴 것은 통과하고, '닫지 말고'를 '닦지 마세요'로 옮긴 것(다른 동사)은 걸린다.
+# 패턴 순서가 중요하다: 앞 패턴이 잡은 부분은 지우고 다음 패턴을 본다('만지면 안 됩니다'를 '안 됩'으로 또 세지 않게).
+_NEG_PATTERNS = (
+    # ~지 마(세요/십시오/요/라) · ~지 말(고/아/라/것/기/도록/자) · ~지 않. '가지마다'·'엄지마디'는 '마' 뒤가
+    # 한글이라 걸리지 않는다.
+    re.compile(r"([가-힣]+)지\s?(?:마(?:세요|십시오|시오|요|라)?(?![가-힣])"
+               r"|말(?:아요|아야|아|고|라|것|기|도록|자)?(?![가-힣])|않)"),
+    # ~(으)면 안 돼요/됩니다/된다/되 — '만지면'·'넣으면'·'하면'.
+    re.compile(r"([가-힣]+?)으?면\s?안\s?(?:돼|됩|된|되)"),
+    # ~ 금지 — '사용 금지', '출입금지'. 어간 대신 앞말을 쓴다.
+    re.compile(r"([가-힣]*?)\s?금지"),
+    # 짧은 부정 '안 + 동사': '콘센트를 안 만져요'. '상자 안에'·'상자 안 물건'은 뒤가 동사 어미가 아니라 걸리지 않는다.
+    # '안 됩니다'의 '됩'은 동사로 보지 않는다(아래 패턴이 센다).
+    re.compile(r"(?<![가-힣])안\s(?![돼되됩된])([가-힣]+?)(?:아요|어요|여요|해요|요|습니다|니다|고|게|도록)(?![가-힣])"),
+    # 위에서 어간을 못 뽑은 '안 돼/안 됩니다'('만져서는 안 됩니다' 등). 어간 없이 '어떤 금지'로 센다.
+    re.compile(r"()안\s?(?:돼|됩|된다|되[요니어고는])"),
+)
+
+
+def negation_keys(text: str) -> list[str]:
+    """문장 속 금지·부정 표현마다 '무엇을'에 해당하는 말(어간·앞말)을 돌려준다. 못 뽑으면 빈 문자열."""
+    keys: list[str] = []
+    rest = text or ""
+    for pat in _NEG_PATTERNS:
+        def take(m: re.Match) -> str:
+            keys.append(m.group(1) or "")
+            return " " * (m.end() - m.start())
+        rest = pat.sub(take, rest)
+    return keys
 
 
 def _has_negation(text: str) -> bool:
-    return any(m in text for m in _NEGATION_MARKERS)
+    return bool(negation_keys(text))
+
+
+def _same_target(a: str, b: str) -> bool:
+    """두 금지가 같은 동작을 가리키는가. 활용형 차이('만지'·'만져', '사용'·'사용하')는 같다고 본다."""
+    if not a or not b:
+        return True  # 어간을 못 뽑은 쪽은 '어떤 금지든'으로 본다
+    return a == b or a.startswith(b) or b.startswith(a) or a[0] == b[0]
 
 
 def check_negation(raw_input: str, raw: dict) -> None:
-    """분해 결과가 원문의 금지·부정을 잃었거나 없는 금지를 만들었으면 ValueError(→ 규칙 분해로 폴백).
+    """분해 결과가 원문의 금지·부정을 잃었거나, 원문에 없는(또는 다른 동작에 붙은) 금지를 만들었으면
+    ValueError(→ 규칙 분해로 폴백).
 
     단계 문장(sentence)만 본다 — 근로자가 듣는 것은 단계 문장이다.
     """
     steps = raw.get("steps") if isinstance(raw, dict) else None
     sentences = [str(s.get("sentence") or "") for s in (steps if isinstance(steps, list) else [])
                  if isinstance(s, dict)]
-    src = _has_negation(raw_input or "")
-    out = any(_has_negation(s) for s in sentences)
-    if src and not out:
-        raise ValueError("분해 결과에서 원문의 금지·부정 표현이 사라짐")
-    if out and not src:
-        raise ValueError("분해 결과에 원문에 없는 금지·부정 표현이 생김")
+    src = negation_keys(raw_input or "")
+    out = [k for s in sentences for k in negation_keys(s)]
+    for k in src:
+        if not any(_same_target(k, o) for o in out):
+            raise ValueError("분해 결과에서 원문의 금지·부정 표현이 사라짐")
+    for o in out:
+        if not any(_same_target(o, k) for k in src):
+            raise ValueError("분해 결과에 원문에 없는 금지·부정 표현이 생김")
 
 
 # --- 2) 사업주용 AI 코칭 가이드 ---------------------------------------------

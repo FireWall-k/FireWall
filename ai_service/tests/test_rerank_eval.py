@@ -146,3 +146,21 @@ def test_live_call_is_always_recorded_in_ledger(tmp_path):
     # 두 번째는 디스크 캐시에서 — 다시 부르지 않는다
     post("url", json=_BODY)
     assert len(calls) == 1 and stats["cache_hit"] == 1
+
+
+def test_rejects_dataset_without_answers(tmp_path, monkeypatch):
+    """정답(accept)이 없는 다른 모양의 파일을 넣으면 0.000을 조용히 내지 않고 멈춘다."""
+    import pytest
+    _isolate(monkeypatch)
+    data = tmp_path / "wrapped.json"
+    data.write_text(json.dumps({"cases": [{"id": "x1", "sentence": "문장", "gap": False, "steps": []}]},
+                               ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(SystemExit) as e:
+        R.main(["--dataset", str(data), "--cache-dir", str(tmp_path / "c")])
+    assert "accept" in str(e.value)
+
+
+def test_check_cases_accepts_answer_or_gap():
+    assert R.check_cases([_CASE, {"id": "g", "sentence": "s", "gap": True}]) == []
+    assert R.check_cases([]) == ["문항(cases)이 없음"]
+    assert len(R.check_cases([{"id": "a", "sentence": "s"}, {"sentence": "s", "accept": ["A"]}])) == 2

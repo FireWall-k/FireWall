@@ -310,3 +310,132 @@ def test_symbol_without_decided_by_is_backward_compatible():
     s = Symbol(keyword="k")
     assert s.decided_by == "rule"
     assert "decided_by" in s.model_dump()
+
+
+# ---------- 동시 호출(백엔드는 직무 하나에 단계 8개를 동시에 준비한다) ----------
+
+def _slow_reply(delay, record=None):
+    import threading as _th
+    import time as _time
+    lock = _th.Lock()
+
+    def post(url, headers=None, json=None, timeout=None):  # noqa: A002
+        if record is not None:
+            with lock:
+                record.append(timeout)
+        _time.sleep(delay)
+        return httpx.Response(200, json={"choices": [{"message": {"content": '{"choice": 1, "confident": true}'}}]},
+                              request=httpx.Request("POST", url))
+    return post
+
+
+@pytest.mark.parametrize("parallel", [8, 16])
+def test_parallel_steps_below_deadline_all_use_gpt_without_cooldown(gpt, monkeypatch, parallel):
+    """한 번 호출이 마감보다 짧으면, 동시에 8·16단계가 와도 모두 GPT로 정하고 쉬는 시간이 걸리지 않는다.
+    (예전 작업 스레드 4개 + 제출 시점부터 센 마감에서는 5번째부터 줄에서 기다린 시간 때문에 거짓 시간 초과가 났다.)"""
+    from concurrent.futures import ThreadPoolExecutor as _Pool
+    monkeypatch.setenv("AAC_LLM_RERANK_TIMEOUT", "1.0")
+    calls = []
+    monkeypatch.setattr(llm, "_http", types.SimpleNamespace(post=_slow_reply(0.6, calls)))
+    with _Pool(max_workers=parallel) as ex:
+        outs = list(ex.map(lambda i: aac_rerank.rerank(_decision("accepted"), keywords=["k"],
+                                                       context={"sentence": f"문장{i}"}), range(parallel)))
+    assert [o["decided_by"] for o in outs] == ["llm"] * parallel
+    assert len(calls) == parallel
+    assert aac_rerank.available() is True
+
+
+def test_deadline_counts_from_call_start_not_from_queueing(gpt, monkeypatch):
+    """작업 스레드가 하나뿐이라 두 번째 호출이 줄에서 기다려도, 기다린 시간은 마감에 넣지 않는다."""
+    from concurrent.futures import ThreadPoolExecutor as _Pool
+    monkeypatch.setattr(aac_rerank, "_pool", _Pool(max_workers=1))
+    monkeypatch.setenv("AAC_LLM_RERANK_TIMEOUT", "1.0")
+    monkeypatch.setattr(llm, "_http", types.SimpleNamespace(post=_slow_reply(0.6)))
+    with _Pool(max_workers=2) as ex:
+        outs = list(ex.map(lambda i: aac_rerank.rerank(_decision("accepted"), keywords=["k"],
+                                                       context={"sentence": f"문장{i}"}), range(2)))
+    # 두 번째는 0.6초 기다린 뒤 시작해 0.6초 걸린다 — 제출부터 1.2초지만 호출 자체는 마감(1초) 안이다.
+    assert [o["decided_by"] for o in outs] == ["llm", "llm"]
+    assert aac_rerank.available() is True
+
+
+def test_queued_call_that_never_started_does_not_cool_down(gpt, monkeypatch):
+    """마감 안에 빈 작업 스레드를 못 얻으면 요청 없이 규칙 판정으로 가고, 쉬는 시간은 걸지 않는다."""
+    import threading as _th
+    from concurrent.futures import ThreadPoolExecutor as _Pool
+    monkeypatch.setattr(aac_rerank, "_pool", _Pool(max_workers=1))
+    entered, release = _th.Event(), _th.Event()
+    sent = []
+
+    def blocking_post(url, headers=None, json=None, timeout=None):  # noqa: A002
+        sent.append(1)
+        entered.set()
+        release.wait(5)
+        return httpx.Response(200, json={"choices": [{"message": {"content": '{"choice": 1, "confident": true}'}}]},
+                              request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(llm, "_http", types.SimpleNamespace(post=blocking_post))
+    monkeypatch.setenv("AAC_LLM_RERANK_TIMEOUT", "5")
+    first = {}
+    t = _th.Thread(target=lambda: first.setdefault("out", aac_rerank.rerank(
+        _decision("accepted"), keywords=["k"], context={"sentence": "첫 문장"})))
+    t.start()
+    assert entered.wait(5)
+    monkeypatch.setenv("AAC_LLM_RERANK_TIMEOUT", "0.2")  # 두 번째 단계의 마감(첫 호출은 이미 5초로 읽었다)
+    d = _decision("accepted")
+    second = aac_rerank.rerank(d, keywords=["k"], context={"sentence": "둘째 문장"})
+    assert second["decided_by"] == "rule" and second["match"] == d["match"]
+    assert aac_rerank.available() is True  # 쉬는 시간이 걸리지 않았다
+    release.set()
+    t.join(5)
+    assert first["out"]["decided_by"] == "llm"
+    assert len(sent) == 1  # 줄에서 취소된 두 번째는 요청을 보내지 않았다
+
+
+# ---------- 판정 파일(재시작해도 같은 단계는 다시 부르지 않는다) ----------
+
+def test_verdict_file_survives_restart_and_stores_no_sentence(gpt, monkeypatch, tmp_path):
+    import sqlite3
+    db = tmp_path / "rerank.sqlite3"
+    monkeypatch.setenv("AAC_LLM_RERANK_CACHE_DB", str(db))
+    fake = gpt({"choice": 2, "confident": True})
+    ctx = {"sentence": "비밀스러운 문장", "business_type": "마트"}
+    first = aac_rerank.rerank(_decision("accepted"), keywords=["k"], context=ctx)
+    aac_rerank.reset_state()  # 프로세스 재시작과 같다(메모리 캐시 비움)
+    second = aac_rerank.rerank(_decision("accepted"), keywords=["k"], context=ctx)
+    assert first == second and len(fake.calls) == 1
+    conn = sqlite3.connect(db)
+    rows = conn.execute("SELECT k, choice, confident FROM verdict").fetchall()
+    conn.close()
+    assert len(rows) == 1 and rows[0][1:] == (2, 1)
+    assert "비밀" not in db.read_bytes().decode("utf-8", "ignore")
+
+
+def test_verdict_file_error_falls_back_to_memory(gpt, monkeypatch, tmp_path):
+    monkeypatch.setenv("AAC_LLM_RERANK_CACHE_DB", str(tmp_path / "no_such_dir" / "x.sqlite3"))
+    fake = gpt({"choice": 1, "confident": True})
+    out = aac_rerank.rerank(_decision("accepted"), keywords=["k"], context={"sentence": "문장"})
+    assert out["decided_by"] == "llm" and len(fake.calls) == 1
+
+
+# ---------- available()은 map_symbols에서 한 번만 본다 ----------
+
+def test_rerank_respects_enabled_false_even_if_available(gpt):
+    fake = gpt({"choice": 1, "confident": True})
+    out = aac_rerank.rerank(_decision("accepted"), keywords=["k"], context={"sentence": "문장"}, enabled=False)
+    assert out["decided_by"] == "rule" and fake.calls == []
+
+
+def test_map_symbols_checks_availability_once(gpt, monkeypatch):
+    fake = gpt({"choice": 1, "confident": True})
+    seen = []
+    real = aac_rerank.available
+
+    def flip():
+        seen.append(1)
+        return len(seen) > 1 and real()  # 처음엔 쉬는 중, 그다음엔 쉬는 시간이 끝난 것처럼
+
+    monkeypatch.setattr(aac_rerank, "available", flip)
+    s = symbols.map_symbols(*_STEP).symbols[0]
+    assert s.decided_by == "rule" and fake.calls == []
+    assert len(seen) == 1

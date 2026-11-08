@@ -13,13 +13,15 @@ _SHORTLIST = 3
 
 
 def map_symbols(keywords: list[str], context: dict) -> MapSymbolsResult:
-    if aac_rerank.available():
+    # available()은 한 번만 본다 — 검색 limit을 고른 뒤 쉬는 시간이 끝나 기본 개수 후보로 GPT를 부르지 않게.
+    rerank_on = aac_rerank.available()
+    if rerank_on:
         # GPT에 규칙 상위 10장을 보여 준다. limit은 후보 길이만 바꾸고 판정은 그대로다(1,006건 대조에서
         # limit 5/10/20 판정이 모두 같았다). 꺼져 있으면 예전과 똑같이 기본 limit으로 부른다.
         decision = search_for_step_detailed(keywords, context, limit=aac_rerank.TOP_N)
     else:
         decision = search_for_step_detailed(keywords, context)
-    decision = aac_rerank.rerank(decision, keywords=keywords, context=context)
+    decision = aac_rerank.rerank(decision, keywords=keywords, context=context, enabled=rerank_on)
     match = decision["match"]
     decided_by = decision.get("decided_by", "rule")
 

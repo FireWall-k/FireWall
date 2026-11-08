@@ -60,6 +60,12 @@ services:
       AAC_LLM_RERANK_TIMEOUT: "${AAC_LLM_RERANK_TIMEOUT:-4}"
       AAC_LLM_RERANK_COOLDOWN: "${AAC_LLM_RERANK_COOLDOWN:-60}"
       AAC_LLM_RERANK_CACHE: "${AAC_LLM_RERANK_CACHE:-1024}"
+      # 백엔드가 직무 하나에 단계 8개(STEP_PREP_WORKERS)를 동시에 준비한다 — 작업 스레드가 그보다 적으면 줄에서 기다리다
+      # 마감을 넘긴다. 16 = 직무 둘이 동시에 만들어지는 경우.
+      AAC_LLM_RERANK_WORKERS: "${AAC_LLM_RERANK_WORKERS:-16}"
+      # 판정 파일(sha256 키 + choice/confident만, 문장 없음). 아래 ai-cache 볼륨에 두어 컨테이너를 다시 만들어도
+      # 같은 단계에 다시 돈이 들지 않고, 검토 화면이 후보를 다시 불러도 직무 생성 때와 같은 판정이 나온다.
+      AAC_LLM_RERANK_CACHE_DB: "${AAC_LLM_RERANK_CACHE_DB:-/app/cache/aac_rerank.sqlite3}"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3).read()"]
       interval: 10s
@@ -70,6 +76,7 @@ services:
       - openai_api_key
     volumes:
       - ./data/aac:/app/aac:ro
+      - ai-cache:/app/cache
 
   # 일회성 스키마 마이그레이션. backend와 같은 이미지로 `manage.py migrate`를 한 번 돌리고 끝난다.
   # 요청을 받는 backend 프로세스(lifespan)에서 돌리지 않는 이유: 인스턴스가 여럿이면 마이그레이션이
@@ -252,6 +259,8 @@ services:
 
 volumes:
   jobcard-data:
+  # ai_service의 GPT 재순위 판정 파일(AAC_LLM_RERANK_CACHE_DB). 지워도 다시 물을 뿐이다.
+  ai-cache:
 
 # 비밀값은 환경변수가 아니라 파일로 넘긴다(컨테이너 안 /run/secrets/<이름>, 읽기 전용).
 # 원본 파일이 없으면 compose가 기동을 거부하므로 처음 한 번 scripts/init-secrets.sh(Windows: .ps1)로
