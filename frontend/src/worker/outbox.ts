@@ -169,7 +169,9 @@ export class Outbox {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { key, ...body } = item;
         try {
-          await send(body);
+          // 보내는 순간의 기기 시각을 같이 싣는다(4차 검증). 서버는 (보낸 시각 - 끝낸 시각)으로 완료 순간을 서버 시계로
+          // 옮겨, 기기 시계가 틀려도 그 뒤에 부른 도움 요청을 닫을지 바르게 정한다.
+          await send({ ...body, client_sent_at: new Date().toISOString() });
           this.remove(item);
           result.sent += 1;
         } catch (e) {

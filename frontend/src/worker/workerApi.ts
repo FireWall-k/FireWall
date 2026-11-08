@@ -44,6 +44,8 @@ export interface LogBody {
   completed: boolean;
   client_event_id: string;
   client_completed_at: string;
+  /** 보내는 순간의 기기 시각. 대기열이 보낼 때마다 새로 채운다(저장하지 않는다). */
+  client_sent_at?: string;
 }
 
 export interface LogResult {

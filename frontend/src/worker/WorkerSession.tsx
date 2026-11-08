@@ -43,8 +43,16 @@ export function WorkerSession({ token, onLogout, children }: { token: string; on
     else if (kind === "offline") setOnline(false);
   }, []);
 
-  /** 저장된 로그인이 아직 이 세션의 것인지(다른 탭·다음 근로자가 바꿨으면 App이 곧 세션을 새로 만든다). */
-  const stillMine = useCallback(() => getAuth()?.token === token, [token]);
+  /**
+   * 저장된 로그인이 다른 토큰으로 바뀌었는지(다른 탭·다음 근로자가 들어왔으면 App이 곧 세션을 새로 만든다).
+   * 4차 검증: 예전에는 '저장된 토큰 === 이 세션 토큰'을 봤는데, 이 세션의 요청이 401을 받으면 toError가 저장된
+   * 로그인을 먼저 지워(null) 늘 '내 것 아님'이 됐다. 그래서 '다시 들어와 주세요'가 뜨지 않고 오늘 할 일 다시 받기도
+   * 멈춘 채, 근로자는 기록이 하나도 안 가는 일을 계속했다. 지워진 것(null)은 이 세션이 풀린 것으로 본다.
+   */
+  const replaced = useCallback(() => {
+    const now = getAuth()?.token;
+    return now != null && now !== token;
+  }, [token]);
 
   const load = useCallback(async () => {
     let m: WorkerMe | null = meRef.current;
@@ -92,7 +100,7 @@ export function WorkerSession({ token, onLogout, children }: { token: string; on
   // 조용히 다시 받기(폴링·화면 복귀·다시 연결). 실패해도 지금 화면을 그대로 둔다.
   const refresh = useCallback(async () => {
     const m = meRef.current;
-    if (!m || !stillMine()) return;
+    if (!m || replaced()) return;
     try {
       const list = writeTodayCache(m.id, await workerApi.today(token));
       setJobs(list);
@@ -100,7 +108,7 @@ export function WorkerSession({ token, onLogout, children }: { token: string; on
     } catch (e) {
       noteError(e);
     }
-  }, [noteError, stillMine, token]);
+  }, [noteError, replaced, token]);
 
   // 대기열 보내기.
   const flush = useCallback(async () => {
@@ -121,7 +129,7 @@ export function WorkerSession({ token, onLogout, children }: { token: string; on
       ),
     );
     if (r.expired) {
-      if (stillMine()) setFatal("expired");
+      if (!replaced()) setFatal("expired");
       return;
     }
     if (r.failed) {
@@ -133,7 +141,7 @@ export function WorkerSession({ token, onLogout, children }: { token: string; on
       backlog.current = false;
       setSynced(true);
     }
-  }, [outbox, token, stillMine]);
+  }, [outbox, token, replaced]);
 
   useEffect(() => {
     if (!synced) return;
