@@ -1004,10 +1004,12 @@
     "bed sheet"
    ],
    "accept": [
-    "CLEANING_075"
+    "CLEANING_075",
+    "CLEANING_087"
    ],
    "gap": false,
-   "confidence": "medium"
+   "confidence": "medium",
+   "note": "2026-11-08 심판 2명 재판정: CLEANING_087 추가."
   },
   {
    "id": "dev_cleaning_10",
@@ -1763,10 +1765,12 @@
     "결제"
    ],
    "accept": [
-    "SERVING_053"
+    "SERVING_053",
+    "CAFE_106"
    ],
    "gap": false,
-   "confidence": "medium"
+   "confidence": "medium",
+   "note": "2026-11-08 심판 2명 재판정: CAFE_106 추가."
   },
   {
    "id": "dev_retail_07",
@@ -1805,11 +1809,11 @@
     "청소"
    ],
    "accept": [
-    "CAFE_004",
-    "DISPLAY_048"
+    "CAFE_004"
    ],
    "gap": false,
-   "confidence": "low"
+   "confidence": "low",
+   "note": "2026-11-08 심판 2명 재판정: DISPLAY_048 제외."
   },
   {
    "id": "dev_retail_09",
@@ -1944,10 +1948,12 @@
     "RETAIL_069",
     "DISPLAY_045",
     "DISPLAY_046",
-    "DISPLAY_047"
+    "DISPLAY_047",
+    "RETAIL_067"
    ],
    "gap": false,
-   "confidence": "high"
+   "confidence": "high",
+   "note": "2026-11-08 심판 2명 재판정: RETAIL_067 추가."
   },
   {
    "id": "dev_retail_16",

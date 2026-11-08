@@ -58,6 +58,10 @@ JOB_ALIASES: dict[str, tuple[str, ...]] = {
         "세탁",
         "환경미화",
         "미화",
+        # 객실(객실 정비·하우스키핑)은 청소 일을 가리킨다. 호텔·빌딩·오피스는 넣지 않는다 — 장소
+        # 이름이라 그 안의 카페·식당·제과점·편의점 일도 가리키고, 부분 문자열로 맞추므로
+        # '빌딩 1층 카페'·'호텔 베이커리 카페'가 청소로 잡혔다('오피스'는 '오피스텔'에도 맞는다).
+        "객실",
     ),
     "packaging": (
         "packaging",
@@ -74,6 +78,10 @@ JOB_ALIASES: dict[str, tuple[str, ...]] = {
         "피킹",
         "계산",
         "편의점",
+        # 업종명(계산·피킹 중심 소매점).
+        "슈퍼",
+        "할인점",
+        "드럭스토어",
     ),
     "serving": (
         "serving",
@@ -82,6 +90,12 @@ JOB_ALIASES: dict[str, tuple[str, ...]] = {
         "식당",
         "음식점",
         "홀서빙",
+        # 업종명. 테이블에 음식을 내고 치우는 가게들이다. 푸드코트(입점 가게마다 카페·제과·식당이
+        # 섞인다)와 뷔페(반납대 세척·음료 코너가 섞인다)는 한 직무를 가리키지 않아 넣지 않았다 —
+        # 뷔페를 넣으면 개발셋에서 청소·카페 그림이 정답인 자동 채택 3건을 잃었다.
+        "고깃집",
+        "분식",
+        "국밥",
     ),
     "display": (
         "display",
@@ -89,6 +103,9 @@ JOB_ALIASES: dict[str, tuple[str, ...]] = {
         "상품진열",
         "매대",
         "진열대",
+        # 옷가게 매장 일은 옷을 개고 걸고 손님을 안내하는 진열 일이다(계산 중심의 마트·편의점과 다르다).
+        "옷가게",
+        "의류매장",
     ),
     "delivery": (
         "delivery",
@@ -97,6 +114,8 @@ JOB_ALIASES: dict[str, tuple[str, ...]] = {
         "택배",
         "배송원",
         "배달원",
+        # 물류·출고(포장과 배송이 한 센터에 섞인다)와 우편(관공서 우편물실은 사무 일이다)은 한 직무를
+        # 가리키지 않아 넣지 않았다 — 넣으면 개발셋에서 다른 직무 그림의 오답 채택이 늘었다.
     ),
     "gas": (
         "gas",
@@ -116,12 +135,29 @@ JOB_ALIASES: dict[str, tuple[str, ...]] = {
 ALIAS_WEIGHT = {"매장": 0.5}
 
 
+# 별칭은 부분 문자열로 맞추므로 다른 낱말 속에 든 별칭도 잡힌다('슈퍼바이저 교육'이 소매로).
+# 그런 낱말을 적어 두고, 그 자리는 별칭으로 세지 않는다.
+ALIAS_FALSE_FRIENDS: dict[str, tuple[str, ...]] = {
+    "슈퍼": ("슈퍼바이저", "슈퍼바이징", "슈퍼비전"),
+}
+
+
+def alias_in(alias: str, text: str) -> bool:
+    """별칭이 (소문자로 바꾼) text에 나오는가. ALIAS_FALSE_FRIENDS의 낱말 속에 든 것은 세지 않는다."""
+    needle = alias.lower()
+    if needle not in text:
+        return False
+    for word in ALIAS_FALSE_FRIENDS.get(alias, ()):
+        text = text.replace(word, " ")
+    return needle in text
+
+
 def infer_job_text(text: str) -> str:
     """업종/환경 텍스트에서 canonical job을 보수적으로 추정한다."""
     norm = str(text or "").lower()
     scored: list[tuple[float, str]] = []
     for job, aliases in JOB_ALIASES.items():
-        count = sum(ALIAS_WEIGHT.get(alias, 1.0) for alias in aliases if alias.lower() in norm)
+        count = sum(ALIAS_WEIGHT.get(alias, 1.0) for alias in aliases if alias_in(alias, norm))
         if count:
             scored.append((count, job))
     if not scored:

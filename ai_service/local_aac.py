@@ -10,7 +10,7 @@ from pathlib import Path
 
 import embeddings
 import korean_verbs
-from taxonomy import ALIAS_WEIGHT, JOB_ALIASES
+from taxonomy import ALIAS_WEIGHT, JOB_ALIASES, alias_in
 
 logger = logging.getLogger("ai_harness.local_aac")
 
@@ -269,7 +269,7 @@ def infer_job(context: dict | None = None, query: str = "") -> str | None:
     norm = _normalize(haystack)
     scores: list[tuple[float, str]] = []
     for job, aliases in _JOB_ALIASES.items():
-        count = sum(_ALIAS_WEIGHT.get(alias, 1.0) for alias in aliases if alias.lower() in norm)
+        count = sum(_ALIAS_WEIGHT.get(alias, 1.0) for alias in aliases if alias_in(alias, norm))
         if count:
             scores.append((count, job))
     return max(scores)[1] if scores else None
@@ -291,7 +291,7 @@ def _canonical_job(value: str) -> str | None:
         longest = 0
         for alias in aliases:
             alias_norm = _normalize(alias)
-            if alias_norm and (norm == alias_norm or alias_norm in norm):
+            if alias_norm and (norm == alias_norm or alias_in(alias_norm, norm)):
                 score += _ALIAS_WEIGHT.get(alias, 1.0)
                 longest = max(longest, len(alias_norm))
         if score and (best is None or (score, longest) > best[:2]):
@@ -670,6 +670,9 @@ _VERB_ANTONYMS: tuple[frozenset[str], ...] = (
     frozenset({"쓰다", "벗다"}),
     frozenset({"끼다", "벗다"}),
     frozenset({"채우다", "비우다"}),
+    # '채우다'(빈 곳에 넣어 메운다)와 '꺼내다'(안에서 밖으로 뺀다)는 넣다/꺼내다와 같은 방향 쌍이다.
+    # 진열 칸을 채우라는 지시에 냉장고에서 꺼내는 그림이 붙던 문제(개발셋 진열).
+    frozenset({"채우다", "꺼내다"}),
     frozenset({"꽂다", "뽑다"}),
     frozenset({"싣다", "내리다"}),
 )
@@ -677,9 +680,13 @@ _VERB_ANTONYM_PENALTY = 0.4
 
 
 def _verb_antonym_penalty(asset: dict, query_lemmas: set[str]) -> float:
-    """질의 동사와 자산 동사가 진짜 반대말이면 깎는다(동의어·무관한 동사는 안 깎는다)."""
+    """질의 동사와 자산 동사가 진짜 반대말이면 깎는다(동의어·무관한 동사는 안 깎는다).
+
+    문장에 그림의 동사가 이미 있으면 깎지 않는다. '꺼내서 채우다'·'빼고 끼우다'처럼 한 문장에
+    두 동작을 차례로 시키는 지시에서는 반대 방향 동사도 문장이 시키는 동작이다.
+    """
     verb = (asset.get("_frame") or {}).get("verb")
-    if not verb or not query_lemmas:
+    if not verb or not query_lemmas or verb in query_lemmas:
         return 1.0
     for group in _VERB_ANTONYMS:
         if verb in group and (query_lemmas & group) - {verb}:
@@ -949,6 +956,28 @@ _GENERIC_OBJECTS = frozenset({
     "상품", "제품", "물건", "물품", "새상품", "부품", "내용물", "구성품", "비품", "라벨", "스티커",
 })
 
+# 일반 명사가 덮는 직무 범위(_object_conflict). '상품'은 가게에서 파는 물건이라 가게 직무(소매·진열·
+# 카페)가 같이 쓰고, '제품'·'내용물'·'구성품'은 만든 물건이라 만드는 직무(포장·조립)가 같이 쓴다.
+# 부품·스티커·라벨·비품은 그 일터의 재료·도구라 같은 직무의 그림만 덮는다 — 조립 그림의 '부품'이 주유
+# 노즐을, 조립 그림의 '스티커'가 포장 일의 지퍼백 입구를 대신하지 않는다.
+_STORE_JOBS = frozenset({"retail", "display", "cafe"})
+_MAKER_JOBS = frozenset({"packaging", "assembly"})
+_GENERIC_OBJECT_SCOPE: dict[str, frozenset[str]] = {
+    "상품": _STORE_JOBS, "새상품": _STORE_JOBS, "물건": _STORE_JOBS, "물품": _STORE_JOBS,
+    "제품": _MAKER_JOBS, "내용물": _MAKER_JOBS, "구성품": _MAKER_JOBS,
+}
+
+
+def _generic_covers(word: str, asset_job: str | None, job: str | None) -> bool:
+    """일반 명사 그림(대상 word, 직무 asset_job)이 일터 직무 job의 구체 대상을 덮는가."""
+    if not job or not asset_job:
+        return False
+    if asset_job == job:
+        return True
+    scope = _GENERIC_OBJECT_SCOPE.get(word, frozenset())
+    return job in scope and asset_job in scope
+
+
 # 같은 대상을 부르는 다른 이름. 인덱스 검색어에 없어서 대상 게이트가 정답을 막는 것을
 # 줄이려고 코드 쪽에 둔다(인덱스 검색어 보강은 별도 단계). 일상어↔표기어 쌍만 넣는다.
 _OBJECT_SYNONYMS: tuple[frozenset[str], ...] = (
@@ -958,6 +987,8 @@ _OBJECT_SYNONYMS: tuple[frozenset[str], ...] = (
     frozenset({"수건", "천", "행주"}),
     frozenset({"휴지", "화장지"}),
     frozenset({"수저통", "수저함"}),
+    # 주유기 손잡이를 일터에서는 '노즐'이라고 많이 부른다(그림 라벨은 '주유건').
+    frozenset({"노즐", "주유건"}),
 )
 
 
@@ -969,11 +1000,186 @@ def _object_variants(word: str) -> set[str]:
     return out
 
 
+# 위치 명사. '책상 위를 닦으세요'에서 을/를이 붙은 것은 '위'지만 동작의 대상은 앞의 '책상'이다.
+# 한국어에서 위치 명사는 홀로 대상을 가리키지 못하고 늘 앞 명사의 어느 곳인지를 나타내는
+# 의존적인 말이라, 대상으로 잡으면 게이트가 엉뚱하게 통과한다 — '위'는 거의 모든 그림 라벨
+# ('매대 위', '선반 위')에 있어 '문장 대상이 그림에 나온다'는 검사를 늘 만족시킨다.
+_POSITION_NOUNS = frozenset({
+    "위", "아래", "밑", "안", "안쪽", "속", "옆", "앞", "뒤", "겉", "바깥", "바깥쪽", "쪽",
+    "가운데", "사이", "끝", "위쪽", "아래쪽", "옆쪽", "앞쪽", "뒤쪽", "윗부분", "아랫부분",
+    "주변", "근처",
+})
+
+
+# 그림 frame 값에서 명사가 아닌 어절을 거르는 데 쓴다. 관형사와 형용사 관형형('빈 접시'·'큰 상자'·
+# '맨 위'의 앞말)은 대상 명사가 아니다. 사전에 없는 형용사도 있어 흔한 것을 적어 둔다.
+_ADNOMINALS = frozenset({"한", "두", "세", "네", "맨", "새", "헌", "각", "모든", "큰", "작은", "다른",
+                         "마른", "젖은", "올바른"})
+# frame 어절 끝에 붙어 나온 조사('손으로'·'작업대에서'·'상자에'·'수건과'·'차량의').
+_FRAME_PARTICLES_LONG = ("으로", "에서")
+_FRAME_PARTICLES_SHORT = ("에", "와", "과", "의", "이")
+
+
+@lru_cache(maxsize=1)
+def _asset_noun_vocab() -> frozenset[str]:
+    """그림 인덱스 frame(대상·장소·도구)에 나오는 명사 어절. '매대'처럼 형태소 분석기가 동사
+    활용형('매다'+'-대')으로 잘못 읽는 명사를 명사로 확인하는 데 쓴다.
+
+    조사가 붙은 어절('손으로')과 관형어('빈'·'큰'·'붙은')는 뺀다. 관형어인지는 frame 값의 마지막
+    어절이 아닌데(뒤 명사를 꾸민다) 분석기가 관형형 용언으로만 읽거나 _ADNOMINALS에 있는 것으로 본다.
+    """
+    heads: set[str] = set()
+    modifiers: set[str] = set()
+    for asset in load_assets():
+        frame = asset.get("_frame") or {}
+        for key in ("object", "location", "instrument"):
+            value = frame.get(key)
+            if value:
+                tokens = str(value).split()
+                heads.add(tokens[-1])
+                modifiers.update(tokens[:-1])
+    raw = heads | modifiers
+    analyzer = _verb_analyzer()
+    vocab: set[str] = set()
+    for token in raw:
+        if token in _ADNOMINALS:
+            continue
+        if len(token) > 2 and token.endswith(_FRAME_PARTICLES_LONG):
+            continue
+        if any(token.endswith(p) and token[:-1] in raw for p in _FRAME_PARTICLES_SHORT):
+            continue
+        if token not in heads:
+            parses = analyzer.analyze_word(token)
+            if parses and all(p.kind == korean_verbs.EXCL for p in parses):
+                continue
+        vocab.add(token)
+    return frozenset(vocab)
+
+
 def _query_objects(sentence: str) -> set[str]:
-    return {m.group(1) for m in _QUERY_OBJECT_RE.finditer(sentence or "")}
+    """문장에서 '명사+을/를' 대상 명사를 뽑는다.
+
+    대상 자리에 위치 명사가 오면('책상 위를') 바로 앞 어절의 명사('책상')를 대상으로 본다.
+    앞 어절이 없으면 대상을 모르는 것으로 둔다 — 위치 명사 자체는 대상으로 쓰지 않는다.
+    """
+    text = sentence or ""
+    out: set[str] = set()
+    for m in _QUERY_OBJECT_RE.finditer(text):
+        noun = m.group(1)
+        if noun not in _POSITION_NOUNS:
+            out.add(noun)
+            continue
+        before = text[: m.start()].rstrip()
+        prev = re.search(r"([가-힣]+)$", before)
+        if not prev or before[prev.start() - 1: prev.start()] not in ("", " "):
+            continue
+        head = prev.group(1)
+        # '매대의 위를'·'컵의 안을' — 관형격 '의'만 떼어 낸다(다른 조사는 위치 명사를 꾸미지 못한다).
+        if head.endswith("의") and len(head) >= 2:
+            head = head[:-1]
+        # 앞 어절이 그림 frame의 명사면 그것이 대상이다('책상 위를' → 책상).
+        if head not in _POSITION_NOUNS and head in _asset_noun_vocab():
+            out.add(head)
+            continue
+        # 부사·관형사·조사 붙은 말('먼저 위를'·'깨끗이 안을'·'그 위를'·'손으로 위를')은 대상이
+        # 아니다 — 대상을 모르는 것으로 둔다.
+        if _not_object_word(head):
+            continue
+        # 그림에 없는 명사('오븐 안을'·'서랍 안을')는 대상을 비워 두면 대상 게이트가 꺼져 엉뚱한
+        # 그림이 통과했다(2차 검증: '오븐 안을 행주로 닦아 주세요' → 스팀 노즐 닦기). 이때는
+        # 위치 명사를 대상으로 남겨 게이트가 켜진 채로 둔다(1차 이전 동작).
+        out.add(noun)
+    return out
 
 
-def _object_conflict(asset: dict, sentence: str, query: str) -> bool:
+# 위치 명사 앞에 와도 대상이 아닌 말: 부사·관형사·지시어. 그리고 조사가 붙은 어절.
+_NON_OBJECT_WORDS = frozenset({
+    "먼저", "다시", "바로", "같이", "함께", "잘", "꼭", "좀", "더", "또", "다", "다들", "모두", "전부",
+    "그", "이", "저", "그런", "이런", "저런", "어느", "각", "매", "맨", "제일", "가장", "아주", "살짝",
+    "깨끗이", "깨끗하게", "꼼꼼히", "꼼꼼하게", "천천히", "조심히", "조심스럽게", "가볍게", "세게", "골고루",
+})
+_PARTICLE_ENDINGS = ("으로", "에서", "에게", "한테", "까지", "부터", "처럼", "보다", "로", "에", "와", "과", "랑", "하고", "도", "만")
+
+
+def _not_object_word(word: str) -> bool:
+    if word in _NON_OBJECT_WORDS:
+        return True
+    if len(word) >= 2 and word.endswith(_PARTICLE_ENDINGS):
+        return True
+    # '-이/-히/-게' 부사형('깨끗이'·'조용히'·'빠르게')
+    return len(word) >= 3 and word.endswith(("히", "게"))
+
+
+# 은/는으로 대상을 앞세운 지시문('계란은 맨 위에 올려요', '떨어진 상품은 주워 주세요')은 을/를
+# 목적어가 없어 대상 게이트가 근거 없음으로 넘어갔다. 을/를 목적어가 없을 때만 주제어를 대상으로 본다.
+_QUERY_TOPIC_RE = re.compile(r"([가-힣]+)(?:은|는)(?=\s|$|[.,!?])")
+# 주제어 자리에 오지만 대상이 아닌 말: 때·순서·대명사·전체를 가리키는 말, 경우·차례를 나타내는
+# 형식 명사, 지시를 하는 사람, 수사('하나는 여기에, 둘은 저기에'·'첫째는').
+_TOPIC_STOPWORDS = frozenset({
+    "오늘", "내일", "이번", "다음", "처음", "마지막", "먼저", "나중", "지금", "평소", "보통",
+    "아침", "점심", "저녁", "오전", "오후", "주말", "평일", "시간", "점심시간", "쉬는시간", "휴식시간",
+    "이것", "그것", "저것", "이거", "그거", "여기", "거기", "저기", "우리", "저희", "나머지", "전부",
+    "경우", "번째", "때문", "정도", "부분", "방법", "순서", "차례", "일", "저", "나",
+    "사장님", "점장님", "매니저", "직원", "선배",
+    "하나", "둘", "셋", "넷", "다섯", "첫째", "둘째", "셋째", "넷째", "첫번째", "두번째", "세번째",
+})
+# 하다가 붙는 동작 명사('청소는 이렇게 해요', '주문은 제가 받을게요')는 동작의 이름이지 그림의
+# 대상이 아니다. 그림 라벨의 'X한다' 꼴에서 뽑은 것과 일터에서 흔한 동작 명사를 함께 본다.
+_ACTION_NOUNS = frozenset({
+    "청소", "정리", "정돈", "주문", "설거지", "계산", "결제", "포장", "진열", "배달", "배송", "조립",
+    "세척", "소독", "점검", "검수", "확인", "준비", "마감", "마무리", "교대", "휴식", "서빙", "안내",
+})
+
+
+@lru_cache(maxsize=1)
+def _label_action_nouns() -> frozenset[str]:
+    out: set[str] = set(_ACTION_NOUNS)
+    pattern = re.compile(r"([가-힣]{2,})(?:한다|하고|해서|하기|해요|하며|하여|합니다|하는)(?![가-힣])")
+    for asset in load_assets():
+        out.update(m.group(1) for m in pattern.finditer(str(asset.get("label") or "")))
+    return frozenset(out)
+# 부사격 조사 뒤의 '는'('냉장고에는', '손으로는')과 '-하는/-되는/-있는/-없는/-않는' 같은
+# 용언 활용형은 대상이 아니다.
+_TOPIC_BAD_SUFFIX = ("에", "에서", "로", "으로", "까지", "에게", "한테", "부터",
+                     "하", "되", "있", "없", "않")
+# 관형형 용언은 의존 명사 앞에 온다('모르는 것', '쉬는 때'). 주제어 뒤에는 이 말들이 오지 않는다.
+_DEPENDENT_NOUNS = frozenset({"것", "거", "수", "때", "곳", "데", "줄", "적", "만큼", "대로", "동안"})
+# '-지는 않다/말다/못하다'의 '-지는'은 부정 보조 용언 앞의 어미다('넣지는 마세요').
+_NEGATIVE_AUX_PREFIX = ("않", "말", "마", "못")
+
+
+def _query_topics(sentence: str) -> set[str]:
+    """을/를 목적어가 없는 문장에서 은/는이 붙은 주제어 명사를 대상 후보로 뽑는다."""
+    text = sentence or ""
+    out: set[str] = set()
+    for m in _QUERY_TOPIC_RE.finditer(text):
+        noun = m.group(1)
+        if noun in _TOPIC_STOPWORDS or noun in _GENERIC_OBJECTS or noun in _DEPENDENT_NOUNS:
+            continue
+        # 한 글자 주제어('컵은'·'옷은')는 그림 frame의 명사일 때만 쓴다 — 나머지 한 글자는
+        # 대명사·의존 명사('저는'·'건')인 때가 많다.
+        if len(noun) < 2 and noun not in _asset_noun_vocab():
+            continue
+        if noun in _label_action_nouns():
+            continue
+        if noun in _POSITION_NOUNS or noun.endswith(_TOPIC_BAD_SUFFIX):
+            continue
+        if _is_verb_word(m.group(0)):
+            continue
+        nxt = re.match(r"\s*([가-힣]+)", text[m.end():])
+        if nxt:
+            word = nxt.group(1)
+            if word.startswith(_NEGATIVE_AUX_PREFIX) and noun.endswith("지"):
+                continue
+            # 의존 명사 뒤 조사 한 글자('것이'·'때에')까지 떼어 본다.
+            if word in _DEPENDENT_NOUNS or (len(word) >= 2 and word[:-1] in _DEPENDENT_NOUNS
+                                            and word[-1] in "이을를은는도에만가"):
+                continue
+        out.add(noun)
+    return out
+
+
+def _object_conflict(asset: dict, sentence: str, query: str, job: str | None = None) -> bool:
     """문장이 말하는 대상과 그림의 대상이 분명히 다른가.
 
     판단 근거가 없으면(문장에 목적어가 없거나 그림에 대상 정보가 없으면) 충돌로 보지
@@ -981,12 +1187,19 @@ def _object_conflict(asset: dict, sentence: str, query: str) -> bool:
     """
     q_objects = _query_objects(sentence)
     if not q_objects:
+        q_objects = _query_topics(sentence)
+    if not q_objects:
         return False
     obj = (asset.get("_frame") or {}).get("object")
     if not obj:
         return False
     obj_norm = _normalize(obj)
-    if obj_norm.replace(" ", "") in _GENERIC_OBJECTS:
+    # 일반 명사('부품'·'스티커'·'상품')는 '이 일터에서 다루는 물건'이라는 뜻이라 같은 직무(또는
+    # 같은 물건을 다루는 직무 묶음, _GENERIC_OBJECT_SCOPE)의 그림일 때만 문장의 구체 대상을 덮는다.
+    # 직무를 모르면(job=None) 덮는다고 볼 근거가 없으므로 면제하지 않는다 — 그래도 아래 검사(문장
+    # 대상이 그림 라벨·검색어에 나오는가)는 그대로 한다.
+    obj_compact = obj_norm.replace(" ", "")
+    if obj_compact in _GENERIC_OBJECTS and _generic_covers(obj_compact, asset.get("job"), job):
         return False
     q_compact = _normalize(query or sentence).replace(" ", "")
     # 그림 대상(의 낱말 하나라도)이 질의에 나오면 일치.
@@ -1085,7 +1298,8 @@ def _margin_settings(embedding: bool) -> tuple[float, float, str, float]:
 
 
 def decide(results: list[dict], embedding: bool = False, *,
-           sentence: str | None = None, query: str | None = None) -> dict:
+           sentence: str | None = None, query: str | None = None,
+           job: str | None = None) -> dict:
     """검색 결과를 자동 채택할지 판정한다.
 
     절대 임계값 하나로는 정답과 오답이 갈리지 않는다. 임계값 스윕 곡선에 오답채택과
@@ -1123,6 +1337,8 @@ def decide(results: list[dict], embedding: bool = False, *,
 
     sentence/query를 주면 마지막에 대상 일치 게이트를 건다: 채택될 1순위 그림의 대상이
     문장의 대상과 분명히 다르면 frame_mismatch로 채택을 보류한다(후보는 그대로 준다).
+    job은 일터의 직무(명시 또는 추론, 모르면 None)다 — 그림 대상이 일반 명사('부품'·'상품')일 때
+    같은 직무의 그림만 문장의 구체 대상을 덮는 것으로 본다(_object_conflict).
     """
     threshold, min_margin, margin_mode, min_rel_margin = _margin_settings(embedding)
 
@@ -1150,7 +1366,7 @@ def decide(results: list[dict], embedding: bool = False, *,
                 "embedding": embedding}
     if sentence:
         asset = _assets_by_id().get(best["asset_id"])
-        if asset is not None and _object_conflict(asset, sentence, query or sentence):
+        if asset is not None and _object_conflict(asset, sentence, query or sentence, job):
             return {"match": None, "reason": "frame_mismatch", "candidates": results,
                     "margin": margin, "embedding": embedding}
     return {"match": best, "reason": "accepted", "candidates": results, "margin": margin,
@@ -1181,4 +1397,8 @@ def search_for_step_detailed(keywords: list[str], context: dict | None = None,
     query = step_query(keywords, ctx)
     results, used_embedding = _search(query, ctx, limit=limit)
     sentence = str(ctx.get("sentence") or "").strip()
-    return decide(results, embedding=used_embedding, sentence=sentence, query=query)
+    # 일반 명사 면제(_object_conflict)의 직무는 일터 문맥(업종·환경·원문)에서 먼저 정한다. 단계
+    # 문장의 장소 말('진열대')은 그 단계의 자리일 뿐 일터의 직무가 아니다 — 베이커리 카페에서
+    # '빵을 진열대에 놓아요'가 진열 직무로 잡혀 카페 그림 '상품을 진열대에 놓는다'가 막혔다.
+    job = _explicit_job(ctx) or infer_job(ctx) or infer_job(ctx, query)
+    return decide(results, embedding=used_embedding, sentence=sentence, query=query, job=job)
