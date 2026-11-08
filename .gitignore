@@ -31,3 +31,5 @@ ai_service/eval/blind_test_result.json
 
 # AAC 원본 이미지(변환 전 PNG, 수백 MB) — 변환본만 커밋한다
 _aac_originals/
+# GPT 재순위 채점 응답 캐시(eval/run_rerank_eval.py) — 실행마다 쌓이는 로컬 캐시라 안 남긴다.
+ai_service/eval/.rerank_cache/
