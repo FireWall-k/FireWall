@@ -97,6 +97,26 @@ def upgrade() -> None:
     for name, columns in _HELP_INDEXES:
         if name not in indexes:
             op.create_index(name, "help_requests", columns)
+    # 2차 검증: 같은 누름 한 건, 배정마다 열린 요청 한 건(동시 요청이 두 건을 만들던 문제). 이 리비전을 먼저 돌린
+    # 개발 DB에 겹친 행이 있으면 색인이 실패하므로 먼저 정리한다: 겹친 누름 키는 가장 먼저 생긴 행에만 남기고,
+    # 한 배정의 열린 요청이 여럿이면 가장 최근 것만 열어 두고 나머지는 취소로 닫는다. 다시 돌려도 결과가 같다.
+    if "uq_help_requests_assignment_client" not in indexes:
+        bind.execute(sa.text(
+            "UPDATE help_requests SET client_request_id = NULL WHERE client_request_id IS NOT NULL AND id NOT IN ("
+            "SELECT MIN(id) FROM help_requests WHERE client_request_id IS NOT NULL "
+            "GROUP BY assignment_id, client_request_id)"))
+        op.create_index("uq_help_requests_assignment_client", "help_requests",
+                        ["assignment_id", "client_request_id"], unique=True)
+    if "uq_help_requests_one_active" not in indexes:
+        bind.execute(sa.text(
+            "UPDATE help_requests SET state = 'cancelled', cancelled_at = created_at "
+            "WHERE state IN ('open', 'acknowledged') AND EXISTS (SELECT 1 FROM help_requests h2 "
+            "WHERE h2.assignment_id = help_requests.assignment_id AND h2.state IN ('open', 'acknowledged') "
+            "AND (h2.created_at > help_requests.created_at "
+            "OR (h2.created_at = help_requests.created_at AND h2.id > help_requests.id)))"))
+        where = sa.text("state IN ('open', 'acknowledged')")
+        op.create_index("uq_help_requests_one_active", "help_requests", ["assignment_id"], unique=True,
+                        sqlite_where=where, postgresql_where=where)
 
 
 def downgrade() -> None:

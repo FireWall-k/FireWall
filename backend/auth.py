@@ -193,6 +193,43 @@ def media_signature(media_id: str, exp: int) -> str:
                           hashlib.sha256).digest())
 
 
+# --- 믿는 기기 표시(근로자 로그인 잠금 우회, 2차 검증) ---------------------------------
+DEVICE_TOKEN_TTL_SEC = int(os.getenv("WORKER_DEVICE_TOKEN_TTL", str(180 * 24 * 60 * 60)))
+
+
+def _device_sig(body: str) -> str:
+    # 로그인 토큰 서명(_sign)과 입력이 겹치지 않게 용도 문자열을 붙인다 — 이 값은 로그인 토큰으로 쓸 수 없다.
+    return _b64e(hmac.new(_secret().encode("utf-8"), f"worker-device:v1:{body}".encode("ascii"),
+                          hashlib.sha256).digest())
+
+
+def make_device_token(employer_id: str, worker_id: str, ttl: int = DEVICE_TOKEN_TTL_SEC) -> str:
+    """근로자가 한 번 맞게 들어온 기기에 주는 표시. 다음 로그인 때 함께 보내면 사업장·IP 공용 잠금 대신
+    이 근로자 몫의 잠금만 본다(ratelimit.py 참고). 사업장 코드를 아는 누군가가 일부러 틀려 사업장 전체를
+    막아도, 이미 쓰던 기기의 근로자는 계속 들어갈 수 있다."""
+    payload = {"e": employer_id, "w": worker_id, "exp": int(time.time()) + ttl}
+    body = _b64e(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
+    return f"{body}.{_device_sig(body)}"
+
+
+def verify_device_token(token: str | None) -> dict | None:
+    """맞으면 {"e": 사업주 id, "w": 근로자 id}. 변조·만료·형식 오류는 None(믿지 않는 기기로 본다)."""
+    if not token:
+        return None
+    try:
+        body, sig = token.split(".", 1)
+        if not hmac.compare_digest(sig, _device_sig(body)):
+            return None
+        payload = json.loads(_b64d(body))
+        if int(payload["exp"]) < int(time.time()):
+            return None
+        if not isinstance(payload.get("e"), str) or not isinstance(payload.get("w"), str):
+            return None
+        return payload
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def verify_token(token: str) -> dict | None:
     try:
         body, sig = token.split(".", 1)

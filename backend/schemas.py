@@ -21,6 +21,9 @@ class WorkerLogin(BaseModel):
     # 프론트는 사업장 코드를 기기에 한 번 저장해 두고 근로자는 자기 접속 코드만 누른다.
     workplace_code: str = Field(min_length=1, max_length=32)
     access_code: str = Field(min_length=1, max_length=32)
+    # 이 기기가 전에 맞게 들어왔을 때 받은 표시(TokenOut.device_token). 있으면 사업장 공용 잠금 대신 근로자 몫의
+    # 잠금만 본다(main.worker_login). 없거나 틀리면 그냥 믿지 않는 기기로 본다.
+    device_token: str | None = Field(default=None, max_length=512)
 
 
 class TokenOut(BaseModel):
@@ -30,6 +33,8 @@ class TokenOut(BaseModel):
     # 근로자 로그인 응답에만 싣는 사업장 이름(키패드 위 띠에 보여 준다). 사업주 로그인은 None.
     # 로그인 전에 사업장 이름을 알려 주는 공개 API는 두지 않는다(사업장 코드 존재 오라클이 된다).
     workplace_name: str | None = None
+    # 근로자 로그인 응답에만: 믿는 기기 표시. 근로자 기기가 저장해 두고 다음 로그인 때 보낸다.
+    device_token: str | None = None
 
 
 # --- 근로자 화면 설정(0006 a11y_prefs) ---
@@ -58,8 +63,12 @@ class A11yPrefs(BaseModel):
 
 
 class A11yPrefsPatch(BaseModel):
-    """사업주가 근로자 화면 설정을 부분 변경한다. 보낸 키만 바꾼다. 쓰기는 엄격하다(모르는 키·허용 밖 값은 422)."""
-    model_config = ConfigDict(extra="forbid")
+    """사업주가 근로자 화면 설정을 부분 변경한다. 보낸 키만 바꾼다. 쓰기는 엄격하다(모르는 키·허용 밖 값은 422).
+
+    strict: 타입도 바꿔 주지 않는다(2차 검증: 예전에는 tts_rate true → 1.0, autoplay_sound 'off' → false로 받았다).
+    JSON 숫자 1은 tts_rate 1.0으로 받는다(strict float도 정수는 받는다).
+    """
+    model_config = ConfigDict(extra="forbid", strict=True)
     font_size: Literal["normal", "large"] | None = None
     autoplay_sound: bool | None = None
     tts_rate: float | None = None
@@ -202,12 +211,19 @@ class ConsentCreate(BaseModel):
 class PerformanceLogCreate(BaseModel):
     assignment_id: str
     step_id: str
-    duration_sec: float = Field(default=0.0, ge=0)
+    # 기기 시계가 단계 중에 뒤로 가면(꺼진 채 켠 뒤 시각 맞춤 등) 음수가 올 수 있다. 예전에는 422였고 대기열은 422를
+    # 버리므로 완료 기록이 영영 사라졌다(2차 검증). 검증 오류로 완료를 지우지 않게 0으로 자른다.
+    duration_sec: float = 0.0
     replay_count: int = Field(default=0, ge=0)
     # '어려움 신호'(다시 듣기 과다·시간 초과)만 뜻한다. 도움 요청은 POST /api/worker/help로 따로 보낸다.
     stuck: bool = False
     # false면 신호만 남기고 완료로 세지 않는다.
     completed: bool = True
+    @field_validator("duration_sec")
+    @classmethod
+    def _clamp_duration(cls, v: float) -> float:
+        return v if v > 0 else 0.0
+
     # 오프라인 대기열 재전송 묶기 키. 같은 값이 다시 오면 아무것도 바꾸지 않고 200(duplicate)을 준다.
     client_event_id: str | None = Field(default=None, max_length=64)
     # 기기에서 단계를 끝낸 시각(시간대 포함 ISO). 서버가 범위를 자른다. 없으면 서버 시각.

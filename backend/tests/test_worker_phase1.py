@@ -327,10 +327,14 @@ def test_help_create_is_idempotent_while_active(client, employer_token, worker):
 
 def test_help_without_step_and_on_done_assignment(client, employer_token, worker):
     _, aid, (s1, s2) = _assigned(client, employer_token, worker["id"])
-    _log(client, worker["token"], aid, s1)
-    _log(client, worker["token"], aid, s2)
     r = _help(client, worker["token"], aid)
     assert r.status_code == 201 and r.json()["step_id"] is None and r.json()["step_order"] is None
+    _log(client, worker["token"], aid, s1)
+    _log(client, worker["token"], aid, s2)
+    # 2차 검증: 다 끝낸 일에서는 새 도움 요청을 열지 않는다(사업주 화면에 새 호출로 뜨지 않게).
+    r = _help(client, worker["token"], aid, s2, client_request_id="after-done")
+    assert r.status_code == 409
+    assert client.get("/api/employer/help", headers=auth(employer_token)).json() == []
 
 
 def test_help_rejects_other_assignment_and_foreign_step(client, employer_token, worker, worker_token):
@@ -875,3 +879,217 @@ def test_concurrent_first_log_integrity_error_is_retried(client, employer_token,
     with SessionLocal() as db:
         rows = db.scalars(select(PerformanceLog).where(PerformanceLog.assignment_id == aid)).all()
     assert len(rows) == 1
+
+
+
+# --- 2차 검증 -------------------------------------------------------------------------------------
+
+def test_late_earlier_step_log_keeps_help_on_later_step_open(client, employer_token, worker):
+    """2단계에서 부른 도움은, 대기열에 남았던 1단계 완료 기록이 늦게 닿아도 열려 있다."""
+    _, aid, (s1, s2) = _assigned(client, employer_token, worker["id"])
+    h = _help(client, worker["token"], aid, s2, client_request_id="r1").json()
+    assert _log(client, worker["token"], aid, s1).status_code == 201
+    got = client.get(f"/api/worker/help/{h['id']}", headers=auth(worker["token"])).json()
+    assert got["state"] == "open" and got["resolution"] is None
+    assert [e["id"] for e in client.get("/api/employer/help", headers=auth(employer_token)).json()] == [h["id"]]
+    # 그 단계를 끝내면(= 직무를 다 끝내면) 닫힌다.
+    _log(client, worker["token"], aid, s2)
+    got = client.get(f"/api/worker/help/{h['id']}", headers=auth(worker["token"])).json()
+    assert got["state"] == "resolved" and got["resolution"] == "step_done"
+
+
+def test_same_step_completion_still_closes_help(client, employer_token, worker):
+    _, aid, (s1, _) = _assigned(client, employer_token, worker["id"])
+    h = _help(client, worker["token"], aid, s1).json()
+    _log(client, worker["token"], aid, s1)
+    got = client.get(f"/api/worker/help/{h['id']}", headers=auth(worker["token"])).json()
+    assert got["state"] == "resolved" and _assignment_status(aid) != "done"
+
+
+def test_cancel_by_client_id_closes_late_and_tombstones_unarrived(client, employer_token, worker):
+    """8초 뒤 끊긴 누름: 이미 닿았으면 닫고, 아직 안 닿았으면 '취소됨'을 먼저 남겨 늦은 누름이 열리지 않게 한다."""
+    _, aid, (s1, s2) = _assigned(client, employer_token, worker["id"])
+    url = "/api/worker/help/cancel-by-client"
+    h = _help(client, worker["token"], aid, s1, client_request_id="late-1").json()
+    r = client.post(url, headers=auth(worker["token"]),
+                    json={"assignment_id": aid, "step_id": s1, "client_request_id": "late-1"})
+    assert r.status_code == 200 and r.json()["id"] == h["id"] and r.json()["state"] == "cancelled"
+    r = client.post(url, headers=auth(worker["token"]),
+                    json={"assignment_id": aid, "step_id": s2, "client_request_id": "late-2"})
+    assert r.status_code == 200 and r.json()["state"] == "cancelled"
+    late = _help(client, worker["token"], aid, s2, client_request_id="late-2")
+    assert late.status_code == 200 and late.json()["state"] == "cancelled"
+    assert client.get("/api/employer/help", headers=auth(employer_token)).json() == []
+    assert client.post(url, headers=auth(worker["token"]),
+                       json={"assignment_id": aid, "step_id": s1}).status_code == 422
+
+
+def test_help_is_unique_per_press_and_per_assignment(client, employer_token, worker):
+    """확인과 저장 사이에 겹친 두 누름이 열린 요청 두 건을 만들지 못한다(DB 색인)."""
+    from sqlalchemy.exc import IntegrityError
+
+    _, aid, _ = _assigned(client, employer_token, worker["id"])
+    with SessionLocal() as db:
+        db.add(HelpRequest(employer_id="emp-demo", worker_id=worker["id"], assignment_id=aid, state="open",
+                           client_request_id="u1"))
+        db.commit()
+        db.add(HelpRequest(employer_id="emp-demo", worker_id=worker["id"], assignment_id=aid, state="open",
+                           client_request_id="u2"))
+        with pytest.raises(IntegrityError):
+            db.commit()
+        db.rollback()
+        db.add(HelpRequest(employer_id="emp-demo", worker_id=worker["id"], assignment_id=aid, state="cancelled",
+                           client_request_id="u1"))
+        with pytest.raises(IntegrityError):
+            db.commit()
+        db.rollback()
+        # 끝난 요청은 여럿이어도 된다.
+        for i in range(2):
+            db.add(HelpRequest(employer_id="emp-demo", worker_id=worker["id"], assignment_id=aid,
+                               state="cancelled", client_request_id=None))
+        db.commit()
+
+
+def test_concurrent_help_integrity_error_returns_existing(client, employer_token, worker, monkeypatch):
+    from sqlalchemy.exc import IntegrityError
+
+    _, aid, (s1, _) = _assigned(client, employer_token, worker["id"])
+    original = main._create_help_once
+    state = {"n": 0}
+
+    def racing(payload, response, db, user):
+        state["n"] += 1
+        if state["n"] == 1:
+            with SessionLocal() as other:  # 다른 기기의 요청이 먼저 들어갔다
+                other.add(HelpRequest(employer_id="emp-demo", worker_id=worker["id"], assignment_id=aid,
+                                      step_id=s1, state="open", client_request_id="dev-b"))
+                other.commit()
+            raise IntegrityError("INSERT", {}, Exception("UNIQUE constraint failed"))
+        return original(payload, response, db, user)
+
+    monkeypatch.setattr(main, "_create_help_once", racing)
+    r = _help(client, worker["token"], aid, s1, client_request_id="dev-a")
+    assert r.status_code == 200 and r.json()["state"] == "open"
+    with SessionLocal() as db:
+        assert len(db.scalars(select(HelpRequest).where(HelpRequest.assignment_id == aid)).all()) == 1
+
+
+def test_help_on_yesterdays_assignment_is_refused(client, employer_token, worker):
+    _, aid, (s1, _) = _assigned(client, employer_token, worker["id"])
+    with SessionLocal() as db:
+        a = db.get(Assignment, aid)
+        a.assigned_date = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=2)
+        db.commit()
+    assert _help(client, worker["token"], aid, s1).status_code == 409
+    assert client.get("/api/employer/help", headers=auth(employer_token)).json() == []
+
+
+def test_negative_duration_is_clamped_not_dropped(client, employer_token, worker):
+    """기기 시계가 뒤로 가 음수 시간이 와도 422로 버리지 않고 0으로 저장한다(대기열은 422를 지운다)."""
+    _, aid, (s1, _) = _assigned(client, employer_token, worker["id"])
+    r = _log(client, worker["token"], aid, s1, duration_sec=-42.5)
+    assert r.status_code == 201, r.text
+    with SessionLocal() as db:
+        log = db.scalar(select(PerformanceLog).where(PerformanceLog.assignment_id == aid))
+        assert log.duration_sec == 0.0 and log.completed
+
+
+def test_a11y_prefs_patch_is_strict_about_types(client, employer_token, worker):
+    url = f"/api/workers/{worker['id']}"
+    for bad in ({"tts_rate": True}, {"tts_rate": "0.9"}, {"autoplay_sound": "off"}, {"autoplay_sound": 0},
+                {"praise": 1}):
+        r = client.patch(url, json={"a11y_prefs": bad}, headers=auth(employer_token))
+        assert r.status_code == 422, (bad, r.text)
+    ok = client.patch(url, json={"a11y_prefs": {"tts_rate": 1, "autoplay_sound": False}},
+                      headers=auth(employer_token))
+    assert ok.status_code == 200 and ok.json()["a11y_prefs"]["tts_rate"] == 1.0
+    assert ok.json()["a11y_prefs"]["autoplay_sound"] is False
+
+
+def test_empty_help_list_writes_no_audit_rows(client, employer_token):
+    with SessionLocal() as db:
+        before = len(db.scalars(select(AccessAuditLog).where(AccessAuditLog.action == "help.list")).all())
+    for _ in range(3):
+        assert client.get("/api/employer/help", headers=auth(employer_token)).json() == []
+    with SessionLocal() as db:
+        after = len(db.scalars(select(AccessAuditLog).where(AccessAuditLog.action == "help.list")).all())
+    assert after == before
+
+
+def _login(client, code, ip, device_token=None, workplace="DEMO01"):
+    body = {"workplace_code": workplace, "access_code": code}
+    if device_token is not None:
+        body["device_token"] = device_token
+    return client.post("/api/auth/worker-login", json=body, headers={"X-Forwarded-For": ip})
+
+
+def test_trusted_device_logs_in_after_workplace_day_lock(client, monkeypatch):
+    """사업장 하루 한도에 닿아도(일부러든 잘못 누른 것이 쌓였든) 전에 들어왔던 기기의 근로자는 맞는 번호로 들어간다."""
+    monkeypatch.setenv("TRUST_FORWARDED_FOR", "1")
+    first = _login(client, "1234", "10.5.0.1")
+    assert first.status_code == 200
+    device = first.json()["device_token"]
+    assert device and device != first.json()["token"]
+    for i in range(100):
+        r = _login(client, f"6{i:03d}", f"10.6.{i // 200}.{i % 200}", workplace="demo-01")
+        assert r.status_code == 401, i
+        ratelimit.worker_wp_throttle.clear()  # 10분 창이 지났다고 친다
+        ratelimit.worker_throttle.clear()
+    # 믿지 않는 기기는 막힌다(대입 한도 그대로).
+    blocked = _login(client, "1234", "9.9.9.9")
+    assert blocked.status_code == 429 and int(blocked.headers["Retry-After"]) > 600
+    # 전에 들어왔던 기기는 들어간다(같은 와이파이 IP여도).
+    ok = _login(client, "1234", "10.6.0.1", device)
+    assert ok.status_code == 200 and ok.json()["display_name"] == "김근로"
+
+
+def test_trusted_device_failures_are_bounded_per_worker(client, monkeypatch):
+    """믿는 기기라도 대입 한도가 있다: 근로자 몫 10분 30번. 다시 로그인해 새 표시를 받아도 같은 몫이다."""
+    monkeypatch.setenv("TRUST_FORWARDED_FOR", "1")
+    device = _login(client, "1234", "10.7.0.1").json()["device_token"]
+    for i in range(30):
+        assert _login(client, f"5{i:03d}", f"10.7.1.{i}", device).status_code == 401
+    assert _login(client, "1234", "10.7.2.1", device).status_code == 429
+    # 사업장 공용 키에는 세지 않았다 — 다른 기기는 영향이 없다.
+    assert _login(client, "1234", "10.7.3.1").status_code == 200
+
+
+def test_device_token_for_other_workplace_or_forged_is_ignored(client, other_employer, monkeypatch):
+    from auth import make_device_token
+
+    monkeypatch.setenv("TRUST_FORWARDED_FOR", "1")
+    foreign = make_device_token(other_employer["id"], "someone")
+    monkeypatch.setattr(ratelimit.worker_wp_throttle, "max_failures", 2)
+    for i, tok in enumerate((foreign, "garbage.token")):
+        assert _login(client, f"4{i:03d}", f"10.8.0.{i}", tok).status_code == 401
+    # 두 번 모두 사업장 공용 키로 셌다.
+    assert _login(client, "1234", "10.8.0.9").status_code == 429
+    # 기기 표시는 로그인 토큰으로 쓸 수 없다.
+    device = make_device_token("emp-demo", "x")
+    assert client.get("/api/worker/me", headers=auth(device)).status_code == 401
+
+
+def test_four_digit_code_cannot_be_prefix_of_longer_code(client, employer_token, monkeypatch):
+    """/w 키패드는 4번째 숫자에서 바로 보낸다: '1234'(데모)가 있으면 '123456'을 만들 수 없고, 그 반대도."""
+    r = client.post("/api/workers", json={"display_name": "앞자리", "access_code": "123456"},
+                    headers=auth(employer_token))
+    assert r.status_code == 409 and "앞 4자리" in r.json()["detail"]
+    long = client.post("/api/workers", json={"display_name": "긴코드", "access_code": "987650"},
+                       headers=auth(employer_token))
+    assert long.status_code == 201
+    try:
+        short = client.post("/api/workers", json={"display_name": "짧은코드", "access_code": "9876"},
+                            headers=auth(employer_token))
+        assert short.status_code == 409
+        # 자동 코드도 긴 코드의 앞 4자리를 피한다.
+        seq = iter("98761112")
+        monkeypatch.setattr(main.secrets, "choice", lambda _: next(seq))
+        with SessionLocal() as db:
+            assert main._new_access_code(db, "emp-demo") == "1112"
+        # 다시 뽑을 때 자기 자신의 옛 코드는 막지 않는다.
+        seq2 = iter("9876")
+        monkeypatch.setattr(main.secrets, "choice", lambda _: next(seq2))
+        with SessionLocal() as db:
+            assert main._new_access_code(db, "emp-demo", exclude_worker_id=long.json()["id"]) == "9876"
+    finally:
+        client.delete(f"/api/workers/{long.json()['id']}", headers=auth(employer_token))

@@ -32,6 +32,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     event,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -225,6 +226,12 @@ class HelpRequest(Base):
     __tablename__ = "help_requests"
     __table_args__ = (
         Index("ix_help_requests_assignment_state", "assignment_id", "state"),
+        # 같은 누름(client_request_id)은 한 건, 배정마다 열린 요청(open·acknowledged)은 한 건(2차 검증: 동시 요청이
+        # 확인과 저장 사이에 겹쳐 두 건이 생겼다). NULL 키는 서로 다른 값으로 본다(SQLite·PostgreSQL 모두).
+        Index("uq_help_requests_assignment_client", "assignment_id", "client_request_id", unique=True),
+        Index("uq_help_requests_one_active", "assignment_id", unique=True,
+              sqlite_where=text("state IN ('open', 'acknowledged')"),
+              postgresql_where=text("state IN ('open', 'acknowledged')")),
     )
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
     employer_id: Mapped[str] = mapped_column(ForeignKey("employers.id"), index=True)

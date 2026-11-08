@@ -36,7 +36,7 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, Up
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
@@ -51,9 +51,11 @@ from auth import (
     hash_access_code,
     hash_password,
     is_production,
+    make_device_token,
     make_token,
     require_employer,
     require_worker,
+    verify_device_token,
     verify_password,
 )
 import db_migrate
@@ -387,19 +389,30 @@ def worker_login(payload: WorkerLogin, request: Request,
                  db: Session = Depends(get_db)) -> TokenOut:
     # 성공해도 IP 카운터를 비우지 않는다. 비우면 공격자가 자기 코드로 한 번씩 로그인해
     # 카운터를 계속 초기화하며 대입할 수 있다. 창(window)이 지나면 저절로 풀린다.
-    # 자동 코드는 4자리라(창업자 결정 3) 시도 제한이 방어선이다. IP 키에 더해 사업장 키로도 센다 — IP를 바꿔 가며
-    # 한 사업장의 1만 개를 훑는 대입을 막는다. 없는 사업장 코드도 같은 키 규칙으로 센다(존재 오라클 방지).
     key = f"ip:{client_ip(request)}"
     wp_key = f"wp:{normalize_workplace_code(payload.workplace_code)}"
-    ensure_not_blocked(worker_throttle, key)
-    ensure_not_blocked(worker_wp_throttle, wp_key)
-    # 하루 창: 10분 창이 풀릴 때마다 다시 훑는 느린 대입을 막는다(사업장·IP 각각 하루 100번).
-    ensure_not_blocked(worker_day_throttle, key)
-    ensure_not_blocked(worker_wp_day_throttle, wp_key)
-    # 접속 코드는 사업장 안에서만 unique다. 사업장 코드로 사업장을 먼저 정하고, 그 사업장 기준
-    # 해시로만 찾는다 — 다른 사업장 근로자의 코드는 여기서 절대 맞지 않는다.
     employer = db.scalar(select(Employer).where(
         Employer.workplace_code == normalize_workplace_code(payload.workplace_code)))
+    # 믿는 기기(2차 검증): 이 사업장에 한 번 맞게 들어온 기기는 서명된 기기 표시(device_token)를 갖고 있다.
+    # 그런 기기는 사업장·IP 공용 잠금을 보지도 세지도 않고, 표시에 적힌 근로자 몫의 잠금("dev:{근로자 id}")만 쓴다.
+    # 예전에는 사업장 코드를 아는 사람이 100번 틀리면(또는 근로자들이 하루 동안 잘못 누른 것이 쌓이면) 맞는 번호를
+    # 넣은 근로자까지 24시간 막혔다. 대입 한도는 그대로다: 믿지 않는 기기는 예전처럼 사업장·IP 키로, 믿는 기기는
+    # 근로자마다 따로(10분 30번·하루 100번) 센다. 같은 근로자가 다시 로그인해 표시를 새로 받아도 같은 키라 한도가
+    # 늘지 않는다.
+    device = verify_device_token(payload.device_token)
+    trusted = device is not None and employer is not None and device["e"] == employer.id
+    if trusted:
+        check_keys = ((worker_throttle, f"dev:{device['w']}"), (worker_day_throttle, f"dev:{device['w']}"))
+    else:
+        # 자동 코드는 4자리라(창업자 결정 3) 시도 제한이 방어선이다. IP 키에 더해 사업장 키로도 센다 — IP를 바꿔 가며
+        # 한 사업장의 1만 개를 훑는 대입을 막는다. 없는 사업장 코드도 같은 키 규칙으로 센다(존재 오라클 방지).
+        # 하루 창: 10분 창이 풀릴 때마다 다시 훑는 느린 대입을 막는다(사업장·IP 각각 하루 100번).
+        check_keys = ((worker_throttle, key), (worker_wp_throttle, wp_key),
+                      (worker_day_throttle, key), (worker_wp_day_throttle, wp_key))
+    for throttle, k in check_keys:
+        ensure_not_blocked(throttle, k)
+    # 접속 코드는 사업장 안에서만 unique다. 사업장 코드로 사업장을 먼저 정하고, 그 사업장 기준
+    # 해시로만 찾는다 — 다른 사업장 근로자의 코드는 여기서 절대 맞지 않는다.
     # 사업장 코드가 없어도 해시 계산과 근로자 조회를 똑같이 한 번 한다. 건너뛰면 응답이 쿼리 하나만큼
     # 빨라져, 메시지가 같아도 응답 시간으로 "이 사업장 코드가 존재한다"를 알 수 있다(타이밍 오라클).
     # 빈 employer_id로는 어떤 근로자도 맞지 않는다(Worker.employer_id는 FK라 비어 있을 수 없다).
@@ -411,10 +424,8 @@ def worker_login(payload: WorkerLogin, request: Request,
     if employer is None:
         worker = None
     if worker is None:
-        worker_throttle.fail(key)
-        worker_wp_throttle.fail(wp_key)
-        worker_day_throttle.fail(key)
-        worker_wp_day_throttle.fail(wp_key)
+        for throttle, k in check_keys:
+            throttle.fail(k)
         # 사업장 코드가 틀린 경우와 접속 코드가 틀린 경우를 같은 응답으로 돌려준다.
         # 다르게 답하면 사업장 코드가 존재하는지를 이 엔드포인트로 탐지할 수 있다.
         raise HTTPException(status_code=401, detail="사업장 코드 또는 접속 코드가 올바르지 않습니다.")
@@ -428,7 +439,8 @@ def worker_login(payload: WorkerLogin, request: Request,
                     role="worker",
                     display_name=worker.display_name,
                     # 근로자 기기가 키패드 위 띠에 보여 줄 사업장 이름(로그인한 뒤에만 알려 준다).
-                    workplace_name=employer.org_name or employer.name)
+                    workplace_name=employer.org_name or employer.name,
+                    device_token=make_device_token(employer.id, worker.id))
 
 
 def current_worker(user: dict = Depends(require_worker), db: Session = Depends(get_db)) -> dict:
@@ -511,6 +523,9 @@ def create_worker(payload: WorkerCreate, db: Session = Depends(get_db),
         if _access_code_taken(db, user["sub"], payload.access_code):
             worker_throttle.fail(key)
             raise HTTPException(status_code=409, detail="이미 사용 중인 접속 코드입니다. 다른 코드를 입력해 주세요.")
+        if _code_prefix_clash(db, user["sub"], payload.access_code):
+            worker_throttle.fail(key)
+            raise HTTPException(status_code=409, detail=_PREFIX_CLASH_DETAIL)
     for _ in range(_CODE_COMMIT_ATTEMPTS):
         code = (payload.access_code if payload.access_code is not None
                 else _new_access_code(db, user["sub"]))
@@ -542,21 +557,52 @@ ACCESS_CODE_DIGITS = 4
 _CODE_COMMIT_ATTEMPTS = 5
 
 
-def _access_code_taken(db: Session, employer_id: str, code: str) -> bool:
-    return db.scalar(select(Worker.id).where(
+def _access_code_taken(db: Session, employer_id: str, code: str, exclude_worker_id: str | None = None) -> bool:
+    query = select(Worker.id).where(
         Worker.employer_id == employer_id,
         Worker.access_code_hash == hash_access_code(employer_id, code),
-    )) is not None
+    )
+    if exclude_worker_id is not None:
+        query = query.where(Worker.id != exclude_worker_id)
+    return db.scalar(query) is not None
 
 
-def _new_access_code(db: Session, employer_id: str) -> str:
+_PREFIX_CLASH_DETAIL = ("앞 4자리가 다른 근로자의 접속 코드와 겹칩니다. 근로자 화면(/w)은 4자리를 누르면 바로 "
+                        "들어가므로 다른 코드를 입력해 주세요.")
+
+
+def _code_prefix_clash(db: Session, employer_id: str, code: str, exclude_worker_id: str | None = None) -> bool:
+    """4자리 코드와 더 긴 코드의 앞 4자리가 겹치는지(2차 검증).
+
+    근로자 키패드(/w)는 4번째 숫자에서 바로 보낸다. 동료가 '1234', 내가 '123456'이면 내가 /w에서 앞 4자리를
+    누르는 순간 동료 계정으로 들어간다. 그래서 4자리 코드는 긴 코드의 앞 4자리와, 긴 코드의 앞 4자리는 4자리 코드와
+    같으면 안 된다. 긴 코드의 평문은 암호문(access_code_cipher)을 풀어 본다 — 암호문이 없는 아주 옛 근로자는
+    알 수 없어 건너뛴다(그 근로자가 한 번 로그인하면 채워진다).
+    """
+    if len(code) > ACCESS_CODE_DIGITS:
+        return _access_code_taken(db, employer_id, code[:ACCESS_CODE_DIGITS], exclude_worker_id)
+    rows = db.execute(select(Worker.id, Worker.access_code_cipher).where(
+        Worker.employer_id == employer_id,
+        Worker.access_code_length > ACCESS_CODE_DIGITS,
+    )).all()
+    for wid, cipher in rows:
+        if wid == exclude_worker_id:
+            continue
+        plain = decrypt_access_code(employer_id, cipher)
+        if plain is not None and plain.startswith(code):
+            return True
+    return False
+
+
+def _new_access_code(db: Session, employer_id: str, exclude_worker_id: str | None = None) -> str:
     """사업장 안에서 겹치지 않는 4자리 무작위 숫자 코드. 근로자가 누르기 쉽게 숫자만 쓴다.
 
     1만 개 중 50번 뽑는다. 사업장 근로자가 수천 명이 아닌 한 겹치지 않는 코드를 찾는다.
     """
     for _ in range(50):
         code = "".join(secrets.choice("0123456789") for _ in range(ACCESS_CODE_DIGITS))
-        if not _access_code_taken(db, employer_id, code):
+        # 다시 뽑는 근로자 자신의 예전 코드는 곧 바뀌므로 앞 4자리 겹침 검사에서 뺀다.
+        if not _access_code_taken(db, employer_id, code) and                 not _code_prefix_clash(db, employer_id, code, exclude_worker_id):
             return code
     raise HTTPException(status_code=503, detail="접속 코드를 만들지 못했습니다. 다시 시도해 주세요.")
 
@@ -573,7 +619,7 @@ def reissue_access_code(worker_id: str, db: Session = Depends(get_db),
     if worker is None or worker.employer_id != user["sub"]:
         raise HTTPException(status_code=404, detail="근로자를 찾을 수 없습니다.")
     for _ in range(_CODE_COMMIT_ATTEMPTS):
-        code = _new_access_code(db, user["sub"])
+        code = _new_access_code(db, user["sub"], exclude_worker_id=worker.id)
         # 해시가 바뀌면 cf 지문도 바뀌어 예전 토큰은 current_worker에서 401이 된다.
         worker.set_access_code(code)
         try:
@@ -1702,9 +1748,15 @@ def _create_log_once(payload: PerformanceLogCreate, response: Response, db: Sess
         raise gone
     if log.completed:
         # 근로자가 [다 했어요]를 눌렀다 = 막혔던 일을 해결했다. 열린 도움 요청을 닫는다(스펙 4.5).
-        db.execute(update(HelpRequest).where(
+        # 닫는 것은 이 단계에서 부른 요청(또는 단계 없이 부른 요청)뿐이다(2차 검증). 예전에는 배정의 열린 요청을
+        # 모두 닫아서, 대기열에 남아 있던 1단계 기록이 늦게 닿으면 2단계에서 방금 부른 요청까지 말없이 닫혔다 —
+        # 근로자는 '여기서 기다려요'를 보고 기다리는데 사업주 화면에서는 사라졌다. 직무를 다 끝냈으면 모두 닫는다.
+        close = update(HelpRequest).where(
             HelpRequest.assignment_id == a.id, HelpRequest.state.in_(ACTIVE_HELP_STATES),
-        ).values(state="resolved", resolution="step_done", resolved_at=now))
+        )
+        if a.status != "done":
+            close = close.where(or_(HelpRequest.step_id == payload.step_id, HelpRequest.step_id.is_(None)))
+        db.execute(close.values(state="resolved", resolution="step_done", resolved_at=now))
     db.commit()
     return LogResultOut(assignment_status=a.status, duplicate=False, applied=True)
 
@@ -1752,6 +1804,17 @@ def create_help(payload: HelpCreate, response: Response, db: Session = Depends(g
 
     같은 배정에 열린 요청이 있으면 새로 만들지 않고 그 요청을 200으로 돌려준다(여러 번 눌러도 한 건).
     """
+    try:
+        return _create_help_once(payload, response, db, user)
+    except IntegrityError:
+        # 같은 누름(client_request_id)의 재전송이나 두 기기가 동시에 불러, 둘 다 "열린 요청 없음"을 보고 넣다가
+        # 하나가 unique 색인(0006: 누름 키, 배정당 열린 요청 하나)에 걸렸다. 되돌리고 한 번 더 하면 먼저 들어간
+        # 요청을 찾아 돌려준다(2차 검증: 예전에는 열린 요청이 두 건 생겨 [취소]가 한 건만 닫았다).
+        db.rollback()
+        return _create_help_once(payload, response, db, user)
+
+
+def _help_assignment(db: Session, payload, user: dict) -> tuple[Assignment, str | None]:
     a = db.get(Assignment, payload.assignment_id)
     if a is None or a.worker_id != user["sub"]:
         raise HTTPException(status_code=404, detail="배정을 찾을 수 없습니다.")
@@ -1760,6 +1823,19 @@ def create_help(payload: HelpCreate, response: Response, db: Session = Depends(g
         step = db.get(Step, step_id)
         if step is None or step.task_id != a.task_id:
             raise HTTPException(status_code=400, detail="이 배정에 속하지 않는 단계입니다.")
+    return a, step_id
+
+
+def _help_closed_assignment(a: Assignment) -> bool:
+    """다 끝낸 일이나 어제 이전에 받은 일인지. 그런 일에서 부른 도움은 사업주 화면에 새 호출로 띄우지 않는다."""
+    if a.status == "done":
+        return True
+    assigned = _naive_utc(a.assigned_date)
+    return assigned is not None and assigned < local_day_start_utc().replace(tzinfo=None)
+
+
+def _create_help_once(payload: HelpCreate, response: Response, db: Session, user: dict) -> HelpOut:
+    a, step_id = _help_assignment(db, payload, user)
     if payload.client_request_id:
         same = db.scalar(select(HelpRequest).where(
             HelpRequest.assignment_id == a.id,
@@ -1768,6 +1844,10 @@ def create_help(payload: HelpCreate, response: Response, db: Session = Depends(g
         if same is not None:
             response.status_code = 200
             return _help_out(db, same)
+    if _help_closed_assignment(a):
+        # 2차 검증: 예전에는 끝낸 일·어제 일의 배정 id(기록·대기열에 남아 있다)로도 열린 요청이 생겨 사업주 화면에
+        # 새 호출로 떴다. 같은 누름의 재전송(위)은 그대로 돌려준다.
+        raise HTTPException(status_code=409, detail="이미 끝난 일이에요.")
     active = _active_help(db, a.id)
     if active is not None and active.state == "acknowledged":
         # 선생님이 확인했지만 아직 오지 않았을 때 근로자가 다시 불렀다(새 누름 = 새 client_request_id).
@@ -1836,6 +1916,44 @@ def cancel_help(help_id: str, db: Session = Depends(get_db),
     return _help_out(db, h)
 
 
+@app.post("/api/worker/help/cancel-by-client", response_model=HelpOut)
+def cancel_help_by_client(payload: HelpCreate, db: Session = Depends(get_db),
+                          user: dict = Depends(current_worker)) -> HelpOut:
+    """답을 못 받은 누름(client_request_id)을 닫는다(2차 검증).
+
+    근로자 기기는 [도와주세요]를 8초 기다리다 끊는다. 그 요청이 늦게라도 서버에 닿으면, 근로자는 이미 [다 했어요]로
+    넘어갔는데 사업주 화면에만 '열린 요청'이 남았다. 기기는 [다 했어요] 때 끊긴 누름의 키로 이것을 부른다.
+    요청이 아직 안 닿았으면 그 키로 '취소됨' 행을 먼저 만들어 둔다 — 늦게 닿은 누름은 같은 키라 새로 열리지 않는다.
+    """
+    if not payload.client_request_id:
+        raise HTTPException(status_code=422, detail="client_request_id가 필요합니다.")
+    try:
+        return _cancel_by_client_once(payload, db, user)
+    except IntegrityError:
+        db.rollback()  # 늦은 누름이 같은 순간 들어갔다 — 한 번 더 하면 그 행을 찾아 닫는다.
+        return _cancel_by_client_once(payload, db, user)
+
+
+def _cancel_by_client_once(payload: HelpCreate, db: Session, user: dict) -> HelpOut:
+    a, step_id = _help_assignment(db, payload, user)
+    h = db.scalar(select(HelpRequest).where(
+        HelpRequest.assignment_id == a.id,
+        HelpRequest.client_request_id == payload.client_request_id,
+    ).limit(1))
+    now = _utcnow()
+    if h is None:
+        h = HelpRequest(employer_id=db.get(Worker, a.worker_id).employer_id, worker_id=a.worker_id,
+                        assignment_id=a.id, step_id=step_id, state="cancelled",
+                        client_request_id=payload.client_request_id, created_at=now, cancelled_at=now)
+        db.add(h)
+    elif h.state in ACTIVE_HELP_STATES:
+        h.state = "cancelled"
+        h.cancelled_at = now
+    db.commit()
+    db.refresh(h)
+    return _help_out(db, h)
+
+
 @app.get("/api/employer/help", response_model=list[EmployerHelpOut])
 def employer_help(request: Request, state: Literal["active", "open", "today"] = "active",
                   db: Session = Depends(get_db),
@@ -1869,7 +1987,9 @@ def employer_help(request: Request, state: Literal["active", "open", "today"] = 
             step_symbol_url=step_out.symbol_url if step_out is not None else None,
         ))
     # 근로자 이름이 실리므로 근로자마다 열람 기록을 남긴다(5초 폴링은 privacy.DEDUPED_ACTIONS가 묶는다).
-    record_access_for_workers(db, request, user, "help.list", [o.worker_id for o in out])
+    # 빈 목록은 개인정보를 보여 주지 않으므로 남기지 않는다(2차 검증: 예전에는 worker_id 없는 행이 1분에 하나씩 쌓였다).
+    if out:
+        record_access_for_workers(db, request, user, "help.list", [o.worker_id for o in out])
     return out
 
 
