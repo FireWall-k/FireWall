@@ -123,6 +123,9 @@ class Symbol(BaseModel):
     reason: MatchReason = "no_candidate"
     # 자동 채택하지 못했을 때 사람이 고를 후보. 채택했으면 비워 둔다.
     candidates: list[AacMatch] = []
+    # 이 판정을 누가 내렸는가(디버깅용). rule = 규칙만(GPT 꺼짐·키 없음·실패), llm = GPT 재순위 답을
+    # 적용함(aac_rerank.py). 예전 클라이언트는 모르는 필드라 무시한다.
+    decided_by: Literal["rule", "llm"] = "rule"
 
 
 class MapSymbolsResult(BaseModel):

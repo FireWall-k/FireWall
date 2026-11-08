@@ -6,6 +6,8 @@ OpenAI 호출(chat_json)만 목으로 대체하고, 프롬프트→JSON 파싱�
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import llm  # noqa: E402
@@ -166,3 +168,105 @@ def test_chat_json_parses_openai_wire_format(monkeypatch):
     assert captured["url"].endswith("/chat/completions")
     assert captured["json_mode"] == "json_object"
     assert captured["auth"].startswith("Bearer ")
+
+
+# ---------- 금지·부정 보존 ----------
+def test_llm_decompose_dropping_prohibition_falls_back_to_rules(monkeypatch):
+    """'만지지 말고 ~ 부르세요'에서 금지가 사라진 GPT 결과는 버리고 규칙 분해로 간다."""
+    monkeypatch.setattr(llm, "llm_available", lambda: True)
+    monkeypatch.setattr(llm, "chat_json", lambda system, user, **kw: {
+        "task_title": "x", "steps": [{"sentence": "담당 선생님을 부르세요.", "action_type": "other"}],
+    })
+    src = "빨간 상자는 만지지 말고 담당 선생님을 부르세요."
+    result = dec.decompose(src, {})
+    assert any("만지지" in s.sentence for s in result.steps)
+
+
+def test_llm_decompose_keeps_result_when_prohibition_survives(monkeypatch):
+    monkeypatch.setattr(llm, "llm_available", lambda: True)
+    monkeypatch.setattr(llm, "chat_json", lambda system, user, **kw: {
+        "task_title": "x", "steps": [{"sentence": "빨간 상자는 만지지 마세요.", "action_type": "other"},
+                                     {"sentence": "담당 선생님을 부르세요.", "action_type": "other"}],
+    })
+    result = dec.decompose("빨간 상자는 만지지 말고 담당 선생님을 부르세요.", {})
+    assert [s.sentence for s in result.steps] == ["빨간 상자는 만지지 마세요.", "담당 선생님을 부르세요."]
+
+
+def test_llm_decompose_invented_prohibition_falls_back_to_rules(monkeypatch):
+    """원문에 없는 '~지 마세요'를 덧붙인 결과(앞 단계와 반대 지시)는 버린다."""
+    monkeypatch.setattr(llm, "llm_available", lambda: True)
+    monkeypatch.setattr(llm, "chat_json", lambda system, user, **kw: {
+        "task_title": "x", "steps": [{"sentence": "수저를 수저통에 넣으세요.", "action_type": "other"},
+                                     {"sentence": "수저통에 넣지 마세요.", "action_type": "other"}],
+    })
+    result = dec.decompose("수저를 모아서 수저통에 넣으세요.", {})
+    assert not any("마세요" in s.sentence for s in result.steps)
+
+
+def test_check_negation_markers():
+    llm.check_negation("넘치지 않게 부으세요.", {"steps": [{"sentence": "넘치지 않게 부으세요."}]})
+    llm.check_negation("컵을 놓으세요.", {"steps": [{"sentence": "컵을 놓으세요."}]})
+    with pytest.raises(ValueError):
+        llm.check_negation("뛰지 마세요.", {"steps": [{"sentence": "걸으세요."}]})
+
+
+@pytest.mark.parametrize("src, steps", [
+    # '~면 안 됩니다'가 사라짐(예전 표지 목록은 '하면 안'만 알아서 놓쳤다)
+    ("뜨거운 냄비는 맨손으로 만지면 안 됩니다. 장갑을 끼세요.", ["장갑을 끼세요."]),
+    ("넣으면 안 돼요. 옆 칸에 두세요.", ["옆 칸에 두세요."]),
+    # 짧은 부정 '안 만져요'
+    ("젖은 손으로 콘센트를 안 만져요. 손을 닦으세요.", ["손을 닦으세요."]),
+    # 금지가 다른 동작으로 옮겨 감
+    ("문을 닫지 말고 열어 두세요. 그리고 바닥을 닦으세요.", ["문을 열어 두세요.", "바닥을 닦지 마세요."]),
+    # '~ 금지'가 사라짐
+    ("엘리베이터 사용 금지. 계단으로 박스를 옮기세요.", ["계단으로 박스를 옮기세요."]),
+    # 원문에 없는 금지
+    ("수저를 수저통에 넣으세요.", ["수저를 수저통에 넣으세요.", "수저통에 넣지 마세요."]),
+])
+def test_check_negation_rejects(src, steps):
+    with pytest.raises(ValueError):
+        llm.check_negation(src, {"steps": [{"sentence": s} for s in steps]})
+
+
+@pytest.mark.parametrize("src, steps", [
+    # 같은 금지를 다른 말로(예전 검사는 '원문에 없는 금지'로 잘못 버렸다)
+    ("뜨거운 냄비는 맨손으로 만지면 안 됩니다.", ["뜨거운 냄비를 만지지 마세요."]),
+    ("손대면 안 됩니다. 선생님을 부르세요.", ["손대지 마세요.", "선생님을 부르세요."]),
+    ("만져서는 안 됩니다.", ["만지지 마세요."]),
+    ("손님 음식에 손가락이 닿으면 안 돼요.", ["손가락이 닿지 않게 하세요."]),
+    ("엘리베이터 사용 금지. 계단으로 옮기세요.", ["엘리베이터를 사용하지 마세요.", "계단으로 옮기세요."]),
+    # '지마'·'안'이 들어가도 금지가 아닌 말(예전 검사는 '가지마다'를 금지로 셌다)
+    ("가지마다 물을 주세요.", ["가지에 물을 주세요."]),
+    ("엄지마디를 굽히세요.", ["엄지마디를 굽히세요."]),
+    ("마지막으로 불을 끄세요.", ["불을 끄세요."]),
+    ("상자 안에 컵을 넣으세요.", ["상자 안에 컵을 넣으세요."]),
+    ("상자 안 물건을 꺼내세요.", ["상자 안 물건을 꺼내세요."]),
+])
+def test_check_negation_accepts(src, steps):
+    llm.check_negation(src, {"steps": [{"sentence": s} for s in steps]})
+
+
+def test_negation_keys_name_the_forbidden_action():
+    assert llm.negation_keys("만지지 마세요") == ["만지"]
+    assert llm.negation_keys("넣으면 안 됩니다") == ["넣"]
+    assert llm.negation_keys("출입금지") == ["출입"]
+    assert llm.negation_keys("가지마다 물을 주세요") == []
+
+
+def test_negation_set_replay_matches_human_verdicts():
+    """eval/negation_set.json: 실제 GPT 분해 응답 22건(금지 문장 20 + 대조 2)을 사람 판정과 맞춘다.
+    실제 API는 부르지 않는다 — 저장된 응답을 다시 검사할 뿐이다."""
+    import json
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "eval", "negation_set.json")
+    with open(path, encoding="utf-8") as f:
+        cases = json.load(f)["cases"]
+    wrong = []
+    for c in cases:
+        try:
+            llm.check_negation(c["sentence"], {"steps": [{"sentence": s} for s in c["gpt_steps"]]})
+            got = "pass"
+        except ValueError:
+            got = "reject"
+        if got != c["expect"]:
+            wrong.append(c["id"])
+    assert wrong == []

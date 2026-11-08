@@ -1,0 +1,219 @@
+{
+ "about": "금지·부정 표현 보존 검사(llm.check_negation) 확인용. 문장은 2026-11-08에 새로 쓴 것이고(정답 분할셋 170문장에는 금지 문장이 1개뿐이다), gpt_steps는 그날 gpt-4o-mini + 지금 분해 프롬프트(llm._DECOMPOSE_SYSTEM)의 실제 응답이다. human은 사람이 응답을 읽고 매긴 판정, expect는 검사가 내야 할 결과다. 검사 패턴을 정한 사람이 문장도 써서 낙관적일 수 있다 — 새 문장으로 다시 재면 이 파일에 덧붙인다.",
+ "cases": [
+  {
+   "id": "neg_01",
+   "sentence": "뜨거운 냄비는 맨손으로 만지면 안 됩니다. 장갑을 끼고 옮기세요.",
+   "gpt_steps": [
+    "뜨거운 냄비를 만지지 마세요.",
+    "장갑을 끼세요.",
+    "뜨거운 냄비를 옮기세요."
+   ],
+   "human": "kept",
+   "expect": "pass"
+  },
+  {
+   "id": "neg_02",
+   "sentence": "젖은 손으로 콘센트를 만지지 마세요.",
+   "gpt_steps": [
+    "젖은 손으로 만지지 마세요."
+   ],
+   "human": "kept",
+   "expect": "pass",
+   "note": "금지는 남았지만 대상 '콘센트'가 빠짐(검사 범위 밖)"
+  },
+  {
+   "id": "neg_03",
+   "sentence": "바닥이 젖어 있으면 뛰지 말고 천천히 걸으세요.",
+   "gpt_steps": [
+    "바닥이 젖어 있으면 확인하세요.",
+    "천천히 걸으세요."
+   ],
+   "human": "lost",
+   "expect": "reject"
+  },
+  {
+   "id": "neg_04",
+   "sentence": "칼은 싱크대에 두지 말고 칼꽂이에 꽂으세요.",
+   "gpt_steps": [
+    "칼을 칼꽂이에 꽂으세요."
+   ],
+   "human": "lost",
+   "expect": "reject"
+  },
+  {
+   "id": "neg_05",
+   "sentence": "유통기한이 지난 우유는 진열하지 말고 따로 빼 두세요.",
+   "gpt_steps": [
+    "유통기한이 지난 우유를 빼세요."
+   ],
+   "human": "lost",
+   "expect": "reject"
+  },
+  {
+   "id": "neg_06",
+   "sentence": "손님 음식에 손가락이 닿으면 안 돼요. 접시 가장자리를 잡으세요.",
+   "gpt_steps": [
+    "손가락이 닿지 않게 하세요.",
+    "접시 가장자리를 잡으세요."
+   ],
+   "human": "kept",
+   "expect": "pass"
+  },
+  {
+   "id": "neg_07",
+   "sentence": "기름이 튀니까 튀김기 안에 손을 넣으면 안 됩니다.",
+   "gpt_steps": [
+    "튀김기 안에 손을 넣지 마세요."
+   ],
+   "human": "kept",
+   "expect": "pass"
+  },
+  {
+   "id": "neg_08",
+   "sentence": "세제와 락스를 섞지 마세요. 하나씩 따로 쓰세요.",
+   "gpt_steps": [
+    "세제를 사용하세요.",
+    "락스를 사용하세요."
+   ],
+   "human": "lost",
+   "expect": "reject"
+  },
+  {
+   "id": "neg_09",
+   "sentence": "빨간 상자는 열지 말고 담당자에게 알려 주세요.",
+   "gpt_steps": [
+    "빨간 상자를 열지 마세요.",
+    "담당자에게 알려주세요."
+   ],
+   "human": "kept",
+   "expect": "pass"
+  },
+  {
+   "id": "neg_10",
+   "sentence": "주유 중에는 휴대폰을 사용하지 마세요.",
+   "gpt_steps": [
+    "휴대폰을 사용하지 마세요."
+   ],
+   "human": "kept",
+   "expect": "pass"
+  },
+  {
+   "id": "neg_11",
+   "sentence": "무거운 상자는 혼자 들지 말고 동료를 부르세요.",
+   "gpt_steps": [
+    "무거운 상자를 들지 마세요.",
+    "동료를 부르세요."
+   ],
+   "human": "kept",
+   "expect": "pass",
+   "note": "금지는 남았지만 '혼자'가 빠져 '들지 마세요'로 뜻이 넓어짐(검사 범위 밖)"
+  },
+  {
+   "id": "neg_12",
+   "sentence": "계산대 돈통은 열면 안 돼요. 손님이 기다리면 매니저를 부르세요.",
+   "gpt_steps": [
+    "돈통을 열지 마세요.",
+    "손님이 기다리면 매니저를 부르세요."
+   ],
+   "human": "kept",
+   "expect": "pass"
+  },
+  {
+   "id": "neg_13",
+   "sentence": "스팀 봉은 사용한 뒤 바로 만지지 않도록 조심하세요.",
+   "gpt_steps": [
+    "스팀 봉을 사용한 뒤 만지지 마세요."
+   ],
+   "human": "kept",
+   "expect": "pass"
+  },
+  {
+   "id": "neg_14",
+   "sentence": "엘리베이터 사용 금지. 박스는 계단 옆 카트로 옮기세요.",
+   "gpt_steps": [
+    "엘리베이터 사용하지 마세요.",
+    "박스를 계단 옆 카트로 옮기세요."
+   ],
+   "human": "kept",
+   "expect": "pass"
+  },
+  {
+   "id": "neg_15",
+   "sentence": "쓰레기봉투를 바닥에 끌지 말고 들어서 옮기세요.",
+   "gpt_steps": [
+    "쓰레기봉투를 들어서 옮기세요."
+   ],
+   "human": "lost",
+   "expect": "reject"
+  },
+  {
+   "id": "neg_16",
+   "sentence": "포장 테이프를 너무 길게 자르지 마세요.",
+   "gpt_steps": [
+    "포장 테이프를 자르세요."
+   ],
+   "human": "lost",
+   "expect": "reject"
+  },
+  {
+   "id": "neg_17",
+   "sentence": "청소기 전선을 밟지 않게 정리하고 청소를 시작하세요.",
+   "gpt_steps": [
+    "청소기 전선을 정리하세요.",
+    "청소를 시작하세요."
+   ],
+   "human": "lost",
+   "expect": "reject"
+  },
+  {
+   "id": "neg_18",
+   "sentence": "냉동고 문을 열어 두면 안 됩니다. 물건을 넣고 바로 닫으세요.",
+   "gpt_steps": [
+    "냉동고 문을 열지 마세요.",
+    "물건을 넣으세요.",
+    "냉동고 문을 닫으세요."
+   ],
+   "human": "changed",
+   "expect": "reject",
+   "note": "'열어 두면 안 됩니다'가 '열지 마세요'로 바뀌어 다음 단계 '물건을 넣으세요'와 모순"
+  },
+  {
+   "id": "neg_19",
+   "sentence": "진열대 맨 위 칸에는 무거운 물건을 올리지 마세요.",
+   "gpt_steps": [
+    "진열대 맨 위 칸에 물건을 올리지 마세요."
+   ],
+   "human": "kept",
+   "expect": "pass"
+  },
+  {
+   "id": "neg_20",
+   "sentence": "손님에게 뜨거운 컵을 손으로 건네지 말고 쟁반에 올려 드리세요.",
+   "gpt_steps": [
+    "컵을 쟁반에 올리세요."
+   ],
+   "human": "lost",
+   "expect": "reject"
+  },
+  {
+   "id": "ctl_01",
+   "sentence": "마지막으로 진열대 안쪽까지 물걸레로 닦으세요.",
+   "gpt_steps": [
+    "진열대 안쪽을 닦으세요."
+   ],
+   "human": "none",
+   "expect": "pass"
+  },
+  {
+   "id": "ctl_02",
+   "sentence": "상자 안에 있는 컵을 꺼내 선반에 놓으세요.",
+   "gpt_steps": [
+    "컵을 꺼내세요.",
+    "컵을 선반에 놓으세요."
+   ],
+   "human": "none",
+   "expect": "pass"
+  }
+ ]
+}
