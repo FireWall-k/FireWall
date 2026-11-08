@@ -279,3 +279,17 @@ def test_supervisor_is_not_a_supermarket():
     assert infer_job_text("슈퍼바이저 교육") == "unknown"
     assert infer_job({"business_type": "동네 슈퍼"}) == "retail"
     assert infer_job({"business_type": "슈퍼바이저 교육", "raw_input": "슈퍼 계산대를 닦아요"}) == "retail"
+
+
+def test_unknown_noun_before_position_keeps_object_gate_on():
+    # 그림에 없는 명사 + 위치 명사('오븐 안을')는 위치 명사를 대상으로 남겨 게이트를 켠다.
+    # 비워 두면 '오븐 안을 행주로 닦아 주세요'가 '스팀 노즐을 행주로 닦는다'로 자동 채택됐다.
+    assert _query_objects("오븐 안을 행주로 닦아 주세요.") == {"안"}
+    assert _query_objects("서랍 안을 걸레로 닦으세요.") == {"안"}
+    by = _by_id()
+    s = "오븐 안을 행주로 닦아 주세요."
+    assert _object_conflict(by["CAFE_095"], s, s, job="cafe") is True
+    # 부사·조사 붙은 말은 대상이 아니다.
+    assert _query_objects("먼저 위를 닦아요") == set()
+    assert _query_objects("깨끗이 안을 닦아요") == set()
+    assert _query_objects("손으로 위를 눌러요") == set()
