@@ -12,3 +12,6 @@ global.Audio = FakeAudio;
 window.speechSynthesis = { speak: vi.fn(), cancel: vi.fn() };
 // @ts-expect-error - 테스트 환경 스텁
 global.SpeechSynthesisUtterance = class { lang = ""; rate = 1; constructor(public text: string) {} };
+// jsdom은 window.scrollTo를 구현하지 않는다(호출하면 "Not implemented" 오류를 찍는다). 단계 화면은 단계가
+// 바뀔 때 맨 위로 스크롤한다.
+window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;

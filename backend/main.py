@@ -1099,6 +1099,7 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
             step.symbol_source = payload.symbol_source or "fallback"
         step.needs_fallback = False
     if payload.sentence is not None:
+        step_sentence_before = step.sentence
         step.sentence = payload.sentence
         if step.tts_media_id:
             released.append(step.tts_media_id)
@@ -1106,6 +1107,11 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
         # 저장된 symbol_query는 옛 문장에 묶여 있다. 비우면 후보 조회가 새 문장에서
         # 검색어를 다시 뽑는다.
         step.symbol_query = ""
+        # 동작 계열도 옛 문장의 것이다("상자를 옮기세요"→move를 "바닥을 쓸어주세요"로 고쳐도 move로 남았다).
+        # 남겨 두면 후보 재검색이 맞는 그림을 계열 불일치로 깎고, 화면에 틀린 꼬리표가 붙는다.
+        # 다시 추정할 근거가 여기엔 없으니 other(벌점 없음·꼬리표 숨김)로 되돌린다.
+        if payload.sentence != step_sentence_before:
+            step.action_type = "other"
     # 확인과 커밋 사이에 다른 요청의 release()가 레코드를 지우지 못하게 커밋 직전에 같은 트랜잭션에서 잠근다
     # (media.claim). TTS 합성(네트워크 호출) 뒤에 잠그는 이유: SQLite 쓰기 잠금은 DB 전체라, 합성 동안 쥐고 있으면
     # 다른 모든 쓰기가 기다린다. 이미 지워졌으면 붙이지 않는다 — 400(남의 것)과 구분해 409로 다시 시도하게 한다.

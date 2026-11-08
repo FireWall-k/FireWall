@@ -77,7 +77,8 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
   }
 
   return (
-    <div className="mx-auto mt-10 max-w-sm rounded-2xl border border-slate-200 bg-white p-6">
+    // break-keep: 한국어 안내 문장을 낱말 중간에서 끊지 않는다(근로자도 이 화면에서 로그인한다).
+    <div className="mx-auto mt-10 max-w-sm break-keep rounded-2xl border border-slate-200 bg-white p-6 [overflow-wrap:anywhere]">
       <h1 className="text-xl font-bold text-slate-900">잡카드 로그인</h1>
       <div className="mt-4 flex gap-1 rounded-lg bg-slate-100 p-1">
         {(["employer", "worker"] as const).map((t) => (

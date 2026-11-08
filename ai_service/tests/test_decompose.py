@@ -106,3 +106,56 @@ def test_fallback_job_inference_uses_business_type_names():
     assert decompose("컵을 씻으세요.", {"business_type": "빌딩 1층 카페"}).job == "cafe"
     assert decompose("빌딩 1층 카페에서 컵을 씻으세요.", {}).job == "cafe"
     assert decompose("호텔 레스토랑에서 접시를 치우세요.", {}).job != "cleaning"
+
+
+# ---- 동작 분류(action_type) — 근로자 화면 꼬리표와 그림 검색 동사 계열 벌점에 쓰인다 ----
+# 예전 규칙은 힌트 글자를 문장 어디서든 찾아서, 지시문 끝 "-세요"의 '세'(세다)를 observe로 읽었다.
+# 상자 덮개를 접는 그림 밑에 '확인하기'·'담기' 같은 틀린 꼬리표가 붙던 원인이다.
+
+def _action(sentence: str) -> str:
+    return decompose(sentence, {}).steps[0].action_type
+
+
+def test_seyo_ending_is_not_read_as_counting():
+    # '-세요'의 '세'는 세다(observe)가 아니다. 접다는 그림 인덱스에서 pack 계열이다.
+    assert _action("박스 바닥 덮개를 접으세요") == "pack"
+
+
+def test_modifier_verb_does_not_decide_action():
+    # 꾸미는 말 '포장된'이 아니라 서술어 '놓으세요'가 할 일이다.
+    assert _action("포장된 상자를 카트에 놓으세요") == "move"
+
+
+def test_noun_fragment_is_not_a_verb():
+    # '입력'의 '입'은 입다(wear)가 아니다. '보관'의 '보'도 보다(observe)가 아니다.
+    assert _action("포스기에 주문을 입력하세요") == "operate"
+    assert _action("물건을 창고에 보관하세요") != "observe"
+
+
+def test_ambiguous_verb_is_other():
+    # 붙이다는 인덱스에서 계열이 갈린다(other·assemble·pack) — 확실하지 않으면 other(화면은 꼬리표를 숨긴다).
+    assert _action("박스 바닥에 테이프를 붙이세요") == "other"
+
+
+def test_two_actions_of_different_classes_is_other():
+    assert _action("손을 씻고 위생 장갑을 끼세요") == "other"
+
+
+def test_common_actions_are_classified():
+    assert _action("상자 수량을 확인하세요") == "observe"
+    assert _action("밀대로 바닥을 닦으세요") == "clean"
+    assert _action("상자를 5개씩 쌓아주세요") == "stack"
+
+
+def test_hada_with_action_noun():
+    # "청소를 하세요"는 동사가 '하다'뿐이라 동작이 명사에 있다.
+    assert _action("청소를 하세요") == "clean"
+
+
+def test_push_with_cleaning_tool_is_clean():
+    # 밀다는 인덱스에서 move지만, 청소 도구로 미는 것은 청소다(맞는 청소 그림이 계열 벌점을 받던 문제).
+    assert _action("차 안 바닥을 청소기로 밀어주세요") == "clean"
+    assert _action("대걸레로 바닥을 미세요") == "clean"
+    assert _action("청소기를 돌리세요") == "clean"
+    # 도구가 없으면 그대로 옮기기다.
+    assert _action("카트를 밀어 주세요") == "move"
