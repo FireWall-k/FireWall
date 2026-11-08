@@ -1,0 +1,123 @@
+// 근로자 화면 공통 틀(명세 4.0, 7.1 WorkerScreen·WorkerTopBar·BottomActionBar·띠).
+// 세로 3칸: 위 띠 / (띠 한 개) / 내용 / 아래 막대. 높이는 100dvh, 문서는 스크롤하지 않는다 —
+// 넘치면 가운데 내용만 스크롤하고 위 띠·아래 막대(주 버튼)는 늘 화면 안에 남는다.
+// 띠(도움·오프라인·기록 보냄)는 한 번에 하나만 보인다. 도움 띠가 있으면 오프라인은 위 띠 가운데 작은 표시로.
+import type { ReactNode } from "react";
+import { cn } from "../cn";
+import { COPY } from "./copy";
+import { IconOffline } from "../ui/icons";
+
+export function WorkerScreen({
+  top,
+  band,
+  bottom,
+  children,
+  mainClassName,
+  testId,
+}: {
+  top: ReactNode;
+  band?: ReactNode;
+  bottom?: ReactNode;
+  children: ReactNode;
+  mainClassName?: string;
+  testId?: string;
+}) {
+  return (
+    <div
+      data-testid={testId}
+      className="flex h-dvh flex-col overflow-hidden bg-worker-bg font-worker text-worker-ink hc:bg-white hc:text-black"
+    >
+      {top}
+      {band}
+      <main
+        data-testid="worker-main"
+        className={cn(
+          // 내용이 넘쳐도 줄어들지 않고(겹침 방지) 이 칸만 스크롤한다.
+          "mx-auto flex min-h-0 w-full max-w-[1024px] flex-1 flex-col overflow-y-auto px-4 tablet:px-8 [&>*]:shrink-0",
+          mainClassName,
+        )}
+      >
+        {children}
+      </main>
+      {bottom}
+    </div>
+  );
+}
+
+/** 위 띠: 왼쪽(나가기·홈으로·인사) / 가운데(오프라인 표시 자리) / 오른쪽(도와주세요·끝내기). */
+export function TopBar({ left, center, right }: { left?: ReactNode; center?: ReactNode; right?: ReactNode }) {
+  return (
+    <header className="w-full shrink-0 border-b-2 border-worker-line-soft bg-worker-bg pt-[env(safe-area-inset-top)] hc:border-black hc:bg-white">
+      <div className="mx-auto flex h-worker-top w-full max-w-[1024px] items-center justify-between gap-2 px-4 tablet:h-worker-top-tab tablet:px-8">
+        <div className="flex min-w-0 items-center">{left}</div>
+        <div className="flex min-w-0 flex-1 items-center justify-center">{center}</div>
+        <div className="flex shrink-0 items-center">{right}</div>
+      </div>
+    </header>
+  );
+}
+
+/** 아래 행동 막대: 버튼 1·2개. 왼손 설정이면 좌우를 바꾼다(주 버튼이 왼쪽). */
+export function BottomBar({ children, stacked = false, className }: { children: ReactNode; stacked?: boolean; className?: string }) {
+  return (
+    <footer className="w-full shrink-0 border-t-2 border-worker-line-soft bg-worker-bg pb-[env(safe-area-inset-bottom)] hc:border-black hc:bg-white">
+      <div
+        className={cn(
+          "mx-auto flex w-full max-w-[1024px] gap-6 px-4 py-3 small:py-2 tablet:px-8 tablet:py-4",
+          stacked ? "flex-col" : "items-stretch lefty:flex-row-reverse",
+          className,
+        )}
+      >
+        {children}
+      </div>
+    </footer>
+  );
+}
+
+/** 띠 공통 모양(64px 이상, 24px 글씨, role=status). */
+export function Band({ tone, children, testId }: { tone: "help" | "offline" | "synced"; children: ReactNode; testId?: string }) {
+  return (
+    <div
+      role="status"
+      data-testid={testId}
+      className={cn(
+        "w-full shrink-0 border-b-2",
+        tone === "help" && "border-worker-help-line bg-worker-help text-worker-help-ink",
+        tone === "offline" && "border-worker-caution-ink bg-worker-caution text-worker-caution-ink",
+        tone === "synced" && "border-worker-primary bg-worker-primary-tint text-worker-primary",
+        "hc:border-black hc:bg-white hc:text-black",
+      )}
+    >
+      <div className="mx-auto flex min-h-16 w-full max-w-[1024px] items-center gap-3 px-4 py-1 text-worker font-semibold small:min-h-14 small:text-worker-caption tablet:px-8">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function OfflineBanner() {
+  return (
+    <Band tone="offline" testId="offline-band">
+      <IconOffline size={28} />
+      <p className="min-w-0 flex-1">{COPY.band.offline}</p>
+    </Band>
+  );
+}
+
+export function SyncNotice() {
+  return (
+    <Band tone="synced" testId="sync-notice">
+      <p className="min-w-0 flex-1">{COPY.band.synced}</p>
+    </Band>
+  );
+}
+
+/** 도움 띠가 떠 있을 때 위 띠 가운데에 두는 작은 오프라인 표시(20px). 좁은 휴대폰에서는 아이콘만 보인다. */
+export function OfflineMark() {
+  return (
+    <span role="status" className="flex items-center gap-1 text-worker-caption text-worker-caution-ink hc:text-black">
+      <IconOffline size={24} />
+      <span className="whitespace-nowrap max-[420px]:sr-only">{COPY.band.offlineShort}</span>
+    </span>
+  );
+}

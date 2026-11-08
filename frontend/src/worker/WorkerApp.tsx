@@ -1,8 +1,22 @@
-// 임시 자리(FOUNDATION 트랙이 App.tsx 연결용으로 만든 빈 껍데기). WORKER 트랙이 /w 화면 전체로 덮어쓴다.
-// 그 전까지는 옛 근로자 화면으로 보낸다: 로그인돼 있으면 /worker, 아니면 늘 로그인 화면을 보이는 /login(근로자 탭).
-// ('/'로 보내면 사업장 코드가 저장된 기기에서 다시 /w로 와 끝없이 돈다.)
-import { Navigate } from "react-router-dom";
+// 근로자 화면(/w/*, 명세 3.2). 근로자가 머무는 곳은 홈(/w/today)과 단계 화면 두 곳뿐이다.
+//   /w                     번호 넣기(연결 안 된 기기면 '연결 안 됨' 화면)
+//   /w/setup               기기 연결(선생님이 함)
+//   /w/today               오늘 할 일
+//   /w/job/:aid            직무 시작
+//   /w/job/:aid/step/:n    단계(주소에 단계 번호 → 새로고침해도 그 자리)
+//   /w/job/:aid/done       직무 완료
+//   /w/history(/:aid)      했던 일 / 다시 보기
+// 쉼 화면(/w/job/:aid/rest)은 묶음 규칙(열린 질문 8)이 정해지면 넣는다.
+import { Navigate, Route, Routes } from "react-router-dom";
 import type { AuthState } from "../api";
+import EntryScreen from "./EntryScreen";
+import { HistoryDetailScreen, HistoryScreen } from "./HistoryScreen";
+import JobDoneScreen from "./JobDoneScreen";
+import JobStartScreen from "./JobStartScreen";
+import SetupScreen from "./SetupScreen";
+import StepRoute from "./StepRoute";
+import TodayScreen from "./TodayScreen";
+import { WorkerSession } from "./WorkerSession";
 
 export interface WorkerAppProps {
   auth: AuthState | null;
@@ -10,7 +24,36 @@ export interface WorkerAppProps {
   onLogout: () => void;
 }
 
-export default function WorkerApp({ auth }: WorkerAppProps) {
-  if (auth?.role === "worker") return <Navigate to="/worker" replace />;
-  return <Navigate to="/login?tab=worker" replace />;
+export default function WorkerApp({ auth, onLogin, onLogout }: WorkerAppProps) {
+  const isWorker = auth?.role === "worker";
+  // 사업주가 근로자 주소로 오면 사업주 화면으로(근로자 토큰이 아니라 근로자 API가 401이 된다).
+  if (auth && !isWorker) return <Navigate to="/manager" replace />;
+
+  return (
+    <Routes>
+      <Route index element={isWorker ? <Navigate to="/w/today" replace /> : <EntryScreen onLogin={onLogin} />} />
+      <Route path="setup" element={<SetupScreen />} />
+      <Route
+        path="*"
+        element={
+          isWorker ? (
+            // 로그인할 때마다 세션을 새로 만든다(다른 근로자가 같은 기기를 쓸 때 앞사람 상태가 남지 않게).
+            <WorkerSession key={auth!.token} onLogout={onLogout}>
+              <Routes>
+                <Route path="today" element={<TodayScreen />} />
+                <Route path="job/:aid" element={<JobStartScreen />} />
+                <Route path="job/:aid/step/:n" element={<StepRoute />} />
+                <Route path="job/:aid/done" element={<JobDoneScreen />} />
+                <Route path="history" element={<HistoryScreen />} />
+                <Route path="history/:aid" element={<HistoryDetailScreen />} />
+                <Route path="*" element={<Navigate to="/w/today" replace />} />
+              </Routes>
+            </WorkerSession>
+          ) : (
+            <Navigate to="/w" replace />
+          )
+        }
+      />
+    </Routes>
+  );
 }

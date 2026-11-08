@@ -1,0 +1,104 @@
+// 직무 완료 / 오늘 일 끝(/w/job/:aid/done, 명세 4.6). 마지막 기록을 서버가 아직 못 받았어도(오프라인) 이 화면은
+// 그대로 보이고, 기록은 대기열이 다시 연결될 때 보낸다.
+// - 다음 일이 있으면: 칭찬 + 다음 일 미리 보기 + [방금 일 다시 보기](보조) / [다음 일 하기](주).
+// - 모두 끝났으면: '오늘 일을 다 했어요' / '선생님께 알려 주세요.' + [했던 일 보기](보조) / [끝내기](주).
+// 칭찬 '조용히'(근로자 설정)면 그림·소리 없이 문장만.
+import { useEffect, useState } from "react";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { IconEnd, IconHistory, IconHome, IconNext } from "../ui/icons";
+import { COPY } from "./copy";
+import { Thumb } from "./JobCard";
+import { useBand, useWorkerSession } from "./session";
+import { speakText } from "./speech";
+import { ConfirmScreen } from "./ui/ConfirmScreen";
+import { Illustration } from "./ui/Illustration";
+import { PrimaryAction, SecondaryAction } from "./ui/WorkerButton";
+import { BottomBar, TopBar, WorkerScreen } from "./WorkerScreen";
+
+export default function JobDoneScreen() {
+  const { aid } = useParams();
+  const navigate = useNavigate();
+  const { jobs, prefs, progressOf, logout } = useWorkerSession();
+  const { band } = useBand();
+  const [confirmEnd, setConfirmEnd] = useState(false);
+  const job = jobs.find((j) => j.assignment_id === aid);
+  const next = jobs.find((j) => j.assignment_id !== aid && progressOf(j).status !== "done") ?? null;
+  const quiet = prefs.praise === "quiet";
+
+  const title = job ? COPY.done.title(job.task_title) : "";
+  const spoken = next ? `${title}. ${COPY.done.praise}` : `${COPY.allDone.title}. ${COPY.allDone.body}`;
+  useEffect(() => {
+    if (job && !quiet && prefs.autoplay_sound) speakText(spoken, { rate: prefs.tts_rate });
+    // 들어올 때 한 번만 읽는다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aid]);
+
+  if (!job) return <Navigate to="/w/today" replace />;
+  if (confirmEnd) {
+    return (
+      <ConfirmScreen kind="end" speak={prefs.autoplay_sound} ttsRate={prefs.tts_rate}
+        onStay={() => setConfirmEnd(false)} onLeave={logout} />
+    );
+  }
+
+  return (
+    <WorkerScreen
+      testId="job-done-screen"
+      top={
+        <TopBar
+          left={
+            <SecondaryAction icon={IconHome} onPress={() => navigate("/w/today")} className="!gap-2 !px-3">
+              {COPY.btn.home}
+            </SecondaryAction>
+          }
+        />
+      }
+      band={band}
+      bottom={
+        <BottomBar stacked>
+          {next ? (
+            <>
+              <SecondaryAction icon={IconHistory} onPress={() => navigate(`/w/history/${job.assignment_id}`)} className="w-full">
+                {COPY.btn.replayJob}
+              </SecondaryAction>
+              <PrimaryAction icon={IconNext} onPress={() => navigate(`/w/job/${next.assignment_id}`)} className="w-full">
+                {COPY.btn.nextJob}
+              </PrimaryAction>
+            </>
+          ) : (
+            <>
+              <SecondaryAction icon={IconHistory} onPress={() => navigate("/w/history")} className="w-full">
+                {COPY.btn.history}
+              </SecondaryAction>
+              <PrimaryAction icon={IconEnd} onPress={() => setConfirmEnd(true)} className="w-full">
+                {COPY.btn.end}
+              </PrimaryAction>
+            </>
+          )}
+        </BottomBar>
+      }
+      mainClassName="items-center justify-center gap-3 py-4 text-center"
+    >
+      <div role="status" className="flex flex-col items-center gap-3">
+        {!quiet && <Illustration kind="praise" size={240} className="max-h-[30dvh] small:size-40" />}
+        {next ? (
+          <>
+            <h1 className="text-worker-lg font-bold">{title}</h1>
+            <p className="text-worker text-worker-ink-soft hc:text-black">{COPY.done.praise}</p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-worker-lg font-bold">{COPY.allDone.title}</h1>
+            <p className="text-worker text-worker-ink-soft hc:text-black">{COPY.allDone.body}</p>
+          </>
+        )}
+      </div>
+      {next && (
+        <div className="mt-2 flex w-full max-w-md items-center gap-4 rounded-worker-card border-2 border-worker-line-soft bg-worker-card p-3 text-left shadow-worker-card">
+          <Thumb url={next.steps[0]?.symbol_url} size={96} />
+          <p className="min-w-0 flex-1 text-worker font-semibold">{COPY.done.nextPreview(next.task_title)}</p>
+        </div>
+      )}
+    </WorkerScreen>
+  );
+}

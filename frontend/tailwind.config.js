@@ -148,6 +148,9 @@ export default {
       addVariant("wide", "@media (orientation: landscape) and (min-width: 768px)");
       // small: 작은 휴대폰(360 폭 이하) 또는 낮은 화면(620 높이 이하). 위 띠·아래 막대를 줄인다.
       addVariant("small", "@media (max-width: 360px), (max-height: 620px)");
+      // tablet: 폭 768 이상이고 높이도 넉넉한 화면(태블릿 세로·가로). 휴대폰 가로(844×390)는 폭만 넓어 md:로는
+      // 태블릿과 구분되지 않는다 — 높이 조건을 붙인다. small과는 겹치지 않는다(높이 700 이상).
+      addVariant("tablet", "@media (min-width: 768px) and (min-height: 700px)");
       // 근로자 화면 설정(a11y_prefs). WorkerApp이 루트에 data 속성을 붙인다.
       addVariant("hc", '[data-contrast="high"] &');
       addVariant("lefty", '[data-hand="left"] &');
