@@ -9,7 +9,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
     globals: true,
-    // e2e/는 Playwright 테스트(실제 브라우저)다. vitest가 *.spec.ts로 집어 jsdom에서 돌리지 않게 뺀다.
-    exclude: [...configDefaults.exclude, 'e2e/**'],
+    // e2e/·e2e-real/은 Playwright 테스트(실제 브라우저)다. vitest가 *.spec.ts로 집어 jsdom에서 돌리지 않게 뺀다.
+    exclude: [...configDefaults.exclude, 'e2e/**', 'e2e-real/**'],
   },
 })
