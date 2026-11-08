@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { api, AuthError, type HistoryCard, type Step, type TodayCard } from "../api";
-import { WorkerActionChip } from "../actions";
+import { api, type HistoryCard, type Step, type TodayCard } from "../api";
+import { COPY, toWorkerMessage } from "../worker/copy";
 import { mergeStepMedia, useMediaRefresh } from "../media";
 import { cn } from "../cn";
 
@@ -17,6 +17,22 @@ function playBrowserTts(text: string) {
   window.speechSynthesis.speak(u);
 }
 
+// 근로자 화면 오류 문구(0차 2번). 서버 문장·영어 원문("Failed to fetch")을 그대로 보이지 않고, 오류 종류에 맞는
+// 쉬운 문장을 보인다. 새 근로자 화면(/w)은 StatusScreen으로 같은 일을 한다.
+function workerErrorText(e: unknown): string {
+  switch (toWorkerMessage(e)) {
+    case "offline":
+      return `${COPY.status.offline.title}. ${COPY.status.offline.body}`;
+    case "expired":
+      return COPY.status.expired.title;
+    default:
+      return `${COPY.status.error.title}. ${COPY.status.error.body}`;
+  }
+}
+
+// 오류 상자: 24px 글씨(근로자 화면 기본 크기), 빨강 대신 '조심' 색(명세 6.1 — 근로자 화면에는 빨강을 쓰지 않는다).
+const errorBox = "rounded-lg bg-worker-caution p-4 text-worker font-semibold text-worker-caution-ink";
+
 export default function WorkerPage() {
   const [cards, setCards] = useState<TodayCard[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +43,7 @@ export default function WorkerPage() {
   useEffect(() => {
     api.today()
       .then((c) => setCards(c))
-      .catch((e) => setError(e instanceof AuthError ? "다시 로그인해 주세요." : (e instanceof Error ? e.message : "불러오지 못했습니다.")));
+      .catch((e) => setError(workerErrorText(e)));
   }, []);
 
   // 사진·음성 서명 URL이 만료되면(화면을 오래 켜 둔 경우) 오늘 카드를 다시 받아 URL만 바꿔 끼운다.
@@ -37,7 +53,7 @@ export default function WorkerPage() {
   });
 
   if (error)
-    return <div role="alert" className="rounded-lg bg-red-50 p-4 text-red-800">{error}</div>;
+    return <div role="alert" className={errorBox}>{error}</div>;
   if (!cards) return <p className="text-slate-500">불러오는 중…</p>;
 
   // 위쪽 탭(오늘 할 일 / 지난 일 보기)은 없앴다. 휴대폰에서 그 줄(96px)이 그림 자리를 먹어 "완료"가 첫 화면
@@ -138,7 +154,7 @@ function StepProgress({ title, current, total }: { title: string; current: numbe
   );
 }
 
-// 단계 카드: 그림 한 장 + 동작 꼬리표 + 문장. 그림이 화면의 주인공이다.
+// 단계 카드: 그림 한 장 + 문장. 그림이 화면의 주인공이다.
 // 그림 칸은 남은 높이를 다 가져가고(flex-1), 그 안에서 칸의 가로·세로 중 짧은 쪽에 맞춘 정사각형으로 그린다
 // (100cqmin). 그래서 휴대폰에서는 가로를 거의 다 쓰고, 문장이 길면 잘리지 않고 작아진다. 바닥은
 // min(160px, 화면 높이의 20%) — 그보다 작으면 그림을 알아보기 어렵고, 작은 휴대폰(667px)에서는 160px을
@@ -165,11 +181,7 @@ function StepCard({ step, level, onMediaError, children }: {
           )}
         </div>
       </div>
-      {level < 3 && (
-        <div className="mt-2 flex justify-center empty:hidden">
-          <WorkerActionChip sentence={step.sentence} className={level === 0 ? "text-worker" : "text-lg"} />
-        </div>
-      )}
+      {/* 동작 꼬리표(ActionChip)는 뺐다(0차 3번). 문장과 그림이 이미 동작을 말하고, 꼬리표가 틀리면 근로자가 헷갈린다. */}
       <p data-testid="step-sentence" data-fit={level}
         className={cn("mt-2 text-pretty font-bold text-slate-900",
           level === 0 ? "text-worker-lg leading-snug" : level === 1 ? "text-worker leading-snug" : "text-xl")}>
@@ -216,6 +228,8 @@ function TodayView({ cards, onMediaError }: {
   const [stepIdx, setStepIdx] = useState(0);
   const [replayCount, setReplayCount] = useState(0);
   const [needHelp, setNeedHelp] = useState(false);
+  // 도움 요청이 서버에 닿지 않았다(0차 3번): '요청했어요'로 보이면 근로자는 선생님이 안다고 믿고 기다린다.
+  const [helpFailed, setHelpFailed] = useState(false);
   const stepStartRef = useRef<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [jobDone, setJobDone] = useState(false); // 현재 직무 완료(다음 직무 대기)
@@ -273,6 +287,7 @@ function TodayView({ cards, onMediaError }: {
   async function reportHelpNow() {
     if (!card || !step || needHelp) return; // 이미 요청한 단계에서 다시 눌러도 중복 보고하지 않는다.
     setNeedHelp(true);
+    setHelpFailed(false);
     const duration = (Date.now() - stepStartRef.current) / 1000;
     try {
       await api.logStep({
@@ -283,7 +298,9 @@ function TodayView({ cards, onMediaError }: {
         stuck: true,
       });
     } catch {
-      // 오프라인이어도 화면 표시(요청했어요)는 유지한다. 완료 시 다시 한번 보고된다.
+      // 못 불렀으면 '요청했어요'를 거두고 손을 들어 부르라고 알린다. 다시 누를 수 있다.
+      setNeedHelp(false);
+      setHelpFailed(true);
     }
   }
 
@@ -293,6 +310,7 @@ function TodayView({ cards, onMediaError }: {
     // 실제 stuck 신호: 본인 도움요청 OR 다시듣기 과다 OR 소요시간 초과
     const stuck =
       needHelp ||
+      helpFailed || // 도움 요청이 닿지 못했어도 '막힘'은 완료 기록에 남긴다.
       replayCount >= STUCK_REPLAY_THRESHOLD ||
       duration >= STUCK_DURATION_SEC;
     try {
@@ -319,6 +337,7 @@ function TodayView({ cards, onMediaError }: {
       setStepIdx((i) => i + 1);
       setReplayCount(0);
       setNeedHelp(false);
+      setHelpFailed(false);
       stepStartRef.current = Date.now();
     }
   }
@@ -330,6 +349,7 @@ function TodayView({ cards, onMediaError }: {
     setStepIdx(0);
     setReplayCount(0);
     setNeedHelp(false);
+    setHelpFailed(false);
     setJobDone(false);
     stepStartRef.current = Date.now();
   }
@@ -398,6 +418,11 @@ function TodayView({ cards, onMediaError }: {
           {needHelp ? "🙋 요청했어요" : "🙋 도움이 필요해요"}
         </button>
       </div>
+      {helpFailed && (
+        <p role="status" className="mt-2 rounded-lg bg-worker-caution p-2 text-worker font-semibold text-worker-caution-ink">
+          {COPY.help.failed}
+        </p>
+      )}
 
       <button onClick={completeStep}
         className="mt-3 min-h-touch w-full rounded-2xl bg-green-700 text-worker-lg font-bold text-white">
@@ -418,7 +443,7 @@ function HistoryView({ onToday }: { onToday: () => void }) {
   useEffect(() => {
     api.history()
       .then(setItems)
-      .catch((e) => setError(e instanceof Error ? e.message : "불러오지 못했습니다."));
+      .catch((e) => setError(workerErrorText(e)));
   }, []);
 
   const onMediaError = useMediaRefresh(async () => {
@@ -441,7 +466,7 @@ function HistoryView({ onToday }: { onToday: () => void }) {
   // 목록 화면은 가로로 넓은 화면(wide)에서도 단계 화면처럼 넓히지 않는다 — 한 줄이 너무 길어진다.
   const narrow = (children: ReactNode) => <div className="mx-auto space-y-3 wide:max-w-2xl">{children}</div>;
 
-  if (error) return narrow(<>{backToToday}<div role="alert" className="rounded-lg bg-red-50 p-4 text-red-800">{error}</div></>);
+  if (error) return narrow(<>{backToToday}<div role="alert" className={errorBox}>{error}</div></>);
   if (!items) return narrow(<>{backToToday}<p className="text-slate-500">불러오는 중…</p></>);
 
   if (items.length === 0)

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { IconHide, IconShow } from "../ui/icons";
+import { maskedCode } from "../workerCodes";
 import { api, type AacMatch, type Step, type StepSymbolCandidates, type Task, type Worker } from "../api";
 import { ActionChip } from "../actions";
 import { accessCodeText } from "../workerCodes";
@@ -568,7 +570,7 @@ export default function ManagerPage() {
                     // 아래 후보 영역이 "그림 고르기"를 안내하는 동안에는 "사진 권장"을
                     // 함께 띄우지 않는다(상충). 후보가 없을 때만 사진을 권한다.
                     <div className={cn(
-                      "flex h-16 w-16 items-center justify-center rounded border border-dashed text-center text-[10px]",
+                      "flex h-16 w-16 items-center justify-center rounded border border-dashed text-center text-xs",
                       stepCandidates[s.id]?.candidates.length
                         ? "border-slate-300 bg-slate-50 text-slate-400"
                         : "border-amber-400 bg-amber-50 text-amber-700",
@@ -576,7 +578,7 @@ export default function ManagerPage() {
                       {stepCandidates[s.id]?.candidates.length ? "그림 선택" : "사진 권장"}
                     </div>
                   )}
-                  <label className="cursor-pointer text-[11px] font-medium text-blue-700 hover:underline">
+                  <label className="cursor-pointer text-xs font-medium text-blue-700 hover:underline">
                     {s.symbol_source === "photo" ? "사진 교체" : "사진 올리기"}
                     <input
                       type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden"
@@ -590,7 +592,7 @@ export default function ManagerPage() {
                   </label>
                   {s.symbol_source === "photo" && (
                     <button onClick={() => handleRemovePhoto(s.id)}
-                            className="text-[11px] text-slate-400 hover:text-slate-600 hover:underline">
+                            className="text-xs text-slate-400 hover:text-slate-600 hover:underline">
                       되돌리기
                     </button>
                   )}
@@ -605,7 +607,7 @@ export default function ManagerPage() {
                     }}
                   />
                   <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                    <ActionChip action={s.action_type} className="text-[11px] !px-2 !py-0.5" />
+                    <ActionChip action={s.action_type} className="text-xs !px-2 !py-0.5" />
                     {/* 그림이 붙은 단계만 출처를 보여준다. 폴백 상태는 아래 후보 영역이
                         이미 설명하므로 "상징: fallback"은 중복 노이즈였다. */}
                     {s.symbol_url && (
@@ -616,13 +618,14 @@ export default function ManagerPage() {
                     {needsConfirm(s) && (
                       <button type="button" onClick={() => confirmStep(s.id)}
                               aria-label={`${s.order}단계 그림 확인`}
-                              className="rounded border border-amber-400 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 hover:bg-amber-100">
-                        자동 선택 · 그림이 맞으면 누르세요
+                              className="rounded border border-auto-700/40 bg-auto-50 px-2 py-0.5 text-xs font-semibold text-auto-700 hover:bg-white">
+                        {/* 자동 결과 표기는 '✦ 자동'(창업자 결정 2, 'AI'라고 쓰지 않는다). */}
+                        ✦ 자동 · 그림이 맞으면 누르세요
                       </button>
                     )}
                     {task.status !== "published" && s.symbol_url && s.symbol_source === "LOCAL_AAC"
                       && confirmedSteps.has(s.id) && (
-                      <span className="text-[11px] font-semibold text-emerald-700">✓ 확인함</span>
+                      <span className="text-xs font-semibold text-emerald-700">✓ 확인함</span>
                     )}
                   </div>
 
@@ -639,11 +642,11 @@ export default function ManagerPage() {
                           <img src={c.image_url} alt={c.label}
                                className="h-14 w-14 shrink-0 rounded border border-slate-200 bg-white object-contain" />
                           <div className="min-w-0 flex-1">
-                            <p className="break-keep text-[11px] font-medium text-emerald-800">
+                            <p className="break-keep text-xs font-medium text-emerald-800">
                               찾은 그림: {c.label}
                             </p>
                             <button type="button" onClick={() => handlePickCandidate(s.id, c)}
-                                    className="mt-1 rounded bg-emerald-600 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-emerald-700">
+                                    className="mt-1 rounded bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-emerald-700">
                               이 그림 적용
                             </button>
                           </div>
@@ -656,7 +659,7 @@ export default function ManagerPage() {
                       const tie = sc.reason === "low_margin";
                       return (
                         <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2">
-                          <p className="text-[11px] font-medium text-amber-800">
+                          <p className="text-xs font-medium text-amber-800">
                             {tie
                               ? "비슷한 그림이 여러 개예요. 맞는 것을 골라 주세요."
                               : "딱 맞는 그림이 없어요. 아래에서 고르거나 현장 사진을 올리세요."}
@@ -669,7 +672,7 @@ export default function ManagerPage() {
                                       title={`${c.label} 선택`}>
                                 <img src={c.image_url} alt={c.label}
                                      className="aspect-square w-full rounded object-contain" />
-                                <span className="mt-0.5 block break-keep text-center text-[10px] leading-tight text-slate-600">
+                                <span className="mt-0.5 block whitespace-normal text-center text-xs leading-tight text-slate-600">
                                   {c.label}
                                 </span>
                               </button>
@@ -679,7 +682,7 @@ export default function ManagerPage() {
                       );
                     }
                     return (
-                      <p className="mt-2 text-[11px] text-amber-700">
+                      <p className="mt-2 text-xs text-amber-700">
                         맞는 그림이 없어요. 실제 현장 사진을 올리면 가장 잘 전달됩니다.
                       </p>
                     );
@@ -748,20 +751,27 @@ export default function ManagerPage() {
                             : "border-slate-300 bg-white text-slate-700")}>
                         <input type="checkbox" className="h-4 w-4" checked={checked}
                           onChange={() => toggleWorkerSelected(w.id)} />
-                        {w.display_name} (코드 {accessCodeText(w)})
+                        {/* 보내기 목록에는 이름만(명세 5.6). 번호가 어깨 너머로 보이면 다른 사람이 그 근로자로 들어갈 수 있다. */}
+                        {w.display_name}
                       </label>
                     );
                   })}
                 </div>
                 <button
                   onClick={handlePublishAndAssign}
-                  disabled={busy || selectedWorkerIds.size === 0 || unconfirmedCount > 0}
+                  disabled={busy || selectedWorkerIds.size === 0 || unconfirmedCount > 0 || missingPictureOrders(task).length > 0}
                   className="mt-2 rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
                   {busy ? "처리 중…" : selectedWorkerIds.size > 1
                     ? `게시하고 ${selectedWorkerIds.size}명에게 보내기`
                     : "게시하고 보내기"}
                 </button>
+                {/* 그림 없는 단계는 보낼 수 없다(0차 7번·창업자 결정 9: 단계마다 그림 1장). 서버도 422로 막는다. */}
+                {missingPictureOrders(task).length > 0 && (
+                  <p className="mt-2 text-sm font-semibold text-danger-700">
+                    그림이 없는 단계가 있어요({missingPictureOrders(task).join(", ")}단계). 그림을 고른 뒤 보내 주세요.
+                  </p>
+                )}
                 {unconfirmedCount > 0 && (
                   <p className="mt-2 text-sm font-semibold text-amber-700">
                     자동으로 고른 그림 {unconfirmedCount}장을 확인해야 보낼 수 있어요. 틀린 그림은 후보에서 다시 고르거나 사진을 올려 주세요.
@@ -822,7 +832,7 @@ export default function ManagerPage() {
                       className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white py-1 pl-3 pr-1.5 text-sm text-slate-700"
                     >
                       <span>
-                        {w.display_name} <span className="text-slate-400">({accessCodeText(w)})</span>
+                        {w.display_name} <MaskedAccessCode worker={w} />
                       </span>
                       <button
                         onClick={() => handleDeleteWorker(w.id, w.display_name)}
@@ -842,5 +852,38 @@ export default function ManagerPage() {
       )}
       </div>
     </div>
+  );
+}
+
+/** 그림이 없는 단계 번호(보내기 막음). 서버의 picture_state가 없으면(예전 서버) 그림 주소로 판단한다. */
+function missingPictureOrders(task: Task): number[] {
+  return task.steps.filter((s) => s.picture_state === "none" || !s.symbol_url).map((s) => s.order);
+}
+
+/** 번호를 가린 채(●●●●) 보이고, 눈 단추를 누르면 5초 동안만 보인다(명세 5.6 — 어깨 너머로 번호가 새지 않게). */
+const CODE_REVEAL_MS = 5_000;
+function MaskedAccessCode({ worker }: { worker: Worker }) {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (!shown) return;
+    const t = window.setTimeout(() => setShown(false), CODE_REVEAL_MS);
+    return () => window.clearTimeout(t);
+  }, [shown]);
+  return (
+    <span className="inline-flex items-center gap-1 text-slate-500">
+      <span className="tabular-nums" data-testid={`code-${worker.id}`}>
+        ({shown ? accessCodeText(worker) : maskedCode(worker.access_code_length)})
+      </span>
+      <button
+        type="button"
+        onClick={() => setShown((v) => !v)}
+        aria-pressed={shown}
+        aria-label={shown ? `${worker.display_name} 번호 가리기` : `${worker.display_name} 번호 보기`}
+        title={shown ? "번호 가리기" : "번호 보기(5초)"}
+        className="rounded p-0.5 text-slate-500 hover:bg-slate-100"
+      >
+        {shown ? <IconHide size={14} strokeWidth={2} /> : <IconShow size={14} strokeWidth={2} />}
+      </button>
+    </span>
   );
 }

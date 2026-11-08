@@ -17,7 +17,7 @@ export const AdminLayout: React.FC = () => {
               </div>
               <div>
                 <p className="font-display text-lg font-semibold leading-tight text-ink-900">설리번</p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-ink-500">JOB CARD</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-ink-500">잡카드</p>
               </div>
             </div>
           </div>

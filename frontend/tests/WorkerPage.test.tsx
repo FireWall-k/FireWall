@@ -146,9 +146,9 @@ describe("WorkerPage stuck 수집", () => {
     await screen.findByText(/오늘 받은 일이 아직 없어요/);
   });
 
-  it("현재 단계의 동작을 칩으로 보여준다(기능 4)", async () => {
+  it("현재 단계의 동작 칩은 근로자 화면에 없다(0차 3번, 예전 기능 4)", async () => {
     await renderAndWait();              // step1 action_type = "move"
-    expect(screen.getByText("옮기기")).toBeInTheDocument();
+    expect(screen.queryByText("옮기기")).not.toBeInTheDocument();
   });
 
 });
@@ -224,19 +224,30 @@ describe("WorkerPage 단계 화면", () => {
     expect(list).toHaveTextContent("두 번째 직무");
   });
 
-  it("문장의 동사를 확실히 못 읽으면 동작 꼬리표를 숨긴다(저장된 action_type이 있어도)", async () => {
-    today.mockResolvedValue([secondCard]);
-    render(<WorkerPage />);
-    await screen.findByText("손님께 인사하세요");
-    expect(screen.queryByTestId("action-chip")).not.toBeInTheDocument();
-    expect(screen.queryByText("확인하기")).not.toBeInTheDocument();
-  });
-
-  it("근로자에게 보이는 꼬리표는 문장의 동사다(계열 이름 '포장하기'·'담기'가 아니다)", async () => {
+  // 0차 3번: 동작 꼬리표(ActionChip)를 근로자 화면에서 뺐다(문장·그림이 동작을 말한다).
+  it("동작 꼬리표를 보이지 않는다(저장된 action_type이 있어도)", async () => {
     today.mockResolvedValue([{ ...secondCard, steps: [{ ...secondCard.steps[0], sentence: "박스 바닥 덮개를 접으세요", action_type: "pack" }] }]);
     render(<WorkerPage />);
     await screen.findByText("박스 바닥 덮개를 접으세요");
-    expect(screen.getByTestId("action-chip")).toHaveTextContent("접기");
+    expect(screen.queryByTestId("action-chip")).not.toBeInTheDocument();
+    expect(screen.queryByText("접기")).not.toBeInTheDocument();
+  });
+
+  it("도움 요청이 서버에 닿지 않으면 '아직 못 불렀어요'를 보이고 다시 누를 수 있다", async () => {
+    logStep.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await renderAndWait();
+    fireEvent.click(screen.getByText("🙋 도움이 필요해요"));
+    expect(await screen.findByText("아직 못 불렀어요. 손을 들어 선생님을 불러요.")).toBeInTheDocument();
+    expect(screen.getByText("🙋 도움이 필요해요")).toBeInTheDocument();
+  });
+
+  it("불러오지 못하면 영어 원문 대신 쉬운 문장을 24px로 보인다", async () => {
+    today.mockRejectedValue(new TypeError("Failed to fetch"));
+    render(<WorkerPage />);
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("인터넷이 안 돼요");
+    expect(alert).not.toHaveTextContent(/[A-Za-z]/);
+    expect(alert).toHaveClass("text-worker");
   });
 
   it("그림은 한 단계에 한 장이다", async () => {

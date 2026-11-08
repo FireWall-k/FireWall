@@ -3,11 +3,10 @@ import { Download, KeyRound, Trash2, UserPlus, UserRound } from "lucide-react";
 import { api, AuthError, type ConsentSubject, type ConsentType, type Worker } from "../api";
 import { ACCESS_CODE_UNKNOWN_HINT, accessCodeText } from "../workerCodes";
 
-// 직접 정하는 코드는 4~12자리 숫자만 받는다(서버와 같은 규칙). 비우면 서버가 6자리를 만든다.
+// 직접 정하는 코드는 4~12자리 숫자만 받는다(서버와 같은 규칙). 비우면 서버가 4자리를 만든다.
+// 4자리가 기본이다(창업자 결정 3: 근로자는 번호 키패드로 4자리만 누른다). 대입 공격은 서버의 로그인 시도 제한
+// (IP별·사업장별)이 막으므로, 예전처럼 6자리 미만을 '짧은 코드'로 경고하지 않는다.
 const CODE_RE = /^\d{4,12}$/;
-// 예전에 만든 짧은 코드. 로그인은 되지만 대입으로 뚫리기 쉬워 새로 만들기를 권한다.
-// 서버가 전체 코드를 모르는 예전 근로자도 있으므로 길이 필드로 판단한다.
-const isWeakCode = (w: Worker) => w.access_code_length < 6;
 
 // 내보낸 JSON을 파일로 저장한다. 서버는 사본을 남기지 않으므로 이 파일이 사업주가 가진 유일한 사본이다.
 // 파일 이름에 근로자 이름을 넣지 않는다(다운로드 폴더·브라우저 기록에 남는다).
@@ -181,6 +180,16 @@ export default function WorkersPage() {
     }
   }
 
+  // 단계에 들어가면 소리를 한 번 자동으로 읽을지(창업자 결정 4, 기본 켬). 근로자마다 끌 수 있다.
+  async function toggleAutoplay(w: Worker, on: boolean) {
+    setError(null);
+    try {
+      replaceWorker(await api.updateWorker(w.id, { a11y_prefs: { autoplay_sound: on } }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "설정을 바꾸지 못했습니다.");
+    }
+  }
+
   async function saveNote(w: Worker) {
     const note = noteDrafts[w.id] ?? w.note ?? "";
     setError(null);
@@ -276,7 +285,7 @@ export default function WorkersPage() {
           </button>
         </div>
         <p className="mt-2 text-xs text-ink-500">
-          접속 코드를 비워 두면 겹치지 않는 6자리 숫자를 자동으로 만들어요. 직접 정할 때는 4~12자리 숫자로 입력해 주세요.
+          접속 코드를 비워 두면 겹치지 않는 4자리 숫자를 자동으로 만들어요. 직접 정할 때는 4~12자리 숫자로 입력해 주세요.
         </p>
         {addError && <div role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">{addError}</div>}
         {addNotice && <div role="status" className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">{addNotice}</div>}
@@ -304,9 +313,6 @@ export default function WorkersPage() {
                     <p className="text-xs text-ink-500">
                       접속 코드 <span className="font-semibold tracking-widest text-ink-900">{accessCodeText(w)}</span>
                       {!w.access_code && <span className="ml-1.5">({ACCESS_CODE_UNKNOWN_HINT})</span>}
-                      {isWeakCode(w) && (
-                        <span className="ml-1.5 font-semibold text-signal-red">짧은 코드예요 — 새로 만들어 주세요</span>
-                      )}
                     </p>
                     {w.name_ambiguous && (
                       // 일반 낱말과 같은 이름은 "컵 하나"의 '하나'까지 바꾸지 않으려고 호칭이 붙은 경우만 가린다.
@@ -427,6 +433,16 @@ export default function WorkersPage() {
                         aria-label={`근로자 ${w.display_name} AI 코칭에 메모 사용`}
                       />
                       AI 코칭에 메모 사용
+                    </label>
+                    <label className="inline-flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        checked={w.a11y_prefs?.autoplay_sound ?? true}
+                        onChange={(e) => toggleAutoplay(w, e.target.checked)}
+                        aria-label={`근로자 ${w.display_name} 소리 자동 재생`}
+                      />
+                      소리 자동 재생
                     </label>
                   </div>
                   {w.ai_note_allowed && !w.ai_consent && (

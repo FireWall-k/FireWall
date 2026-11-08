@@ -196,3 +196,32 @@ describe("LoginPage", () => {
     expect(loginEmployer).not.toHaveBeenCalled();
   });
 });
+
+describe("LoginPage 오류 문구·근로자 입구(0차)", () => {
+  it("번호가 틀리면(401) 서버 문장을 그대로 보인다", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("jobcard_workplace_code", "DEMO01");
+    loginWorker.mockRejectedValue(new Error("사업장 코드 또는 접속 코드가 올바르지 않습니다."));
+    render(<LoginPage onLogin={vi.fn()} />);
+    await user.click(screen.getByText("근로자"));
+    await user.type(screen.getByLabelText("접속 코드"), "9999");
+    await user.click(screen.getByRole("button", { name: "로그인" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("사업장 코드 또는 접속 코드가 올바르지 않습니다.");
+    expect(screen.queryByText(/로그인이 필요합니다/)).not.toBeInTheDocument();
+  });
+
+  it("'근로자이신가요? 근로자 화면으로 ›' 링크가 /w로 간다", () => {
+    render(<LoginPage onLogin={vi.fn()} />);
+    expect(screen.getByRole("link", { name: "근로자 화면으로 ›" })).toHaveAttribute("href", "/w");
+  });
+
+  it("/login?tab=worker로 오면 근로자 탭이 열려 있다(예전 긴 번호용 우회로)", () => {
+    window.history.pushState({}, "", "/login?tab=worker");
+    try {
+      render(<LoginPage onLogin={vi.fn()} />);
+      expect(screen.getByLabelText("접속 코드")).toBeInTheDocument();
+    } finally {
+      window.history.pushState({}, "", "/");
+    }
+  });
+});

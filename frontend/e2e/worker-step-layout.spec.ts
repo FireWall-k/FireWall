@@ -230,10 +230,11 @@ test.describe("휴대폰 390×844 표시 규칙", () => {
     await expect(page.getByText(/번째/)).toHaveCount(0);
   });
 
-  test("동작 꼬리표: 문장의 동사를 보여 주고, 확실하지 않으면 숨긴다", async ({ page }) => {
+  // 0차 3번: 근로자 화면에서 동작 꼬리표를 뺐다.
+  test("동작 꼬리표를 보이지 않는다", async ({ page }) => {
     await page.goto("/worker");
     await expect(page.getByText("박스 바닥 덮개를 접으세요")).toBeVisible();
-    await expect(page.getByTestId("action-chip")).toHaveText("접기");
+    await expect(page.getByTestId("action-chip")).toHaveCount(0);
     await expect(page.getByText("담기")).toHaveCount(0);
 
     await done(page).click();

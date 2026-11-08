@@ -3,8 +3,17 @@ import { auth, type AuthState } from "../api";
 import { getSavedWorkplaceCode, normalizeWorkplaceCode, saveWorkplaceCode } from "../workerCodes";
 import { cn } from "../cn";
 
+// /login?tab=worker로 오면 근로자 탭을 연다(/w 키패드로 못 넣는 예전 긴 번호용 우회로).
+function initialTab(): "employer" | "worker" {
+  try {
+    return new URLSearchParams(window.location.search).get("tab") === "worker" ? "worker" : "employer";
+  } catch {
+    return "employer";
+  }
+}
+
 export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void }) {
-  const [tab, setTab] = useState<"employer" | "worker">("employer");
+  const [tab, setTab] = useState<"employer" | "worker">(initialTab);
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -62,7 +71,8 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
       }
       onLogin(state);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "로그인 실패");
+      // 번호·비밀번호가 틀렸을 때(401)는 서버 문장을 그대로 보인다(api.ts가 로그인 401을 AuthError로 바꾸지 않음).
+      setError(e instanceof Error ? e.message : "로그인하지 못했어요. 다시 시도해 주세요.");
     } finally {
       setBusy(false);
     }
@@ -138,9 +148,16 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
       {error && <div role="alert" className="mt-3 rounded-lg bg-red-50 p-2 text-sm text-red-800">{error}</div>}
 
       <button onClick={submit} disabled={busy || !ready}
-        className="mt-4 w-full rounded-lg bg-blue-700 py-2.5 font-semibold text-white disabled:opacity-50">
+        className="mt-4 w-full rounded-lg bg-moss-600 py-2.5 font-semibold text-white hover:bg-moss-700 disabled:opacity-50">
         {busy ? "확인 중…" : "로그인"}
       </button>
+      {/* 근로자는 번호 키패드 화면(/w)으로. Router 밖에서도 렌더되도록(테스트) 일반 링크를 쓴다. */}
+      <p className="mt-4 text-center text-sm text-ink-700">
+        근로자이신가요?{" "}
+        <a href="/w" className="font-semibold text-info-700 underline underline-offset-2">
+          근로자 화면으로 ›
+        </a>
+      </p>
     </div>
   );
 }
