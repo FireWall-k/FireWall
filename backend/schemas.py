@@ -307,6 +307,17 @@ class PerformanceLogCreate(BaseModel):
     # (서버 시각 created_at)과 순서를 바르게 비교할 수 있다. 없으면 client_completed_at을 그대로 쓴다.
     client_sent_at: datetime | None = None
 
+    @field_validator("client_completed_at", "client_sent_at")
+    @classmethod
+    def _drop_absurd_time(cls, v: datetime | None) -> datetime | None:
+        # 4차 검증 2회: '0001-01-02'·'9999-12-31T23:00-09:00' 같은 값은 시간대 바꾸기·빼기에서 날짜가 넘쳐(OverflowError)
+        # 500이 났고, 대기열은 5xx를 다시 보내므로 그 기록이 맨 앞에서 뒤 기록까지 막았다. 422로 거절하면 대기열이 완료
+        # 기록을 버리므로(시계가 크게 망가진 기기의 진짜 완료가 사라진다) 거절하지 않고 '모르는 시각'(None)으로 본다.
+        # 그러면 서버 시각을 쓴다. 전원이 나가 1970년으로 돌아간 기기 시계는 그대로 받는다.
+        if v is not None and not (1900 <= v.year <= 2200):
+            return None
+        return v
+
 
 class LogResultOut(BaseModel):
     ok: bool = True

@@ -1973,6 +1973,8 @@ def worker_history(db: Session = Depends(get_db),
 # --- 근로자: 단계 완료 로그(업서트) ---
 # 기기 시각이 서버보다 이만큼 넘게 앞서면 믿지 않는다(시계가 틀린 기기).
 _CLIENT_CLOCK_SKEW = timedelta(minutes=5)
+# 완료 기록이 '몇 초 전에 끝냈다'고 말할 수 있는 가장 긴 시간(_completed_at_server_clock). 넘으면 하루 전으로 본다.
+_COMPLETED_AT_MAX_AGE = timedelta(days=1)
 
 
 def _completed_at_server_clock(payload: PerformanceLogCreate, now: datetime) -> datetime:
@@ -1993,7 +1995,9 @@ def _completed_at_server_clock(payload: PerformanceLogCreate, now: datetime) -> 
     if elapsed < timedelta(0):
         # 끝낸 뒤 기기 시계가 뒤로 갔다(시각 맞춤 등). 순서를 알 수 없으니 방금 끝낸 것으로 본다.
         return now
-    return now - elapsed
+    # 4차 검증 2회: 차이가 터무니없이 크면(기기 시계를 끝낸 뒤 고쳤거나 일부러 만든 값) 날짜 계산이 넘치지 않게 자른다.
+    # 하루 넘게 묵은 완료는 '오늘 부른 도움보다 앞'이라는 뜻만 있으면 된다(도움은 그날 일에서만 연다).
+    return now - min(elapsed, _COMPLETED_AT_MAX_AGE)
 
 
 def _clamp_client_time(value: datetime | None, now: datetime, floor: datetime | None) -> datetime:

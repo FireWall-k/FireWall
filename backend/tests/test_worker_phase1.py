@@ -1210,6 +1210,32 @@ def test_completion_arriving_90s_after_later_help_does_not_close_it(client, empl
     assert got["state"] == "resolved" and got["resolution"] == "step_done"
 
 
+def test_absurd_client_times_do_not_500(client, employer_token, worker):
+    """4차 검증 2회: 기기 시각이 터무니없으면(0001년·9999년, 차이 수천 년) 날짜 계산이 넘쳐 500이 났고 대기열이 그 기록을
+    5xx로 보고 끝없이 다시 보내 뒤 기록까지 막았다. 이제 201로 받고(완료는 남는다), 뒤에 부른 도움을 닫지도 않는다."""
+    _, aid, (s1, s2) = _assigned(client, employer_token, worker["id"])
+    h = _help(client, worker["token"], aid, s1, client_request_id="absurd").json()
+    now = datetime.now(timezone.utc)
+    # 끝낸 시각과 보낸 시각이 100년 떨어져도(둘 다 받는 범위) 넘치지 않는다. 아주 옛 완료라 뒤에 부른 도움은 그대로 열림.
+    r = _log(client, worker["token"], aid, s1, client_completed_at=(now - timedelta(days=36500)).isoformat(),
+             client_sent_at=now.isoformat(), client_event_id="e-old100y")
+    assert r.status_code == 201, r.text
+    got = client.get(f"/api/worker/help/{h['id']}", headers=auth(worker["token"])).json()
+    assert got["state"] == "open"
+    # 시간대 바꾸기·빼기가 넘치던 값(검증 재현값). 어려움 신호(완료 아님)와 완료 둘 다 500이 아니다.
+    for i, (done, sent) in enumerate([
+        ("2026-11-09T00:00:00Z", "9999-12-31T23:00:00-09:00"),
+        ("0001-01-01T00:00:00+09:00", "2026-11-09T00:00:00Z"),
+    ]):
+        r = _log(client, worker["token"], aid, s2, completed=False, client_completed_at=done,
+                 client_sent_at=sent, client_event_id=f"e-absurd-{i}")
+        assert r.status_code == 201, r.text
+    r = _log(client, worker["token"], aid, s2, client_completed_at="0001-01-02T00:00:00Z",
+             client_sent_at="9999-12-30T00:00:00Z", client_event_id="e-absurd-done")
+    assert r.status_code == 201, r.text
+    assert r.json()["assignment_status"] == "done"
+
+
 def test_cancel_by_client_precreate_is_throttled_and_refused_for_closed_jobs(client, employer_token, worker):
     """3차 검증: 아직 없는 누름 키로 '취소됨' 행을 미리 만드는 길도 도움 요청 몫(60초 10건)으로 센다."""
     _, aid, (s1, s2) = _assigned(client, employer_token, worker["id"])
