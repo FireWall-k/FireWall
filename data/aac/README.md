@@ -6,16 +6,16 @@
 
 ## 구성
 
-- `images/assembly/` — 254장 (2026-09-16 변형 세트 ASSEMBLY_023~038·AUX 확장)
-- `images/cafe/` — 119장
-- `images/cleaning/` — 240장 (2026-09-23 CLEANING_051~190 140장 추가)
+- `images/assembly/` — 255장 (2026-09-16 변형 세트 ASSEMBLY_023~038·AUX 확장)
+- `images/cafe/` — 121장
+- `images/cleaning/` — 241장 (2026-09-23 CLEANING_051~190 140장 추가)
 - `images/packaging/` — 179장 (2026-09-23 120장 추가)
-- `images/retail/` — 96장
-- `images/delivery/` — 67장 (배송·택배, 2026-09-21 추가)
-- `images/display/` — 74장 (진열·재고·손님 안내)
-- `images/gas/` — 45장 (주유소·세차)
-- `images/serving/` — 86장 (홀 서빙·퇴식)
-- 총 1,160장 (2026-11-08 갭 해소용 새 카드 111장 추가 — 아래 '새 카드' 절) — 정확한 수는 `aac_assets.json`의 `asset_count`/`jobs`가 기준이며,
+- `images/retail/` — 97장
+- `images/delivery/` — 68장 (배송·택배, 2026-09-21 추가)
+- `images/display/` — 92장 (진열·재고·손님 안내)
+- `images/gas/` — 57장 (주유소·세차)
+- `images/serving/` — 103장 (홀 서빙·퇴식)
+- 총 1,213장 (2026-11-08 갭 해소용 새 카드 111장 + 수작업 카드 53장 추가 — 아래 '새 카드' 절) — 정확한 수는 `aac_assets.json`의 `asset_count`/`jobs`가 기준이며,
   `ai_service/tests/test_aac_data.py`가 이미지·메타데이터·인덱스·임베딩의 정합성을 CI에서 검사한다.
 
 새 직무 4개는 `scripts/import_aac_images.py`로 등록했다(원본 PNG 1254px 등 → 768×768 WebP,
@@ -34,7 +34,15 @@ PACKAGING_165~, RETAIL_093~, DELIVERY_049~). 기존 그림 2장을 참조로 넣
 판정자가 참조 그림과 나란히 놓고 캐릭터·유니폼·동작·글자 유무·안전을 검수해 통과한 것만 넣었다(118장 중 111장).
 `source_file`은 설계 단계 id(`<JOB>_NEW_<번호>.png`)다. enrich 규칙 필드는 새 카드에만 적용했고(기존 자산은 그대로),
 `aac_index.json` 항목은 build_aac_index.py와 같은 규칙·검증 함수로 만들었다.
-임베딩(`aac_embeddings.npz`)은 새 카드를 포함한 1,160장 전체를 로컬 모델로 다시 만들었다(아래 절).
+임베딩(`aac_embeddings.npz`)은 새 카드를 포함한 1,213장 전체를 로컬 모델로 다시 만들었다(아래 절).
+
+### 수작업 카드 53장 (2026-11-08)
+
+API 크레딧이 떨어져 못 만든 진열·서빙·주유 중심 카드와 검수 불합격분 7장을 ChatGPT 구독(웹)으로 손수 만들었다(API 호출 없음).
+DISPLAY_055~072, SERVING_074~090, GAS_046~057, CAFE_109~110, ASSEMBLY_195, CLEANING_218, DELIVERY_060, RETAIL_113.
+57장 중 53장이 직무별 검수(여러 검수자가 본 카드는 모두 통과해야 합격)를 통과했다. 불합격 4장(커터칼 2장은 칼질 방향 안전,
+배송 2장은 캐릭터 차이)은 재작업 대상이다. 인덱스 항목은 Claude 에이전트가 같은 규칙·검증 함수로 만들었고,
+정답지 추가는 제안자와 독립 검토자, 상위 3위 교차 직무 쌍은 판정자 2명이 모두 맞다고 한 것만 넣었다.
 
 ## 메타데이터
 

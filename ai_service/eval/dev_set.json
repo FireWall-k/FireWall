@@ -249,7 +249,9 @@
    "accept": [
     "ASSEMBLY_184",
     "CLEANING_209",
-    "RETAIL_101"
+    "RETAIL_101",
+    "DISPLAY_072",
+    "SERVING_084"
    ],
    "gap": false,
    "confidence": "high",
@@ -374,9 +376,12 @@
     "지퍼백",
     "scale"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "ASSEMBLY_195"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_assembly_19",
@@ -394,7 +399,11 @@
    "accept": [
     "ASSEMBLY_176",
     "CAFE_092",
-    "PACKAGING_178"
+    "PACKAGING_178",
+    "DISPLAY_055",
+    "DISPLAY_061",
+    "SERVING_074",
+    "GAS_047"
    ],
    "gap": false,
    "confidence": "high",
@@ -441,7 +450,10 @@
     "CAFE_093",
     "ASSEMBLY_177",
     "CLEANING_192",
-    "RETAIL_095"
+    "RETAIL_095",
+    "DISPLAY_056",
+    "SERVING_076",
+    "GAS_048"
    ],
    "gap": false,
    "confidence": "medium"
@@ -764,7 +776,10 @@
    ],
    "accept": [
     "CAFE_092",
-    "RETAIL_093"
+    "RETAIL_093",
+    "DISPLAY_055",
+    "SERVING_074",
+    "GAS_047"
    ],
    "gap": false,
    "confidence": "high",
@@ -825,9 +840,13 @@
     "door",
     "lock"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "SERVING_085",
+    "CAFE_110"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_cleaning_01",
@@ -846,7 +865,10 @@
     "ASSEMBLY_AUX_036",
     "CLEANING_192",
     "CLEANING_191",
-    "ASSEMBLY_178"
+    "ASSEMBLY_178",
+    "DISPLAY_056",
+    "SERVING_076",
+    "GAS_048"
    ],
    "gap": false,
    "confidence": "medium"
@@ -1222,7 +1244,8 @@
     "펜"
    ],
    "accept": [
-    "CLEANING_191"
+    "CLEANING_191",
+    "DISPLAY_063"
    ],
    "gap": false,
    "confidence": "medium",
@@ -1465,7 +1488,8 @@
    ],
    "accept": [
     "PACKAGING_175",
-    "ASSEMBLY_189"
+    "ASSEMBLY_189",
+    "DISPLAY_063"
    ],
    "gap": false,
    "confidence": "high",
@@ -1577,7 +1601,10 @@
     "ASSEMBLY_AUX_036",
     "PACKAGING_172",
     "ASSEMBLY_177",
-    "CAFE_093"
+    "CAFE_093",
+    "DISPLAY_056",
+    "SERVING_076",
+    "GAS_048"
    ],
    "gap": false,
    "confidence": "low"
@@ -1661,7 +1688,10 @@
     "ASSEMBLY_AUX_036",
     "RETAIL_095",
     "ASSEMBLY_177",
-    "CAFE_093"
+    "CAFE_093",
+    "DISPLAY_056",
+    "SERVING_076",
+    "GAS_048"
    ],
    "gap": false,
    "confidence": "medium"
@@ -1682,7 +1712,8 @@
    "accept": [
     "CLEANING_164",
     "RETAIL_108",
-    "ASSEMBLY_192"
+    "ASSEMBLY_192",
+    "DISPLAY_067"
    ],
    "gap": false,
    "confidence": "medium",
@@ -1723,7 +1754,8 @@
    "accept": [
     "RETAIL_099",
     "ASSEMBLY_191",
-    "CAFE_108"
+    "CAFE_108",
+    "DISPLAY_057"
    ],
    "gap": false,
    "confidence": "medium",
@@ -1785,7 +1817,11 @@
     "RETAIL_093",
     "RETAIL_100",
     "CAFE_092",
-    "CLEANING_206"
+    "CLEANING_206",
+    "DISPLAY_055",
+    "DISPLAY_061",
+    "SERVING_074",
+    "GAS_047"
    ],
    "gap": false,
    "confidence": "high",
@@ -1825,10 +1861,12 @@
     "진열"
    ],
    "accept": [
-    "RETAIL_047"
+    "RETAIL_047",
+    "SERVING_090"
    ],
    "gap": false,
-   "confidence": "high"
+   "confidence": "high",
+   "note": "2026-11-08 심판 2명 재판정으로 추가."
   },
   {
    "id": "dev_retail_10",
@@ -1844,7 +1882,8 @@
     "냉동식품"
    ],
    "accept": [
-    "RETAIL_097"
+    "RETAIL_097",
+    "DISPLAY_064"
    ],
    "gap": false,
    "confidence": "high",
@@ -1865,7 +1904,8 @@
    ],
    "accept": [
     "RETAIL_102",
-    "CAFE_107"
+    "CAFE_107",
+    "DISPLAY_063"
    ],
    "gap": false,
    "confidence": "high",
@@ -1903,9 +1943,12 @@
     "장바구니",
     "조심"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "RETAIL_113"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_retail_14",
@@ -2004,7 +2047,9 @@
     "보고"
    ],
    "accept": [
-    "RETAIL_094"
+    "RETAIL_094",
+    "DISPLAY_062",
+    "SERVING_083"
    ],
    "gap": false,
    "confidence": "high",
@@ -2024,7 +2069,8 @@
     "생활용품"
    ],
    "accept": [
-    "RETAIL_103"
+    "RETAIL_103",
+    "DISPLAY_065"
    ],
    "gap": false,
    "confidence": "medium",
@@ -2292,7 +2338,10 @@
    "accept": [
     "DELIVERY_049",
     "CAFE_092",
-    "CLEANING_206"
+    "CLEANING_206",
+    "DISPLAY_055",
+    "SERVING_074",
+    "GAS_047"
    ],
    "gap": false,
    "confidence": "high",
@@ -2352,7 +2401,8 @@
     "직원"
    ],
    "accept": [
-    "RETAIL_055"
+    "RETAIL_055",
+    "SERVING_086"
    ],
    "gap": false,
    "confidence": "medium"
@@ -2392,10 +2442,12 @@
    ],
    "accept": [
     "CAFE_088",
-    "RETAIL_047"
+    "RETAIL_047",
+    "SERVING_090"
    ],
    "gap": false,
-   "confidence": "medium"
+   "confidence": "medium",
+   "note": "2026-11-08 심판 2명 재판정으로 추가."
   },
   {
    "id": "dev_delivery_18",
@@ -2431,7 +2483,8 @@
    ],
    "accept": [
     "ASSEMBLY_192",
-    "RETAIL_108"
+    "RETAIL_108",
+    "DISPLAY_067"
    ],
    "gap": false,
    "confidence": "high",
@@ -2477,7 +2530,8 @@
     "CLEANING_164",
     "DISPLAY_023",
     "ASSEMBLY_192",
-    "RETAIL_108"
+    "RETAIL_108",
+    "DISPLAY_067"
    ],
    "gap": false,
    "confidence": "medium"
@@ -2520,7 +2574,8 @@
    "accept": [
     "RETAIL_047",
     "RETAIL_034",
-    "DISPLAY_031"
+    "DISPLAY_031",
+    "SERVING_090"
    ],
    "gap": false,
    "confidence": "low"
@@ -2629,7 +2684,8 @@
    "accept": [
     "ASSEMBLY_191",
     "CLEANING_210",
-    "RETAIL_099"
+    "RETAIL_099",
+    "DISPLAY_057"
    ],
    "gap": false,
    "confidence": "high",
@@ -2673,7 +2729,8 @@
    ],
    "accept": [
     "PACKAGING_107",
-    "RETAIL_111"
+    "RETAIL_111",
+    "DISPLAY_068"
    ],
    "gap": false,
    "confidence": "medium"
@@ -2695,7 +2752,10 @@
    "accept": [
     "ASSEMBLY_176",
     "CAFE_092",
-    "RETAIL_093"
+    "RETAIL_093",
+    "DISPLAY_055",
+    "SERVING_074",
+    "GAS_047"
    ],
    "gap": false,
    "confidence": "high",
@@ -2779,9 +2839,12 @@
     "fitting room",
     "clothes"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "DISPLAY_058"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_display_16",
@@ -2798,7 +2861,8 @@
     "fold"
    ],
    "accept": [
-    "CLEANING_069"
+    "CLEANING_069",
+    "DISPLAY_069"
    ],
    "gap": false,
    "confidence": "high"
@@ -2818,7 +2882,8 @@
     "size"
    ],
    "accept": [
-    "CLEANING_099"
+    "CLEANING_099",
+    "DISPLAY_070"
    ],
    "gap": false,
    "confidence": "medium"
@@ -2838,7 +2903,8 @@
     "wilted"
    ],
    "accept": [
-    "RETAIL_098"
+    "RETAIL_098",
+    "DISPLAY_059"
    ],
    "gap": false,
    "confidence": "medium",
@@ -2902,7 +2968,10 @@
     "ASSEMBLY_AUX_036",
     "ASSEMBLY_177",
     "CAFE_093",
-    "CLEANING_192"
+    "CLEANING_192",
+    "DISPLAY_056",
+    "SERVING_076",
+    "GAS_048"
    ],
    "gap": false,
    "confidence": "medium"
@@ -2921,9 +2990,12 @@
     "걸레",
     "fuel pump"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "GAS_052"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_gas_03",
@@ -3020,7 +3092,8 @@
     "결제"
    ],
    "accept": [
-    "CAFE_106"
+    "CAFE_106",
+    "GAS_051"
    ],
    "gap": false,
    "confidence": "medium",
@@ -3042,7 +3115,10 @@
    "accept": [
     "CAFE_092",
     "CLEANING_206",
-    "RETAIL_093"
+    "RETAIL_093",
+    "DISPLAY_055",
+    "SERVING_074",
+    "GAS_047"
    ],
    "gap": false,
    "confidence": "high",
@@ -3143,9 +3219,12 @@
     "자동차",
     "손님"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "GAS_046"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_gas_14",
@@ -3203,10 +3282,13 @@
     "생수",
     "음료"
    ],
-   "accept": [],
-   "gap": true,
+   "accept": [
+    "SERVING_090"
+   ],
+   "gap": false,
    "confidence": "low",
-   "disputed": true
+   "disputed": true,
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_gas_17",
@@ -3261,7 +3343,10 @@
     "퇴근"
    ],
    "accept": [
-    "PACKAGING_180"
+    "PACKAGING_180",
+    "DISPLAY_062",
+    "SERVING_083",
+    "GAS_053"
    ],
    "gap": false,
    "confidence": "medium",
@@ -3281,9 +3366,12 @@
     "공기압",
     "tire inflator"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "GAS_054"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_serving_01",
@@ -3364,10 +3452,12 @@
     "cutlery holder"
    ],
    "accept": [
-    "SERVING_044"
+    "SERVING_044",
+    "SERVING_078"
    ],
    "gap": false,
-   "confidence": "high"
+   "confidence": "high",
+   "note": "2026-11-08 심판 2명 재판정으로 추가."
   },
   {
    "id": "dev_serving_05",
@@ -3404,9 +3494,12 @@
     "grill plate",
     "tongs"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "SERVING_077"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_serving_07",
@@ -3467,7 +3560,10 @@
     "ASSEMBLY_AUX_036",
     "ASSEMBLY_177",
     "CAFE_093",
-    "CLEANING_192"
+    "CLEANING_192",
+    "DISPLAY_056",
+    "SERVING_076",
+    "GAS_048"
    ],
    "gap": false,
    "confidence": "low"
@@ -3506,10 +3602,13 @@
     "바구니",
     "basket"
    ],
-   "accept": [],
-   "gap": true,
+   "accept": [
+    "SERVING_078"
+   ],
+   "gap": false,
    "confidence": "medium",
-   "disputed": true
+   "disputed": true,
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_serving_12",
@@ -3573,7 +3672,10 @@
     "ASSEMBLY_176",
     "CAFE_092",
     "CLEANING_206",
-    "RETAIL_093"
+    "RETAIL_093",
+    "DISPLAY_055",
+    "SERVING_074",
+    "GAS_047"
    ],
    "gap": false,
    "confidence": "high",
@@ -3593,9 +3695,12 @@
     "memo",
     "order slip"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "high"
+   "accept": [
+    "SERVING_079"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_serving_16",
@@ -3632,9 +3737,12 @@
     "나이프",
     "napkin"
    ],
-   "accept": [],
-   "gap": true,
-   "confidence": "medium"
+   "accept": [
+    "SERVING_080"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
   },
   {
    "id": "dev_serving_18",
@@ -3673,7 +3781,8 @@
     "table"
    ],
    "accept": [
-    "CLEANING_211"
+    "CLEANING_211",
+    "SERVING_081"
    ],
    "gap": false,
    "confidence": "high",
@@ -3693,9 +3802,507 @@
     "condiment container",
     "salted shrimp"
    ],
+   "accept": [
+    "SERVING_075"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_assembly_gap02",
+   "job": "assembly",
+   "business_type": "자동차 부품 협력업체 보호작업장",
+   "sentence": "다 쓴 전동 드릴 배터리를 충전기에 꽂아 두세요.",
+   "symbol_query": [
+    "드릴 배터리",
+    "충전기",
+    "배터리 충전"
+   ],
    "accept": [],
    "gap": true,
-   "confidence": "high"
+   "confidence": "high",
+   "context": {
+    "business_type": "자동차 부품 협력업체 보호작업장"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 전동 드릴로 조이기(ASSEMBLY_183), 청소기 플러그 꽂기(CLEANING_216) 카드는 있으나 배터리 충전 카드 없음"
+  },
+  {
+   "id": "dev_assembly_gap03",
+   "job": "assembly",
+   "business_type": "멀티탭 조립 보호작업장",
+   "sentence": "기판 위 먼지를 에어건으로 불어 내세요.",
+   "symbol_query": [
+    "에어건",
+    "먼지 불기",
+    "기판"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "멀티탭 조립 보호작업장"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 오염 확인·작업대 닦기 카드만 있고 에어건으로 불어내는 카드 없음"
+  },
+  {
+   "id": "dev_assembly_gap04",
+   "job": "assembly",
+   "business_type": "전자부품 임가공 보호작업장",
+   "sentence": "납땜 인두를 다 쓰면 거치대에 꽂아 두세요.",
+   "symbol_query": [
+    "납땜 인두",
+    "인두 거치대"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "전자부품 임가공 보호작업장"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 주유건 거치대 꽂기(GAS_039)·도구 제자리 카드는 있으나 납땜 인두 카드 없음"
+  },
+  {
+   "id": "dev_cafe_gap01",
+   "job": "cafe",
+   "business_type": "프랜차이즈 커피전문점",
+   "sentence": "아이스 음료 위에 휘핑크림을 둥글게 올려 주세요.",
+   "symbol_query": [
+    "휘핑크림",
+    "크림 올리기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "프랜차이즈 커피전문점"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 우유·시럽 붓기 카드는 있으나 휘핑크림 올리기 카드 없음"
+  },
+  {
+   "id": "dev_cafe_gap02",
+   "job": "cafe",
+   "business_type": "테이크아웃 카페",
+   "sentence": "뜨거운 음료 컵에 컵 홀더를 끼워 주세요.",
+   "symbol_query": [
+    "컵 홀더",
+    "슬리브 끼우기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "테이크아웃 카페"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 컵뚜껑 닫기 카드는 있으나 컵 홀더(슬리브) 카드 없음"
+  },
+  {
+   "id": "dev_cafe_gap03",
+   "job": "cafe",
+   "business_type": "프랜차이즈 커피전문점",
+   "sentence": "다 쓴 우유팩은 물로 헹궈서 따로 모아 두세요.",
+   "symbol_query": [
+    "우유팩 헹구기",
+    "빈 우유팩"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "프랜차이즈 커피전문점"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 우유팩 물건 카드(CAFE_TOOL_015)·식기 헹굼 카드는 있으나 빈 우유팩 헹구기 카드 없음"
+  },
+  {
+   "id": "dev_cleaning_gap01",
+   "job": "cleaning",
+   "business_type": "대형 쇼핑몰(화장실 관리)",
+   "sentence": "손 말리는 핸드 드라이어 겉면을 마른 천으로 닦으세요.",
+   "symbol_query": [
+    "핸드 드라이어",
+    "드라이어 닦기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "대형 쇼핑몰(화장실 관리)"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 세면대·거울 닦기 카드는 있으나 핸드 드라이어 카드 없음"
+  },
+  {
+   "id": "dev_cleaning_gap02",
+   "job": "cleaning",
+   "business_type": "빌딩 미화 용역업체(오피스 빌딩)",
+   "sentence": "탕비실 정수기 물받이에 고인 물을 비워 주세요.",
+   "symbol_query": [
+    "정수기 물받이",
+    "물 비우기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "빌딩 미화 용역업체(오피스 빌딩)"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 쓰레기통 비우기 카드는 있으나 정수기 물받이 카드 없음"
+  },
+  {
+   "id": "dev_cleaning_gap03",
+   "job": "cleaning",
+   "business_type": "아파트 관리사무소(공용부 청소)",
+   "sentence": "청소가 끝나면 양동이의 더러운 물을 배수구에 버리세요.",
+   "symbol_query": [
+    "양동이 물 버리기",
+    "더러운 물"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "아파트 관리사무소(공용부 청소)"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 양동이에 물 받기(CLEANING_212) 카드는 있으나 구정물 버리기 카드 없음"
+  },
+  {
+   "id": "dev_cleaning_gap04",
+   "job": "cleaning",
+   "business_type": "대형 쇼핑몰(화장실 관리)",
+   "sentence": "변기 물탱크 안에 세정 블록을 하나 넣으세요.",
+   "symbol_query": [
+    "세정 블록",
+    "변기 물탱크"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "대형 쇼핑몰(화장실 관리)"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 변기 솔질·물비누 채우기 카드는 있으나 세정 블록 넣기 카드 없음"
+  },
+  {
+   "id": "dev_packaging_gap01",
+   "job": "packaging",
+   "business_type": "온라인 쇼핑몰 물류센터",
+   "sentence": "수축 필름을 씌운 상자에 열풍기를 골고루 쏘세요.",
+   "symbol_query": [
+    "열풍기",
+    "수축 필름"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "온라인 쇼핑몰 물류센터"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 팔레트 랩 감기·실링기 카드는 있으나 열풍기 수축 포장 카드 없음"
+  },
+  {
+   "id": "dev_packaging_gap02",
+   "job": "packaging",
+   "business_type": "보호작업장 임가공",
+   "sentence": "커터칼을 다 쓰면 칼날을 안으로 밀어 넣으세요.",
+   "symbol_query": [
+    "커터칼 칼날",
+    "칼날 넣기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "보호작업장 임가공"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 커터칼로 상자 뜯기 카드는 있으나 칼날을 집어넣는 안전 동작 카드 없음"
+  },
+  {
+   "id": "dev_packaging_gap03",
+   "job": "packaging",
+   "business_type": "화장품 세트 포장 라인",
+   "sentence": "다 쓴 테이프 심은 디스펜서에서 빼서 버리세요.",
+   "symbol_query": [
+    "테이프 심",
+    "빈 테이프 빼기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "화장품 세트 포장 라인"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 디스펜서에 새 테이프 끼우기 카드는 있으나 빈 심 빼기 카드 없음"
+  },
+  {
+   "id": "dev_packaging_gap04",
+   "job": "packaging",
+   "business_type": "농산물 선별 포장장",
+   "sentence": "과일 상자 옆면의 손잡이 구멍을 눌러 뚫어 주세요.",
+   "symbol_query": [
+    "손잡이 구멍",
+    "상자 구멍 뚫기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "농산물 선별 포장장"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 상자 접기·테이프 붙이기 카드는 있으나 손잡이 구멍 뚫기 카드 없음"
+  },
+  {
+   "id": "dev_retail_gap01",
+   "job": "retail",
+   "business_type": "의류·잡화 할인매장",
+   "sentence": "계산이 끝난 옷에서 도난 방지 태그를 떼어 주세요.",
+   "symbol_query": [
+    "도난 방지 태그",
+    "태그 떼기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "의류·잡화 할인매장"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 바코드 스캔·라벨 보호지 떼기 카드는 있으나 도난 방지 태그 카드 없음"
+  },
+  {
+   "id": "dev_retail_gap02",
+   "job": "retail",
+   "business_type": "대형마트 농산물 코너",
+   "sentence": "손님이 고른 채소를 저울에 올려 가격표를 뽑아 주세요.",
+   "symbol_query": [
+    "채소 저울",
+    "무게 달기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "대형마트 농산물 코너"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 상자 저울 달기(PACKAGING_171)·가격표 인쇄 카드는 있으나 매장 저울에 채소 다는 카드 없음"
+  },
+  {
+   "id": "dev_retail_gap03",
+   "job": "retail",
+   "business_type": "동네 슈퍼마켓",
+   "sentence": "계산대 봉투 걸이에 새 비닐봉투 묶음을 걸어 채우세요.",
+   "symbol_query": [
+    "봉투 걸이",
+    "비닐봉투 채우기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "동네 슈퍼마켓"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 상품을 봉투에 넣기·냅킨 채우기 카드는 있으나 계산대 봉투 보충 카드 없음"
+  },
+  {
+   "id": "dev_delivery_gap01",
+   "job": "delivery",
+   "business_type": "식자재 유통업체",
+   "sentence": "트럭을 세우면 뒷바퀴 앞에 고임목을 놓으세요.",
+   "symbol_query": [
+    "고임목",
+    "트럭 바퀴"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "식자재 유통업체"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 트럭 적재함 카드는 있으나 바퀴 고임목 카드 없음"
+  },
+  {
+   "id": "dev_delivery_gap02",
+   "job": "delivery",
+   "business_type": "택배 대리점",
+   "sentence": "집에 아무도 없으면 문에 부재중 안내 스티커를 붙이세요.",
+   "symbol_query": [
+    "부재중 스티커",
+    "문에 붙이기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "택배 대리점"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 문 앞 내려놓기·송장 붙이기 카드는 있으나 부재 안내 스티커 카드 없음"
+  },
+  {
+   "id": "dev_delivery_gap03",
+   "job": "delivery",
+   "business_type": "택배 대리점",
+   "sentence": "받는 사람이 없으면 택배를 경비실에 맡기세요.",
+   "symbol_query": [
+    "경비실",
+    "택배 맡기기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "택배 대리점"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 문 앞 내려놓기·무인 택배함 카드는 있으나 경비실 맡기기 카드 없음"
+  },
+  {
+   "id": "dev_display_gap01",
+   "job": "display",
+   "business_type": "의류매장",
+   "sentence": "마네킹에 새로 온 셔츠를 입혀 주세요.",
+   "symbol_query": [
+    "마네킹",
+    "옷 입히기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "의류매장"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 옷 행거 걸기·옷 개기 카드는 있으나 마네킹 카드 없음"
+  },
+  {
+   "id": "dev_display_gap02",
+   "job": "display",
+   "business_type": "의류매장",
+   "sentence": "옷걸이 목에 사이즈 링을 끼워 주세요.",
+   "symbol_query": [
+    "사이즈 링",
+    "옷걸이"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "의류매장"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 옷 행거 걸기 카드는 있으나 사이즈 링 끼우기 카드 없음"
+  },
+  {
+   "id": "dev_display_gap03",
+   "job": "display",
+   "business_type": "대형마트",
+   "sentence": "큰 세제 통이 들어가게 선반 높이를 한 칸 올리세요.",
+   "symbol_query": [
+    "선반 높이",
+    "선반 옮기기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "대형마트"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 상품 선반 놓기·의자 높이 조절(ASSEMBLY_AUX_028) 카드는 있으나 선반 높이 조절 카드 없음"
+  },
+  {
+   "id": "dev_gas_gap01",
+   "job": "gas",
+   "business_type": "일반 주유소(주유원 근무)",
+   "sentence": "보닛을 열고 엔진오일 게이지를 뽑아 눈금을 보세요.",
+   "symbol_query": [
+    "엔진오일 게이지",
+    "오일 점검"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "일반 주유소(주유원 근무)"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 워셔액 붓기(GAS_057) 카드는 있으나 엔진오일 점검 카드 없음"
+  },
+  {
+   "id": "dev_gas_gap02",
+   "job": "gas",
+   "business_type": "일반 주유소(주유원 근무)",
+   "sentence": "앞 유리를 닦기 전에 와이퍼를 위로 세워 주세요.",
+   "symbol_query": [
+    "와이퍼",
+    "와이퍼 세우기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "일반 주유소(주유원 근무)"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 유리 닦기 카드는 많으나 와이퍼 세우기 카드 없음"
+  },
+  {
+   "id": "dev_gas_gap03",
+   "job": "gas",
+   "business_type": "셀프주유소",
+   "sentence": "주유기 옆 비닐장갑 통이 비었으면 새 장갑을 채우세요.",
+   "symbol_query": [
+    "비닐장갑",
+    "장갑 채우기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "셀프주유소"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 장갑 착용·냅킨 채우기 카드는 있으나 주유기 비닐장갑 보충 카드 없음"
+  },
+  {
+   "id": "dev_serving_gap01",
+   "job": "serving",
+   "business_type": "고깃집",
+   "sentence": "손님 겉옷에 냄새 배지 않게 옷 커버를 씌워 드리세요.",
+   "symbol_query": [
+    "옷 커버",
+    "겉옷 덮기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "고깃집"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 앞치마·의자 정리 카드는 있으나 손님 옷 커버 카드 없음"
+  },
+  {
+   "id": "dev_serving_gap02",
+   "job": "serving",
+   "business_type": "고깃집",
+   "sentence": "익은 고기를 가위로 먹기 좋게 잘라 드리세요.",
+   "symbol_query": [
+    "고기 가위",
+    "고기 자르기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "고깃집"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 집게로 불판 바꾸기(SERVING_077) 카드는 있으나 가위로 고기 자르기 카드 없음"
+  },
+  {
+   "id": "dev_serving_gap03",
+   "job": "serving",
+   "business_type": "고깃집",
+   "sentence": "고기를 구우면 테이블 위 연통을 불판 가까이 내려 드리세요.",
+   "symbol_query": [
+    "연통",
+    "연기 빼기"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high",
+   "context": {
+    "business_type": "고깃집"
+   },
+   "note": "2026-11-08 갭 보충(라벨러 2명이 카드 1,213장을 확인해 둘 다 맞는 카드 없음). 불판 교체 카드는 있으나 연통(배기 덕트) 내리기 카드 없음"
   }
  ]
 }
