@@ -43,8 +43,10 @@ export const ACTION_META: Record<string, ActionMeta> = {
     chip: "bg-orange-100 text-orange-800",
     icon: svg(<><path d="M11 5h10" /><path d="M11 9h7" /><path d="M11 13h4" /><path d="m3 8 3-3 3 3" /><path d="M6 5v14" /></>),
   },
+  // pack은 담다·포장하다·밀봉하다·접다를 묶은 계열이다(ai_service/taxonomy.py). 예전 라벨 "담기"는 그중
+  // 한 동사라, 상자를 접는 단계에도 "담기"가 붙었다. 계열 이름은 묶음 전체를 가리키는 말로 둔다.
   pack: {
-    label: "담기",
+    label: "포장하기",
     chip: "bg-teal-100 text-teal-800",
     icon: svg(<><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" /></>),
   },
@@ -52,6 +54,22 @@ export const ACTION_META: Record<string, ActionMeta> = {
     label: "청소하기",
     chip: "bg-cyan-100 text-cyan-800",
     icon: svg(<><path d="M9 4v4" /><path d="M7 6h4" /><path d="M15 10l1.6 3.4L20 15l-3.4 1.6L15 20l-1.6-3.4L10 15l3.4-1.6Z" /></>),
+  },
+  // 아래 셋은 분류 체계(taxonomy.py)에 있는데 여기 없어서 '작업하기'로 뭉개져 보였다.
+  wear: {
+    label: "착용하기",
+    chip: "bg-indigo-100 text-indigo-800",
+    icon: svg(<><path d="M20.4 18.6 12 14l-8.4 4.6" /><path d="M12 14V3" /><path d="m8 6 4-3 4 3" /></>),
+  },
+  operate: {
+    label: "조작하기",
+    chip: "bg-amber-100 text-amber-900",
+    icon: svg(<><circle cx="12" cy="12" r="3" /><path d="M12 2v3" /><path d="M12 19v3" /><path d="M2 12h3" /><path d="M19 12h3" /></>),
+  },
+  assemble: {
+    label: "조립하기",
+    chip: "bg-rose-100 text-rose-800",
+    icon: svg(<><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8Z" /></>),
   },
   other: {
     label: "작업하기",
@@ -73,6 +91,103 @@ export function ActionChip({ action, className = "" }: { action: string; classNa
     >
       {m.icon}
       {m.label}
+    </span>
+  );
+}
+
+// ---------- 근로자 화면의 동작 꼬리표 ----------
+// 근로자 화면에서는 계열 이름(action_type)을 그대로 보여 주지 않는다. 계열은 여러 동사를 묶은 것이라
+// ("포장" 계열 = 담다·접다·밀봉하다…) 그 이름이 문장의 동사와 다른 말이 되기 쉽다 — 상자를 접는 그림과
+// "덮개를 접으세요" 문장 밑에 "담기"가 붙었다. 게다가 저장된 action_type은 틀릴 수 있다(규칙 분해가
+// "-세요"의 '세'를 세다로 읽어 거의 모든 단계를 확인하기로 분류했고, 문장을 고쳐도 옛 값이 남았다).
+//
+// 그래서 꼬리표는 근로자가 읽는 그 문장의 서술어에서 만든다: 아래 닫힌 사전에 있는 동사로 문장이 끝날 때만
+// 그 동사 그대로("접으세요" → "접기")를 아이콘·색과 함께 보여 준다. 사전에 없으면 꼬리표를 숨긴다 —
+// 틀린 동작 낱말을 보여 주느니 안 보여 주는 편이 낫다.
+
+type VerbEntry = {
+  label: string;      // 꼬리표 글자(명사형) — 문장의 동사 그대로
+  action: string;     // 아이콘·색을 고를 계열
+  stem: string | null; // '-세요/-십시오' 앞 모양(접으-·옮기-·확인하-). 모호하면 null
+  a: string[];         // '-아/-어' 모양(접어·옮겨·확인해) — "-요", 보조 용언("주세요")이 붙는다
+};
+
+const v = (label: string, action: string, stem: string | null, ...a: string[]): VerbEntry =>
+  ({ label, action, stem, a });
+
+// 현장 지시문에 흔한 동사만 둔다. 뜻이 여럿인 표면형('쓰세요' = 쓰다/쓸다)은 넣지 않는다.
+const VERBS: VerbEntry[] = [
+  v("접기", "pack", "접으", "접어"), v("담기", "pack", "담으", "담아"), v("넣기", "pack", "넣으", "넣어"),
+  v("덮기", "pack", "덮으", "덮어"), v("포장하기", "pack", "포장하", "포장해"), v("밀봉하기", "pack", "밀봉하", "밀봉해"),
+  v("놓기", "move", "놓으", "놓아", "놔"), v("두기", "move", "두", "둬", "두어"), v("옮기기", "move", "옮기", "옮겨"),
+  v("꺼내기", "move", "꺼내", "꺼내"), v("가져오기", "move", "가져오", "가져와"), v("가져가기", "move", "가져가", "가져가"),
+  v("올리기", "move", "올리", "올려"), v("내리기", "move", "내리", "내려"), v("붓기", "move", "부으", "부어"),
+  v("싣기", "move", "실으", "실어"), v("채우기", "move", "채우", "채워"), v("건네기", "move", "건네", "건네"),
+  v("전달하기", "move", "전달하", "전달해"),
+  v("쌓기", "stack", "쌓으", "쌓아"),
+  v("분류하기", "sort", "분류하", "분류해"), v("나누기", "sort", "나누", "나눠", "나누어"),
+  v("정리하기", "sort", "정리하", "정리해"), v("구분하기", "sort", "구분하", "구분해"),
+  v("닦기", "clean", "닦으", "닦아"), v("씻기", "clean", "씻으", "씻어"), v("쓸기", "clean", null, "쓸어"),
+  v("치우기", "clean", "치우", "치워"), v("버리기", "clean", "버리", "버려"), v("청소하기", "clean", "청소하", "청소해"),
+  v("헹구기", "clean", "헹구", "헹궈"), v("소독하기", "clean", "소독하", "소독해"),
+  v("확인하기", "observe", "확인하", "확인해"), v("살펴보기", "observe", "살펴보", "살펴봐"), v("보기", "observe", "보", "봐"),
+  v("세기", "observe", "세", "세어"), v("읽기", "observe", "읽으", "읽어"), v("점검하기", "observe", "점검하", "점검해"),
+  v("검사하기", "observe", "검사하", "검사해"),
+  v("입기", "wear", "입으", "입어"), v("신기", "wear", "신으", "신어"), v("벗기", "wear", "벗으", "벗어"),
+  v("끼기", "wear", "끼", "껴", "끼어"), v("착용하기", "wear", "착용하", "착용해"),
+  v("누르기", "operate", "누르", "눌러"), v("켜기", "operate", "켜", "켜"), v("끄기", "operate", "끄", "꺼"),
+  v("열기", "operate", "여", "열어"), v("닫기", "operate", "닫으", "닫아"), v("입력하기", "operate", "입력하", "입력해"),
+  v("끼우기", "assemble", "끼우", "끼워"), v("붙이기", "assemble", "붙이", "붙여"), v("조이기", "assemble", "조이", "조여"),
+  v("조립하기", "assemble", "조립하", "조립해"), v("연결하기", "assemble", "연결하", "연결해"), v("고정하기", "assemble", "고정하", "고정해"),
+];
+
+// '-어' 모양 뒤에 붙는 보조 용언("닦아 주세요"·"넣어 두세요"·"확인해 보세요"). 본동사는 앞 낱말이다.
+const AUX_WORDS = new Set([
+  "주세요", "주십시오", "줘요", "줘", "드리세요", "드려요", "두세요", "둬요", "놓으세요", "놔요", "놓아요",
+  "보세요", "봐요", "오세요", "와요", "가세요", "가요",
+]);
+const HON_ENDINGS = ["세요", "십시오", "시오", "셔요"];
+
+function matchWord(word: string, allowFusedAux: boolean): VerbEntry | null {
+  for (const e of VERBS) {
+    if (e.stem && HON_ENDINGS.some((end) => word === e.stem + end)) return e;
+    for (const a of e.a) {
+      if (word === a || word === `${a}요`) return e;
+      // "옮겨주세요"처럼 보조 용언을 붙여 쓴 경우
+      if (allowFusedAux && word.startsWith(a) && AUX_WORDS.has(word.slice(a.length))) return e;
+    }
+    if (word === e.label) return e; // 체크리스트식 "컵에 우유 붓기"
+  }
+  return null;
+}
+
+/** 문장 서술어의 동사로 만든 꼬리표. 사전에 없는 동사로 끝나면 null(꼬리표를 보여 주지 않는다). */
+export function stepActionChip(sentence: string): { label: string; action: string } | null {
+  const words = sentence.match(/[가-힣]+/g);
+  if (!words?.length) return null;
+  const last = words[words.length - 1];
+  if (AUX_WORDS.has(last) && words.length >= 2) {
+    const prev = words[words.length - 2];
+    const main = VERBS.find((e) => e.a.includes(prev));
+    if (main) return { label: main.label, action: main.action };
+  }
+  const e = matchWord(last, true);
+  return e ? { label: e.label, action: e.action } : null;
+}
+
+/** 근로자 단계 화면의 동작 꼬리표. 문장에서 동사를 확실히 못 읽으면 아무것도 그리지 않는다. */
+export function WorkerActionChip({ sentence, className = "" }: { sentence: string; className?: string }) {
+  const chip = stepActionChip(sentence);
+  if (!chip) return null;
+  const m = metaFor(chip.action);
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold ${m.chip} ${className}`}
+      data-action={chip.action}
+      data-testid="action-chip"
+    >
+      {m.icon}
+      {chip.label}
     </span>
   );
 }

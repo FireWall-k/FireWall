@@ -13,13 +13,19 @@ from __future__ import annotations
 
 import logging
 import re
+from collections import Counter, defaultdict
+from functools import lru_cache
 
 import llm
+import local_aac
 from schemas import DecomposeResult, Keyword, Step
 from taxonomy import VALID_ACTION_TYPES, VALID_JOBS, infer_job_text
 
 logger = logging.getLogger("ai_harness.decompose")
 
+# 키워드 품사 추정용 동사 어간 힌트(_extract_keywords). 동작 분류(_guess_action)에는 쓰지 않는다 —
+# 부분 문자열로 맞추면 "접으세요"의 '세'(세다)·"보관"의 '보'(보다)·"입력"의 '입'(입다)처럼 어미·명사
+# 조각이 동작으로 잡힌다(아래 _guess_action 설명 참고).
 _ACTION_HINTS = {
     "assemble": ["조립", "결합", "끼우", "연결", "체결", "조이", "맞추", "고정", "부착", "교체"],
     "wear": ["착용", "입", "신", "보안경", "작업모", "장갑"],
@@ -52,10 +58,85 @@ _ADJ_STEMS = {
 _SEQ_SUFFIXES = ("고", "뒤", "후", "다음")
 
 
+# ---- 동작 분류(action_type) ------------------------------------------------------
+# 예전 규칙은 힌트 글자가 문장 어디에든 있으면 그 동작으로 봤다. 그래서 거의 모든 지시문 끝의
+# "-세요"에 든 '세'(세다)가 observe로 잡혔다 — "박스 바닥 덮개를 접으세요"·"테이프를 붙이세요"가
+# 모두 '확인하기'였고, "포장된 상자를 카트에 놓으세요"는 꾸미는 말 '포장된'의 '포장' 때문에 pack이
+# 됐다. "입력하세요"는 '입'(입다) 때문에 wear였다. 이 값은 근로자 화면의 동작 꼬리표와 그림 검색의
+# 동사 계열 벌점(local_aac._verb_class_penalty)에 그대로 쓰여, 틀린 꼬리표와 맞는 그림 감점을 낳았다.
+#
+# 지금은 그림 검색과 같은 동사 분석기(local_aac._verb_lemmas: 어미를 확인해 '할 일'의 동사 원형만
+# 뽑는다)로 동사를 찾고, 그림 인덱스가 그 동사에 붙인 verb_class로 분류한다. 인덱스와 같은 축을 쓰므로
+# 분류와 그림의 동작 계열이 어긋나지 않는다. 확실하지 않으면 other — 화면은 other면 꼬리표를 숨긴다.
+
+# 인덱스에서 한 동사의 verb_class가 이 비율 이상 한쪽으로 모여야 그 계열로 본다. '넣다'(pack 25 /
+# move 22 / assemble 6…)·'붙이다'(other 14 / assemble 4 / pack 3…)처럼 갈리는 동사는 other로 둔다 —
+# 틀린 계열은 그림 감점(0.85)과 틀린 꼬리표를 낳지만, other는 아무것도 깎지 않는다.
+_CLASS_MIN_SHARE = 0.75
+_CLASS_MIN_COUNT = 2
+
+# 인덱스 frame.verb에 없지만 지시문에 흔한 동사. 뜻이 한 계열로만 읽히는 것만 둔다(쓰다·들다처럼
+# 여러 뜻인 동사는 넣지 않는다).
+_EXTRA_VERB_CLASSES = {
+    "포장하다": "pack", "밀봉하다": "pack", "싸다": "pack",
+    "씻다": "clean", "청소하다": "clean", "쓸다": "clean", "헹구다": "clean", "소독하다": "clean",
+    "버리다": "clean",
+    "쌓다": "stack", "적재하다": "stack",
+    "분류하다": "sort", "나누다": "sort", "구분하다": "sort",
+    "옮기다": "move", "꺼내다": "move", "가져오다": "move", "놓다": "move",
+    "확인하다": "observe", "점검하다": "observe", "살펴보다": "observe", "세다": "observe",
+    "보다": "observe", "읽다": "observe", "검사하다": "observe",
+    "착용하다": "wear", "입다": "wear", "신다": "wear", "벗다": "wear",
+    "누르다": "operate", "켜다": "operate", "끄다": "operate", "입력하다": "operate",
+    "조립하다": "assemble", "끼우다": "assemble", "조이다": "assemble", "체결하다": "assemble",
+}
+
+# "청소를 하세요"처럼 동작이 명사에 있고 동사가 '하다'뿐일 때만 보는 명사 힌트(어절 앞부분 일치).
+_HADA_NOUN_CLASSES = {
+    "청소": "clean", "포장": "pack", "분류": "sort", "정리": "sort", "확인": "observe",
+    "점검": "observe", "조립": "assemble", "착용": "wear", "적재": "stack",
+}
+_LIGHT_LEMMAS = frozenset({"하다", "되다", "있다"})
+
+
+@lru_cache(maxsize=1)
+def _lemma_classes() -> dict[str, str]:
+    """동사 원형 → 동작 계열. 그림 인덱스의 frame.verb/verb_class에서 만든다(갈리는 동사는 other)."""
+    counts: dict[str, Counter] = defaultdict(Counter)
+    try:
+        index = local_aac.load_index()
+    except Exception:  # noqa: BLE001 - 인덱스가 없어도 분해는 돌아야 한다(보충 표만 쓴다)
+        index = {}
+    for entry in index.values():
+        frame = entry.get("frame") or {}
+        verb, verb_class = frame.get("verb"), frame.get("verb_class")
+        if verb and verb_class in VALID_ACTION_TYPES:
+            counts[local_aac._normalize_lemma(verb)][verb_class] += 1
+    table: dict[str, str] = {}
+    for lemma, counter in counts.items():
+        cls, n = counter.most_common(1)[0]
+        total = sum(counter.values())
+        if total < _CLASS_MIN_COUNT:
+            continue  # 그림 한 장으로는 판단하지 않는다(보충 표가 있으면 그걸 쓴다).
+        table[lemma] = cls if n / total >= _CLASS_MIN_SHARE else "other"
+    for lemma, cls in _EXTRA_VERB_CLASSES.items():
+        table.setdefault(lemma, cls)
+    return table
+
+
 def _guess_action(sentence: str) -> str:
-    for action, hints in _ACTION_HINTS.items():
-        if any(h in sentence for h in hints):
-            return action
+    """지시문이 시키는 동작의 계열. 모르는·갈리는 동사가 있거나 동사들의 계열이 다르면 other."""
+    lemmas = local_aac._verb_lemmas(sentence)
+    table = _lemma_classes()
+    # 모르는 동사는 other로 센다. 아는 동사만 보고 정하면 "손을 씻고 장갑을 끼세요"가 '씻다'만 보고
+    # clean이 된다 — 두 동작 중 하나만 맞는 꼬리표도 근로자에게는 틀린 꼬리표다.
+    classes = {table.get(l, "other") for l in lemmas if l not in _LIGHT_LEMMAS}
+    words = re.findall(r"[가-힣]+", sentence)
+    if not classes and words and words[-1].startswith(("하", "해")):
+        # 분석기는 '하다'를 할 일로 세지 않는다(빈 집합). 서술어가 '하다'면 동작은 앞의 명사에 있다.
+        classes = {cls for w in words for noun, cls in _HADA_NOUN_CLASSES.items() if w.startswith(noun)}
+    if len(classes) == 1:
+        return classes.pop()
     return "other"
 
 

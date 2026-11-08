@@ -41,11 +41,16 @@ function Shell({ auth, onLogout, children }: { auth: AuthState; onLogout: () => 
 
   if (auth.role === "worker") {
     return (
-      <div className="min-h-screen bg-worker-bg px-4 py-5 font-worker text-worker-ink">
-        <header className="mx-auto mb-5 flex max-w-3xl items-center justify-between rounded-2xl border border-paper-200 bg-white px-4 py-3 shadow-sm">
+      // break-keep: 한국어를 낱말 단위로 줄바꿈한다("접 / 으세요"처럼 낱말 중간에서 끊기면 읽기 어려운 근로자가
+      // 다른 낱말로 읽는다). 아주 긴 낱말(코드·영문)이 화면을 넘지 않게 overflow-wrap:anywhere를 함께 둔다.
+      // 둘 다 상속되므로 근로자 화면 전체(머리글·문장·버튼)에 적용된다.
+      // 위아래 여백(py-3)·머리글 여백을 줄여 단계 화면의 그림 자리를 늘렸다. 아래 여백 0.75rem은
+      // WorkerPage의 useFillViewport가 쓰는 값과 같아야 한다.
+      <div className="min-h-dvh break-keep bg-worker-bg px-4 py-3 font-worker text-worker-ink [overflow-wrap:anywhere]">
+        <header className="mx-auto mb-3 flex max-w-3xl items-center justify-between gap-3 rounded-2xl border border-paper-200 bg-white px-4 py-2 shadow-sm">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-moss-600">JOB CARD</p>
-            <h1 className="text-lg font-bold">{auth.displayName || "근로자"}님의 오늘 할 일</h1>
+            <h1 className="text-pretty text-lg font-bold">{auth.displayName || "근로자"}님의 오늘 할 일</h1>
           </div>
           {/* 근로자 화면의 모든 버튼은 80px 터치 영역(min-h-touch)을 지킨다. 예전에는 이 버튼만 38px이라
               작업 버튼보다 훨씬 작았고, e2e도 <main> 안만 재서 놓쳤다(Phase 0.4 보완). */}

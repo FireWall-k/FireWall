@@ -385,6 +385,23 @@ def test_editing_sentence_clears_stale_symbol_query(client, employer_token):
         assert db.get(Step, step_id).symbol_query == ""
 
 
+def test_editing_sentence_resets_stale_action_type(client, employer_token):
+    """문장을 고치면 옛 문장의 동작 계열(move)이 남지 않는다 — 틀린 꼬리표·그림 감점을 막는다."""
+    r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"},
+                    headers=auth(employer_token))
+    task = r.json()
+    step = task["steps"][0]
+    assert step["action_type"] == "move"
+
+    same = client.patch(f"/api/tasks/{task['id']}/steps/{step['id']}",
+                        json={"sentence": step["sentence"]}, headers=auth(employer_token))
+    assert same.json()["action_type"] == "move"  # 같은 문장을 다시 저장하면 그대로 둔다
+
+    edited = client.patch(f"/api/tasks/{task['id']}/steps/{step['id']}",
+                          json={"sentence": "바닥을 쓸어주세요."}, headers=auth(employer_token))
+    assert edited.json()["action_type"] == "other"
+
+
 def test_accepted_rematch_is_offered_as_a_single_candidate(client, employer_token, monkeypatch):
     """생성 땐 폴백이었는데 재조회 시 매칭이 있으면 그 그림을 후보로 돌려준다."""
     import ai_client

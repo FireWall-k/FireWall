@@ -167,7 +167,7 @@ describe("WorkerPage 지난 일 보기", () => {
     ],
   };
 
-  it("탭을 누르면 완료한 일을 목록으로 보여주고, 눌러 열면 그림을 다시 볼 수 있다", async () => {
+  it("'지난 일 보기'를 누르면 완료한 일을 목록으로 보여주고, 눌러 열면 그림을 다시 볼 수 있다", async () => {
     history.mockResolvedValue([historyCard]);
     await renderAndWait();
 
@@ -187,5 +187,71 @@ describe("WorkerPage 지난 일 보기", () => {
     await renderAndWait();
     fireEvent.click(screen.getByText("지난 일 보기"));
     await screen.findByText("아직 받은 일이 없어요.");
+  });
+});
+
+// ---------- 단계 화면 정리(진행 표시 하나·꼬리표 확신·직무 사이 목록) ----------
+
+describe("WorkerPage 단계 화면", () => {
+  const secondCard = {
+    assignment_id: "asg-2", task_id: "task-2", task_title: "두 번째 직무",
+    steps: [
+      { id: "t1", order: 1, sentence: "손님께 인사하세요", action_type: "observe",
+        symbol_url: null, symbol_source: "fallback", needs_fallback: true, tts_audio_url: null },
+    ],
+  };
+
+  it("진행 표시는 하나뿐이다(오늘 몇 번째 일인지는 단계 화면에 띄우지 않는다)", async () => {
+    today.mockResolvedValue([card, secondCard]);
+    await renderAndWait();
+    expect(screen.getAllByTestId("step-progress")).toHaveLength(1);
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "2");
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+    expect(screen.queryByText(/번째/)).not.toBeInTheDocument();
+  });
+
+  it("직무를 마치면 오늘 할 일 목록에서 몇 번째까지 했는지 보여 준다", async () => {
+    today.mockResolvedValue([card, secondCard]);
+    await renderAndWait();
+    fireEvent.click(screen.getByText("✓ 완료"));
+    await screen.findByText("수량을 확인하세요");
+    fireEvent.click(screen.getByText("✓ 완료"));
+    await screen.findByText(/다음 일 시작하기/);
+    expect(screen.getByText("오늘 할 일 2개 중 1개를 마쳤어요.")).toBeInTheDocument();
+    const list = screen.getByRole("list", { name: "오늘 할 일" });
+    expect(list).toHaveTextContent("테스트 직무");
+    expect(list).toHaveTextContent("두 번째 직무");
+  });
+
+  it("문장의 동사를 확실히 못 읽으면 동작 꼬리표를 숨긴다(저장된 action_type이 있어도)", async () => {
+    today.mockResolvedValue([secondCard]);
+    render(<WorkerPage />);
+    await screen.findByText("손님께 인사하세요");
+    expect(screen.queryByTestId("action-chip")).not.toBeInTheDocument();
+    expect(screen.queryByText("확인하기")).not.toBeInTheDocument();
+  });
+
+  it("근로자에게 보이는 꼬리표는 문장의 동사다(계열 이름 '포장하기'·'담기'가 아니다)", async () => {
+    today.mockResolvedValue([{ ...secondCard, steps: [{ ...secondCard.steps[0], sentence: "박스 바닥 덮개를 접으세요", action_type: "pack" }] }]);
+    render(<WorkerPage />);
+    await screen.findByText("박스 바닥 덮개를 접으세요");
+    expect(screen.getByTestId("action-chip")).toHaveTextContent("접기");
+  });
+
+  it("그림은 한 단계에 한 장이다", async () => {
+    today.mockResolvedValue([{ ...card, steps: [{ ...card.steps[0], symbol_url: "https://x/img.png" }] }]);
+    await renderAndWait();
+    expect(screen.getByTestId("step-picture").querySelectorAll("img")).toHaveLength(1);
+  });
+});
+
+describe("WorkerPage 지난 일 → 오늘 할 일", () => {
+  it("지난 일 화면에서 '← 오늘 할 일로'를 누르면 단계 화면으로 돌아온다", async () => {
+    await renderAndWait();
+    fireEvent.click(screen.getByText("지난 일 보기"));
+    await screen.findByText("아직 받은 일이 없어요.");
+    fireEvent.click(screen.getByText("← 오늘 할 일로"));
+    await screen.findByText("상자를 옮기세요");
   });
 });
