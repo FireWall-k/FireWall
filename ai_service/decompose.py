@@ -198,8 +198,10 @@ def _plain(sentence: str) -> str:
 def _rule_decompose(raw_input: str, context: dict) -> DecomposeResult:
     """규칙 기반 분해(LLM 미사용/실패 시 폴백).
 
-    조각마다 step_split이 확실한 꼴만 자동으로 나눈다(같은 split_group, source_text=원문 조각). 동작이 둘 이상인데
-    자동으로 나누지 못한 조각은 한 단계로 두고 split_check를 켠다 — 사업주가 입력 화면에서 [더 나누기]로 나눈다.
+    조각마다 step_split이 확실한 꼴만 자동으로 나눈다(같은 split_group, source_text=원문 조각). 확실하지 않지만
+    나누기 제안(plan.suggestion)이 있으면 제안대로 나누고 split_check를 켠다 — 입력 화면에서 노란 줄로 보이고,
+    틀렸으면 사업주가 [합치기]로 되돌린다(GPT가 안 될 때 여러 동작이 한 줄로 남지 않게). 제안도 없이 동작이
+    둘 이상인 조각은 한 단계로 두고 split_check를 켠다 — 사업주가 [더 나누기]로 나눈다.
     """
     text = raw_input.strip()
     clauses = clauses_of(text)
@@ -210,6 +212,8 @@ def _rule_decompose(raw_input: str, context: dict) -> DecomposeResult:
         plan = cl.plan
         if plan.auto and len(plan.steps) >= 2:
             pieces = [(_plain(p), False) for p in plan.steps]
+        elif plan.suggestion and len(plan.suggestion) >= 2:
+            pieces = [(_plain(p), True) for p in plan.suggestion]
         else:
             pieces = [(cl.text, plan.actions >= 2)]
         for chunk, check in pieces:

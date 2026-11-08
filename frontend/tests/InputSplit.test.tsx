@@ -103,6 +103,33 @@ describe("입력 화면 — 쓰는 순간 나누기", () => {
     expect(screen.getAllByRole("button", { name: /단계 더 나누기$/ })).toHaveLength(4);
   });
 
+  it("나누지 못한 노란 줄(묶음 없음)은 [더 나누기]로 나누라고 안내하고 [합치기]는 없다", async () => {
+    // GPT가 안 될 때 규칙이 동작 여럿을 한 줄로 남긴 경우(split_group=null, split_check=true).
+    const user = userEvent.setup();
+    splitPreview.mockResolvedValue({
+      ...PREVIEW,
+      steps: [{ order: 1, sentence: "카드를 받아서 결제하고 영수증을 손님에게 드려요", action_type: "other",
+        symbol_query: [], split_group: null, split_check: true, source_text: null }],
+    });
+    render(<ManagerPage />);
+    await split(user);
+    const row = screen.getByTestId("split-row-1");
+    expect(row).toHaveAttribute("data-check", "true");
+    expect(within(row).getByText(/동작이 여러 개일 수 있어요/)).toBeInTheDocument();
+    expect(within(row).queryByText(/나눈 곳 확인/)).toBeNull();
+    expect(within(row).queryByRole("button", { name: /합치기/ })).toBeNull();
+  });
+
+  it("문장 칸에서 Enter는 줄바꿈을 넣지 않는다(한 줄 = 한 동작)", async () => {
+    const user = userEvent.setup();
+    render(<ManagerPage />);
+    await split(user);
+    const field = screen.getByLabelText("1단계 문장");
+    await user.click(field);
+    await user.keyboard("{End}{Enter}");
+    expect((field as HTMLTextAreaElement).value).toBe("앞치마를 입어요.");
+  });
+
   it("[합치기]를 누르면 두 줄이 한 줄로 합쳐지고 초점이 그 줄로 간다", async () => {
     const user = userEvent.setup();
     render(<ManagerPage />);

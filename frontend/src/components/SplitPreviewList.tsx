@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { cn } from "../cn";
 import {
@@ -9,6 +9,13 @@ import {
 // 나누기는 여기서 끝낸다 — 편집기에는 '동작이 2개예요' 알림이 없다. 애매하게 나눈 줄만 노랗게 칠하고
 // [합치기]를 띄우며, 어느 줄이든 [더 나누기]·고치기·지우기를 할 수 있다. [이대로 그림 고르기]를 눌러야
 // 초안이 만들어지고 그림을 고르러 간다.
+
+// 문장 칸은 내용만큼 높이를 늘린다. 한 줄 입력칸이면 좁은 화면(390px)에서 긴 문장이 잘려, 애매한 줄을
+// 사업주가 끝까지 읽고 나눌 곳을 고를 수 없었다(LIVE 점검에서 확인). 줄바꿈은 넣지 않는다 — 한 줄 = 한 동작.
+function fitHeight(el: HTMLTextAreaElement) {
+  el.style.height = "auto";
+  if (el.scrollHeight > 0) el.style.height = `${el.scrollHeight}px`;
+}
 
 // 사업주 화면 버튼은 44px 이상(min-h-11), 키보드 초점은 파란 테두리로 보인다.
 const BTN = cn(
@@ -27,7 +34,7 @@ interface Props {
 }
 
 export default function SplitPreviewList({ rows, onChange, onConfirm, confirming, stale }: Props) {
-  const inputs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const inputs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   // 다음 렌더 뒤 초점을 줄 줄(합치기·나누기·지우기 뒤). 상태가 아니라 ref로 두고, 렌더가 끝나면 한 번 쓰고 비운다.
   const pendingFocus = useRef<{ key: string; caret?: number } | null>(null);
   const [emptyError, setEmptyError] = useState<string | null>(null);
@@ -42,6 +49,16 @@ export default function SplitPreviewList({ rows, onChange, onConfirm, confirming
       if (want.caret !== undefined) el.setSelectionRange(want.caret, want.caret);
     }
   });
+
+  // 글자를 고치거나 화면 폭이 바뀌면 칸 높이를 다시 맞춘다.
+  useLayoutEffect(() => {
+    inputs.current.forEach(fitHeight);
+  });
+  useEffect(() => {
+    const onResize = () => inputs.current.forEach(fitHeight);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const setFocusKey = (want: { key: string; caret?: number }) => {
     pendingFocus.current = want;
@@ -108,18 +125,23 @@ export default function SplitPreviewList({ rows, onChange, onConfirm, confirming
                   >
                     {n}
                   </span>
-                  <input
+                  <textarea
+                    rows={1}
                     ref={(el) => {
                       if (el) inputs.current.set(row.key, el);
                       else inputs.current.delete(row.key);
                     }}
                     value={row.text}
-                    onChange={(e) => onChange(editRow(rows, i, e.target.value))}
+                    onChange={(e) => onChange(editRow(rows, i, e.target.value.replace(/\s*[\r\n]+\s*/g, " ")))}
+                    onKeyDown={(e) => {
+                      // Enter는 줄바꿈을 넣지 않는다(한 줄 = 한 동작). 나누려면 [더 나누기]를 쓴다.
+                      if (e.key === "Enter" && !e.nativeEvent.isComposing) e.preventDefault();
+                    }}
                     aria-label={`${n}단계 문장`}
                     aria-invalid={!row.text.trim() || undefined}
                     placeholder="이 단계에서 할 일을 적어 주세요"
                     className={cn(
-                      "min-h-11 w-full min-w-0 break-keep rounded-lg border bg-white px-3 text-base text-slate-900",
+                      "block min-h-11 w-full min-w-0 resize-none overflow-hidden break-keep rounded-lg border bg-white px-3 py-2 text-base leading-6 text-slate-900",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600",
                       row.text.trim() ? "border-slate-300" : "border-red-500",
                     )}
@@ -159,7 +181,9 @@ export default function SplitPreviewList({ rows, onChange, onConfirm, confirming
               </div>
               {row.check && (
                 <p className="mt-1 break-keep pl-10 text-sm text-amber-900">
-                  나눈 곳 확인{row.source ? ` · 원래 문장: “${row.source}”` : ""}
+                  {row.group === null
+                    ? "동작이 여러 개일 수 있어요. 나눌 곳에 커서를 두고 [더 나누기]를 눌러 주세요."
+                    : `나눈 곳 확인${row.source ? ` · 원래 문장: “${row.source}”` : ""}`}
                 </p>
               )}
             </li>

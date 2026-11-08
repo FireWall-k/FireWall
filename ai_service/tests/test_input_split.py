@@ -143,3 +143,33 @@ def test_decompose_prompt_drops_split_per_object_rule():
     # 과분할의 원인이던 '물건별 단계로 나눈다' 지시가 돌아오지 않게.
     assert "물건별 단계로 나눕니다" not in llm._DECOMPOSE_SYSTEM
     assert "src" in llm._DECOMPOSE_SYSTEM
+
+
+def test_rule_path_uses_split_suggestion_as_yellow_split(monkeypatch):
+    # GPT가 안 될 때(키 오류 등): 규칙이 확실하진 않지만 나누기 제안을 냈으면 제안대로 나누고 노란 표시.
+    # 한 줄에 동작 둘이 남지 않게 하고, 틀렸으면 사업주가 [합치기]로 원문(source_text)을 되돌린다.
+    monkeypatch.setattr(llm, "llm_available", lambda: False)
+    steps = run("그릇을 헹궈서 선반에 올려 두세요.", {}).steps
+    assert [s.sentence for s in steps] == ["그릇을 헹구세요", "선반에 올려 두세요"]
+    assert [s.split_group for s in steps] == [1, 1]
+    assert all(s.split_check for s in steps)
+    assert {s.source_text for s in steps} == {"그릇을 헹궈서 선반에 올려 두세요."}
+
+
+def test_decompose_http_response_carries_contract_fields(monkeypatch):
+    # 백엔드가 받는 실제 HTTP 응답(JSON)에 세 칸이 그대로 실린다(response_model이 버리지 않는다).
+    from fastapi.testclient import TestClient
+
+    import main as ai_main
+
+    monkeypatch.setattr(llm, "llm_available", lambda: False)
+    r = TestClient(ai_main.app).post("/ai/decompose", json={
+        "raw_input": "상자를 접고 테이프를 붙이세요. 그릇을 헹궈서 선반에 올려 두세요. 불을 끄세요.",
+        "context": {}})
+    assert r.status_code == 200, r.text
+    steps = r.json()["steps"]
+    assert [(s["split_group"], s["split_check"]) for s in steps] == [
+        (1, False), (1, False), (2, True), (2, True), (None, False)]
+    assert steps[0]["source_text"] == "상자를 접고 테이프를 붙이세요."
+    assert steps[2]["source_text"] == "그릇을 헹궈서 선반에 올려 두세요."
+    assert steps[4]["source_text"] is None

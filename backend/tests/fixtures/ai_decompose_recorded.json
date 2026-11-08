@@ -1,0 +1,302 @@
+{
+ "gpt_three_actions": {
+  "raw_input": "카드를 받아서 결제하고 영수증을 손님에게 드려요.",
+  "response": {
+   "task_title": "결제 처리",
+   "job": "retail",
+   "steps": [
+    {
+     "order": 1,
+     "sentence": "카드를 받으세요.",
+     "keywords": [
+      {
+       "term": "카드를 받다",
+       "pos": "noun"
+      }
+     ],
+     "symbol_query": [
+      "카드를 받다"
+     ],
+     "action_type": "move",
+     "safety_flags": [],
+     "split_group": 1,
+     "split_check": false,
+     "source_text": "카드를 받아서 결제하고 영수증을 손님에게 드려요."
+    },
+    {
+     "order": 2,
+     "sentence": "결제하세요.",
+     "keywords": [
+      {
+       "term": "결제하다",
+       "pos": "noun"
+      }
+     ],
+     "symbol_query": [
+      "결제하다"
+     ],
+     "action_type": "other",
+     "safety_flags": [],
+     "split_group": 1,
+     "split_check": false,
+     "source_text": "카드를 받아서 결제하고 영수증을 손님에게 드려요."
+    },
+    {
+     "order": 3,
+     "sentence": "영수증을 드리세요.",
+     "keywords": [
+      {
+       "term": "영수증을 주다",
+       "pos": "noun"
+      }
+     ],
+     "symbol_query": [
+      "영수증을 주다"
+     ],
+     "action_type": "move",
+     "safety_flags": [],
+     "split_group": 1,
+     "split_check": false,
+     "source_text": "카드를 받아서 결제하고 영수증을 손님에게 드려요."
+    }
+   ]
+  }
+ },
+ "gpt_one_action_eoseo": {
+  "raw_input": "카트를 밀어서 부품을 옮기세요.",
+  "response": {
+   "task_title": "부품 이동",
+   "job": "unknown",
+   "steps": [
+    {
+     "order": 1,
+     "sentence": "카트를 밀어서 부품을 옮기세요.",
+     "keywords": [
+      {
+       "term": "카트를 밀어서 부품을 옮기다",
+       "pos": "noun"
+      }
+     ],
+     "symbol_query": [
+      "카트를 밀어서 부품을 옮기다"
+     ],
+     "action_type": "move",
+     "safety_flags": [],
+     "split_group": null,
+     "split_check": false,
+     "source_text": null
+    }
+   ]
+  }
+ },
+ "gpt_one_action_wait": {
+  "raw_input": "고객이 화장실을 쓰고 있으면 밖에서 기다리세요.",
+  "response": {
+   "task_title": "고객 대기",
+   "job": "unknown",
+   "steps": [
+    {
+     "order": 1,
+     "sentence": "밖에서 기다리세요.",
+     "keywords": [
+      {
+       "term": "밖에서 기다리다",
+       "pos": "noun"
+      }
+     ],
+     "symbol_query": [
+      "밖에서 기다리다"
+     ],
+     "action_type": "other",
+     "safety_flags": [],
+     "split_group": null,
+     "split_check": false,
+     "source_text": null
+    }
+   ]
+  }
+ },
+ "gpt_two_actions_wait": {
+  "raw_input": "커피 머신 전원을 켜고 물이 데워질 때까지 기다려요.",
+  "response": {
+   "task_title": "커피 제조",
+   "job": "cafe",
+   "steps": [
+    {
+     "order": 1,
+     "sentence": "커피 머신 전원을 켜세요.",
+     "keywords": [
+      {
+       "term": "커피 머신 전원을 켜다",
+       "pos": "noun"
+      }
+     ],
+     "symbol_query": [
+      "커피 머신 전원을 켜다"
+     ],
+     "action_type": "operate",
+     "safety_flags": [],
+     "split_group": 1,
+     "split_check": false,
+     "source_text": "커피 머신 전원을 켜고 물이 데워질 때까지 기다려요."
+    },
+    {
+     "order": 2,
+     "sentence": "물 데워지기를 기다리세요.",
+     "keywords": [
+      {
+       "term": "물 데워지기를 기다리다",
+       "pos": "noun"
+      }
+     ],
+     "symbol_query": [
+      "물 데워지기를 기다리다"
+     ],
+     "action_type": "other",
+     "safety_flags": [],
+     "split_group": 1,
+     "split_check": false,
+     "source_text": "커피 머신 전원을 켜고 물이 데워질 때까지 기다려요."
+    }
+   ]
+  }
+ },
+ "gpt_check_gaseo": {
+  "raw_input": "호출벨이 울리면 그 자리로 가서 무엇이 필요한지 여쭤봐요.",
+  "response": {
+   "task_title": "고객 응대",
+   "job": "serving",
+   "steps": [
+    {
+     "order": 1,
+     "sentence": "그 자리로 가세요.",
+     "keywords": [
+      {
+       "term": "그 자리로 가다",
+       "pos": "noun"
+      }
+     ],
+     "symbol_query": [
+      "그 자리로 가다"
+     ],
+     "action_type": "move",
+     "safety_flags": [],
+     "split_group": 1,
+     "split_check": true,
+     "source_text": "호출벨이 울리면 그 자리로 가서 무엇이 필요한지 여쭤봐요."
+    },
+    {
+     "order": 2,
+     "sentence": "무엇이 필요한지 여쭤보세요.",
+     "keywords": [
+      {
+       "term": "무엇이 필요한지 여쭤보다",
+       "pos": "noun"
+      }
+     ],
+     "symbol_query": [
+      "무엇이 필요한지 여쭤보다"
+     ],
+     "action_type": "other",
+     "safety_flags": [],
+     "split_group": 1,
+     "split_check": true,
+     "source_text": "호출벨이 울리면 그 자리로 가서 무엇이 필요한지 여쭤봐요."
+    }
+   ]
+  }
+ },
+ "rule_fallback_mixed": {
+  "raw_input": "앞치마를 입고 손을 씻으세요. 컵을 씻어서 건조대에 올려 놓으세요.",
+  "response": {
+   "task_title": "앞치마를 입고 손을 씻으세요",
+   "job": "unknown",
+   "steps": [
+    {
+     "order": 1,
+     "sentence": "앞치마를 입으세요",
+     "keywords": [
+      {
+       "term": "앞치마를",
+       "pos": "noun"
+      },
+      {
+       "term": "입으세요",
+       "pos": "verb"
+      }
+     ],
+     "symbol_query": [],
+     "action_type": "wear",
+     "safety_flags": [],
+     "split_group": 1,
+     "split_check": false,
+     "source_text": "앞치마를 입고 손을 씻으세요."
+    },
+    {
+     "order": 2,
+     "sentence": "손을 씻으세요",
+     "keywords": [
+      {
+       "term": "손을",
+       "pos": "noun"
+      },
+      {
+       "term": "씻으세요",
+       "pos": "verb"
+      }
+     ],
+     "symbol_query": [],
+     "action_type": "clean",
+     "safety_flags": [],
+     "split_group": 1,
+     "split_check": false,
+     "source_text": "앞치마를 입고 손을 씻으세요."
+    },
+    {
+     "order": 3,
+     "sentence": "컵을 씻으세요",
+     "keywords": [
+      {
+       "term": "컵을",
+       "pos": "noun"
+      },
+      {
+       "term": "씻으세요",
+       "pos": "verb"
+      }
+     ],
+     "symbol_query": [],
+     "action_type": "clean",
+     "safety_flags": [],
+     "split_group": 2,
+     "split_check": true,
+     "source_text": "컵을 씻어서 건조대에 올려 놓으세요."
+    },
+    {
+     "order": 4,
+     "sentence": "건조대에 올려 놓으세요",
+     "keywords": [
+      {
+       "term": "건조대에",
+       "pos": "noun"
+      },
+      {
+       "term": "올려",
+       "pos": "noun"
+      },
+      {
+       "term": "놓으세요",
+       "pos": "verb"
+      }
+     ],
+     "symbol_query": [],
+     "action_type": "observe",
+     "safety_flags": [],
+     "split_group": 2,
+     "split_check": true,
+     "source_text": "컵을 씻어서 건조대에 올려 놓으세요."
+    }
+   ]
+  }
+ }
+}
