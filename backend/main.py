@@ -1245,7 +1245,8 @@ def merge_steps(task_id: str, payload: StepMerge, db: Session = Depends(get_db),
                 user: dict = Depends(require_employer)) -> TaskOut:
     """이어진 단계들을 sentence 한 단계로 합친다 — 편집기에서 저장하며 나눈 것을 [되돌리기]할 때 쓴다.
     합치는 단계에 사업주가 올린 사진이 있으면 그 사진을 붙이고(나눌 때 첫 단계로 넘긴 사진이 돌아온다), 없으면
-    그림은 단계 추가와 같은 방법으로 새로 찾는다. 동작 종류는 화면이 기억한 나누기 전 값(action_type)을 쓴다.
+    그림은 단계 추가와 같은 방법으로 새로 찾는다. 동작 종류는 화면이 기억한 나누기 전 값(action_type)을 쓰고, 없으면
+    규칙 분류기(classify_action)로 매긴다.
     게시한 직무는 합치지 않는다(409) — 단계 id가 바뀌면 받은 근로자의 진행 기록이 지워지고, 그림 확인을 마친 뒤
     새 그림이 붙는다(rewrite_step이 게시한 직무를 나누지 않는 것과 같은 이유)."""
     task = _owned_task(task_id, user["sub"], db)
@@ -1261,8 +1262,10 @@ def merge_steps(task_id: str, payload: StepMerge, db: Session = Depends(get_db),
     if orders != list(range(orders[0], orders[0] + len(orders))):
         raise HTTPException(status_code=409, detail="합칠 단계가 붙어 있지 않습니다. 순서가 바뀌었는지 확인해 주세요.")
     photo = next((s.symbol_media_id for s in run if s.symbol_source == "photo" and s.symbol_media_id), None)
-    prepared = [_prepare_new_step(db, task, user["sub"], payload.sentence, payload.action_type or "other",
-                                  photo_media_id=photo)]
+    # 화면이 나누기 전 동작 종류를 모르면(단계 추가를 되돌림) 문장 고치기와 같은 규칙 분류기로 다시 매긴다.
+    action_type = payload.action_type or ai_client.classify_action(
+        employer_pseudonymizer(db, user["sub"]).mask(payload.sentence))
+    prepared = [_prepare_new_step(db, task, user["sub"], payload.sentence, action_type, photo_media_id=photo)]
     _, media_ids = _replace_steps(db, task, user["sub"], run, prepared)
     db.commit()
     media.release(db, media_ids)
@@ -1363,6 +1366,7 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
             step.symbol_source = payload.symbol_source or "fallback"
         step.needs_fallback = False
     if payload.sentence is not None:
+        step_sentence_before = step.sentence
         step.sentence = payload.sentence
         if step.tts_media_id:
             released.append(step.tts_media_id)
@@ -1370,6 +1374,13 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
         # 저장된 symbol_query는 옛 문장에 묶여 있다. 비우면 후보 조회가 새 문장에서
         # 검색어를 다시 뽑는다.
         step.symbol_query = ""
+        # 동작 계열도 옛 문장의 것이다("상자를 옮기세요"→move를 "바닥을 쓸어주세요"로 고쳐도 move로 남았다).
+        # 남겨 두면 후보 재검색이 맞는 그림을 계열 불일치로 깎고, 화면에 틀린 꼬리표가 붙는다. 새 문장으로
+        # 직무 분해와 같은 규칙 분류기(AI 하네스 /ai/classify-action, LLM 없음)에 다시 매긴다. 하네스가 죽어 있으면
+        # other(벌점 없음·꼬리표 숨김)다. 하네스로 보내는 글은 직무 생성과 같이 근로자 실명을 별칭으로 바꾼다.
+        if payload.sentence != step_sentence_before:
+            masker = employer_pseudonymizer(db, user["sub"])
+            step.action_type = ai_client.classify_action(masker.mask(payload.sentence))
     # 확인과 커밋 사이에 다른 요청의 release()가 레코드를 지우지 못하게 커밋 직전에 같은 트랜잭션에서 잠근다
     # (media.claim). TTS 합성(네트워크 호출) 뒤에 잠그는 이유: SQLite 쓰기 잠금은 DB 전체라, 합성 동안 쥐고 있으면
     # 다른 모든 쓰기가 기다린다. 이미 지워졌으면 붙이지 않는다 — 400(남의 것)과 구분해 409로 다시 시도하게 한다.

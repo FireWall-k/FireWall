@@ -77,14 +77,15 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
   }
 
   return (
-    <div className="mx-auto mt-10 max-w-sm rounded-2xl border border-slate-200 bg-white p-6">
+    // break-keep: 한국어 안내 문장을 낱말 중간에서 끊지 않는다(근로자도 이 화면에서 로그인한다).
+    <div className="mx-auto mt-10 max-w-sm break-keep rounded-2xl border border-slate-200 bg-white p-6 [overflow-wrap:anywhere]">
       <h1 className="text-xl font-bold text-slate-900">잡카드 로그인</h1>
       <div className="mt-4 flex gap-1 rounded-lg bg-slate-100 p-1">
         {(["employer", "worker"] as const).map((t) => (
           <button
             key={t}
             onClick={() => { setTab(t); setError(null); }}
-            className={cn("flex-1 rounded-md px-3 py-2 text-sm font-medium",
+            className={cn("min-h-12 flex-1 rounded-md px-3 py-2 text-base font-medium",
               tab === t ? "bg-white text-slate-900 shadow" : "text-slate-500")}
           >
             {t === "employer" ? "사업주" : "근로자"}
@@ -137,7 +138,7 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
       {error && <div role="alert" className="mt-3 rounded-lg bg-red-50 p-2 text-sm text-red-800">{error}</div>}
 
       <button onClick={submit} disabled={busy || !ready}
-        className="mt-4 w-full rounded-lg bg-blue-700 py-2.5 font-semibold text-white disabled:opacity-50">
+        className="mt-4 min-h-12 w-full rounded-lg bg-blue-700 py-2.5 font-semibold text-white disabled:opacity-50">
         {busy ? "확인 중…" : "로그인"}
       </button>
     </div>

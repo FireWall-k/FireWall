@@ -19,7 +19,7 @@ import embeddings
 import local_aac
 import llm
 from local_aac import search_assets
-from decompose import decompose
+from decompose import _guess_action, decompose
 from schemas import (
     AacMatch,
     AacSearchRequest,
@@ -27,6 +27,8 @@ from schemas import (
     CoachingRequest,
     CoachingResult,
     CoachingStepInput,
+    ClassifyActionRequest,
+    ClassifyActionResult,
     CoachingSuggestion,
     DecomposeRequest,
     DecomposeResult,
@@ -87,6 +89,17 @@ def ai_decompose(req: DecomposeRequest) -> DecomposeResult:
             logger.warning("decompose retry attempt=%s error=%s", attempt, e)
 
     raise HTTPException(status_code=502, detail=f"분해 실패: {last_error}")
+
+
+@app.post("/ai/classify-action", response_model=ClassifyActionResult)
+def ai_classify_action(req: ClassifyActionRequest) -> ClassifyActionResult:
+    """단계 문장 하나의 동작 계열(action_type). 직무 분해(규칙)와 같은 분류기(_guess_action)를 쓴다.
+
+    사업주가 검토 화면에서 문장을 고치면 백엔드가 이것으로 계열을 다시 매긴다. 예전에는 다시 추정할 길이 없어
+    other로 되돌렸고, 사업주 화면의 동작 꼬리표가 단계를 다시 만들 때까지 '작업하기'로 남았다.
+    결정론적 규칙만 쓴다 — LLM·임베딩 호출이 없어 비용이 들지 않고 문장이 밖으로 나가지 않는다.
+    """
+    return ClassifyActionResult(action_type=_guess_action(req.sentence))
 
 
 @app.post("/ai/map-symbols", response_model=MapSymbolsResult)
