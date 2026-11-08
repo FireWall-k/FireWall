@@ -83,6 +83,7 @@ from schemas import (
     PerformanceLogCreate,
     SplitPreviewOut,
     SplitPreviewStep,
+    StepAddOut,
     StepCreate,
     StepMerge,
     StepOut,
@@ -104,7 +105,7 @@ from schemas import (
     WorkerWithCodeOut,
     WorkplaceOut,
 )
-from ratelimit import client_ip, employer_throttle, ensure_not_blocked, worker_throttle
+from ratelimit import client_ip, employer_throttle, ensure_not_blocked, take_ai_split_call, worker_throttle
 import maintenance
 import media
 from photos import MAX_PHOTO_BYTES, ImageRejected, sanitize_image, save_photo, sniff_image
@@ -879,6 +880,8 @@ def split_preview(payload: TaskCreate, db: Session = Depends(get_db),
     사업주가 이 목록을 그 자리에서 고치고 [이대로 그림 고르기]를 누르면 POST /api/tasks에 steps로 보내
     그때 초안을 만든다. 그림 검색·음성 합성은 여기서 하지 않는다(확인 전에 비용을 쓰지 않는다).
     """
+    if not take_ai_split_call(user["sub"]):
+        raise HTTPException(status_code=429, detail="나누기를 너무 자주 눌렀어요. 1분 뒤에 다시 눌러 주세요.")
     masker, raw_masked, context = _decompose_inputs(db, payload, user["sub"])
     decomposed = _decompose_or_502(raw_masked, context)
     steps: list[SplitPreviewStep] = []
@@ -1056,39 +1059,52 @@ def delete_task(task_id: str, db: Session = Depends(get_db),
     return {"ok": True}
 
 
-@app.post("/api/tasks/{task_id}/steps", response_model=TaskOut, status_code=201)
+@app.post("/api/tasks/{task_id}/steps", response_model=StepAddOut, status_code=201)
 def add_step(task_id: str, payload: StepCreate, db: Session = Depends(get_db),
-             user: dict = Depends(require_employer)) -> TaskOut:
+             user: dict = Depends(require_employer)) -> StepAddOut:
     """검토 화면에서 사업주가 단계를 직접 추가한다.
 
     맨 끝에 붙이며(순서는 이후 드래그로 조정), 상징/TTS는 서버가 생성한다.
     LLM symbol_query가 없으므로 문장에서 한글/영문 단어를 뽑아 상징 후보로 쓴다.
+    새 문장에 동작이 둘이면(초안일 때만) 문장 고치기와 같이 경고 없이 두 단계로 나눠 넣고 split_step_ids를
+    돌려준다 — 화면이 [되돌리기]를 띄운다(한 단계 = 한 동작 = 그림 1장, 설계 5.5).
     """
     task = _owned_task(task_id, user["sub"], db)
     sentence = payload.sentence.strip()
     action_type = payload.action_type or "other"
     next_order = max((s.order_index for s in task.steps), default=0) + 1
-    _insert_step(db, task, user["sub"], _prepare_new_step(db, task, user["sub"], sentence, action_type),
-                 next_order)
+    parts = _detect_split(db, task, user["sub"], sentence) if task.status != "published" else []
+    prepared = ([_prepare_new_step(db, task, user["sub"], part["sentence"], part["action_type"], part["terms"])
+                 for part in parts]
+                or [_prepare_new_step(db, task, user["sub"], sentence, action_type)])
+    new_steps = [_insert_step(db, task, user["sub"], prep, next_order + i) for i, prep in enumerate(prepared)]
     db.commit()
     db.refresh(task)
-    return _task_out(task)
+    out = _task_out(task)
+    return StepAddOut(**out.model_dump(), sentence=sentence,
+                      split_step_ids=[s.id for s in new_steps] if parts else [])
 
 
 def _prepare_new_step(db: Session, task: Task, employer_id: str, sentence: str,
-                      action_type: str = "other", terms: list[str] | None = None) -> dict:
+                      action_type: str = "other", terms: list[str] | None = None,
+                      photo_media_id: str | None = None) -> dict:
     """사업주가 쓴 문장의 그림·음성을 준비한다(네트워크 호출만, DB는 건드리지 않는다).
 
     직무 생성 때와 같은 맥락으로 검색해야 나중에 만든 단계만 다른 그림이 붙지 않는다.
     검색어·맥락은 AI 하네스(→ 임베딩 API)로 가므로 근로자 실명을 별칭으로 바꿔 보낸다.
     terms(AI가 준 검색어)가 있으면 저장해 두고 후보 재조회도 같은 질의로 한다. 없으면 문장에서 뽑는다.
     add_step·rewrite_step·merge_steps가 함께 쓴다.
+    photo_media_id: 원래 단계에 사업주가 올린 사진 — 그림을 새로 찾지 않고 그 사진을 그대로 붙인다
+    (나누거나 되돌릴 때 사진이 사라지지 않게).
     """
     query = [t for t in (terms or []) if str(t).strip()][:4]
-    search = query or re.findall(r"[가-힣A-Za-z]+", sentence) or [sentence[:12]]
-    masker = employer_pseudonymizer(db, employer_id)
-    sym = _pick_symbol(masker.mask_obj(search[:4]),
-                       context=masker.mask_obj(_task_context(task, sentence, action_type)))
+    if photo_media_id:
+        sym = {"photo_media_id": photo_media_id, "source": "photo", "needs_fallback": False}
+    else:
+        search = query or re.findall(r"[가-힣A-Za-z]+", sentence) or [sentence[:12]]
+        masker = employer_pseudonymizer(db, employer_id)
+        sym = _pick_symbol(masker.mask_obj(search[:4]),
+                           context=masker.mask_obj(_task_context(task, sentence, action_type)))
     return {"sentence": sentence, "action_type": action_type, "sym": sym,
             "symbol_query": ",".join(str(t).strip() for t in query),
             "tts": synthesize_tts(sentence, employer_id)}
@@ -1100,7 +1116,8 @@ def _insert_step(db: Session, task: Task, employer_id: str, prepared: dict, orde
         task_id=task.id, order_index=order_index, sentence=prepared["sentence"],
         action_type=prepared["action_type"],
         symbol_query=prepared.get("symbol_query") or "",
-        symbol_url=sym.get("image_url"),
+        symbol_url=None if sym.get("photo_media_id") else sym.get("image_url"),
+        symbol_media_id=sym.get("photo_media_id"),
         symbol_source=sym.get("source", "fallback"),
         needs_fallback=sym.get("needs_fallback", True),
         tts_media_id=_tts_media_id(db, employer_id, prepared["tts"]),
@@ -1112,12 +1129,14 @@ def _insert_step(db: Session, task: Task, employer_id: str, prepared: dict, orde
 def _replace_steps(db: Session, task: Task, employer_id: str, old: list[Step],
                    prepared: list[dict]) -> tuple[list[Step], list[str]]:
     """연속한 단계들(old)을 새 단계들로 같은 자리에서 바꾸고 순서를 1..N으로 다시 매긴다(커밋은 부르는 쪽).
-    지운 단계의 수행 로그를 정리하고, 놓아줄 사진·음성 레코드 id를 돌려준다(커밋 뒤 media.release)."""
+    지운 단계의 수행 로그를 정리하고, 놓아줄 사진·음성 레코드 id를 돌려준다(커밋 뒤 media.release).
+    새 단계로 넘긴 사진(prepared의 photo_media_id)은 놓아주지 않는다."""
     position = min(s.order_index for s in old)
     ids = {s.id for s in old}
     others = sorted((s for s in task.steps if s.id not in ids), key=lambda s: s.order_index)
     db.execute(delete(PerformanceLog).where(PerformanceLog.step_id.in_(ids)))
-    media_ids = _step_media_ids(old)
+    kept = {p["sym"].get("photo_media_id") for p in prepared} - {None}
+    media_ids = [m for m in _step_media_ids(old) if m not in kept]
     for s in old:
         db.delete(s)
     db.flush()
@@ -1130,6 +1149,22 @@ def _replace_steps(db: Session, task: Task, employer_id: str, old: list[Step],
     return new_steps, media_ids
 
 
+# 편집기 저장 시 나누기 확인의 AI 시간 제한(초). 저장을 오래 붙잡지 않게 직무 생성(AI_TIMEOUT)보다 짧다.
+_SPLIT_CHECK_TIMEOUT = float(os.getenv("AI_SPLIT_CHECK_TIMEOUT", "8"))
+# 동작이 둘일 수 있는 겉모양: 쉼표·순서 접속어, 또는 마지막이 아닌 어절의 연결 꼴(-고·-서·-며·-다가), '-어' 꼴
+# (집어·올려·꺼내), '-(으)ㄴ 다음/후/뒤'. 하나도 없으면 동작 하나다("컵을 깨끗이 닦으세요") — GPT를 부르지 않는다.
+_SPLIT_HINT_RE = re.compile(r"[,，]|그리고|그다음|그 다음")
+_CONNECTIVE_TAIL_RE = re.compile(
+    r"(?:고|서|며|면서|다가|다음|다음에|후|후에|뒤|뒤에)$|[아어여워와해봐줘놔둬려겨켜쳐혀펴껴내빼대새개매]$")
+
+
+def _may_have_two_actions(sentence: str) -> bool:
+    if _SPLIT_HINT_RE.search(sentence):
+        return True
+    words = re.findall(r"[가-힣A-Za-z0-9]+", sentence)
+    return any(_CONNECTIVE_TAIL_RE.search(w) for w in words[:-1])
+
+
 # 편집기에서 고친 문장 하나를 나눌 때 받아들이는 최대 단계 수. 이보다 많으면 문장이 아니라 직무 하나를
 # 통째로 적은 것이라 저장하며 몰래 나누지 않는다(그대로 저장하고 사업주가 단계 추가로 나눈다).
 _MAX_REWRITE_PARTS = 4
@@ -1140,9 +1175,13 @@ def _detect_split(db: Session, task: Task, employer_id: str, sentence: str) -> l
 
     - AI가 '애매하다'(split_check)고 한 줄이 하나라도 있으면 나누지 않는다. GPT는 한 동작 문장도 나누는
       경향이 있어(개발셋 한 단계 문장 92개 중 30개), 확실한 것만 저장하는 순간 나눈다. 틀려도 [되돌리기]가 있다.
-    - AI 하네스 장애·시간 초과면 나누지 않고 그대로 저장한다(편집을 막지 않는다).
+    - AI 하네스 장애·시간 초과(_SPLIT_CHECK_TIMEOUT)면 나누지 않고 그대로 저장한다(편집을 막지 않는다).
+    - 겉모양으로 동작이 하나뿐인 문장(_may_have_two_actions)은 AI를 부르지 않는다 — 오타 고치기마다 GPT를 부르면
+      저장이 느리고 비용이 든다. 사업주별 호출 한도(ratelimit.ai_split_throttle)를 넘어도 부르지 않는다.
     - 근로자 특성 메모는 보내지 않는다. 문장·맥락의 근로자 실명은 별칭으로 바꿔 보낸다.
     """
+    if not _may_have_two_actions(sentence) or not take_ai_split_call(employer_id):
+        return []
     masker = employer_pseudonymizer(db, employer_id)
     masked = masker.mask(sentence)
     context = {
@@ -1152,7 +1191,7 @@ def _detect_split(db: Session, task: Task, employer_id: str, sentence: str) -> l
         "raw_input": masked,
     }
     try:
-        result = ai_client.decompose(masked, context)
+        result = ai_client.decompose(masked, context, timeout=_SPLIT_CHECK_TIMEOUT)
     except Exception:  # noqa: BLE001
         logger.warning("편집 문장 나누기 확인 실패 — 나누지 않고 저장한다", exc_info=True)
         return []
@@ -1189,8 +1228,11 @@ def rewrite_step(task_id: str, step_id: str, payload: StepRewrite, db: Session =
         db.refresh(task)
         return StepRewriteOut(task=_task_out(task), sentence=sentence)
     # 네트워크 호출(그림·음성)을 먼저 끝낸다 — SQLite 쓰기 잠금을 오래 쥐지 않게(직무 생성과 같은 이유).
-    prepared = [_prepare_new_step(db, task, user["sub"], part["sentence"], part["action_type"], part["terms"])
-                for part in parts]
+    # 사업주가 올린 사진은 첫 단계로 넘긴다(지우지 않는다) — [되돌리기]하면 합친 단계로 다시 돌아온다.
+    photo = step.symbol_media_id if step.symbol_source == "photo" else None
+    prepared = [_prepare_new_step(db, task, user["sub"], part["sentence"], part["action_type"], part["terms"],
+                                  photo_media_id=photo if i == 0 else None)
+                for i, part in enumerate(parts)]
     new_steps, media_ids = _replace_steps(db, task, user["sub"], [step], prepared)
     db.commit()
     media.release(db, media_ids)
@@ -1202,8 +1244,13 @@ def rewrite_step(task_id: str, step_id: str, payload: StepRewrite, db: Session =
 def merge_steps(task_id: str, payload: StepMerge, db: Session = Depends(get_db),
                 user: dict = Depends(require_employer)) -> TaskOut:
     """이어진 단계들을 sentence 한 단계로 합친다 — 편집기에서 저장하며 나눈 것을 [되돌리기]할 때 쓴다.
-    그림·음성은 단계 추가와 같은 방법으로 새로 만든다."""
+    합치는 단계에 사업주가 올린 사진이 있으면 그 사진을 붙이고(나눌 때 첫 단계로 넘긴 사진이 돌아온다), 없으면
+    그림은 단계 추가와 같은 방법으로 새로 찾는다. 동작 종류는 화면이 기억한 나누기 전 값(action_type)을 쓴다.
+    게시한 직무는 합치지 않는다(409) — 단계 id가 바뀌면 받은 근로자의 진행 기록이 지워지고, 그림 확인을 마친 뒤
+    새 그림이 붙는다(rewrite_step이 게시한 직무를 나누지 않는 것과 같은 이유)."""
     task = _owned_task(task_id, user["sub"], db)
+    if task.status == "published":
+        raise HTTPException(status_code=409, detail="보낸 직무는 단계를 합칠 수 없어요.")
     if len(set(payload.step_ids)) != len(payload.step_ids):
         raise HTTPException(status_code=400, detail="같은 단계가 두 번 들어 있습니다.")
     by_id = {s.id: s for s in task.steps}
@@ -1213,7 +1260,9 @@ def merge_steps(task_id: str, payload: StepMerge, db: Session = Depends(get_db),
     orders = [s.order_index for s in run]
     if orders != list(range(orders[0], orders[0] + len(orders))):
         raise HTTPException(status_code=409, detail="합칠 단계가 붙어 있지 않습니다. 순서가 바뀌었는지 확인해 주세요.")
-    prepared = [_prepare_new_step(db, task, user["sub"], payload.sentence, "other")]
+    photo = next((s.symbol_media_id for s in run if s.symbol_source == "photo" and s.symbol_media_id), None)
+    prepared = [_prepare_new_step(db, task, user["sub"], payload.sentence, payload.action_type or "other",
+                                  photo_media_id=photo)]
     _, media_ids = _replace_steps(db, task, user["sub"], run, prepared)
     db.commit()
     media.release(db, media_ids)

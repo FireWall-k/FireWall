@@ -4,9 +4,12 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 MAX_RAW_INPUT = 2000
+# 입력 화면에서 확인한 단계 문장 합계의 상한. 단계마다 그림 검색(임베딩 API)·음성 합성을 하므로 원문 상한과 같은
+# 이유로 막는다. 사업주가 줄을 고치거나 더하면 원문보다 조금 길어질 수 있어 여유를 둔다.
+MAX_CONFIRMED_TOTAL = MAX_RAW_INPUT + 500
 
 
 # --- 인증 ---
@@ -78,6 +81,12 @@ class TaskCreate(BaseModel):
             raise ValueError("직무 내용을 입력해 주세요.")
         return v
 
+    @model_validator(mode="after")
+    def _confirmed_total(self) -> "TaskCreate":
+        if self.steps and sum(len(s.sentence) for s in self.steps) > MAX_CONFIRMED_TOTAL:
+            raise ValueError("단계 문장이 너무 길어요. 줄을 줄이거나 나눠 주세요.")
+        return self
+
 
 class StepUpdate(BaseModel):
     sentence: str | None = Field(default=None, max_length=500)
@@ -103,6 +112,8 @@ class StepMerge(BaseModel):
     """이어진 단계들을 한 단계로 합친다(편집기의 [되돌리기]). sentence가 합친 단계의 문장이다."""
     step_ids: list[str] = Field(min_length=2, max_length=10)
     sentence: str = Field(min_length=1, max_length=500)
+    # 나누기 전 단계의 동작 종류(되돌리기가 원래 단계를 되살리도록 화면이 기억해 보낸다). 없으면 "other".
+    action_type: str | None = Field(default=None, max_length=20)
 
     @field_validator("sentence")
     @classmethod
@@ -221,6 +232,12 @@ class SplitPreviewOut(BaseModel):
     task_title: str
     job: str = ""
     steps: list[SplitPreviewStep]
+
+
+class StepAddOut(TaskOut):
+    """단계 추가 결과(직무 전체). 새 문장에 동작이 둘이라 두 단계로 나눠 넣었으면 그 id들(되돌리기용)."""
+    split_step_ids: list[str] = []
+    sentence: str = ""
 
 
 class StepRewriteOut(BaseModel):

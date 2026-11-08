@@ -40,7 +40,7 @@ import db_migrate  # noqa: E402
 db_migrate.migrate()
 
 
-def _fake_decompose(raw_input: str, context=None) -> dict:
+def _fake_decompose(raw_input: str, context=None, **kw) -> dict:
     return {
         "task_title": "테스트 직무",
         "steps": [
@@ -87,6 +87,7 @@ def _reset_login_throttle():
     import ratelimit
     ratelimit.employer_throttle.clear()
     ratelimit.worker_throttle.clear()
+    ratelimit.ai_split_throttle.clear()
     yield
 
 

@@ -25,11 +25,13 @@ _http = httpx.Client(
 )
 
 
-def decompose(raw_input: str, context: dict | None = None) -> dict:
-    """원문 -> {task_title, steps[]}. 실패 시 예외를 올린다(상위에서 처리)."""
+def decompose(raw_input: str, context: dict | None = None, *, timeout: float | None = None) -> dict:
+    """원문 -> {task_title, steps[]}. 실패 시 예외를 올린다(상위에서 처리).
+    timeout: 이 호출만 짧게 기다릴 때(편집기 저장 시 나누기 확인). 없으면 AI_TIMEOUT."""
     resp = _http.post(
         f"{AI_BASE_URL}/ai/decompose",
         json={"raw_input": raw_input, "context": context or {}},
+        **({"timeout": timeout} if timeout is not None else {}),
     )
     resp.raise_for_status()
     return resp.json()
