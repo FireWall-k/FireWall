@@ -158,6 +158,10 @@ export default {
       // land: 가로로 눕힌 휴대폰(844×390 등). 높이가 낮아 세로로 쌓으면 넘친다 — 번호 넣기는 제목·칸을 왼쪽,
       // 키패드를 오른쪽에 둔다.
       addVariant("land", "@media (orientation: landscape) and (max-height: 620px)");
+      // topnarrow: 위 띠(TopBar, container-name topbar)가 22rem보다 좁을 때. 컨테이너 쿼리의 rem은 html 글자 크기를
+      // 따른다(미디어 쿼리는 따르지 않는다) — 그래서 글자를 키운 좁은 휴대폰(360·390 폭, 130%)에서만 걸리고 100%
+      // 글자 휴대폰에서는 걸리지 않는다. 4차 검증: 360폭 130%에서 [나가기]와 [도와주세요]가 16~46px 겹쳤다.
+      addVariant("topnarrow", "@container topbar (max-width: 22rem)");
       // 근로자 화면 설정(a11y_prefs). WorkerApp이 루트에 data 속성을 붙인다.
       addVariant("hc", '[data-contrast="high"] &');
       addVariant("lefty", '[data-hand="left"] &');

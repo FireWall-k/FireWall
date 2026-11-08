@@ -2,10 +2,40 @@
 // 세로 3칸: 위 띠 / (띠 한 개) / 내용 / 아래 막대. 높이는 100dvh, 문서는 스크롤하지 않는다 —
 // 넘치면 가운데 내용만 스크롤하고 위 띠·아래 막대(주 버튼)는 늘 화면 안에 남는다.
 // 띠(도움·오프라인·기록 보냄)는 한 번에 하나만 보인다. 도움 띠가 있으면 오프라인은 위 띠 가운데 작은 표시로.
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "../cn";
 import { COPY } from "./copy";
 import { IconOffline } from "../ui/icons";
+
+/**
+ * 가운데 칸이 넘쳐 스크롤되는지. 넘칠 때만 칸 자체를 키보드 초점에 넣는다(4차 검증: 시작·완료 화면은 칸 안에 초점 받을
+ * 것이 없어, 넘치면 키보드·스위치 사용자가 아래 내용(다음 일 미리 보기)으로 스크롤할 수 없었다 — axe
+ * scrollable-region-focusable). 넘치지 않으면 쓸데없는 초점 자리를 만들지 않는다.
+ */
+function useOverflowing() {
+  const ref = useRef<HTMLElement | null>(null);
+  const [over, setOver] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => setOver(el.scrollHeight > el.clientHeight + 1);
+    check();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    for (const c of Array.from(el.children)) ro.observe(c);
+    const mo = typeof MutationObserver === "undefined" ? null : new MutationObserver(() => {
+      for (const c of Array.from(el.children)) ro.observe(c);
+      check();
+    });
+    mo?.observe(el, { childList: true });
+    return () => {
+      ro.disconnect();
+      mo?.disconnect();
+    };
+  }, []);
+  return [ref, over] as const;
+}
 
 export function WorkerScreen({
   top,
@@ -22,6 +52,7 @@ export function WorkerScreen({
   mainClassName?: string;
   testId?: string;
 }) {
+  const [mainRef, overflowing] = useOverflowing();
   return (
     <div
       data-testid={testId}
@@ -30,8 +61,12 @@ export function WorkerScreen({
       {top}
       {band}
       <main
+        ref={mainRef}
         data-testid="worker-main"
+        tabIndex={overflowing ? 0 : undefined}
+        aria-label={overflowing ? COPY.screen.scrollArea : undefined}
         className={cn(
+          "focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-[-3px] focus-visible:outline-worker-primary",
           // 내용이 넘쳐도 줄어들지 않고(겹침 방지) 이 칸만 스크롤한다.
           "mx-auto flex min-h-0 w-full max-w-[1024px] flex-1 flex-col overflow-y-auto px-4 tablet:px-8 [&>*]:shrink-0",
           mainClassName,
@@ -49,7 +84,7 @@ export function WorkerScreen({
  *  80px 버튼이 있는 띠는 버튼 높이만큼(80)이고, 버튼 없는 띠(번호 넣기 등)만 72로 줄어든다. 띠에 위아래 여백은 없다. */
 export function TopBar({ left, center, right }: { left?: ReactNode; center?: ReactNode; right?: ReactNode }) {
   return (
-    <header className="w-full shrink-0 border-b-2 border-worker-line-soft bg-worker-bg pt-[env(safe-area-inset-top)] hc:border-black hc:bg-white">
+    <header className="w-full shrink-0 border-b-2 border-worker-line-soft bg-worker-bg pt-[env(safe-area-inset-top)] [container-name:topbar] [container-type:inline-size] hc:border-black hc:bg-white">
       <div className="mx-auto flex h-worker-top w-full max-w-[1024px] items-center justify-between gap-2 px-4 small:h-auto small:min-h-worker-top-sm tablet:h-worker-top-tab tablet:px-8">
         <div className="flex min-w-0 items-center">{left}</div>
         <div className="flex min-w-0 flex-1 items-center justify-center">{center}</div>
@@ -108,7 +143,8 @@ export function Band({
           "mx-auto flex min-h-16 w-full max-w-[1024px] items-center gap-3 px-4 py-1 text-worker font-semibold small:min-h-14 small:gap-2 small:px-3 tablet:px-8",
           // 버튼이 있는 띠([취소]·[다시 부르기])는 위 띠의 [도와주세요]와 24px 넘게 떨어뜨린다(명세 8.1: 다른 행동
           // 버튼 사이 24px. 2차 검증: 6px 아래라 '불렀어요'를 조금 낮게 누르면 취소됐다).
-          spaced && "pt-6",
+          // px로 둔다: 글자를 키워도(130%) 간격은 24px이면 되고, rem이면 가로 휴대폰에서 문장 칸 몫을 7px 더 먹었다(4차 검증).
+          spaced && "pt-[24px]",
         )}
       >
         {children}

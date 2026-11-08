@@ -21,6 +21,8 @@ export function HelpButton({ phase, onPress }: { phase: HelpPhase; onPress: () =
       data-testid="help-button"
       className={cn(
         "inline-flex min-h-touch min-w-[160px] select-none items-center justify-center gap-2 whitespace-nowrap rounded-worker-btn bg-worker-help px-3 text-worker font-bold text-worker-help-ink small:min-w-0",
+        // 좁은 위 띠(글자를 키운 360·390 폭): 손 아이콘을 글자 위로 올려 폭을 줄인다(글자 크기는 그대로, 4차 검증).
+        "topnarrow:min-w-0 topnarrow:flex-col topnarrow:gap-0 topnarrow:px-2 topnarrow:leading-tight",
         pressed ? "border-4 border-worker-help-ink" : "border-[3px] border-worker-help-line",
         "hc:border-black hc:bg-white hc:text-black",
       )}

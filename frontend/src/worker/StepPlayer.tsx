@@ -226,14 +226,17 @@ function StepPicture({ step, onMediaError }: { step: Step; onMediaError?: (url: 
 }
 
 // --- 듣기 ---
-function SpeakButton({ playing, blocked, onPress }: { playing: boolean; blocked: boolean; onPress: () => void }) {
+function SpeakButton({ playing, blocked, onPress, compact = false }: { playing: boolean; blocked: boolean; onPress: () => void; compact?: boolean }) {
   return (
     <button
       type="button"
       onClick={onPress}
       data-testid="speak-button"
       className={cn(
-        "flex size-20 shrink-0 select-none flex-col items-center justify-center gap-0.5 rounded-worker-btn bg-worker-sound text-worker-caption font-bold text-worker-sound-ink",
+        "flex shrink-0 select-none items-center justify-center rounded-worker-btn bg-worker-sound text-worker-caption font-bold text-worker-sound-ink",
+        // compact(가로 휴대폰 위 띠 안): 높이를 80px로 고정하고 아이콘·글자를 옆으로 둔다. 4차 검증: 5rem 정사각형이라
+        // 글자 130%에서 104px이 되어 위 띠를 키웠고, 그만큼 문장 칸이 4px까지 줄었다.
+        compact ? "h-[80px] min-w-touch flex-row gap-1 px-2" : "size-20 flex-col gap-0.5",
         blocked ? "border-[3px] border-worker-sound-ink" : "border-2 border-transparent",
         "hc:border-black hc:bg-white hc:text-black",
       )}
@@ -342,10 +345,11 @@ export function StepPlayer({
       total={steps.length}
       current={index}
       done={(i) => doneIds.has(steps[i].id)}
-      size={dotsInTop && steps.length > 6 ? "sm" : "md"}
+      size={dotsInTop ? "sm" : "md"}
+      nowrap={dotsInTop}
     />
   );
-  const speak = <SpeakButton playing={audio.playing} blocked={audio.blocked} onPress={audio.toggle} />;
+  const speak = <SpeakButton playing={audio.playing} blocked={audio.blocked} onPress={audio.toggle} compact={dotsInTop} />;
 
   const exit = () => {
     if (live) {
@@ -360,19 +364,20 @@ export function StepPlayer({
       data-mode={mode}
       className={cn(
         "flex h-dvh flex-col overflow-hidden bg-worker-bg font-worker text-worker-ink hc:bg-white hc:text-black",
-        "wide:grid wide:grid-cols-[minmax(0,1fr)_minmax(18rem,26.5rem)] wide:grid-rows-[auto_auto_auto_minmax(0,1fr)_auto] wide:gap-x-6 tablet:wide:gap-x-8",
+        "wide:grid wide:grid-cols-[minmax(0,1fr)_minmax(288px,424px)] wide:grid-rows-[auto_auto_auto_minmax(0,1fr)_auto] wide:gap-x-6 tablet:wide:gap-x-8",
       )}
     >
       <div className="wide:col-span-2 wide:row-start-1">
         <TopBar
           left={
-            <SecondaryAction icon={IconExit} onPress={exit} className="!gap-2 !px-3">
+            <SecondaryAction icon={IconExit} onPress={exit}
+              className="!gap-2 !px-3 topnarrow:min-w-touch topnarrow:flex-col topnarrow:!gap-0 topnarrow:!px-2 topnarrow:text-worker-caption topnarrow:font-bold">
               {COPY.btn.exit}
             </SecondaryAction>
           }
           center={
             dotsInTop ? (
-              <div className="flex min-w-0 items-center gap-6 px-4" data-testid="top-dots">
+              <div className="flex min-w-0 items-center gap-3 pl-2 pr-4 [&>[data-testid=progress-dots]]:min-w-0 [&>[data-testid=progress-dots]]:overflow-hidden" data-testid="top-dots">
                 {offlineMark && <OfflineMark />}
                 {dots}
                 {speak}
@@ -411,10 +416,11 @@ export function StepPlayer({
           <div
             key={`pic-${step.id}`}
             className={cn(
-              "relative min-h-[240px] flex-1 [container-type:size]",
-              // 띠(도움·끊김)가 떠 있으면 작은 휴대폰에서 그림 바닥을 180 → 96px로 낮춘다 — 문장과 [듣기]가 먼저다
-              // (2차 검증). 그래도 넘치면 가운데 칸 아래를 흐리게 한다(data-more).
-              shownBand ? "small:min-h-[96px]" : "small:min-h-[180px]",
+              "relative flex-1 [container-type:size]",
+              // 띠(도움·끊김)가 떠 있으면 그림 바닥을 96px로 낮춘다 — 문장과 [듣기]가 먼저다(2차 검증). 4차 검증: 예전에는
+              // 작은 휴대폰(small)만 낮춰서 390×740·390×844에서는 240px 바닥을 지키느라 문장·[듣기]가 흐림 아래로 밀렸다.
+              // 그래도 넘치면 가운데 칸 아래를 흐리게 한다(data-more).
+              shownBand ? "min-h-[96px]" : "min-h-[240px] small:min-h-[180px]",
               "wide:col-start-1 wide:row-span-3 wide:row-start-3 wide:my-4 wide:ml-4 wide:min-h-0 tablet:wide:ml-8",
               "animate-step-in motion-reduce:animate-none",
             )}
@@ -432,7 +438,9 @@ export function StepPlayer({
             data-testid="step-caption-cell"
             className={cn(
               "flex shrink-0 flex-col gap-1 pb-2 pt-3",
-              "wide:col-start-2 wide:row-start-4 wide:min-h-0 wide:pr-4 wide:pt-2 tablet:wide:pr-8",
+              "wide:col-start-2 wide:row-start-4 wide:min-h-0 wide:pr-4 tablet:wide:pr-8",
+              // 띠가 떠 있는 가로 휴대폰은 문장 칸 위아래 여백을 줄여 한 줄이라도 더 보이게 한다(4차 검증).
+              dotsInTop ? "wide:py-0" : "wide:pt-2",
               "animate-step-in motion-reduce:animate-none",
             )}
           >

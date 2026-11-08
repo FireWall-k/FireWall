@@ -219,7 +219,7 @@ export default function EntryScreen({ onLogin }: { onLogin: (a: AuthState) => vo
       </div>
       {/* 화면 읽기 프로그램용: 넣은 자릿수(숫자는 화면에 보이므로 그대로 읽는다). */}
       <p className="sr-only" aria-live="polite">{digits.split("").join(" ")}</p>
-      <div className="flex min-h-0 w-full flex-1 !shrink items-center justify-center land:col-start-2 land:row-span-2 land:row-start-1">
+      <div className="flex min-h-[calc(256px+2.25rem)] w-full flex-1 !shrink items-center justify-center small:min-h-[calc(256px+1.5rem)] land:col-start-2 land:row-span-2 land:row-start-1">
         <Keypad
           disabled={busy}
           onDigit={onDigit}
@@ -228,15 +228,20 @@ export default function EntryScreen({ onLogin }: { onLogin: (a: AuthState) => vo
         />
       </div>
       {/* 선생님만 쓰는 작은 링크(근로자가 우연히 누르지 않게 작게). 예전 5자리 이상 번호용.
-          세로 화면은 키패드 아래, 가로 화면은 왼쪽 칸 아래. */}
-      <button
-        type="button"
-        data-teacher-only=""
-        onClick={() => navigate("/login?tab=worker")}
-        className="min-h-11 shrink-0 self-center rounded-worker-btn px-4 text-worker-caption text-worker-ink-soft underline underline-offset-4 hc:text-black land:col-start-1 land:row-start-2 [@media(max-height:620px)]:min-h-9"
-      >
-        {COPY.btn.teacherLongCode}
-      </button>
+          세로 화면은 키패드 아래, 가로 화면은 왼쪽 칸 아래.
+          4차 검증: 높이가 모자라면(글자 130% + 세 번 틀림 안내 네 줄) 키패드가 제 칸을 넘쳐 이 링크가 맨 아랫줄
+          [지우기][0][비우기] 위에 겹쳤다 — 0을 누르려다 링크를 누를 수 있었다. 이제 키패드 칸은 키패드 최소 높이(64px ×
+          4줄 + 틈) 아래로 줄지 않고, 모자라면 링크 칸이 가장 먼저 줄어(shrink 1000) 잘려 사라진다. 키패드와 겹치지 않는다. */}
+      <div className="flex min-h-0 w-full !shrink-[1000] justify-center overflow-hidden land:col-start-1 land:row-start-2">
+        <button
+          type="button"
+          data-teacher-only=""
+          onClick={() => navigate("/login?tab=worker")}
+          className="min-h-11 max-w-full shrink-0 rounded-worker-btn px-4 text-worker-caption leading-tight text-worker-ink-soft underline underline-offset-4 hc:text-black [@media(max-height:620px)]:min-h-9"
+        >
+          {COPY.btn.teacherLongCode}
+        </button>
+      </div>
     </WorkerScreen>
   );
 }

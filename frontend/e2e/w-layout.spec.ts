@@ -308,3 +308,186 @@ test("작은 화면에서도 번호 틀림 안내와 도움 띠 글씨는 24px, 
   expect(fs).toBe(24);
   expect(await page.title()).toBe("잡카드");
 });
+
+// --- 4차 검증: 시스템 글자 130%(html 글자 크기) ---------------------------------------------------------------
+
+async function bigText(page: Page) {
+  await page.addInitScript(() => {
+    const set = () => {
+      document.documentElement.style.fontSize = "130%";
+    };
+    if (document.documentElement) set();
+    document.addEventListener("DOMContentLoaded", set);
+  });
+}
+
+type Box = { x: number; y: number; width: number; height: number };
+function overlap(a: Box, b: Box) {
+  const ox = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+  const oy = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
+  return ox > 1 && oy > 1;
+}
+
+test.describe("130% 글자 가로 휴대폰 + 도움 띠: 문장 칸에 한 줄 넘게 보이고 [다 했어요]·[듣기]도 보인다", () => {
+  for (const [name, vp] of LANDSCAPE_PHONES) {
+    test(name, async ({ page }) => {
+      await bigText(page);
+      await loginAsWorker(page);
+      await page.setViewportSize(vp);
+      await page.goto("/w/job/asg-1/step/1");
+      await page.getByTestId("step-sentence").waitFor();
+      await page.getByTestId("help-button").click();
+      await expect(page.getByTestId("help-band")).toContainText("선생님을 불렀어요");
+      await page.waitForTimeout(300);
+      const r = await page.evaluate(() => {
+        const cap = document.querySelector('[data-testid="step-caption"]') as HTMLElement;
+        const h1 = document.querySelector('[data-testid="step-sentence"]') as HTMLElement;
+        const line = parseFloat(getComputedStyle(h1).fontSize) * 1.35;
+        const dots = document.querySelector('[data-testid="top-dots"] [data-testid="progress-dots"]')!.getBoundingClientRect();
+        const dot = document.querySelector('[data-testid="top-dots"] [data-testid="progress-dots"] span')!.getBoundingClientRect();
+        return { ch: cap.clientHeight, line, dotsH: dots.height, dotH: dot.height };
+      });
+      expect(r.ch, `${name}: 문장 칸 ${r.ch}px < 한 줄 ${r.line}px`).toBeGreaterThanOrEqual(r.line - 1);
+      // 진행 점은 한 줄(두 줄로 꺾여 위 띠를 키우지 않는다).
+      expect(r.dotsH).toBeLessThan(r.dotH * 2);
+      const done = (await page.getByRole("button", { name: "다 했어요" }).boundingBox())!;
+      expect(done.y + done.height).toBeLessThanOrEqual(vp.height + 0.5);
+      const sp = (await page.getByTestId("speak-button").boundingBox())!;
+      expect(sp.y).toBeGreaterThanOrEqual(0);
+      expect(sp.height).toBeGreaterThanOrEqual(79.5);
+      const top = (await page.locator('[data-testid="step-player"] header').boundingBox())!;
+      expect(sp.y + sp.height, `${name}: [듣기]가 위 띠 안`).toBeLessThanOrEqual(top.y + top.height + 0.5);
+    });
+  }
+});
+
+test("130% 글자 360·390 폭: 위 띠 [나가기]와 [도와주세요]·[불렀어요]가 겹치지 않는다", async ({ page }) => {
+  await bigText(page);
+  await loginAsWorker(page);
+  for (const vp of [{ width: 360, height: 640 }, { width: 360, height: 560 }, { width: 390, height: 740 }]) {
+    await page.setViewportSize(vp);
+    await page.goto("/w/job/asg-1/step/1");
+    await page.getByTestId("step-sentence").waitFor();
+    const exit = page.getByRole("button", { name: "나가기" });
+    const help = page.getByTestId("help-button");
+    expect(overlap((await exit.boundingBox())!, (await help.boundingBox())!), `${vp.width}×${vp.height} 처음`).toBe(false);
+    await help.click();
+    await expect(page.getByTestId("help-band")).toContainText("선생님을 불렀어요");
+    const e = (await exit.boundingBox())!;
+    const h = (await help.boundingBox())!;
+    expect(overlap(e, h), `${vp.width}×${vp.height} 불렀어요`).toBe(false);
+    expect(h.x + h.width).toBeLessThanOrEqual(vp.width + 0.5);
+    expect(e.x).toBeGreaterThanOrEqual(0);
+    // 글자가 버튼 밖으로 삐져나오지 않는다.
+    for (const b of [exit, help]) {
+      const spill = await b.evaluate((el) => {
+        const rg = document.createRange();
+        rg.selectNodeContents(el);
+        const t = rg.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        return t.left < r.left - 0.5 || t.right > r.right + 0.5;
+      });
+      expect(spill).toBe(false);
+    }
+    await page.getByTestId("help-band").getByRole("button", { name: "취소" }).click();
+    await expect(page.getByTestId("help-band")).toHaveCount(0);
+  }
+});
+
+test("390폭 세로 + 도움 띠(100%·130%): 문장 첫 줄과 [듣기]가 흐림 위에 보인다", async ({ page }) => {
+  for (const big of [false, true]) {
+    if (big) await bigText(page);
+    await loginAsWorker(page);
+    for (const vp of [{ width: 390, height: 740 }, { width: 390, height: 844 }]) {
+      await page.setViewportSize(vp);
+      for (const n of [1, 3]) {
+        await page.goto(`/w/job/asg-1/step/${n}`);
+        await page.getByTestId("step-sentence").waitFor();
+        await page.getByTestId("help-button").click();
+        await expect(page.getByTestId("help-band")).toContainText("선생님을 불렀어요");
+        await page.waitForTimeout(400);
+        const r = await page.evaluate(() => {
+          const sc = document.querySelector('[data-testid="step-scroll"]') as HTMLElement;
+          const h1 = document.querySelector('[data-testid="step-sentence"]') as HTMLElement;
+          const sp = document.querySelector('[data-testid="speak-button"]')!.getBoundingClientRect();
+          const s = sc.getBoundingClientRect();
+          const fade = sc.dataset.more === "true" ? 40 : 0;
+          const line = parseFloat(getComputedStyle(h1).fontSize) * 1.35;
+          return { visibleBottom: s.bottom - fade, firstLineBottom: h1.getBoundingClientRect().top + line, speakBottom: sp.bottom };
+        });
+        const label = `${big ? "130%" : "100%"} ${vp.width}×${vp.height} ${n}단계`;
+        expect(r.firstLineBottom, `${label}: 문장 첫 줄`).toBeLessThanOrEqual(r.visibleBottom + 0.5);
+        expect(r.speakBottom, `${label}: [듣기]`).toBeLessThanOrEqual(r.visibleBottom + 0.5);
+        // 다음 반복을 위해 도움을 거둔다.
+        await page.getByTestId("help-band").getByRole("button", { name: "취소" }).click();
+        await expect(page.getByTestId("help-band")).toHaveCount(0);
+      }
+    }
+  }
+});
+
+test("넘치는 시작·완료 화면도 axe 심각 위반이 없다(390×740·가로·130%)", async ({ page }) => {
+  for (const big of [false, true]) {
+    if (big) await bigText(page);
+    await loginAsWorker(page);
+    for (const vp of [{ width: 390, height: 740 }, { width: 844, height: 390 }, { width: 640, height: 360 }]) {
+      await page.setViewportSize(vp);
+      for (const url of ["/w/job/asg-1", "/w/job/asg-2/done"]) {
+        await page.goto(url);
+        await page.waitForTimeout(400);
+        const results = await new AxeBuilder({ page }).analyze();
+        const serious = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+        expect(serious, `${big ? "130%" : "100%"} ${vp.width}×${vp.height} ${url}: ${serious.map((v) => v.id).join(", ")}`).toEqual([]);
+      }
+    }
+  }
+});
+
+test("완료 화면 640×360 130%: 아래 막대 두 버튼이 화면 안에 있고 겹치지 않는다", async ({ page }) => {
+  await bigText(page);
+  await loginAsWorker(page);
+  await page.setViewportSize({ width: 640, height: 360 });
+  await page.goto("/w/job/asg-2/done");
+  await page.getByTestId("job-done-screen").waitFor();
+  const next = (await page.getByRole("button", { name: "다음 일 하기" }).boundingBox())!;
+  const replay = (await page.getByRole("button", { name: "방금 일 다시 보기" }).boundingBox())!;
+  for (const b of [next, replay]) {
+    expect(b.x).toBeGreaterThanOrEqual(-0.5);
+    expect(b.x + b.width).toBeLessThanOrEqual(640.5);
+    expect(b.y + b.height).toBeLessThanOrEqual(360.5);
+  }
+  expect(overlap(next, replay)).toBe(false);
+});
+
+test("번호 넣기 360×560 130%: 세 번 틀려도 선생님용 링크가 키패드 위에 겹치지 않는다", async ({ page }) => {
+  await bigText(page);
+  await pairedDevice(page);
+  await page.setViewportSize({ width: 360, height: 560 });
+  await page.goto("/w");
+  await page.getByTestId("keypad").waitFor();
+  for (let k = 0; k < 3; k++) {
+    for (const d of ["1", "2", "3", "5"]) await page.getByRole("button", { name: d, exact: true }).click();
+    await expect.poll(() => state.loginAttempts.length).toBe(k + 1);
+    await page.getByTestId("login-notice").waitFor();
+  }
+  const r = await page.evaluate(() => {
+    // 링크가 실제로 보이는 부분 = 링크 상자 ∩ 링크 칸(넘치면 잘린다).
+    const a = document.querySelector("[data-teacher-only]")!;
+    const b = a.getBoundingClientRect();
+    const c = a.parentElement!.getBoundingClientRect();
+    const vis = { x: Math.max(b.left, c.left), y: Math.max(b.top, c.top), r: Math.min(b.right, c.right), b: Math.min(b.bottom, c.bottom) };
+    return Array.from(document.querySelectorAll('[data-testid="keypad"] button')).map((k) => {
+      const kr = k.getBoundingClientRect();
+      const ox = Math.min(kr.right, vis.r) - Math.max(kr.left, vis.x);
+      const oy = Math.min(kr.bottom, vis.b) - Math.max(kr.top, vis.y);
+      const hit = document.elementFromPoint(kr.left + kr.width / 2, kr.top + kr.height * 0.75);
+      return { key: (k.textContent ?? "").trim(), overlaps: ox > 1 && oy > 1, hitKey: !!hit && k.contains(hit), bottom: kr.bottom };
+    });
+  });
+  const inner = await page.evaluate(() => window.innerHeight);
+  for (const k of r) {
+    expect(k.overlaps, `링크 × ${k.key}`).toBe(false);
+    expect(k.hitKey, `${k.key}: 누르면 그 키가 눌린다`).toBe(true);
+    expect(k.bottom, `${k.key}: 화면 안`).toBeLessThanOrEqual(inner + 0.5);
+  }
+});

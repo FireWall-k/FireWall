@@ -44,6 +44,8 @@ export function josa(word: string, pair: JosaPair): string {
 const WEEKDAYS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
 
 export const COPY = {
+  // 화면 읽기 프로그램만 읽는 이름. 넘쳐서 스크롤되는 가운데 칸(WorkerScreen).
+  screen: { scrollArea: "화면 내용" },
   btn: {
     enter: "들어가기",
     start: "시작하기",

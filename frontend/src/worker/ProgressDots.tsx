@@ -11,6 +11,7 @@ export function ProgressDots({
   current,
   done,
   size = "md",
+  nowrap = false,
   className,
 }: {
   total: number;
@@ -19,6 +20,8 @@ export function ProgressDots({
   /** i번째 단계를 끝냈는지. */
   done: (i: number) => boolean;
   size?: "sm" | "md";
+  /** 한 줄로만(위 띠 안). 4차 검증: 가로 휴대폰 130% 글자에서 두 줄로 꺾여 위 띠가 높아졌다. */
+  nowrap?: boolean;
   className?: string;
 }) {
   const label = current >= 0 ? COPY.step.srProgress(current + 1, total) : undefined;
@@ -43,7 +46,7 @@ export function ProgressDots({
   const sm = size === "sm";
   return (
     <div role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}
-      data-testid="progress-dots" className={cn("flex flex-wrap items-center", sm ? "gap-1.5" : "gap-2.5", className)}>
+      data-testid="progress-dots" className={cn("flex items-center", nowrap ? "flex-nowrap" : "flex-wrap", sm ? "gap-1.5" : "gap-2.5", className)}>
       {items.map((i) => {
         const isDone = done(i);
         const isCurrent = i === current;

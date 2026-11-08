@@ -16,6 +16,12 @@ import { Illustration } from "./ui/Illustration";
 import { PrimaryAction, SecondaryAction } from "./ui/WorkerButton";
 import { BottomBar, TopBar, WorkerScreen } from "./WorkerScreen";
 
+// 아래 막대 두 버튼. 가로 휴대폰(land)에서는 나란히 둔다 — 주 버튼은 제 폭을 지키고(줄지 않음), 보조 버튼이 남는 폭을
+// 쓴다. 남는 폭이 모자라면(글자 130%) 보조 버튼 글자만 낱말 단위로 두 줄이 된다. 4차 검증: 둘 다 w-full이라 줄지 못해
+// 640×360 130%에서 [다음 일 하기]가 화면 오른쪽 밖으로 잘렸다.
+const SECONDARY_CLASS = cn("w-full", "land:min-w-0 land:flex-1 land:whitespace-normal land:break-keep land:!px-3 land:leading-tight");
+const PRIMARY_CLASS = cn("w-full", "land:w-auto land:flex-none land:!px-4");
+
 export default function JobDoneScreen() {
   const { aid } = useParams();
   const navigate = useNavigate();
@@ -62,19 +68,19 @@ export default function JobDoneScreen() {
         <BottomBar stacked>
           {next ? (
             <>
-              <SecondaryAction icon={IconHistory} onPress={() => navigate(`/w/history/${job.assignment_id}`)} className="w-full">
+              <SecondaryAction icon={IconHistory} onPress={() => navigate(`/w/history/${job.assignment_id}`)} className={SECONDARY_CLASS}>
                 {COPY.btn.replayJob}
               </SecondaryAction>
-              <PrimaryAction icon={IconNext} onPress={() => navigate(`/w/job/${next.assignment_id}`)} className="w-full">
+              <PrimaryAction icon={IconNext} onPress={() => navigate(`/w/job/${next.assignment_id}`)} className={PRIMARY_CLASS}>
                 {COPY.btn.nextJob}
               </PrimaryAction>
             </>
           ) : (
             <>
-              <SecondaryAction icon={IconHistory} onPress={() => navigate("/w/history")} className="w-full">
+              <SecondaryAction icon={IconHistory} onPress={() => navigate("/w/history")} className={SECONDARY_CLASS}>
                 {COPY.btn.history}
               </SecondaryAction>
-              <PrimaryAction icon={IconEnd} onPress={() => setConfirmEnd(true)} className="w-full">
+              <PrimaryAction icon={IconEnd} onPress={() => setConfirmEnd(true)} className={PRIMARY_CLASS}>
                 {COPY.btn.end}
               </PrimaryAction>
             </>
