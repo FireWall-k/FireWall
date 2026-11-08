@@ -297,6 +297,8 @@ class SplitOutcome:
     # '-고/-어서'로 이어진 앞 절 중 동작으로 세지 않은 것(방법·사건·사고)의 동사 원형 — 규칙 경로가 "누르고
     # 기다리다"처럼 방법 동사로 본 앞 동작이 실은 따로 그림이 필요한지 확인을 띄우는 데 쓴다("눌러 뚫다"는 넣지 않는다).
     hidden_lemmas: frozenset[str] = frozenset()
+    # 사전에 없는 동사가 '-(으)ㄴ 뒤/후/다음' 앞에 있다("물을 끓인 뒤 …") — 동작일 수 있는데 세지 못했다.
+    unparsed_verbs: int = 0
 
 
 @lru_cache(maxsize=1)
@@ -418,6 +420,11 @@ class _Sentence:
     def is_verb_word(self, i: int) -> bool:
         return bool(self.own[i]) or bool(self.parses[i])
 
+    def comma_after(self, i: int) -> bool:
+        """i 어절 바로 뒤(다음 어절 앞)에 쉼표가 있는가."""
+        stop = self.matches[i + 1].start() if i + 1 < len(self.matches) else len(self.text)
+        return any(c in self.text[self.matches[i].end():stop] for c in ",，")
+
     def _aux_word(self, j: int) -> bool:
         return (not self.parses[j]) and any(q.lemma in kv._AUX_OR_PASSIVE for q in self.own[j])
 
@@ -533,6 +540,10 @@ class _Sentence:
                 act = _Action(head=i, end=end, stop=end, lemmas=lemmas, compound=compound)
                 act.manner = bool(lemmas & MANNER_VERBS)
                 word = self.words[end]
+                if act.manner and kind == kv.CONN and word.endswith("고") and self.comma_after(end):
+                    # '-고,'처럼 쉼표로 끊어 쓴 순차 연결이면 방법 동사도 따로 하는 동작이다("컵에 물을 따르고, 테이블에
+                    # 놓으세요"). 방법으로 빼는 것은 쉼표 없는 연결("손잡이를 잡고 당기세요")일 때만(2차 검증).
+                    act.manner = False
                 if kind == kv.CONN:
                     if word.endswith(("고", "고서")) and not word.endswith("다고"):
                         act.boundary = "go"
@@ -589,6 +600,19 @@ class _Sentence:
                 if not lemmas <= kv._LIGHT_VERBS and not all(_is_adjective(lm) for lm in lemmas):
                     n += 1
             elif (self.kind.get(i) == kv.CONN and lemmas <= {"하다"} and i > 0 and self.is_object(i - 1)):
+                n += 1
+        return n
+
+    def unparsed_adnominals(self) -> int:
+        """사전에 없는 말이 관형형 꼴(끝 받침 ㄴ)로 '뒤·후·다음' 앞에 있고 그 뒤에 할 일 동사가 오는 어절 수.
+        "물을 끓인 뒤 티백을 넣으세요"의 '끓인'처럼 동작인데 동작 찾기(actions)가 원형을 몰라 건너뛴다(2차 검증)."""
+        n = 0
+        for i in range(len(self.words) - 1):
+            w = self.words[i]
+            if (self.parses[i] or self.own[i] or self.quoted[i] or len(w) < 2 or _final_of(w) != 4
+                    or w in _noun_vocab() or self.words[i + 1] not in _TEMPORAL_NOUNS):
+                continue
+            if any(self.kind.get(j) in kv.MAIN_KINDS for j in range(i + 2, len(self.words))):
                 n += 1
         return n
 
@@ -1023,6 +1047,48 @@ def _build(s: _Sentence, acts: list[_Action]) -> list[str] | None:
     return pieces
 
 
+# 초안 대상 잇기(_fill_gaps)에서 빼는 동사. 앞 동사가 살피기·세기면 뒤 동작의 대상은 그 물건이 아니고("동전을 세고
+# 장부에 적으세요" — 적는 것은 센 수), 뒤 동사가 적기·알리기면 대상은 물건이 아니라 내용이다.
+_NO_FILL_PREV = frozenset({"세다", "확인하다", "재다", "보다", "읽다", "고르다", "찾다", "계산하다", "결제하다",
+                           "스캔하다", "점검하다", "살펴보다"})
+_NO_FILL_NEXT = frozenset({"적다", "쓰다", "찍다", "기록하다", "말하다", "알리다", "부르다", "묻다", "여쭈다"})
+
+
+def _fill_gaps(s: _Sentence, acts: list[_Action], pieces: list[str], gaps: list[int]) -> tuple[list[str], list[int]]:
+    """나누기 초안(노란 줄)에서 대상이 빠진 뒤 단계에 앞 단계의 대상을 붙인다("걸레를 빨아서 짜 주세요" → "걸레를
+    짜 주세요"). 초안은 사업주가 한 번 보는 줄이라 자동 분할(_carries)보다 넓게 붙이지만, 앞 절에 도구 '-로'가
+    있거나(버릴 것이 도구일 수 있다) 대상이 몸이거나 뒤 절에 조건·때 꼴이 있으면 붙이지 않는다. 붙인 문장이 문법
+    검사를 지나야 한다. 못 붙인 번호는 gaps에 남는다(2차 검증 — 뒤 단계에 '짜 주세요'만 남아 그림 검색어가 없었다)."""
+    out = list(pieces)
+    left: list[int] = []
+    bounds: list[tuple[int, int]] = []
+    lo = 0
+    for act in acts:
+        bounds.append((lo, act.head))
+        lo = act.stop + 1
+    for k in gaps:
+        if k == 0 or k >= len(acts):
+            left.append(k)
+            continue
+        plo, phi = bounds[k - 1]
+        prev = acts[k - 1]
+        lemma = next(iter(prev.lemmas)) if len(prev.lemmas) == 1 else None
+        j = _object_word(s, plo, phi, lemma)
+        np_ = _object_np(s, j, plo) if j is not None else None
+        nlo = prev.stop + 1
+        if (np_ is None or prev.boundary not in ("go", "seo", "bare") or _has_tool(s, plo, phi)
+                or np_.split()[-1] in NO_CARRY_NOUNS or s.clause_has_condition(nlo, acts[k].stop + 1)
+                or prev.lemmas & _NO_FILL_PREV or acts[k].lemmas & _NO_FILL_NEXT):
+            left.append(k)
+            continue
+        cand = f"{np_}{_josa(np_)} {out[k]}"
+        if _grammar_ok(cand, s.an, carried=True):
+            out[k] = cand
+        else:
+            left.append(k)
+    return out, left
+
+
 def _next_lemma_ok(s: _Sentence, act: _Action) -> bool:
     """뒤 절 동사는 원문 그대로 두므로, 원형 후보 중 하나가 사전 낱말이고 활용이 확실하면 된다."""
     return any(lm in s.an.lemmas and lm not in kv._LIGHT_VERBS and not _is_adjective(lm)
@@ -1162,37 +1228,188 @@ def split_clause(text: str, question: bool = False) -> SplitOutcome:
     sure: list[_Action] = []
     acts = _counted(s, all_acts, sure)
     # 갈라 담기(_sorts_into)로 세지 않은 동사는 확실한 쪽이라 hidden에 넣지 않는다.
+    unparsed = s.unparsed_adnominals()
     hidden = (len(all_acts) - len(acts) - len(sure) + sum(1 for a in all_acts if a.compound)
-              + s.unseen_verbs())
+              + s.unseen_verbs() + unparsed)
     hidden_lemmas = frozenset(lm for a in all_acts if a not in acts and a not in sure and a.boundary in ("go", "seo")
                               for lm in a.lemmas)
     soft = any(a.lemmas & BARE_MOTION for a in acts[:-1]) or any(s.quoted) or any(
         q in original for q in _QUOTE_CHARS)
     if len(acts) < 2:
-        return SplitOutcome(steps=[original], actions=len(acts), hidden_verbs=hidden, hidden_lemmas=hidden_lemmas,
+        return SplitOutcome(steps=[original], actions=len(acts), hidden_verbs=hidden, unparsed_verbs=unparsed,
+                            hidden_lemmas=hidden_lemmas,
                             list_object=_has_list_object(s), sorted_into=bool(sure), with_joined=s.with_joined)
     if has_negation(original, an):
         return SplitOutcome(steps=[original], suggestion=None, reason="negation", actions=len(acts),
-                            why_not=["negation"], hidden_verbs=hidden, hidden_lemmas=hidden_lemmas,
+                            why_not=["negation"], hidden_verbs=hidden, unparsed_verbs=unparsed,
+                            hidden_lemmas=hidden_lemmas,
                             soft_boundary=soft)
     # 세지 않은 동작(방법·사건·사고)이 사이에 있으면 절 경계가 어긋나므로 문장을 만들지 않는다(힌트만).
     if len(all_acts) != len(acts):
         return SplitOutcome(steps=[original], suggestion=None, reason="multi_action", actions=len(acts),
-                            why_not=["uncounted_action"], hidden_verbs=hidden, hidden_lemmas=hidden_lemmas,
+                            why_not=["uncounted_action"], hidden_verbs=hidden, unparsed_verbs=unparsed,
+                            hidden_lemmas=hidden_lemmas,
                             soft_boundary=soft)
     why = _auto_blockers(s, all_acts)
+    if unparsed:
+        why.append("unparsed_verb")
     pieces = _build(s, all_acts)
     if not why and pieces:
         return SplitOutcome(steps=pieces, auto=True, actions=len(acts), source=original, hidden_verbs=hidden,
+                            unparsed_verbs=unparsed,
                             hidden_lemmas=hidden_lemmas, soft_boundary=soft)
     draft_why = _first_verb_blockers(s, all_acts)
     suggestion = pieces if pieces and not draft_why else None
     comma_draft = pieces if pieces and draft_why and set(draft_why) <= COMMA_OK_BLOCKERS else None
     gaps = _missing_objects(s, all_acts, _carries(s, all_acts)) if suggestion else None
+    if suggestion and gaps:
+        suggestion, gaps = _fill_gaps(s, all_acts, suggestion, gaps)
     return SplitOutcome(steps=[original], suggestion=suggestion, reason="multi_action", actions=len(acts),
                         why_not=why or ["grammar"], suggestion_gaps=gaps or None, hidden_verbs=hidden,
+                        unparsed_verbs=unparsed,
                         hidden_lemmas=hidden_lemmas, soft_boundary=soft, comma_draft=comma_draft,
                         draft_blockers=draft_why)
+
+
+def finish_piece(chunk: str, style: str = "seyo") -> str | None:
+    """쉼표·순서 접속어 앞에서 끊긴 조각("도착한 우편물을 부서별로 분류하고", "서류를 넣고 복사한 뒤")의 끝 어절을
+    지시형으로 바꾼 문장("…분류하세요.", "…복사하세요."). 끝 어절이 '-고(나서)'·'-어서'·'-(으)ㄴ 뒤/후/다음'이고
+    원형이 확실할 때만, 아니면 None. 뜻 검사(부정·다른 주어·실수)는 하지 않는다 — 부르는 쪽이 문장 전체로 이미 본다.
+    조각 안에 동작이 더 남아 있어도 된다("서류를 넣고 복사하세요") — 부르는 쪽이 그 문장을 다시 나눈다."""
+    an = _analyzer()
+    text = chunk.strip().rstrip(",， ")
+    if an is None or not text:
+        return None
+    s = _Sentence(text, an)
+    n = len(s.words)
+    if n == 0:
+        return None
+    i, boundary = n - 1, None
+    if n >= 2 and s.words[-1] in _TEMPORAL_NOUNS:
+        i, boundary = n - 2, "adn"
+    elif n >= 2 and s.words[-1] == "나서":
+        i, boundary = n - 2, "go"
+    word = s.words[i]
+    if s.quoted[i]:
+        return None
+    # 'X하고·X해서·X한 뒤'(파쇄하고·복사한 뒤) — 사전에 없는 'X하다'도 지시형은 'X하세요' 하나다. 형용사(깨끗하고)는 뺀다.
+    hada = {"go": ("하고", "하고서"), "seo": ("해서",), "adn": ("한",)}
+    for b, ends in hada.items():
+        if boundary not in (None, b):
+            continue
+        tail = next((e for e in ends if word.endswith(e)), None)
+        if tail is None or len(word) <= len(tail):
+            continue
+        stem = word[:-len(tail)]
+        if stem in _ADJ_STEMS or style != "seyo":
+            return None
+        sentence = (text[:s.matches[i].start()] + stem + "하세요").strip() + "."
+        return sentence if _finished_ok(sentence, an) else None
+    if not s.parses[i] or any(p.aux for p in s.parses[i]):
+        return None
+    if boundary is None:
+        if s.kind.get(i) != kv.CONN:
+            return None
+        if word.endswith(("고", "고서")) and not word.endswith("다고"):
+            boundary = "go"
+        elif word.endswith("서") and not word.endswith("면서"):
+            boundary = "seo"
+        else:
+            return None
+    lemmas = s.main_lemmas(i) if boundary != "adn" else frozenset(p.lemma for p in s.parses[i])
+    act = _Action(head=i, end=i, stop=n - 1, lemmas=lemmas, boundary=boundary)
+    imp = _rewrite_boundary(s, act, style)
+    if imp is None:
+        return None
+    sentence = (text[:s.matches[i].start()] + imp).strip() + "."
+    return sentence if _finished_ok(sentence, an) else None
+
+
+def _finished_ok(sentence: str, an: kv.Analyzer) -> bool:
+    """finish_piece가 만든 문장의 겉모양 — 두 어절 이상, 마침표, 마지막 어절이 '-요' 종결 서술어, 동사에 조사가 붙은
+    어절 없음. 안쪽의 연결형(넣고)은 허용한다(_grammar_ok와 다른 점)."""
+    body = sentence[:-1].strip()
+    words = kv._TOKEN_RE.findall(body)
+    if not sentence.endswith(".") or len(words) < 2 or not words[-1].endswith("요"):
+        return False
+    return any(q.kind == kv.FINAL for q in an.analyze_word(words[-1]))
+
+
+def _cond_word(s: _Sentence, j: int) -> bool:
+    """j 어절이 조건·때 말인가('-(으)면'·'-거든'·'-려면'·'때'·'전에'·'경우에'). 순서 말(뒤·후·다음)과 까닭('-니')은
+    아니다 — 앞 동작을 끝내고 하는 일은 나누는 경계다."""
+    w = s.words[j]
+    if s.quoted[j] or len(w) < 1:
+        return False
+    if w in _TIME_WORDS:
+        return True
+    if len(w) >= 2 and w not in _noun_vocab() and (
+            (w.endswith("면") and not w.endswith("면서")) or w.endswith(("거든", "다면", "려면"))):
+        return True
+    return False
+
+
+def has_condition(text: str) -> bool:
+    """문장에 조건·때 말이 있는가(_cond_word). 순서 말(뒤·후·다음)도 있다고 본다 — GPT가 '출근하면'을 '출근한 뒤'로
+    바꿔 쓴 것도 조건을 지킨 것이다."""
+    an = _analyzer()
+    if an is None or not text.strip():
+        return False
+    s = _Sentence(text.strip(), an)
+    return any(_cond_word(s, j) or s.words[j] in _TEMPORAL_NOUNS for j in range(len(s.words)))
+
+
+def condition_prefix(text: str) -> str | None:
+    """조각 맨 앞의 조건·때 절("출근하면", "고객이 화장실을 쓰고 있으면", "일하기 전에"). 첫 할 일 동사보다 앞에
+    있을 때만, 아니면 None. GPT 단계 문장이 이 조건을 잃었을 때 첫 단계 앞에 되살리는 데 쓴다(2차 검증)."""
+    an = _analyzer()
+    text = text.strip()
+    if an is None or not text:
+        return None
+    s = _Sentence(text, an)
+    acts = s.actions()
+    first = acts[0].head if acts else len(s.words)
+    found = None
+    for j in range(min(first, len(s.words))):
+        if _cond_word(s, j):
+            found = j
+    if found is None or any(q in text[:s.matches[found].end()] for q in _QUOTE_CHARS):
+        return None
+    return text[:s.matches[found].end()].strip()
+
+
+def fix_polite(sentence: str) -> tuple[str, bool]:
+    """'-아/어세요' 꼴로 틀린 지시형(눌러세요·알려세요·둘러세요·깔아세요)을 바로잡는다. (문장, 확실한가).
+
+    마지막 어절이 '…세요'이고 '세요' 앞이 어떤 동사의 '-아/-어' 몸통이면(눌러 → 누르다) 그 동사의 지시형으로 바꾼다
+    (누르세요·알리세요·두르세요·깔아 주세요). 몸통과 어간이 같은 동사(가세요·켜세요)는 원래 맞다. 틀린 꼴인데 원형을
+    하나로 정하지 못하면 문장을 두고 False — 부르는 쪽이 노란 줄을 켠다(2차 검증: GPT 문장의 틀린 명령형)."""
+    an = _analyzer()
+    body = sentence.rstrip()
+    end = ""
+    while body and body[-1] in ".!?":
+        end = body[-1] + end
+        body = body[:-1]
+    m = re.search(r"([가-힣]+)세요$", body)
+    if an is None or m is None:
+        return sentence, True
+    stem = m.group(1)
+    hits = set()
+    for q in an.analyze_word(stem):
+        forms = conjugate.conjugate(q.lemma)
+        if forms is not None and stem in forms.a and q.lemma not in kv._LIGHT_VERBS:
+            hits.add(q.lemma)
+    if not hits:
+        return sentence, True
+    goods = {imperative(lm, "seyo") for lm in hits}
+    if stem + "세요" in goods:
+        return sentence, True
+    if len(hits) != 1 or None in goods:
+        return sentence, False
+    fixed = goods.pop()
+    if not _reads_as(fixed, next(iter(hits)), an):
+        return sentence, False
+    return body[:m.start()] + fixed + end, True
 
 
 # 쉼표('~고,')로 이미 끊어 쓴 문장이면 이 이유만으로는 쉼표에서 나누기를 막지 않는다 — 앞 동사가 일부러 하는 일
@@ -1229,8 +1446,14 @@ def _counted(s: _Sentence, acts: list[_Action], sure: list[_Action] | None = Non
 
 
 def _sorts_into(s: _Sentence, act: _Action, nxt: _Action, lo: int) -> bool:
-    """앞 절이 갈라 담기의 '나눠·모아'인가(SORT_INTO_VERBS 주석)."""
+    """앞 절이 갈라 담기의 '나눠·모아'인가(SORT_INTO_VERBS 주석).
+
+    앞 동사가 '-어/-아' 꼴(나눠·모아·나눠서)로 바로 이어질 때만이다. '-고'로 잇거나 쉼표로 끊어 쓴 문장("빨래를
+    색깔별로 분류하고 세탁기에 넣으세요", "물건을 종류별로 나누고, 선반에 놓으세요")은 사업주가 두 동작으로 말한
+    것이라 둘로 센다(입력 화면 나누기 2차 검증 — 말없이 한 단계로 합쳐 그림 한 장에 두 동작이 남았다)."""
     if not (act.lemmas & SORT_INTO_VERBS) or not (nxt.lemmas & SORT_INTO_PLACE):
+        return False
+    if act.boundary not in ("bare", "seo") or s.comma_after(act.end):
         return False
     words = s.words[lo:act.head]
     if any(w.endswith(("별로", "끼리")) or w in ("따로", "따로따로") for w in words):

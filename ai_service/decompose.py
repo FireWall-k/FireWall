@@ -172,11 +172,20 @@ def _guess_action(sentence: str) -> str:
     return "other"
 
 
+# 그림 검색어가 못 되는 말 — 순서 접속어(그리고·그다음)와, 동사 뒤 보조 용언 '주다'("짜 주세요"의 '주세요').
+# 이 말만 남으면 그림 검색에 근거가 없다(2차 검증). "손님께 영수증을 주세요"의 '주세요'는 본동사라 남긴다.
+_KEYWORD_STOP = frozenset({"먼저"}) | frozenset(w for c in _SEQ_CONNECTIVES for w in c.split())
+_AUX_GIVE = frozenset({"주세요", "줘요", "주십시오"})
+_GIVE_ARGS = ("을", "를", "에게", "께", "한테")
+
+
 def _extract_keywords(sentence: str) -> list[Keyword]:
     words = re.findall(r"[가-힣A-Za-z0-9]+", sentence)
     keywords: list[Keyword] = []
-    for w in words:
-        if len(w) < 2:
+    for k, w in enumerate(words):
+        if len(w) < 2 or w in _KEYWORD_STOP:
+            continue
+        if w in _AUX_GIVE and k > 0 and not words[k - 1].endswith(_GIVE_ARGS):
             continue
         pos = "verb" if any(h in w for hs in _ACTION_HINTS.values() for h in hs) else "noun"
         keywords.append(Keyword(term=w, pos=pos))
@@ -261,6 +270,8 @@ class Clause:
     # 규칙 경로에서 이 조각을 보여 줄 지시형 문장("물기를 닦은 후," → "물기를 닦으세요."). None이면 조각 그대로.
     rule_text: str | None = None
     rule_check: bool = False   # 규칙 경로에서 이 조각에 노란 줄(쉼표에서 잘랐지만 지시형 문장을 못 만들었다)
+    # 사업주가 쉼표·순서 접속어로 끊어 썼는데 뜻 검사에 걸려 자르지 않은 문장(규칙 경로에서 한 번 보게 한다).
+    cut_refused: bool = False
 
 
 def _comma_cut_ok(whole: step_split.SplitOutcome, pieces: list[str]) -> tuple[list[str | None], bool] | None:
@@ -285,12 +296,52 @@ def _comma_cut_ok(whole: step_split.SplitOutcome, pieces: list[str]) -> tuple[li
     return None
 
 
+def _more_cut_ok(whole: step_split.SplitOutcome, text: str) -> bool:
+    """동작이 조각보다 많은 문장("서류를 넣고 복사한 뒤, 클립으로 묶어 놓으세요")을 쉼표·접속어에서 잘라도 되는가 —
+    부정이 없고, 앞 절들의 뜻 검사(다른 주어·실수·물음·'빼고')가 쉼표로 끊어 쓴 문장에서 막지 않는 것뿐일 때."""
+    if step_split.has_negation(text):
+        return False
+    return whole.draft_blockers is not None and set(whole.draft_blockers) <= step_split.COMMA_OK_BLOCKERS
+
+
+def _conn_groups(sentence: str) -> list[tuple[str, list[str]]]:
+    """문장을 순서 접속어(그리고·그다음)에서 자른 부분들을 묶는다. 앞부분이 이미 끝난 지시("닦으세요 그리고 …")면
+    거기서 묶음을 닫고, 끝나지 않은 연결형("손을 씻고 그다음 …")이면 뒤 부분과 한 묶음이다 — 쉼표 조각처럼
+    문장 전체로 뜻을 검사해야 한다(입력 화면 나누기 2차 검증). (원문 그대로의 묶음 글, 부분 목록)."""
+    spans: list[tuple[int, int]] = []
+    pos = 0
+    for m in re.finditer(_CONN_PATTERN, sentence):
+        spans.append((pos, m.start()))
+        pos = m.end()
+    spans.append((pos, len(sentence)))
+    groups: list[tuple[str, list[str]]] = []
+    cur: list[str] = []
+    g_start: int | None = None
+    for k, (a, b) in enumerate(spans):
+        part = sentence[a:b].strip()
+        if part:
+            if g_start is None:
+                g_start = a
+            cur.append(part)
+        last = k == len(spans) - 1
+        if cur and (last or part.endswith(("요", "다"))):
+            groups.append((sentence[g_start:b].strip(), cur))
+            cur, g_start = [], None
+    return groups
+
+
 def clauses_of(text: str) -> list[Clause]:
     """원문 → 조각마다 규칙 판정(자동 분할·나누기 제안·그대로). 평가 도구도 이 함수를 쓴다.
 
-    문장부호·순서 접속어(그리고·그다음)에서 자르고, '~고,' 같은 쉼표 조각은 _comma_cut_ok가 될 때만 따로 둔다.
+    문장부호에서 자르고, 순서 접속어(그리고·그다음)·'~고,' 같은 쉼표에서 끊긴 조각은 문장 전체를 규칙 동작
+    세기에 넣어 본 뒤(_comma_cut_ok) 될 때만 따로 둔다. 접속어 조각을 먼저 떼면 "컵은 씻지 말고 그다음 선반에
+    올리세요" → "컵은 씻지 말고."(부정), "손님이 나가고 그리고 …" → "손님이 나가고."(남의 일), "먼저 손을 씻고
+    그다음 …" → "먼저 손을 씻고."(끝나지 않은 말)가 노란 표시 없이 단계가 됐다(2차 검증). 동작이 조각보다 많으면
+    뜻 위험이 없을 때만 조각마다 노란 줄로 자르고(_more_cut_ok), 끝나지 않은 조각은 지시형으로 맺어(finish_piece)
+    그 안에서 다시 나눈다.
     _split_steps는 문장부호를 떼므로, 원문에서 조각 바로 뒤에 물음표가 있었는지 따로 알려 준다 — 물음
     ("상자를 접어서 넣을까요?")을 지시로 바꿔 나누지 않게.
+    GPT에 보여 주는 원문 조각(pieces)은 언제나 쉼표·접속어 조각 그대로다(응답 캐시·src 번호가 그대로 맞는다).
     """
     out: list[Clause] = []
     cursor = 0
@@ -304,25 +355,33 @@ def clauses_of(text: str) -> list[Clause]:
         return text[cursor:cursor + 3].lstrip().startswith(("?", "？"))
 
     for si, (sentence, raw_sentence) in enumerate(_sentence_spans(text)):
-        for part in re.split(_CONN_PATTERN, sentence):
-            part = part.strip()
-            if not part:
-                continue
-            pieces = _split_sequential(part)
+        for group_text, parts in _conn_groups(sentence):
+            pieces = [c for part in parts for c in _split_sequential(part)]
             asks = [question_after(chunk) for chunk in pieces]
             if len(pieces) < 2:
                 out.extend(Clause(chunk, step_split.split_clause(chunk, question=ask), si, raw_sentence,
                                   pieces=[chunk]) for chunk, ask in zip(pieces, asks))
                 continue
-            whole = step_split.split_clause(part, question=asks[-1])
+            whole_text = parts[0] if len(parts) == 1 else ", ".join(pieces)
+            whole = step_split.split_clause(whole_text, question=asks[-1])
             cut = _comma_cut_ok(whole, pieces)
+            if cut is None and whole.actions > len(pieces) and _more_cut_ok(whole, whole_text):
+                last = len(pieces) - 1
+                for k, (chunk, ask) in enumerate(zip(pieces, asks)):
+                    shown = None if k == last else step_split.finish_piece(chunk)
+                    out.append(Clause(chunk, step_split.split_clause(shown or chunk, question=ask), si,
+                                      raw_sentence, pieces=[chunk], rule_text=shown, rule_check=True))
+                continue
             if cut is None:
-                out.append(Clause(part, whole, si, raw_sentence, pieces=pieces))
+                out.append(Clause(group_text, whole, si, raw_sentence, pieces=pieces, cut_refused=True))
                 continue
             texts, sure = cut
-            out.extend(Clause(chunk, step_split.split_clause(chunk, question=ask), si, raw_sentence,
-                              pieces=[chunk], rule_text=shown, rule_check=not sure)
-                       for chunk, ask, shown in zip(pieces, asks, texts))
+            last = len(pieces) - 1
+            for k, (chunk, ask, shown) in enumerate(zip(pieces, asks, texts)):
+                if shown is None and k != last:
+                    shown = step_split.finish_piece(chunk)
+                out.append(Clause(chunk, step_split.split_clause(chunk, question=ask), si, raw_sentence,
+                                  pieces=[chunk], rule_text=shown, rule_check=not sure))
     return out
 
 
@@ -380,18 +439,22 @@ def _rule_decompose(raw_input: str, context: dict) -> DecomposeResult:
     sentence_of: list[int] = []
     for cl in clauses:
         plan = cl.plan
-        if cl.rule_text is not None:
+        if cl.rule_text is not None and not cl.rule_check:
             pieces = [(_plain(cl.rule_text), False)]
-        elif cl.rule_check:
-            pieces = [(cl.text, True)]
         elif plan.auto and len(plan.steps) >= 2:
-            pieces = [(_plain(p), False) for p in plan.steps]
+            pieces = [(_plain(p), cl.rule_check) for p in plan.steps]
         elif plan.suggestion and len(plan.suggestion) >= 2:
             pieces = [(_plain(p), True) for p in plan.suggestion]
+        elif cl.rule_text is not None:
+            pieces = [(_plain(cl.rule_text), True)]
+        elif cl.rule_check:
+            pieces = [(cl.text, True)]
         else:
             # 동작이 둘 이상인데 못 나눴거나, 방법 동사로 본 앞 동작이 따로 그림이 필요할 수 있는 동사(누르고 기다리다·
-            # 따라서 갖다 드리다)면 노란 줄로 한 번 보게 한다.
-            pieces = [(cl.text, plan.actions >= 2 or bool(plan.hidden_lemmas & _HAND_MANNER))]
+            # 따라서 갖다 드리다)거나, 사전에 없는 동사가 '-ㄴ 뒤' 앞에 있거나, 사업주가 끊어 쓴 곳을 뜻 검사 때문에
+            # 자르지 않았으면 노란 줄로 한 번 보게 한다.
+            pieces = [(cl.text, plan.actions >= 2 or bool(plan.hidden_lemmas & _HAND_MANNER)
+                       or plan.unparsed_verbs > 0 or cl.cut_refused)]
         for chunk, check in pieces:
             steps.append(Step(
                 order=len(steps) + 1,
@@ -426,11 +489,14 @@ def _build_from_llm(raw: dict, clauses: list[Clause] | None = None) -> Decompose
 
     steps: list[Step] = []
     srcs: list[object] = []
+    bad_form: set[int] = set()
     for i, s in enumerate(raw_steps[:_MAX_STEPS], start=1):
         sentence = str(s.get("sentence", "")).strip()
         if not sentence:
             continue
         sentence = sentence[:_MAX_SENTENCE]
+        # GPT가 쓴 틀린 지시형('눌러세요'·'알려세요')을 바로잡는다. 못 고치면 노란 줄(근로자는 이 문장을 그대로 듣는다).
+        sentence, form_ok = step_split.fix_polite(sentence)
         action = s.get("action_type", "other")
         if action not in _VALID_ACTIONS:
             action = "other"
@@ -442,11 +508,17 @@ def _build_from_llm(raw: dict, clauses: list[Clause] | None = None) -> Decompose
             symbol_query=symbol_query, action_type=action, safety_flags=flags,
         ))
         srcs.append(s.get("src"))
+        if not form_ok:
+            bad_form.add(id(steps[-1]))
 
     if not steps:
         raise ValueError("LLM 응답에서 유효한 단계를 만들지 못했습니다.")
     if clauses:
         steps = _reconcile(steps, _align(steps, srcs, clauses), clauses)
+    for st in steps:
+        # 검산이 문장을 원문으로 바꿨으면(조건 되살리기) 다시 본다.
+        if id(st) in bad_form and not step_split.fix_polite(st.sentence)[1]:
+            st.split_check = True
     title = str(raw.get("task_title") or steps[0].sentence)[:40]
     job = str(raw.get("job") or "unknown")
     if job not in VALID_JOBS:
@@ -552,6 +624,22 @@ def _merge_is_sure(mine: list[Step], plan: step_split.SplitOutcome, text: str) -
     return len({_head_verb(st) for st in mine}) == 1
 
 
+def _keep_condition(mine: list[Step], clause: Clause, one: bool) -> None:
+    """원문 조각 앞의 조건·때 절("출근하면", "고객이 화장실을 쓰고 있으면")을 GPT 단계 문장이 모두 잃었으면 되살린다
+    (2차 검증: 조건 절이 있는 26문장 중 24문장에서 조건이 노란 표시 없이 빠졌다 — "밖에서 기다리세요"만 남으면 근로자는
+    언제 기다리는지 모른다). 한 동작 조각이 원문 문장 그대로면 사업주가 쓴 원문을 쓰고(받는 사람·도구도 지킨다), 아니면
+    첫 단계 앞에 조건 절을 붙인다. 그림 검색어는 그대로다."""
+    prefix = step_split.condition_prefix(clause.text)
+    if prefix is None or any(step_split.has_condition(st.sentence) for st in mine):
+        return
+    first = mine[0]
+    whole = clause.sentence_text.rstrip(".!?").strip() == clause.text
+    if one and whole:
+        first.sentence = clause.sentence_text if clause.sentence_text.endswith((".", "!", "?"))             else clause.sentence_text + "."
+    else:
+        first.sentence = f"{prefix} {first.sentence}"[:_MAX_SENTENCE]
+
+
 def _reconcile(steps: list[Step], where: list[int], clauses: list[Clause]) -> list[Step]:
     """원문 조각마다 GPT 단계 수(g)와 규칙 동작 수(r)를 맞춰 본다.
 
@@ -586,6 +674,7 @@ def _reconcile(steps: list[Step], where: list[int], clauses: list[Clause]) -> li
             sure = g == r and not (g >= 2 and soft)
             for st in mine:
                 st.split_check = not sure or not _grounded(st, clause.text)
+            _keep_condition(mine, clause, g == r == 1)
         out.extend(mine)
         sentence_of.extend([clause.sentence] * len(mine))
     for st, si in zip(out, sentence_of):

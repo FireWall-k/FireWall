@@ -297,8 +297,12 @@ def test_question_mark_from_the_raw_text_blocks_the_split():
 
 
 def test_draft_marks_the_box_without_an_object():
+    # 앞 단계 대상을 이을 수 있으면 잇는다(2차 검증: 뒤 단계에 무엇을 하는지가 없었다). 못 이으면 칸을 표시한다.
     out = split_clause("영수증을 뽑아서 손님께 드리세요.")
-    assert out.suggestion == ["영수증을 뽑으세요.", "손님께 드리세요."]
+    assert out.suggestion == ["영수증을 뽑으세요.", "영수증을 손님께 드리세요."]
+    assert out.suggestion_gaps is None
+    out = split_clause("동전을 세고 장부에 적으세요.")
+    assert out.suggestion == ["동전을 세세요.", "장부에 적으세요."]
     assert out.suggestion_gaps == [1]
     out = split_clause("출근하면 카드를 찍고 이름을 쓰세요.")
     assert out.suggestion_gaps is None
@@ -334,7 +338,7 @@ def test_no_object_is_put_before_a_condition():
 def test_bare_a_form_gets_a_draft_in_the_original_ending():
     out = split_clause("빵을 집어 봉투에 담아요.")
     assert out.reason == "multi_action"
-    assert out.suggestion == ["빵을 집어요.", "봉투에 담아요."]
+    assert out.suggestion == ["빵을 집어요.", "빵을 봉투에 담아요."]
 
 
 def test_single_action_has_no_hint():

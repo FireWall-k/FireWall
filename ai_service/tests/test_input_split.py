@@ -150,7 +150,8 @@ def test_rule_path_uses_split_suggestion_as_yellow_split(monkeypatch):
     # 한 줄에 동작 둘이 남지 않게 하고, 틀렸으면 사업주가 [합치기]로 원문(source_text)을 되돌린다.
     monkeypatch.setattr(llm, "llm_available", lambda: False)
     steps = run("그릇을 헹궈서 선반에 올려 두세요.", {}).steps
-    assert [s.sentence for s in steps] == ["그릇을 헹구세요", "선반에 올려 두세요"]
+    # 뒤 단계는 대상이 없어 앞 단계 대상을 이어 붙인다(2차 검증 — 무엇을 올리는지 남기기).
+    assert [s.sentence for s in steps] == ["그릇을 헹구세요", "그릇을 선반에 올려 두세요"]
     assert [s.split_group for s in steps] == [1, 1]
     assert all(s.split_check for s in steps)
     assert {s.source_text for s in steps} == {"그릇을 헹궈서 선반에 올려 두세요."}
@@ -275,3 +276,112 @@ def test_dependent_noun_object_blocks_auto_split():
 def test_decimal_point_is_not_a_sentence_end():
     assert _rule("2.5L 생수를 하나씩 꺼내세요.") == [("2.5L 생수를 하나씩 꺼내세요", False)]
     assert decompose._split_steps("2.5L 생수를 꺼내세요. 상자를 접으세요.") == ["2.5L 생수를 꺼내세요", "상자를 접으세요"]
+
+
+# ---- 2차 검증 회귀 ------------------------------------------------------------------------------
+
+def _no_gpt(monkeypatch):
+    monkeypatch.setattr(llm, "llm_available", lambda: False)
+
+
+def test_rule_path_connective_pieces_are_checked_like_comma_pieces(monkeypatch):
+    # '그리고/그다음'에서 먼저 자르면 부정·남의 일·끝나지 않은 조각이 노란 표시 없이 단계가 됐다.
+    _no_gpt(monkeypatch)
+    steps = _rule("컵은 씻지 말고 그다음 선반에 올리세요.")
+    assert len(steps) == 1 and steps[0][1] is True
+    assert not steps[0][0].endswith("말고.")
+    steps = _rule("손님이 나가고 그리고 테이블을 닦으세요.")
+    assert len(steps) == 1 and steps[0][1] is True
+    assert _rule("먼저 손을 씻고 그다음 앞치마를 입으세요.") == [("먼저 손을 씻으세요", False),
+                                                       ("앞치마를 입으세요", False)]
+    # 앞부분이 이미 끝난 지시면 접속어에서 그대로 나눈다.
+    assert _rule("테이블을 닦으세요 그리고 의자를 넣으세요.") == [("테이블을 닦으세요", False),
+                                                       ("의자를 넣으세요", False)]
+
+
+def test_connective_pieces_shown_to_gpt_are_unchanged(monkeypatch):
+    seen = []
+    _gpt(monkeypatch, [_step("손을 씻으세요.", "손 씻다", 1), _step("앞치마를 입으세요.", "앞치마 입다", 2)], seen)
+    steps = run("먼저 손을 씻고 그다음 앞치마를 입으세요.", {}).steps
+    assert "1) 먼저 손을 씻고" + chr(10) + "2) 앞치마를 입으세요" in seen[0]
+    assert [s.split_check for s in steps] == [False, False]
+
+
+def test_sort_with_go_or_comma_is_two_actions(monkeypatch):
+    # '-고'·쉼표로 이은 나누기·모으기 + 놓기는 두 동작(갈라 담기 한 동작은 '-어' 연결일 때만).
+    _no_gpt(monkeypatch)
+    for text in ("빨래를 색깔별로 분류하고 세탁기에 넣으세요.", "물건을 종류별로 나누고, 선반에 놓으세요.",
+                 "숟가락과 포크를 모으고 서랍에 넣으세요.",
+                 "도착한 우편물을 부서별로 분류하고, 각 부서 자리에 가져다 놓으세요."):
+        steps = _rule(text)
+        assert len(steps) == 2 or steps[0][1] is True, (text, steps)
+        assert decompose.clauses_of(text)[0].plan.actions == 2 or len(decompose.clauses_of(text)) == 2, text
+    assert _rule("숟가락을 종류별로 나눠 담으세요.") == [("숟가락을 종류별로 나눠 담으세요", False)]
+    # GPT가 맞게 둘로 나눈 것을 다시 합치지 않는다.
+    _gpt(monkeypatch, [_step("빨래를 색깔별로 분류하세요.", "빨래 분류하다"), _step("세탁기에 넣으세요.", "빨래 넣다")])
+    steps = run("빨래를 색깔별로 분류하고 세탁기에 넣으세요.", {}).steps
+    assert len(steps) == 2
+
+
+def test_comma_go_with_manner_verb_counts_two_actions(monkeypatch):
+    _gpt(monkeypatch, [_step("컵에 물을 따르세요.", "물 따르다", 1), _step("테이블에 놓으세요.", "컵 놓다", 2)])
+    steps = run("컵에 물을 따르고, 테이블에 놓으세요.", {}).steps
+    assert [s.sentence for s in steps] == ["컵에 물을 따르세요.", "테이블에 놓으세요."]
+    assert [s.split_check for s in steps] == [False, False]
+    # 쉼표 없는 방법 동사는 그대로 한 동작.
+    _no_gpt(monkeypatch)
+    assert _rule("손잡이를 잡고 당기세요.") == [("손잡이를 잡고 당기세요", False)]
+
+
+def test_rule_path_cuts_commas_when_actions_outnumber_pieces(monkeypatch):
+    _no_gpt(monkeypatch)
+    steps = _rule("서류를 복사기에 넣고 복사한 뒤, 클립으로 묶어 테이블에 놓으세요.")
+    assert len(steps) >= 2 and all(check for _, check in steps)
+    assert steps[0][0] == "서류를 복사기에 넣고 복사하세요"
+    # 부정이 있으면 자르지 않는다.
+    steps = _rule("컵을 씻고 헹구지 말고, 바로 버리세요.")
+    assert len(steps) == 1 and steps[0][1] is True
+
+
+def test_unknown_verb_before_after_is_flagged(monkeypatch):
+    _no_gpt(monkeypatch)
+    assert _rule("물을 끓인 뒤 티백을 넣으세요.")[0][1] is True
+    assert all(check for _, check in _rule("물을 끓인 뒤 티백을 넣고 3분 기다리세요."))
+
+
+def test_object_is_carried_into_a_yellow_draft_step(monkeypatch):
+    _no_gpt(monkeypatch)
+    steps = run("걸레를 빨아서 짜 주세요.", {}).steps
+    assert [s.sentence for s in steps] == ["걸레를 빨아 주세요", "걸레를 짜 주세요"]
+    assert all(s.split_check for s in steps)
+    assert "주세요" not in [k.term for s in steps for k in s.keywords]
+
+
+def test_gpt_lost_condition_is_restored(monkeypatch):
+    # 한 동작 문장: 사업주 원문을 쓴다(조건·받는 사람·도구를 지킨다).
+    _gpt(monkeypatch, [_step("밖에서 기다리세요.", "기다리다")])
+    steps = run("고객이 화장실을 쓰고 있으면 밖에서 기다리세요.", {}).steps
+    assert [s.sentence for s in steps] == ["고객이 화장실을 쓰고 있으면 밖에서 기다리세요."]
+    assert steps[0].symbol_query == ["기다리다"]
+    # 나뉜 문장: 첫 단계 앞에 조건 절을 붙인다.
+    _gpt(monkeypatch, [_step("앞치마를 입으세요.", "앞치마 입다"), _step("손을 씻으세요.", "손 씻다")])
+    steps = run("출근하면 앞치마를 입고 손을 씻으세요.", {}).steps
+    assert [s.sentence for s in steps] == ["출근하면 앞치마를 입으세요.", "손을 씻으세요."]
+    # 조건을 지켰으면 그대로, 순서 말(뒤)은 조건이 아니다.
+    _gpt(monkeypatch, [_step("쓰레기통이 차면 비우세요.", "비우다")])
+    assert run("쓰레기통이 꽉 차면 비우세요.", {}).steps[0].sentence == "쓰레기통이 차면 비우세요."
+    _gpt(monkeypatch, [_step("컵을 씻으세요.", "컵 씻다"), _step("컵을 건조대에 올리세요.", "컵 올리다")])
+    steps = run("컵을 씻은 뒤 건조대에 올리세요.", {}).steps
+    assert steps[0].sentence == "컵을 씻으세요."
+
+
+def test_gpt_wrong_polite_form_is_fixed_or_flagged(monkeypatch):
+    _gpt(monkeypatch, [_step("원두를 눌러세요.", "원두 누르다")])
+    steps = run("탬퍼로 원두를 꾹 눌러 주세요.", {}).steps
+    assert steps[0].sentence == "원두를 누르세요."
+    _gpt(monkeypatch, [_step("앞치마를 둘러세요.", "앞치마 두르다")])
+    assert run("앞치마를 두르세요.", {}).steps[0].sentence == "앞치마를 두르세요."
+    # 원형을 하나로 못 정하면(걸어: 걷다/걸다) 문장을 두고 노란 줄.
+    _gpt(monkeypatch, [_step("천천히 걸어세요.", "걷다")])
+    steps = run("천천히 걸으세요.", {}).steps
+    assert steps[0].split_check is True
