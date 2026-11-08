@@ -35,7 +35,7 @@ const PREVIEW = {
   ],
 };
 
-async function mockBackend(page: Page) {
+async function mockBackend(page: Page, opts: { preview?: typeof PREVIEW; createFails?: boolean } = {}) {
   const state = { createBodies: [] as { steps: { sentence: string }[] }[], previewCalls: 0 };
   await page.route("https://cdn.jsdelivr.net/**", (route) => route.abort());
   await page.route("http://e2e-api.invalid/**", async (route: Route) => {
@@ -51,11 +51,12 @@ async function mockBackend(page: Page) {
     if (url.pathname === "/api/workers" && method === "GET") return json([]);
     if (url.pathname === "/api/tasks/split-preview" && method === "POST") {
       state.previewCalls += 1;
-      return json(PREVIEW);
+      return json(opts.preview ?? PREVIEW);
     }
     if (url.pathname === "/api/tasks" && method === "POST") {
       const body = req.postDataJSON() as { steps: { sentence: string }[] };
       state.createBodies.push(body);
+      if (opts.createFails) return json({ detail: "초안을 만들지 못했어요. 잠시 뒤 다시 눌러 주세요." }, 502);
       return json({
         id: "task-1", title: "출근 준비", status: "draft",
         steps: body.steps.map((s, i) => ({
@@ -116,7 +117,8 @@ test("입력 화면: 나눈 줄 확인 → 합치기 → 고치기 → 이대로
   // 키보드로 합치기 → 초점은 합친 줄
   await page.getByRole("button", { name: "3단계와 4단계 합치기" }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByLabel("3단계 문장")).toHaveValue("컵을 씻어요. 컵을 건조대에 올려요.");
+  // 한 원래 문장에서 나온 줄을 모두 합치면 두 문장을 잇지 않고 원래 문장 한 줄로 되돌린다
+  await expect(page.getByLabel("3단계 문장")).toHaveValue(SOURCE);
   await expect(page.getByLabel("3단계 문장")).toBeFocused();
 
   // 그 자리에서 고치기
@@ -127,8 +129,30 @@ test("입력 화면: 나눈 줄 확인 → 합치기 → 고치기 → 이대로
   expect(state.previewCalls).toBe(1);
   expect(state.createBodies).toHaveLength(1);
   expect(state.createBodies[0].steps.map((s) => s.sentence)).toEqual([
-    "앞치마를 입어요.", "손을 비누로 씻어요.", "컵을 씻어요. 컵을 건조대에 올려요.",
+    "앞치마를 입어요.", "손을 비누로 씻어요.", SOURCE,
   ]);
   // 편집기에는 나누기 알림이 없다
   await expect(page.getByText(/동작이 \d개/)).toHaveCount(0);
+});
+
+test("390px 긴 목록: [이대로 그림 고르기]가 실패하면 버튼 아래 알림이 화면 안에 보인다", async ({ page }) => {
+  const many = {
+    ...PREVIEW,
+    steps: Array.from({ length: 9 }, (_, i) => ({
+      order: i + 1, sentence: `${i + 1}번째 일을 천천히 해요.`, action_type: "other", symbol_query: [],
+      split_group: null, split_check: false, source_text: null,
+    })),
+  };
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockBackend(page, { preview: many, createFails: true });
+  await loginEmployer(page);
+  await splitInput(page);
+  const confirm = page.getByRole("button", { name: "이대로 그림 고르기 ›" });
+  await confirm.scrollIntoViewIfNeeded();
+  await confirm.click();
+  const alert = page.locator('[aria-labelledby="split-preview-title"]').getByRole("alert");
+  await expect(alert).toContainText("초안을 만들지 못했어요");
+  await expect(alert).toBeInViewport();
+  // 목록은 그대로 남아 다시 누를 수 있다
+  await expect(page.getByLabel("9단계 문장")).toHaveValue("9번째 일을 천천히 해요.");
 });

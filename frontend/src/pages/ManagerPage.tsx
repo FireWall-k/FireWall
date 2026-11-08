@@ -46,11 +46,21 @@ export default function ManagerPage() {
 
   // 입력 화면 나누기 결과(직무를 만들기 전). 한 줄 = 한 동작 = 그림 1장. [이대로 그림 고르기]를 눌러야
   // 이 목록으로 초안을 만든다. input은 이 목록을 만든 원문 — 원문을 고치면 다시 나누라고 알려 준다.
-  const [preview, setPreview] = useState<{ title: string; job: string; input: string; rows: SplitRow[] } | null>(null);
+  // initial: 서버가 준 처음 줄 글(사업주가 목록을 고쳤는지 보려고 둔다 — 다시 나누면 고친 것이 사라진다).
+  const [preview, setPreview] = useState<{
+    title: string; job: string; input: string; rows: SplitRow[]; initial: string[];
+  } | null>(null);
   const [splitting, setSplitting] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  // 편집기에서 문장을 고쳐 저장하며 두 단계로 나눈 경우 [되돌리기]용(새 단계 id들 + 사업주가 적은 문장).
-  const [splitUndo, setSplitUndo] = useState<{ stepIds: string[]; sentence: string } | null>(null);
+  // [이대로 그림 고르기] 실패 이유 — 목록의 확인 버튼 바로 아래에 보인다.
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  // 편집기에서 문장을 고쳐 저장하거나 단계를 추가하며 두 단계로 나눈 경우 [되돌리기]용
+  // (새 단계 id들 + 사업주가 적은 문장 + 나누기 전 동작 종류).
+  const [splitUndo, setSplitUndo] = useState<{ stepIds: string[]; sentence: string; actionType?: string } | null>(null);
+  // 편집기 문장을 저장(나누기 확인 포함)하는 중인 단계. 그동안 다른 문장 칸은 읽기 전용이다 — 응답이 직무 전체를
+  // 바꾸므로, 기다리는 사이 고친 다른 줄이 덮어써지지 않게.
+  const [rewritingId, setRewritingId] = useState<string | null>(null);
+  const errorBox = useRef<HTMLDivElement | null>(null);
   const editorHeading = useRef<HTMLHeadingElement | null>(null);
 
   // 1:N — 사업주의 근로자 목록 + 배정 대상(여러 명) 선택 + 인라인 추가
@@ -128,9 +138,29 @@ export default function ManagerPage() {
     worker_id: noteWorkerId || undefined,
   });
 
+  // 위쪽 오류 알림이 생기면 화면 안으로 끌어온다 — 긴 목록을 내려 본 뒤의 실패가 보이지 않던 문제(1차 검증).
+  useEffect(() => {
+    if (error) errorBox.current?.scrollIntoView?.({ block: "nearest" });
+  }, [error]);
+
+  // [되돌리기]는 나눈 단계가 그대로 붙어 있을 때만 뜻이 있다. 보냈거나, 순서를 바꿨거나, 그중 하나를 지웠으면 내린다
+  // (남겨 두면 눌렀을 때 404·409가 나거나 보낸 직무를 바꾸려 든다).
+  const undoIds = task?.steps.map((s) => s.id) ?? [];
+  const undoAt = splitUndo ? undoIds.indexOf(splitUndo.stepIds[0]) : -1;
+  const activeUndo = splitUndo && task && task.status !== "published" && undoAt >= 0
+    && splitUndo.stepIds.every((id, k) => undoIds[undoAt + k] === id)
+    ? splitUndo : null;
+
+  const previewEdited = !!preview
+    && (preview.rows.length !== preview.initial.length || preview.rows.some((r, i) => r.text !== preview.initial[i]));
+  const previewStale = !!preview && rawInput !== preview.input;
+
   // [단계로 나누기] — 직무는 아직 만들지 않는다. 나눈 결과를 입력칸 바로 아래에 보여 주고 사업주가 그 자리에서 고친다.
+  // 목록을 고쳤으면 다시 나누기 전에 묻는다(새로 나누면 고친 줄이 사라지고 GPT를 다시 부른다).
   async function handleDecompose() {
+    if (previewEdited && !window.confirm("고친 줄이 있어요. 새로 나눌까요? 고친 내용은 사라져요.")) return;
     setSplitting(true);
+    setConfirmError(null);
     setError(null);
     setNotice(null);
     try {
@@ -144,7 +174,8 @@ export default function ManagerPage() {
       // 새로 나누면 앞서 열어 둔 편집기는 닫는다(그 초안은 서버에 그대로 남는다).
       setTask(null);
       setSplitUndo(null);
-      setPreview({ title: result.task_title, job: result.job, input, rows: rowsFromPreview(result.steps) });
+      const rows = rowsFromPreview(result.steps);
+      setPreview({ title: result.task_title, job: result.job, input, rows, initial: rows.map((r) => r.text) });
     } catch (e) {
       setError(e instanceof Error ? e.message : "문장을 나누지 못했어요. 잠시 뒤 다시 눌러 주세요.");
     } finally {
@@ -157,6 +188,7 @@ export default function ManagerPage() {
     if (!preview) return;
     setConfirming(true);
     setError(null);
+    setConfirmError(null);
     setNotice(null);
     try {
       setConfirmedSteps(new Set());
@@ -172,7 +204,7 @@ export default function ManagerPage() {
       // 편집기 제목으로 초점을 옮겨 화면 읽기 프로그램·키보드 사용자가 다음 할 일로 바로 간다.
       setTimeout(() => editorHeading.current?.focus(), 0);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "초안을 만들지 못했어요. 잠시 뒤 다시 눌러 주세요.");
+      setConfirmError(e instanceof Error ? e.message : "초안을 만들지 못했어요. 잠시 뒤 다시 눌러 주세요.");
     } finally {
       setConfirming(false);
     }
@@ -224,15 +256,19 @@ export default function ManagerPage() {
       return;
     }
     setError(null);
+    const before = task.steps.find((s) => s.id === stepId);
+    setRewritingId(stepId);
     try {
       const result = await api.rewriteStep(task.id, stepId, text);
       setTask(result.task);
       setSplitUndo(result.split_step_ids.length >= 2
-        ? { stepIds: result.split_step_ids, sentence: result.sentence }
+        ? { stepIds: result.split_step_ids, sentence: result.sentence, actionType: before?.action_type }
         : null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "문장을 저장하지 못했어요. 잠시 뒤 다시 해 주세요.");
       return;
+    } finally {
+      setRewritingId(null);
     }
     // 문장이 바뀌면 그림이 여전히 맞는지 다시 봐야 한다.
     unconfirmStep(stepId);
@@ -246,10 +282,10 @@ export default function ManagerPage() {
 
   // 저장하며 나눈 단계를 사업주가 적은 문장 한 단계로 되돌린다.
   async function handleUndoSplit() {
-    if (!task || !splitUndo) return;
+    if (!task || !activeUndo) return;
     setError(null);
     try {
-      setTask(await api.mergeSteps(task.id, splitUndo.stepIds, splitUndo.sentence));
+      setTask(await api.mergeSteps(task.id, activeUndo.stepIds, activeUndo.sentence, activeUndo.actionType));
       setSplitUndo(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "되돌리지 못했어요. 잠시 뒤 다시 해 주세요.");
@@ -323,7 +359,12 @@ export default function ManagerPage() {
     setBusy(true);
     setError(null);
     try {
-      setTask(await api.addStep(task.id, newStepSentence.trim()));
+      const result = await api.addStep(task.id, newStepSentence.trim());
+      setTask(result);
+      // 새 문장에 동작이 둘이라 서버가 두 단계로 넣었으면 문장 고치기와 같이 [되돌리기]를 띄운다.
+      setSplitUndo(result.split_step_ids && result.split_step_ids.length >= 2
+        ? { stepIds: result.split_step_ids, sentence: result.sentence || newStepSentence.trim() }
+        : null);
       setNewStepSentence("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "단계 추가에 실패했습니다.");
@@ -404,6 +445,8 @@ export default function ManagerPage() {
     setError(null);
     setNotice(null);
     setAssignFeedback(null);
+    // 보내면 단계를 합칠 수 없다(서버도 409) — [되돌리기]를 내린다.
+    setSplitUndo(null);
     try {
       if (task.status !== "published") {
         await api.publish(task.id);
@@ -452,7 +495,7 @@ export default function ManagerPage() {
   return (
     <div className="space-y-6">
       {error && (
-        <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
+        <div ref={errorBox} role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
           {error}
         </div>
       )}
@@ -519,7 +562,8 @@ export default function ManagerPage() {
         </p>
         <button
           onClick={handleDecompose}
-          disabled={busy || splitting || confirming || !rawInput.trim()}
+          // 목록이 지금 원문 그대로면(원문도 목록도 안 고침) 다시 나눌 것이 없다 — GPT를 다시 부르지 않는다.
+          disabled={busy || splitting || confirming || !rawInput.trim() || (!!preview && !previewStale && !previewEdited)}
           className="mt-3 min-h-11 rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:opacity-50"
         >
           단계로 나누기
@@ -535,7 +579,8 @@ export default function ManagerPage() {
             onChange={(rows) => setPreview((cur) => (cur ? { ...cur, rows } : cur))}
             onConfirm={handleConfirmSplit}
             confirming={confirming}
-            stale={rawInput !== preview.input}
+            stale={previewStale}
+            confirmError={confirmError}
           />
         )}
       </section>
@@ -613,7 +658,7 @@ export default function ManagerPage() {
           <p className="mt-1 text-sm text-slate-600">
             근로자가 보게 될 화면과 같은 순서입니다. 손잡이를 끌어 순서를 바꾸고, 문장을 다듬거나 단계를 추가할 수 있습니다.
           </p>
-          {splitUndo && (
+          {activeUndo && (
             <div role="status" className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-sm text-slate-700">
               <span className="break-keep">동작이 둘이라 두 단계로 나눴어요.</span>
               <button
@@ -696,13 +741,20 @@ export default function ManagerPage() {
                 </div>
                 <div className="flex-1">
                   <input
-                    className="w-full rounded border border-slate-200 px-2 py-1 text-base"
+                    className="w-full rounded border border-slate-200 px-2 py-1 text-base read-only:bg-slate-50"
                     defaultValue={s.sentence}
                     aria-label={`${s.order}단계 문장`}
+                    readOnly={rewritingId !== null}
+                    aria-busy={rewritingId === s.id || undefined}
                     onBlur={(e) => {
-                      if (e.target.value !== s.sentence) handleEditSentence(s.id, e.target.value);
+                      if (rewritingId === null && e.target.value !== s.sentence) handleEditSentence(s.id, e.target.value);
                     }}
                   />
+                  {rewritingId === s.id && (
+                    <p role="status" className="mt-1 break-keep text-sm font-semibold text-slate-700">
+                      저장하는 중… 동작이 둘이면 두 단계로 나눠요.
+                    </p>
+                  )}
                   <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
                     <ActionChip action={s.action_type} className="text-[11px] !px-2 !py-0.5" />
                     {/* 그림이 붙은 단계만 출처를 보여준다. 폴백 상태는 아래 후보 영역이

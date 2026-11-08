@@ -31,12 +31,17 @@ interface Props {
   confirming: boolean;
   /** 목록을 만든 뒤 직무 내용(원문)을 고쳤는지 — 고쳤으면 다시 나누라고 알려 준다. */
   stale: boolean;
+  /** [이대로 그림 고르기]가 실패한 이유. 버튼 바로 아래에 보여 준다 — 페이지 맨 위 알림은 긴 목록을 내려 본
+   * 390px 화면에서 보이지 않았다(1차 검증). */
+  confirmError?: string | null;
 }
 
-export default function SplitPreviewList({ rows, onChange, onConfirm, confirming, stale }: Props) {
+export default function SplitPreviewList({ rows, onChange, onConfirm, confirming, stale, confirmError }: Props) {
   const inputs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
+  const confirmAlert = useRef<HTMLParagraphElement | null>(null);
   // 다음 렌더 뒤 초점을 줄 줄(합치기·나누기·지우기 뒤). 상태가 아니라 ref로 두고, 렌더가 끝나면 한 번 쓰고 비운다.
-  const pendingFocus = useRef<{ key: string; caret?: number } | null>(null);
+  // select: 글 전체를 선택한다(일부만 합친 줄 — 한 문장으로 다듬게).
+  const pendingFocus = useRef<{ key: string; caret?: number; select?: boolean } | null>(null);
   const [emptyError, setEmptyError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -46,9 +51,15 @@ export default function SplitPreviewList({ rows, onChange, onConfirm, confirming
     const el = inputs.current.get(want.key);
     if (el) {
       el.focus();
-      if (want.caret !== undefined) el.setSelectionRange(want.caret, want.caret);
+      if (want.select) el.select();
+      else if (want.caret !== undefined) el.setSelectionRange(want.caret, want.caret);
     }
   });
+
+  // 확인 실패 알림이 생기면 화면 안으로 끌어온다(버튼 바로 아래라 대개 이미 보이지만, 키보드 확대·작은 화면 대비).
+  useEffect(() => {
+    if (confirmError) confirmAlert.current?.scrollIntoView?.({ block: "nearest" });
+  }, [confirmError]);
 
   // 글자를 고치거나 화면 폭이 바뀌면 칸 높이를 다시 맞춘다.
   useLayoutEffect(() => {
@@ -60,14 +71,14 @@ export default function SplitPreviewList({ rows, onChange, onConfirm, confirming
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  const setFocusKey = (want: { key: string; caret?: number }) => {
+  const setFocusKey = (want: { key: string; caret?: number; select?: boolean }) => {
     pendingFocus.current = want;
   };
 
-  const apply = (next: { rows: SplitRow[]; focus: number }, caret?: number) => {
+  const apply = (next: { rows: SplitRow[]; focus: number; select?: boolean }, caret?: number) => {
     onChange(next.rows);
     const target = next.rows[next.focus];
-    if (target) setFocusKey({ key: target.key, caret });
+    if (target) setFocusKey({ key: target.key, caret, select: next.select });
     setEmptyError(null);
   };
 
@@ -214,6 +225,11 @@ export default function SplitPreviewList({ rows, onChange, onConfirm, confirming
         </button>
         <p className="break-keep text-sm text-slate-600">누르면 초안으로 저장하고 단계마다 그림을 붙여요.</p>
       </div>
+      {confirmError && !confirming && (
+        <p ref={confirmAlert} role="alert" className="mt-3 break-keep rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-800">
+          {confirmError}
+        </p>
+      )}
     </section>
   );
 }

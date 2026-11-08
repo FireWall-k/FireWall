@@ -65,13 +65,24 @@ function joinText(a: string, b: string): string {
   return `${left} ${right}`;
 }
 
-/** i번째 줄을 합치기 상대와 한 줄로 합친다. 합친 줄은 사업주가 정한 것이라 더는 노랗게 칠하지 않는다. */
-export function mergeRows(rows: SplitRow[], i: number): { rows: SplitRow[]; focus: number } {
+/**
+ * i번째 줄을 합치기 상대와 한 줄로 합친다. 합친 줄은 사업주가 정한 것이라 더는 노랗게 칠하지 않는다.
+ * 같은 원래 절에서 나온 줄을 모두 합쳤으면 두 문장을 잇지 않고 그 원래 문장(source)으로 되돌린다 — 한 줄이 두
+ * 문장("컵을 씻어요. 컵을 건조대에 올려요.")이 되어 그대로 근로자에게 읽히지 않게. 일부만 합쳤으면 이은 글을 두고
+ * select로 알려, 화면이 글 전체를 선택해 사업주가 한 문장으로 다듬게 한다.
+ */
+export function mergeRows(
+  rows: SplitRow[], i: number,
+): { rows: SplitRow[]; focus: number; select?: boolean } {
   const j = mergeTarget(rows, i);
   if (j === null) return { rows, focus: i };
   const lo = Math.min(i, j);
-  const merged = userRow(joinText(rows[lo].text, rows[lo + 1].text), rows[lo]);
-  return { rows: [...rows.slice(0, lo), merged, ...rows.slice(lo + 2)], focus: lo };
+  const row = rows[lo];
+  const rest = rows.filter((r, k) => k !== lo && k !== lo + 1 && r.group === row.group);
+  const whole = rest.length === 0 && !!row.source?.trim();
+  const text = whole ? row.source!.trim() : joinText(row.text, rows[lo + 1].text);
+  const merged = userRow(text, rest.length === 0 ? { group: null, source: null } : row);
+  return { rows: [...rows.slice(0, lo), merged, ...rows.slice(lo + 2)], focus: lo, select: !whole };
 }
 
 /**

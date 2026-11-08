@@ -39,14 +39,38 @@ describe("splitRows — 입력 화면 나눈 줄", () => {
     expect(mergeTarget(other, 0)).toBeNull();
   });
 
-  it("합치면 두 문장을 이은 한 줄이 되고 노란 표시가 사라진다", () => {
+  it("한 원래 문장에서 나온 줄을 모두 합치면 그 원래 문장 한 줄이 되고 노란 표시가 사라진다", () => {
     const rows = rowsFromPreview(PREVIEW);
     const out = mergeRows(rows, 2);
-    expect(out.rows.map((r) => r.text)).toEqual(["앞치마를 입어요.", "컵을 씻어요. 컵을 건조대에 올려요."]);
+    // 두 문장을 잇지 않는다("컵을 씻어요. 컵을 건조대에 올려요."가 한 단계로 읽히지 않게)
+    expect(out.rows.map((r) => r.text)).toEqual(["앞치마를 입어요.", SOURCE]);
     expect(out.rows[1].check).toBe(false);
+    expect(out.rows[1].group).toBeNull();
     expect(out.focus).toBe(1);
+    expect(out.select).toBe(false);
     // 합친 줄은 사업주가 만든 문장 — AI 검색어를 보내지 않는다
-    expect(toConfirmed(out.rows)[1]).toEqual({ sentence: "컵을 씻어요. 컵을 건조대에 올려요." });
+    expect(toConfirmed(out.rows)[1]).toEqual({ sentence: SOURCE });
+  });
+
+  it("일부만 합치면 두 문장을 잇고 글 전체를 선택하라고 알린다(다듬게)", () => {
+    const three = "컵을 씻고 행주로 닦아 건조대에 올려요";
+    const rows = rowsFromPreview([
+      step(1, "컵을 씻어요.", { split_group: 1, split_check: true, source_text: three }),
+      step(2, "컵을 행주로 닦아요.", { split_group: 1, split_check: true, source_text: three }),
+      step(3, "컵을 건조대에 올려요.", { split_group: 1, split_check: true, source_text: three }),
+    ]);
+    const out = mergeRows(rows, 0);
+    expect(out.rows.map((r) => r.text)).toEqual(["컵을 씻어요. 컵을 행주로 닦아요.", "컵을 건조대에 올려요."]);
+    expect(out.select).toBe(true);
+    expect(out.rows[0].group).toBe(1);
+  });
+
+  it("원래 문장이 없으면 두 문장을 잇는다", () => {
+    const rows = rowsFromPreview([step(1, "a 해요.", { split_group: 1, split_check: true }),
+                                  step(2, "b 해요.", { split_group: 1, split_check: true })]);
+    const out = mergeRows(rows, 0);
+    expect(out.rows.map((r) => r.text)).toEqual(["a 해요. b 해요."]);
+    expect(out.select).toBe(true);
   });
 
   it("더 나누기: 커서 자리에서 자르고, 커서가 없으면 아래에 빈 줄을 만든다", () => {

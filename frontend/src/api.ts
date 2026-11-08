@@ -330,11 +330,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ sentence }),
     }),
-  /** 이어진 단계들을 한 단계로 합친다(저장하며 나눈 것 되돌리기). */
-  mergeSteps: (taskId: string, stepIds: string[], sentence: string) =>
+  /** 이어진 단계들을 한 단계로 합친다(저장하며 나눈 것 되돌리기). actionType은 나누기 전 단계의 동작 종류. */
+  mergeSteps: (taskId: string, stepIds: string[], sentence: string, actionType?: string) =>
     req<Task>(`/api/tasks/${taskId}/steps/merge`, {
       method: "POST",
-      body: JSON.stringify({ step_ids: stepIds, sentence }),
+      body: JSON.stringify({ step_ids: stepIds, sentence, action_type: actionType }),
     }),
   coaching: (taskId: string, workerId?: string) =>
     req<Coaching>(`/api/dashboard/tasks/${taskId}/coaching${workerId ? `?worker_id=${workerId}` : ""}`),
@@ -350,8 +350,10 @@ export const api = {
     req<StepSymbolCandidates>(`/api/tasks/${taskId}/steps/${stepId}/symbol-candidates`),
   deleteStep: (taskId: string, stepId: string) =>
     req<Task>(`/api/tasks/${taskId}/steps/${stepId}`, { method: "DELETE" }),
+  /** 단계 추가. 새 문장에 동작이 둘이면 서버가 두 단계로 나눠 넣고 split_step_ids를 준다(되돌리기용). */
   addStep: (taskId: string, sentence: string) =>
-    req<Task>(`/api/tasks/${taskId}/steps`, { method: "POST", body: JSON.stringify({ sentence }) }),
+    req<Task & { split_step_ids?: string[]; sentence?: string }>(
+      `/api/tasks/${taskId}/steps`, { method: "POST", body: JSON.stringify({ sentence }) }),
   reorderSteps: (taskId: string, stepIds: string[]) =>
     req<Task>(`/api/tasks/${taskId}/steps/reorder`, {
       method: "PATCH",
