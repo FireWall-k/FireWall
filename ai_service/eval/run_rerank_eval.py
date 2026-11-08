@@ -10,8 +10,9 @@ Chat Completions 응답 하나다. 그래서 같은 프롬프트·후보로 다�
 
 기본은 오프라인이다. 캐시에 없는 문항은 GPT 없이 규칙 판정으로 센다(운영의 '키 없음·실패'와 같다)
 — 그런 문항 수를 'GPT 응답 없음'으로 따로 보여 준다. --live는 키(OPENAI_API_KEY_FILE)가 필요하고,
---ledger 장부에 호출마다 비용(gpt-4o-mini 공개 단가, 캐시 할인 무시 = 보수적)을 남기며 장부 합계가
---cap에 닿으면 더 부르지 않는다.
+--ledger 장부와 --cap(0보다 큰 USD)이 반드시 함께 있어야 한다. 호출마다 비용(gpt-4o-mini 공개 단가, 캐시
+할인 무시 = 보수적)을 장부에 남기고, 장부 합계가 --cap에 닿으면 더 부르지 않는다. 단가를 모르는 모델은
+부르기 전에 거절한다(부른 뒤에 알면 이미 돈이 나갔다).
 
 지표(정답 있는 문항 기준; gap 문항은 자동 채택하면 틀림으로만 센다):
   top1/top3   사업주에게 보여 주는 순서의 1번째/상위 3장 안에 정답이 있는 비율
@@ -68,7 +69,14 @@ class _Cached:
         return self._data
 
 
+def _price(model: str) -> tuple[float, float] | None:
+    return next((v for k, v in PRICES.items() if model.startswith(k)), None)
+
+
 def make_post(real_post, cache_dir: Path, live: bool, ledger: Path | None, cap: float, stats: dict):
+    if live and (ledger is None or cap <= 0):
+        raise ValueError("--live에는 --ledger 장부와 0보다 큰 --cap이 필요합니다")
+
     def post(url, *args, **kwargs):
         body = kwargs.get("json") or {}
         msgs = body.get("messages") or []
@@ -81,24 +89,32 @@ def make_post(real_post, cache_dir: Path, live: bool, ledger: Path | None, cap: 
         if not live:
             stats["missing"] += 1
             raise LookupError("캐시에 없음(오프라인)")
+        req_model = str(body.get("model") or "")
+        price = _price(req_model)
+        if price is None:
+            stats["budget_stop"] += 1
+            raise Budget(f"단가를 모르는 모델이라 부르지 않음: {req_model}")
         if ledger_total(ledger) >= cap:
             stats["budget_stop"] += 1
             raise Budget(f"장부 합계가 상한 ${cap}에 닿음")
         resp = real_post(url, *args, **kwargs)
-        data = resp.json()
+        try:
+            data = resp.json()
+        except ValueError:
+            data = {}
+        if not isinstance(data, dict):
+            data = {}
         usage = data.get("usage") or {}
-        model = str(data.get("model") or body.get("model") or "")
-        price = next((v for k, v in PRICES.items() if model.startswith(k)), None)
-        if price is None:
-            raise Budget(f"단가를 모르는 모델: {model}")
+        model = str(data.get("model") or req_model)
+        # 응답 모델 이름이 달라도(예: 날짜 붙은 이름) 요청 모델 단가로 반드시 장부에 남긴다.
+        price = _price(model) or price
         usd = usage.get("prompt_tokens", 0) / 1e6 * price[0] + usage.get("completion_tokens", 0) / 1e6 * price[1]
         stats["live"] += 1
         stats["usd"] += usd
-        if ledger is not None:
-            with ledger.open("a", encoding="utf-8") as fh:
-                fh.write(json.dumps({"t": time.time(), "model": model, "in": usage.get("prompt_tokens", 0),
-                                     "out": usage.get("completion_tokens", 0), "usd": usd,
-                                     "status": resp.status_code, "src": "run_rerank_eval"}) + "\n")
+        with ledger.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"t": time.time(), "model": model, "in": usage.get("prompt_tokens", 0),
+                                 "out": usage.get("completion_tokens", 0), "usd": usd,
+                                 "status": resp.status_code, "src": "run_rerank_eval"}) + "\n")
         resp.raise_for_status()
         cache_dir.mkdir(parents=True, exist_ok=True)
         f.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
@@ -168,6 +184,8 @@ def main(argv: list[str] | None = None) -> None:
     cases = json.loads(Path(path).read_text(encoding="utf-8"))["cases"]
     policies = ["top1", "top3"] if args.policy == "both" else [args.policy]
 
+    if args.live and (not args.ledger or args.cap <= 0):
+        raise SystemExit("--live에는 --ledger 장부와 0보다 큰 --cap이 함께 필요합니다(상한 없는 실제 호출 금지).")
     if args.live and not llm.llm_available():
         raise SystemExit("--live에는 키(OPENAI_API_KEY_FILE)가 필요합니다.")
     if not llm.llm_available():

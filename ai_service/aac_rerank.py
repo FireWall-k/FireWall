@@ -9,6 +9,10 @@
      - top3: GPT가 확신하고 고른 카드가 규칙 상위 3장 안이면 그 카드를 자동 채택한다.
   4) 자동 채택하지 않을 때, GPT가 고른 카드가 상위 3장 안이면 사업주에게 보여 줄 후보 맨 앞에 둔다.
   5) 키 없음·꺼짐·시간 초과·오류·이상한 응답이면 규칙 판정을 그대로 돌려준다(지금과 같은 동작).
+     시간 제한(AAC_LLM_RERANK_TIMEOUT)은 호출 전체의 마감이다 — httpx timeout은 연결·읽기 단계마다 따로
+     세므로, 응답이 조금씩 흘러들어오면 넘을 수 있어 호출을 작업 스레드에서 돌리고 결과를 마감까지만 기다린다.
+  6) 연결·HTTP 오류·시간 초과 뒤, 그리고 이상한 응답이 연달아 _BAD_STREAK_LIMIT번 오면 잠시 GPT를 쉰다
+     (장애 중에 단계마다 돈을 내고도 규칙 판정으로 떨어지지 않게).
 
 정책 근거(2026-11-08, gpt-4o-mini, 임베딩 꺼짐, eval/README.md의 표):
   블라인드1(90)·봉인 시험지2(89)에서 top1 정책은 규칙만 쓸 때보다 틀린 자동 채택이 줄고(3→2, 9→3)
@@ -26,10 +30,13 @@
 from __future__ import annotations
 
 import logging
+import math
 import os
 import threading
 import time
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as _FutureTimeout
 
 import httpx
 
@@ -50,6 +57,8 @@ RERANK_SYSTEM = (
     "shows it, answer 0. Reply JSON {\"choice\": <number>, \"confident\": true|false}."
 )
 MAX_TOKENS = 30
+# 이상한 응답(JSON 깨짐·번호 범위 밖 등)이 이만큼 연달아 오면 쉬는 시간을 건다.
+_BAD_STREAK_LIMIT = 3
 
 _OFF_VALUES = frozenset({"off", "0", "false", "no"})
 _POLICIES = frozenset({"top1", "top3"})
@@ -80,7 +89,7 @@ def timeout() -> float:
 
 
 def _cooldown_sec() -> float:
-    """연결·HTTP 오류 뒤 GPT를 쉬는 시간(초, 기본 60). 직무 하나에 단계가 여럿이라, 장애 중에 단계마다
+    """연결·HTTP 오류·마감 초과·연속된 이상한 응답 뒤 GPT를 쉬는 시간(초, 기본 60). 직무 하나에 단계가 여럿이라, 장애 중에 단계마다
     시간 초과를 기다리면 직무 생성이 그만큼 늦어진다(임베딩 질의의 쉬는 시간과 같은 이유)."""
     return _env_float("AAC_LLM_RERANK_COOLDOWN", 60.0)
 
@@ -92,14 +101,25 @@ def _cache_size() -> int:
 _lock = threading.Lock()
 _cache: OrderedDict[tuple, tuple[int, bool]] = OrderedDict()
 _down_until = 0.0
+_bad_streak = 0
+# 호출 전체 마감을 지키려고 GPT 호출을 여기서 돌린다. 마감을 넘긴 호출은 버리고(스레드는 httpx 단계별
+# timeout으로 곧 끝난다) 쉬는 시간을 걸어, 장애 중에 멈춘 호출이 쌓이지 않는다.
+_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="aac-rerank")
 
 
 def reset_state() -> None:
-    """캐시와 쉬는 시간을 비운다(테스트용)."""
-    global _down_until
+    """캐시·쉬는 시간·연속 실패 수를 비운다(테스트용)."""
+    global _down_until, _bad_streak
     with _lock:
         _cache.clear()
         _down_until = 0.0
+        _bad_streak = 0
+
+
+def _cool_down() -> None:
+    global _down_until
+    with _lock:
+        _down_until = time.monotonic() + _cooldown_sec()
 
 
 def available() -> bool:
@@ -123,9 +143,12 @@ def parse_verdict(raw: dict, n_candidates: int) -> tuple[int, bool]:
     choice = raw.get("choice")
     if isinstance(choice, bool) or choice is None:
         raise ValueError("choice 없음")
+    if isinstance(choice, float) and not (math.isfinite(choice) and choice.is_integer()):
+        # 1.7을 1로 자르지 않는다 — 형식이 어긋난 답은 규칙 판정으로 간다.
+        raise ValueError("choice가 정수가 아님")
     try:
         choice = int(choice)
-    except (TypeError, ValueError) as e:
+    except (TypeError, ValueError, OverflowError) as e:
         raise ValueError("choice가 숫자가 아님") from e
     if not 0 <= choice <= n_candidates:
         raise ValueError("choice 범위 밖")
@@ -156,20 +179,38 @@ def _cache_put(key: tuple, value: tuple[int, bool]) -> None:
 
 def _ask(sentence: str, business_type: str, keywords: list[str], top: list[dict]) -> tuple[tuple[int, bool], bool]:
     """((choice, confident), 캐시 적중 여부). 실패하면 예외."""
-    global _down_until
+    global _bad_streak
     key = (sentence, tuple(keywords), business_type, tuple(c.get("asset_id", "") for c in top))
     hit = _cache_get(key)
     if hit is not None:
         return hit, True
     user = build_user_prompt(sentence, business_type, top)
+    deadline = timeout()
     try:
-        raw = llm.chat_json(RERANK_SYSTEM, user, max_tokens=MAX_TOKENS, timeout=timeout())
-    except httpx.HTTPError:
-        # 연결 실패·시간 초과·4xx/5xx(키 오류, 한도 초과 포함). 잠시 쉬어 다음 단계들이 기다리지 않게 한다.
-        with _lock:
-            _down_until = time.monotonic() + _cooldown_sec()
+        future = _pool.submit(llm.chat_json, RERANK_SYSTEM, user, max_tokens=MAX_TOKENS, timeout=deadline)
+        try:
+            raw = future.result(timeout=deadline)
+        except _FutureTimeout:
+            future.cancel()
+            raise
+        verdict = parse_verdict(raw, len(top))
+    except (httpx.HTTPError, _FutureTimeout):
+        # 연결 실패·시간 초과(전체 마감 포함)·4xx/5xx(키 오류, 한도 초과 포함). 잠시 쉬어 다음 단계들이
+        # 기다리지 않게 한다.
+        _cool_down()
         raise
-    verdict = parse_verdict(raw, len(top))
+    except Exception:
+        # JSON 깨짐·choices 없음·번호 범위 밖 등. 한두 번은 넘기고, 연달아 오면 쉰다.
+        with _lock:
+            _bad_streak += 1
+            trip = _bad_streak >= _BAD_STREAK_LIMIT
+            if trip:
+                _bad_streak = 0
+        if trip:
+            _cool_down()
+        raise
+    with _lock:
+        _bad_streak = 0
     _cache_put(key, verdict)
     return verdict, False
 

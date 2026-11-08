@@ -66,18 +66,83 @@ def test_missing_cache_counts_as_rule_without_calling(tmp_path, monkeypatch, cap
     assert rule[-4:] == gpt[-4:]  # 채택·맞음·틀림·정밀도가 규칙만과 같다
 
 
-def test_live_refuses_without_cap(tmp_path):
-    stats = {"cache_hit": 0, "missing": 0, "live": 0, "usd": 0.0, "budget_stop": 0}
+def _stats():
+    return {"cache_hit": 0, "missing": 0, "live": 0, "usd": 0.0, "budget_stop": 0}
 
-    def real(*a, **kw):
-        raise AssertionError("상한 0이면 부르지 않는다")
 
-    post = R.make_post(real, tmp_path, True, None, 0.0, stats)
-    body = {"model": "gpt-4o-mini", "messages": [{"role": "system", "content": "s"}, {"role": "user", "content": "u"}]}
+_BODY = {"model": "gpt-4o-mini", "messages": [{"role": "system", "content": "s"}, {"role": "user", "content": "u"}]}
+
+
+def _never(*a, **kw):
+    raise AssertionError("실제 호출이 일어나면 안 된다")
+
+
+def test_live_requires_ledger_and_positive_cap(tmp_path):
+    for ledger, cap in ((None, 0.85), (tmp_path / "u.jsonl", 0.0), (None, 0.0)):
+        try:
+            R.make_post(_never, tmp_path, True, ledger, cap, _stats())
+        except ValueError:
+            continue
+        raise AssertionError(f"장부 {ledger}, 상한 {cap}이면 거절해야 한다")
+
+
+def test_main_live_without_ledger_exits_before_any_call(tmp_path, monkeypatch):
+    _isolate(monkeypatch)
     try:
-        post("url", json=body)
+        R.main(["--dataset", "dev", "--live", "--cap", "0.85", "--cache-dir", str(tmp_path)])
+    except SystemExit as e:
+        assert "--ledger" in str(e)
+    else:
+        raise AssertionError("SystemExit이 나야 한다")
+
+
+def test_live_refuses_when_ledger_reaches_cap(tmp_path):
+    ledger = tmp_path / "usage.jsonl"
+    ledger.write_text(json.dumps({"usd": 0.5}) + "\n", encoding="utf-8")
+    stats = _stats()
+    post = R.make_post(_never, tmp_path, True, ledger, 0.5, stats)
+    try:
+        post("url", json=_BODY)
     except R.Budget:
         pass
     else:
         raise AssertionError("Budget 예외가 나야 한다")
     assert stats["budget_stop"] == 1
+
+
+def test_unknown_model_is_refused_before_calling(tmp_path):
+    stats = _stats()
+    post = R.make_post(_never, tmp_path, True, tmp_path / "usage.jsonl", 0.85, stats)
+    try:
+        post("url", json={**_BODY, "model": "gpt-9-unknown"})
+    except R.Budget:
+        pass
+    else:
+        raise AssertionError("Budget 예외가 나야 한다")
+    assert stats["budget_stop"] == 1 and not (tmp_path / "usage.jsonl").exists()
+
+
+def test_live_call_is_always_recorded_in_ledger(tmp_path):
+    """응답 모델 이름이 단가표에 없어도(이미 돈은 나갔다) 요청 모델 단가로 장부에 남긴다."""
+    ledger = tmp_path / "usage.jsonl"
+
+    class _Resp:
+        status_code = 200
+
+        def json(self):
+            return {"model": "renamed-model", "usage": {"prompt_tokens": 1000, "completion_tokens": 100},
+                    "choices": [{"message": {"content": '{"choice": 1, "confident": true}'}}]}
+
+        def raise_for_status(self):
+            return None
+
+    calls = []
+    stats = _stats()
+    post = R.make_post(lambda *a, **kw: calls.append(1) or _Resp(), tmp_path / "cache", True, ledger, 0.85, stats)
+    post("url", json=_BODY)
+    rows = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines()]
+    assert len(calls) == 1 and len(rows) == 1
+    assert abs(rows[0]["usd"] - (1000 * 0.15 + 100 * 0.60) / 1e6) < 1e-12
+    # 두 번째는 디스크 캐시에서 — 다시 부르지 않는다
+    post("url", json=_BODY)
+    assert len(calls) == 1 and stats["cache_hit"] == 1

@@ -374,7 +374,8 @@ GET  /api/aac/images/{path}                 # 자체 AAC 이미지 정적 서빙
    자동 채택하고, 아니면 후보 3장을 사업주에게 보여 줍니다(GPT가 고른 카드가 3장 안이면 맨 앞). 규칙이 채택했어도
    GPT가 확인해 주지 않으면 사람에게 넘깁니다. 블라인드1·봉인 시험지2에서 틀린 자동 채택 3→2, 9→3, 맞은 자동 채택
    39→45, 24→37(`ai_service/eval/README.md` 2026-11-08 절). 단계 하나에 한 번 부르고(같은 단계는 프로세스 안 캐시),
-   단계 100개에 약 $0.005입니다. 키 없음·꺼짐·4초 초과·오류면 예전 규칙 판정 그대로이고, 응답의 `decided_by`
+   단계 100개에 약 $0.005입니다. Docker 기본값은 꺼짐(`AAC_LLM_RERANK=off`)이라 `.env`에서 `auto`로 켜야 돕니다.
+   키 없음·꺼짐·4초 초과(호출 전체 마감)·오류면 예전 규칙 판정 그대로이고, 응답의 `decided_by`
    (`rule`|`llm`)로 어느 쪽이 정했는지 볼 수 있습니다. 사업주의 직접 검색(`/ai/aac/search`)은 규칙만 씁니다 —
    사람이 목록을 보고 고르는 화면이라 자동 채택이 없고, 검색어마다 부를 이유가 없습니다.
 
@@ -389,10 +390,10 @@ OPENAI_API_KEY=sk-...            # 미설정 시 폴백
 OPENAI_MODEL=gpt-4o-mini
 OPENAI_BASE_URL=https://api.openai.com/v1
 LLM_TIMEOUT=20
-AAC_LLM_RERANK=auto              # 그림 재순위. off면 규칙만
+AAC_LLM_RERANK=off               # 그림 재순위. auto면 키가 있을 때 켬(로컬 실행 코드 기본 auto, Docker 기본 off). off면 규칙만
 AAC_LLM_RERANK_POLICY=top1       # top1(기본) | top3(GPT가 확신한 상위 3장 안 카드를 채택 — 블라인드1에서 오답 +1)
-AAC_LLM_RERANK_TIMEOUT=4         # 초. 넘으면 규칙 판정
-AAC_LLM_RERANK_COOLDOWN=60       # 연결·HTTP 오류 뒤 GPT를 쉬는 시간(초)
+AAC_LLM_RERANK_TIMEOUT=4         # 호출 전체 마감(초). 넘으면 규칙 판정
+AAC_LLM_RERANK_COOLDOWN=60       # 연결·HTTP 오류·마감 초과·이상한 응답 3번 연속 뒤 GPT를 쉬는 시간(초)
 AAC_LLM_RERANK_CACHE=1024        # 같은 단계 응답을 기억하는 개수(프로세스 안)
 ```
 

@@ -123,13 +123,16 @@ def test_top3_policy_accepts_confident_pick_within_top3():
     ({"choice": 0, "confident": True}, 10, (0, True)),
     ({"choice": 1}, 10, (1, False)),
     ({"choice": 1, "confident": "yes"}, 10, (1, False)),
+    ({"choice": 2.0, "confident": True}, 10, (2, True)),
 ])
 def test_parse_verdict_accepts_valid_answers(raw, n, expected):
     assert aac_rerank.parse_verdict(raw, n) == expected
 
 
 @pytest.mark.parametrize("raw", [{"choice": 11, "confident": True}, {"choice": -1}, {"confident": True},
-                                 {"choice": True}, {"choice": "two"}, []])
+                                 {"choice": True}, {"choice": "two"}, [],
+                                 {"choice": 1.7, "confident": True}, {"choice": float("inf")},
+                                 {"choice": float("nan")}, {"choice": "1.5"}])
 def test_parse_verdict_rejects_bad_answers(raw):
     with pytest.raises(ValueError):
         aac_rerank.parse_verdict(raw, 10)
@@ -185,6 +188,46 @@ def test_malformed_answer_falls_back_without_cooldown(gpt):
     out = aac_rerank.rerank(_decision("low_margin"), keywords=["k"], context={"sentence": "문장3"})
     assert out["decided_by"] == "llm"
     assert len(fake.calls) == 3
+
+
+def test_repeated_malformed_answers_cool_down(gpt):
+    """이상한 응답이 연달아 오면 단계마다 돈을 내지 않도록 쉰다."""
+    fake = gpt(*(["not json"] * aac_rerank._BAD_STREAK_LIMIT), {"choice": 1, "confident": True})
+    for i in range(aac_rerank._BAD_STREAK_LIMIT + 5):
+        out = aac_rerank.rerank(_decision("low_margin"), keywords=["k"], context={"sentence": f"문장{i}"})
+        assert out["decided_by"] == "rule"
+    assert len(fake.calls) == aac_rerank._BAD_STREAK_LIMIT
+    assert aac_rerank.available() is False
+
+
+def test_good_answer_resets_malformed_streak(gpt):
+    fake = gpt("not json", "not json", {"choice": 1, "confident": True}, "not json", "not json",
+               {"choice": 1, "confident": True})
+    for i in range(6):
+        aac_rerank.rerank(_decision("low_margin"), keywords=["k"], context={"sentence": f"문장{i}"})
+    assert len(fake.calls) == 6 and aac_rerank.available() is True
+
+
+def test_total_deadline_caps_a_slow_trickling_call(gpt, monkeypatch):
+    """httpx timeout은 단계별이라, 전체 마감은 aac_rerank가 따로 지킨다."""
+    import time as _time
+    monkeypatch.setenv("AAC_LLM_RERANK_TIMEOUT", "0.2")
+    calls = []
+
+    def slow_post(url, headers=None, json=None, timeout=None):  # noqa: A002
+        calls.append(timeout)
+        _time.sleep(1.0)
+        return httpx.Response(200, json={"choices": [{"message": {"content": '{"choice": 1, "confident": true}'}}]},
+                              request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(llm, "_http", types.SimpleNamespace(post=slow_post))
+    d = _decision("accepted")
+    started = _time.monotonic()
+    out = aac_rerank.rerank(d, keywords=["k"], context={"sentence": "문장"})
+    assert _time.monotonic() - started < 0.8
+    assert out["decided_by"] == "rule" and out["match"] == d["match"]
+    assert calls == [0.2]
+    assert aac_rerank.available() is False
 
 
 def test_no_key_never_calls(gpt, monkeypatch):

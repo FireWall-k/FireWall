@@ -6,6 +6,8 @@ OpenAI 호출(chat_json)만 목으로 대체하고, 프롬프트→JSON 파싱�
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import llm  # noqa: E402
@@ -166,3 +168,43 @@ def test_chat_json_parses_openai_wire_format(monkeypatch):
     assert captured["url"].endswith("/chat/completions")
     assert captured["json_mode"] == "json_object"
     assert captured["auth"].startswith("Bearer ")
+
+
+# ---------- 금지·부정 보존 ----------
+def test_llm_decompose_dropping_prohibition_falls_back_to_rules(monkeypatch):
+    """'만지지 말고 ~ 부르세요'에서 금지가 사라진 GPT 결과는 버리고 규칙 분해로 간다."""
+    monkeypatch.setattr(llm, "llm_available", lambda: True)
+    monkeypatch.setattr(llm, "chat_json", lambda system, user, **kw: {
+        "task_title": "x", "steps": [{"sentence": "담당 선생님을 부르세요.", "action_type": "other"}],
+    })
+    src = "빨간 상자는 만지지 말고 담당 선생님을 부르세요."
+    result = dec.decompose(src, {})
+    assert any("만지지" in s.sentence for s in result.steps)
+
+
+def test_llm_decompose_keeps_result_when_prohibition_survives(monkeypatch):
+    monkeypatch.setattr(llm, "llm_available", lambda: True)
+    monkeypatch.setattr(llm, "chat_json", lambda system, user, **kw: {
+        "task_title": "x", "steps": [{"sentence": "빨간 상자는 만지지 마세요.", "action_type": "other"},
+                                     {"sentence": "담당 선생님을 부르세요.", "action_type": "other"}],
+    })
+    result = dec.decompose("빨간 상자는 만지지 말고 담당 선생님을 부르세요.", {})
+    assert [s.sentence for s in result.steps] == ["빨간 상자는 만지지 마세요.", "담당 선생님을 부르세요."]
+
+
+def test_llm_decompose_invented_prohibition_falls_back_to_rules(monkeypatch):
+    """원문에 없는 '~지 마세요'를 덧붙인 결과(앞 단계와 반대 지시)는 버린다."""
+    monkeypatch.setattr(llm, "llm_available", lambda: True)
+    monkeypatch.setattr(llm, "chat_json", lambda system, user, **kw: {
+        "task_title": "x", "steps": [{"sentence": "수저를 수저통에 넣으세요.", "action_type": "other"},
+                                     {"sentence": "수저통에 넣지 마세요.", "action_type": "other"}],
+    })
+    result = dec.decompose("수저를 모아서 수저통에 넣으세요.", {})
+    assert not any("마세요" in s.sentence for s in result.steps)
+
+
+def test_check_negation_markers():
+    llm.check_negation("넘치지 않게 부으세요.", {"steps": [{"sentence": "넘치지 않게 부으세요."}]})
+    llm.check_negation("컵을 놓으세요.", {"steps": [{"sentence": "컵을 놓으세요."}]})
+    with pytest.raises(ValueError):
+        llm.check_negation("뛰지 마세요.", {"steps": [{"sentence": "걸으세요."}]})
