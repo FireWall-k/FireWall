@@ -9,6 +9,13 @@
   호출자는 임베딩 없는 기존 방식(기존 임계값)으로 물러난다. 임베딩 장애가 서비스 장애가 되면 안 된다.
 - 점수 척도가 임베딩 유무로 달라지므로 임계값도 두 벌이다(local_aac.decide).
 - 자산 벡터가 현재 라벨·검색어와 어긋나면(인덱스를 고치고 다시 안 만든 경우) 쓰지 않는다.
+
+제공자(AAC_EMBED_PROVIDER):
+- local(기본) — 무료 로컬 모델(fastembed/ONNX, CPU). 키·네트워크가 필요 없다. 모델은 처음 쓸 때
+  한 번 불러온다. 도커 이미지는 빌드할 때 모델을 AAC_EMBED_CACHE_DIR에 받아 두고 실행 중에는
+  내려받지 않는다(HF_HUB_OFFLINE=1).
+- openai — text-embedding-3-large(OPENAI_EMBED_MODEL/DIMS). 키가 있을 때만 켜진다.
+자산 벡터 파일에는 만든 모델·차원이 적혀 있고, 지금 제공자의 모델·차원과 다르면 쓰지 않는다.
 """
 from __future__ import annotations
 
@@ -31,18 +38,125 @@ STORE_FILENAME = "aac_embeddings.npz"
 
 # 질의 호출이 느리거나 실패하면 이 시간 동안은 시도조차 하지 않는다(요청마다 타임아웃을
 # 기다리게 되는 걸 막는다). 짧은 타임아웃 + 쿨다운이 함께 있어야 장애가 번지지 않는다.
+# 타임아웃은 openai 제공자(네트워크 호출)에만 적용된다. local은 요청 안에서 바로 추론하고(질의 하나
+# 7~14ms) 타임아웃이 없다 — 모델 로딩·추론이 예외를 내면 쿨다운만 걸린다.
 _QUERY_TIMEOUT = float(os.getenv("AAC_EMBED_TIMEOUT", "3"))
 _COOLDOWN_SEC = float(os.getenv("AAC_EMBED_COOLDOWN", "60"))
 _CACHE_SIZE = 512
 
 _lock = threading.Lock()
-_cache: "OrderedDict[str, np.ndarray]" = OrderedDict()
+_cache: "OrderedDict[tuple, np.ndarray]" = OrderedDict()
 _cooldown_until = 0.0
 
 
 def mode() -> str:
-    """AAC_EMBEDDINGS: 'off'면 끈다. 그 외에는 키와 자산 파일이 있을 때 자동으로 켠다."""
-    return os.getenv("AAC_EMBEDDINGS", "auto").strip().lower()
+    """AAC_EMBEDDINGS: 기본 'off'. 'auto'면 제공자를 쓸 수 있고 자산 파일이 맞을 때 켠다.
+
+    기본이 off인 이유: 로컬 모델이 개발셋에서는 오답 채택을 줄였지만 블라인드셋(재판정 후)에서는
+    full 5→7, 문장 5→6으로 늘었다(eval/README.md 2026-11-08 블라인드 확인 절).
+    """
+    return (os.getenv("AAC_EMBEDDINGS") or "off").strip().lower()
+
+
+# --- 제공자 -----------------------------------------------------------------------
+
+PROVIDERS = ("local", "openai")
+DEFAULT_LOCAL_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+
+# 로컬 모델 표: 이름 → (차원, 입력 앞에 붙일 말). fastembed 기본 목록에 없는 모델은
+# _register_custom에서 등록한다. 표에 없는 모델도 AAC_LOCAL_EMBED_DIMS를 주면 쓸 수 있다.
+_LOCAL_MODELS: dict[str, tuple[int, str]] = {
+    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2": (384, ""),
+    "intfloat/multilingual-e5-small": (384, "query: "),
+}
+_CUSTOM_MODELS = {
+    # fastembed 0.9 목록에 없다. HF 저장소의 onnx/model.onnx를 그대로 쓴다(평균 풀링 + 정규화).
+    "intfloat/multilingual-e5-small": dict(dim=384, model_file="onnx/model.onnx"),
+}
+
+
+def provider() -> str:
+    """AAC_EMBED_PROVIDER: local(기본) | openai. 알 수 없는 값은 local로 본다."""
+    value = os.getenv("AAC_EMBED_PROVIDER", "local").strip().lower()
+    return value if value in PROVIDERS else "local"
+
+
+def local_model_name() -> str:
+    return os.getenv("AAC_LOCAL_EMBED_MODEL", "").strip() or DEFAULT_LOCAL_MODEL
+
+
+def local_model_dims() -> int:
+    env = os.getenv("AAC_LOCAL_EMBED_DIMS", "").strip()
+    if env:
+        return int(env)
+    return _LOCAL_MODELS.get(local_model_name(), (384, ""))[0]
+
+
+def _local_prefix() -> str:
+    return _LOCAL_MODELS.get(local_model_name(), (0, ""))[1]
+
+
+def active_model() -> tuple[str, int]:
+    """지금 제공자의 (모델 이름, 차원). 자산 파일 검사·digest·평가 캐시 키가 모두 이것을 쓴다."""
+    if provider() == "openai":
+        return llm.EMBED_MODEL, llm.EMBED_DIMS
+    return local_model_name(), local_model_dims()
+
+
+def provider_ready() -> bool:
+    """제공자를 부를 수 있는가. openai는 키가 있어야 하고, local은 키와 무관하다."""
+    if provider() == "openai":
+        return llm.llm_available()
+    return True
+
+
+_local_lock = threading.Lock()
+_local_models: dict[str, object] = {}
+
+
+def _register_custom(name: str) -> None:
+    spec = _CUSTOM_MODELS.get(name)
+    if spec is None:
+        return
+    from fastembed import TextEmbedding
+    from fastembed.common.model_description import ModelSource, PoolingType
+
+    if any(m["model"] == name for m in TextEmbedding.list_supported_models()):
+        return
+    TextEmbedding.add_custom_model(model=name, pooling=PoolingType.MEAN, normalization=True,
+                                   sources=ModelSource(hf=name), **spec)
+
+
+def load_local_model():
+    """로컬 모델을 프로세스당 한 번 불러온다. 실패하면 예외(호출부가 임베딩 없이 진행한다)."""
+    name = local_model_name()
+    with _local_lock:
+        model = _local_models.get(name)
+        if model is None:
+            from fastembed import TextEmbedding  # 무거운 import — 임베딩을 쓸 때만
+
+            _register_custom(name)
+            started = time.monotonic()
+            threads = int(os.getenv("AAC_LOCAL_EMBED_THREADS", "2"))
+            cache_dir = os.getenv("AAC_EMBED_CACHE_DIR", "").strip() or None
+            model = TextEmbedding(model_name=name, cache_dir=cache_dir, threads=threads)
+            _local_models[name] = model
+            logger.info("로컬 임베딩 모델 %s 를 %.1f초에 불러왔습니다.", name,
+                        time.monotonic() - started)
+    return model
+
+
+def embed_texts(texts: list[str], *, timeout: float = 20.0) -> list:
+    """지금 제공자로 텍스트를 임베딩한다(정규화 전). 실패 시 예외. 자산·질의가 같은 함수를 쓴다."""
+    if provider() == "openai":
+        return llm.embed_texts(texts, timeout=timeout)
+    model = load_local_model()
+    prefix = _local_prefix()
+    vecs = list(model.embed([prefix + t for t in texts], batch_size=64))
+    dims = local_model_dims()
+    if vecs and len(vecs[0]) != dims:
+        raise RuntimeError(f"로컬 모델 차원이 설정과 다릅니다: {len(vecs[0])} != {dims}")
+    return vecs
 
 
 def asset_texts(asset: dict, index_entry: dict | None) -> tuple[str, str]:
@@ -85,7 +199,8 @@ def _current_texts() -> tuple[list[str], list[str], list[str]]:
 
 def current_digest() -> str:
     ids, labels, fulls = _current_texts()
-    return texts_digest(ids, labels, fulls, llm.EMBED_MODEL, llm.EMBED_DIMS)
+    model, dims = active_model()
+    return texts_digest(ids, labels, fulls, model, dims)
 
 
 @lru_cache(maxsize=1)
@@ -105,9 +220,9 @@ def _load_store() -> _Store | None:
     except Exception as e:  # noqa: BLE001 - 파일이 깨졌으면 없는 것과 같다
         logger.warning("자산 임베딩 파일을 읽지 못해 임베딩을 쓰지 않습니다: %s", e)
         return None
-    if (model, dims) != (llm.EMBED_MODEL, llm.EMBED_DIMS):
+    if (model, dims) != active_model():
         logger.warning("자산 임베딩 모델이 다릅니다(파일 %s/%s, 설정 %s/%s) — 쓰지 않습니다.",
-                       model, dims, llm.EMBED_MODEL, llm.EMBED_DIMS)
+                       model, dims, *active_model())
         return None
     if stored_digest != current_digest():
         logger.warning("자산 임베딩이 현재 라벨·검색어와 어긋납니다 — 쓰지 않습니다. "
@@ -119,7 +234,7 @@ def _load_store() -> _Store | None:
 
 def available() -> bool:
     """이 프로세스에서 임베딩을 쓸 수 있는 상태인가(호출이 일시적으로 실패 중인 건 따로 본다)."""
-    return mode() != "off" and llm.llm_available() and _load_store() is not None
+    return mode() != "off" and provider_ready() and _load_store() is not None
 
 
 class QuerySims:
@@ -136,27 +251,25 @@ class QuerySims:
 
 def _query_vector(query: str) -> np.ndarray | None:
     global _cooldown_until
+    key = (provider(), *active_model(), query)
     with _lock:
-        vec = _cache.get(query)
+        vec = _cache.get(key)
         if vec is not None:
-            _cache.move_to_end(query)
+            _cache.move_to_end(key)
             return vec
         if time.monotonic() < _cooldown_until:
             return None
     try:
-        raw = llm.embed_texts([query], timeout=_QUERY_TIMEOUT)[0]
-        vec = np.asarray(raw, dtype=np.float32)
-        norm = float(np.linalg.norm(vec))
-        if not norm:
+        vec = normalize(embed_texts([query], timeout=_QUERY_TIMEOUT)[0])
+        if vec is None:
             return None
-        vec = vec / norm
     except Exception as e:  # noqa: BLE001 - 어떤 실패든 임베딩 없이 계속한다
         with _lock:
             _cooldown_until = time.monotonic() + _COOLDOWN_SEC
         logger.warning("질의 임베딩 실패 — %.0f초 동안 임베딩 없이 진행합니다: %s", _COOLDOWN_SEC, e)
         return None
     with _lock:
-        _cache[query] = vec
+        _cache[key] = vec
         while len(_cache) > _CACHE_SIZE:
             _cache.popitem(last=False)
     return vec
@@ -164,7 +277,7 @@ def _query_vector(query: str) -> np.ndarray | None:
 
 def query_similarities(query: str) -> QuerySims | None:
     """질의와 각 자산의 유사도(라벨과 라벨+검색어 중 높은 쪽). 못 쓰면 None."""
-    if not query.strip() or mode() == "off" or not llm.llm_available():
+    if not query.strip() or mode() == "off" or not provider_ready():
         return None
     store = _load_store()
     if store is None:
@@ -172,7 +285,32 @@ def query_similarities(query: str) -> QuerySims | None:
     vec = _query_vector(query)
     if vec is None:
         return None
+    return sims_for_vector(store, vec)
+
+
+def sims_for_vector(store: _Store, vec: np.ndarray) -> QuerySims:
+    """정규화된 질의 벡터 → 자산별 유사도. 평가 하네스의 디스크 캐시 경로도 같은 식을 쓰게 따로 뺐다."""
     return QuerySims(store, np.maximum(store.label_vecs @ vec, store.full_vecs @ vec))
+
+
+def normalize(raw) -> np.ndarray | None:
+    """제공자가 준 벡터를 float32 단위 벡터로. 영벡터면 None."""
+    vec = np.asarray(raw, dtype=np.float32)
+    norm = float(np.linalg.norm(vec))
+    return vec / norm if norm else None
+
+
+def warm_up() -> bool:
+    """서비스 시작 때 자산 파일과 로컬 모델을 미리 불러 둔다(첫 요청이 모델 로딩 ~3초를 기다리지
+    않게). 실패해도 예외를 내지 않는다 — 요청 시점에 같은 폴백이 다시 적용된다."""
+    try:
+        if not available() or provider() != "local":
+            return False
+        load_local_model()
+        return True
+    except Exception as e:  # noqa: BLE001
+        logger.warning("로컬 임베딩 모델을 미리 불러오지 못했습니다(요청 때 다시 시도): %s", e)
+        return False
 
 
 def _reset_for_tests() -> None:

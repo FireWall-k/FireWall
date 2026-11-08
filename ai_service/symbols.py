@@ -46,7 +46,11 @@ def map_symbols(keywords: list[str], context: dict) -> MapSymbolsResult:
                 source="fallback",
                 confidence=0.0,
                 needs_fallback=True,
-                reason=decision["reason"],
+                # frame_mismatch(대상이 다른 그림)는 '후보를 보여 주고 사람이 고른다'는 화면
+                # 동작이 low_margin과 같다. backend·frontend 계약의 reason 값을 늘리지 않으려고
+                # 바깥으로는 low_margin으로 내보낸다.
+                reason=("low_margin" if decision["reason"] == "frame_mismatch"
+                        else decision["reason"]),
                 candidates=[
                     AacMatch(**c) for c in decision["candidates"][:_SHORTLIST]
                 ],

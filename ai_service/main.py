@@ -10,9 +10,13 @@ LLM은 아직 목(decompose.py)이지만, 바깥 인터페이스는 최종형과
 from __future__ import annotations
 
 import logging
+import threading
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 
+import embeddings
+import local_aac
 import llm
 from local_aac import search_assets
 from decompose import decompose
@@ -34,7 +38,20 @@ from symbols import map_symbols
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ai_harness")
 
-app = FastAPI(title="JOB CARD - AI Harness", version="0.1.0")
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    # 로컬 임베딩 모델 로딩(~3초)을 시작과 함께 뒤에서 한다. 그동안 들어온 요청은 로딩이 끝나기를
+    # 기다릴 뿐 실패하지 않는다(embeddings.load_local_model의 잠금).
+    try:
+        local_aac.log_embed_settings()
+    except Exception:  # 진단 로그 실패가 기동을 막으면 안 된다
+        logger.exception("임베딩 보정값 로그 실패")
+    threading.Thread(target=embeddings.warm_up, name="embed-warmup", daemon=True).start()
+    yield
+
+
+app = FastAPI(title="JOB CARD - AI Harness", version="0.1.0", lifespan=_lifespan)
 
 MAX_RETRIES = 2  # (가정) 스키마 검증 실패 시 재시도 횟수
 

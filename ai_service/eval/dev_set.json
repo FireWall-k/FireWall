@@ -1,0 +1,3701 @@
+{
+ "_comment": "개발용 평가셋(9개 직무 x 20 = 180). 판정자 2명 합의/조정 라벨(이미지 직접 확인). 스키마는 eval/match_dataset.json과 같고 business_type은 최상위와 context 양쪽에 둔다. gap=true면 accept는 비어 있다. action_type은 두지 않았다(하네스 기본값 'other'). 튜닝에 쓰지 않은 새 문장이지만, 이 세트로 튜닝을 반복하면 골든셋처럼 낙관적이 된다.",
+ "decision": {
+  "recall_depth": 20,
+  "shortlist_depth": 3
+ },
+ "cases": [
+  {
+   "id": "dev_assembly_01",
+   "job": "assembly",
+   "business_type": "전자부품 임가공 보호작업장",
+   "sentence": "출근하면 출근부에 이름을 쓰세요.",
+   "context": {
+    "business_type": "전자부품 임가공 보호작업장"
+   },
+   "symbol_query": [
+    "출근부",
+    "펜",
+    "attendance sheet"
+   ],
+   "accept": [
+    "ASSEMBLY_178"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_assembly_02",
+   "job": "assembly",
+   "business_type": "전자부품 임가공 보호작업장",
+   "sentence": "작업복으로 갈아입으세요.",
+   "context": {
+    "business_type": "전자부품 임가공 보호작업장"
+   },
+   "symbol_query": [
+    "작업복",
+    "탈의실",
+    "work uniform"
+   ],
+   "accept": [
+    "ASSEMBLY_AUX_031",
+    "ASSEMBLY_AUX_017",
+    "RETAIL_112"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_assembly_03",
+   "job": "assembly",
+   "business_type": "전자부품 임가공 보호작업장",
+   "sentence": "커넥터 구멍에 단자를 딸깍 소리 나게 끼우세요.",
+   "context": {
+    "business_type": "전자부품 임가공 보호작업장"
+   },
+   "symbol_query": [
+    "커넥터",
+    "단자",
+    "connector",
+    "terminal"
+   ],
+   "accept": [
+    "ASSEMBLY_107",
+    "ASSEMBLY_108",
+    "ASSEMBLY_106"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_assembly_04",
+   "job": "assembly",
+   "business_type": "전자부품 임가공 보호작업장",
+   "sentence": "다 끼운 것을 20개씩 세어서 비닐봉투에 담아요.",
+   "context": {
+    "business_type": "전자부품 임가공 보호작업장"
+   },
+   "symbol_query": [
+    "비닐봉투",
+    "완성품",
+    "plastic bag",
+    "count"
+   ],
+   "accept": [
+    "PACKAGING_030",
+    "PACKAGING_062",
+    "PACKAGING_032",
+    "ASSEMBLY_185"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_assembly_05",
+   "job": "assembly",
+   "business_type": "볼펜 조립 보호작업장",
+   "sentence": "볼펜 몸통에 볼펜심을 쏙 넣으세요.",
+   "context": {
+    "business_type": "볼펜 조립 보호작업장"
+   },
+   "symbol_query": [
+    "볼펜",
+    "볼펜심",
+    "pen refill"
+   ],
+   "accept": [
+    "ASSEMBLY_179"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_assembly_06",
+   "job": "assembly",
+   "business_type": "볼펜 조립 보호작업장",
+   "sentence": "심 끝에 작은 스프링을 끼우세요.",
+   "context": {
+    "business_type": "볼펜 조립 보호작업장"
+   },
+   "symbol_query": [
+    "스프링",
+    "볼펜심",
+    "spring"
+   ],
+   "accept": [
+    "ASSEMBLY_180"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_assembly_07",
+   "job": "assembly",
+   "business_type": "볼펜 조립 보호작업장",
+   "sentence": "종이에 한 번 그어서 글씨가 나오는지 봐요.",
+   "context": {
+    "business_type": "볼펜 조립 보호작업장"
+   },
+   "symbol_query": [
+    "종이",
+    "볼펜",
+    "test paper"
+   ],
+   "accept": [
+    "ASSEMBLY_181"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_assembly_08",
+   "job": "assembly",
+   "business_type": "볼펜 조립 보호작업장",
+   "sentence": "안 나오는 볼펜은 빨간 바구니에 따로 두세요.",
+   "context": {
+    "business_type": "볼펜 조립 보호작업장"
+   },
+   "symbol_query": [
+    "빨간 바구니",
+    "불량 볼펜",
+    "reject basket"
+   ],
+   "accept": [
+    "ASSEMBLY_037_01",
+    "ASSEMBLY_037_03",
+    "ASSEMBLY_037_04"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "disputed": true
+  },
+  {
+   "id": "dev_assembly_09",
+   "job": "assembly",
+   "business_type": "자동차 부품 협력업체 보호작업장",
+   "sentence": "고무 패킹을 브래킷 홈에 꾹 눌러 끼우세요.",
+   "context": {
+    "business_type": "자동차 부품 협력업체 보호작업장"
+   },
+   "symbol_query": [
+    "고무 패킹",
+    "브래킷",
+    "rubber gasket"
+   ],
+   "accept": [
+    "ASSEMBLY_075"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_assembly_10",
+   "job": "assembly",
+   "business_type": "자동차 부품 협력업체 보호작업장",
+   "sentence": "볼트에 와셔를 먼저 하나 끼워요.",
+   "context": {
+    "business_type": "자동차 부품 협력업체 보호작업장"
+   },
+   "symbol_query": [
+    "볼트",
+    "와셔",
+    "washer",
+    "bolt"
+   ],
+   "accept": [
+    "ASSEMBLY_182"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_assembly_11",
+   "job": "assembly",
+   "business_type": "자동차 부품 협력업체 보호작업장",
+   "sentence": "전동 드릴로 볼트를 끝까지 박으세요.",
+   "context": {
+    "business_type": "자동차 부품 협력업체 보호작업장"
+   },
+   "symbol_query": [
+    "전동 드릴",
+    "볼트",
+    "electric screwdriver"
+   ],
+   "accept": [
+    "ASSEMBLY_183"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_assembly_12",
+   "job": "assembly",
+   "business_type": "자동차 부품 협력업체 보호작업장",
+   "sentence": "종이 울리면 휴게실에 가서 쉬어요.",
+   "context": {
+    "business_type": "자동차 부품 협력업체 보호작업장"
+   },
+   "symbol_query": [
+    "휴게실",
+    "종",
+    "break time"
+   ],
+   "accept": [
+    "ASSEMBLY_184",
+    "CLEANING_209",
+    "RETAIL_101"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_assembly_13",
+   "job": "assembly",
+   "business_type": "멀티탭 조립 보호작업장",
+   "sentence": "아래 케이스 위에 기판을 맞춰 올리세요.",
+   "context": {
+    "business_type": "멀티탭 조립 보호작업장"
+   },
+   "symbol_query": [
+    "멀티탭 케이스",
+    "기판",
+    "circuit board"
+   ],
+   "accept": [
+    "ASSEMBLY_076"
+   ],
+   "gap": false,
+   "confidence": "low",
+   "disputed": true
+  },
+  {
+   "id": "dev_assembly_14",
+   "job": "assembly",
+   "business_type": "멀티탭 조립 보호작업장",
+   "sentence": "위 뚜껑을 덮고 꾹 눌러 맞추세요.",
+   "context": {
+    "business_type": "멀티탭 조립 보호작업장"
+   },
+   "symbol_query": [
+    "멀티탭",
+    "뚜껑",
+    "cover"
+   ],
+   "accept": [
+    "ASSEMBLY_078",
+    "ASSEMBLY_076",
+    "ASSEMBLY_077"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_assembly_15",
+   "job": "assembly",
+   "business_type": "멀티탭 조립 보호작업장",
+   "sentence": "박스 입구를 테이프로 붙이세요.",
+   "context": {
+    "business_type": "멀티탭 조립 보호작업장"
+   },
+   "symbol_query": [
+    "박스",
+    "박스 테이프",
+    "tape dispenser"
+   ],
+   "accept": [
+    "PACKAGING_048",
+    "PACKAGING_097",
+    "PACKAGING_039"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_assembly_16",
+   "job": "assembly",
+   "business_type": "멀티탭 조립 보호작업장",
+   "sentence": "다 붙인 박스를 팔레트 위에 차곡차곡 쌓아요.",
+   "context": {
+    "business_type": "멀티탭 조립 보호작업장"
+   },
+   "symbol_query": [
+    "팔레트",
+    "박스",
+    "pallet"
+   ],
+   "accept": [
+    "PACKAGING_168",
+    "PACKAGING_170",
+    "PACKAGING_119",
+    "PACKAGING_169"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_assembly_17",
+   "job": "assembly",
+   "business_type": "가구 부속 소포장 보호작업장",
+   "sentence": "경첩 2개와 육각렌치 1개를 지퍼백에 넣어요.",
+   "context": {
+    "business_type": "가구 부속 소포장 보호작업장"
+   },
+   "symbol_query": [
+    "경첩",
+    "육각렌치",
+    "지퍼백",
+    "hinge"
+   ],
+   "accept": [
+    "PACKAGING_062",
+    "PACKAGING_031",
+    "PACKAGING_030"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_assembly_18",
+   "job": "assembly",
+   "business_type": "가구 부속 소포장 보호작업장",
+   "sentence": "지퍼백을 저울에 올려 숫자를 보세요.",
+   "context": {
+    "business_type": "가구 부속 소포장 보호작업장"
+   },
+   "symbol_query": [
+    "전자저울",
+    "지퍼백",
+    "scale"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_assembly_19",
+   "job": "assembly",
+   "business_type": "가구 부속 소포장 보호작업장",
+   "sentence": "작업장 전화가 울리면 받고 반장님을 불러 주세요.",
+   "context": {
+    "business_type": "가구 부속 소포장 보호작업장"
+   },
+   "symbol_query": [
+    "전화기",
+    "반장",
+    "telephone"
+   ],
+   "accept": [
+    "ASSEMBLY_176",
+    "CAFE_092",
+    "PACKAGING_178"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_assembly_20",
+   "job": "assembly",
+   "business_type": "가구 부속 소포장 보호작업장",
+   "sentence": "일이 끝나면 작업대 위를 걸레로 훔치세요.",
+   "context": {
+    "business_type": "가구 부속 소포장 보호작업장"
+   },
+   "symbol_query": [
+    "작업대",
+    "걸레",
+    "wipe table"
+   ],
+   "accept": [
+    "ASSEMBLY_166",
+    "ASSEMBLY_AUX_013",
+    "CAFE_004",
+    "CAFE_086",
+    "PACKAGING_184"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_cafe_01",
+   "job": "cafe",
+   "business_type": "테이크아웃 카페",
+   "sentence": "출근하면 출퇴근 기록기에 카드를 찍어요.",
+   "context": {
+    "business_type": "테이크아웃 카페"
+   },
+   "symbol_query": [
+    "출퇴근 기록기",
+    "카드",
+    "time clock"
+   ],
+   "accept": [
+    "ASSEMBLY_AUX_036",
+    "CAFE_093",
+    "ASSEMBLY_177",
+    "CLEANING_192",
+    "RETAIL_095"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_cafe_02",
+   "job": "cafe",
+   "business_type": "테이크아웃 카페",
+   "sentence": "가게 문을 열고 간판 불을 켜세요.",
+   "context": {
+    "business_type": "테이크아웃 카페"
+   },
+   "symbol_query": [
+    "간판",
+    "조명",
+    "signboard"
+   ],
+   "accept": [
+    "ASSEMBLY_AUX_029"
+   ],
+   "gap": false,
+   "confidence": "low",
+   "disputed": true,
+   "note": "정답지 교정(P1, 2026-11-07): 유지. ASSEMBLY_AUX_043은 공장 작업대 위 탁상 작업등을 켜는 그림이라 간판과 다른 대상을 그린다. AUX_029(벽 스위치 누르기)는 대상을 특정하지 않는 일반 그림이라 근사로 인정. disputed 유지."
+  },
+  {
+   "id": "dev_cafe_03",
+   "job": "cafe",
+   "business_type": "테이크아웃 카페",
+   "sentence": "시럽 병이 비었으면 가득 채워 두세요.",
+   "context": {
+    "business_type": "테이크아웃 카페"
+   },
+   "symbol_query": [
+    "시럽",
+    "펌프",
+    "syrup"
+   ],
+   "accept": [
+    "CAFE_099"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cafe_04",
+   "job": "cafe",
+   "business_type": "테이크아웃 카페",
+   "sentence": "빨대와 냅킨을 통에 채워 넣으세요.",
+   "context": {
+    "business_type": "테이크아웃 카페"
+   },
+   "symbol_query": [
+    "빨대",
+    "냅킨",
+    "straw",
+    "napkin"
+   ],
+   "accept": [
+    "CAFE_048",
+    "CAFE_049"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_cafe_05",
+   "job": "cafe",
+   "business_type": "테이크아웃 카페",
+   "sentence": "그라인더 위 통에 원두를 부어 채우세요.",
+   "context": {
+    "business_type": "테이크아웃 카페"
+   },
+   "symbol_query": [
+    "원두",
+    "그라인더",
+    "grinder",
+    "hopper"
+   ],
+   "accept": [
+    "CAFE_012"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_cafe_06",
+   "job": "cafe",
+   "business_type": "프랜차이즈 커피전문점",
+   "sentence": "스팀 노즐을 젖은 행주로 닦아요.",
+   "context": {
+    "business_type": "프랜차이즈 커피전문점"
+   },
+   "symbol_query": [
+    "스팀 노즐",
+    "행주",
+    "steam wand"
+   ],
+   "accept": [
+    "CAFE_095"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cafe_07",
+   "job": "cafe",
+   "business_type": "프랜차이즈 커피전문점",
+   "sentence": "포터필터에 남은 커피 찌꺼기를 털어 버리세요.",
+   "context": {
+    "business_type": "프랜차이즈 커피전문점"
+   },
+   "symbol_query": [
+    "포터필터",
+    "커피 찌꺼기",
+    "portafilter",
+    "coffee grounds"
+   ],
+   "accept": [
+    "CAFE_024"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_cafe_08",
+   "job": "cafe",
+   "business_type": "프랜차이즈 커피전문점",
+   "sentence": "블렌더 통에 썰어 둔 과일을 넣으세요.",
+   "context": {
+    "business_type": "프랜차이즈 커피전문점"
+   },
+   "symbol_query": [
+    "블렌더",
+    "과일",
+    "blender",
+    "fruit"
+   ],
+   "accept": [
+    "CAFE_100"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cafe_09",
+   "job": "cafe",
+   "business_type": "프랜차이즈 커피전문점",
+   "sentence": "우유 팩에 적힌 유통기한을 확인하세요.",
+   "context": {
+    "business_type": "프랜차이즈 커피전문점"
+   },
+   "symbol_query": [
+    "우유",
+    "유통기한",
+    "expiration date"
+   ],
+   "accept": [
+    "RETAIL_041"
+   ],
+   "gap": false,
+   "confidence": "low"
+  },
+  {
+   "id": "dev_cafe_10",
+   "job": "cafe",
+   "business_type": "베이커리 카페",
+   "sentence": "갓 나온 빵을 진열대에 가지런히 놓으세요.",
+   "context": {
+    "business_type": "베이커리 카페"
+   },
+   "symbol_query": [
+    "빵",
+    "진열대",
+    "bread",
+    "display case"
+   ],
+   "accept": [
+    "CAFE_058"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_cafe_11",
+   "job": "cafe",
+   "business_type": "베이커리 카페",
+   "sentence": "집게로 빵을 집어 봉투에 담아요.",
+   "context": {
+    "business_type": "베이커리 카페"
+   },
+   "symbol_query": [
+    "집게",
+    "빵",
+    "봉투",
+    "tongs"
+   ],
+   "accept": [
+    "CAFE_054"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_cafe_12",
+   "job": "cafe",
+   "business_type": "베이커리 카페",
+   "sentence": "케이크 상자를 미리 접어 두세요.",
+   "context": {
+    "business_type": "베이커리 카페"
+   },
+   "symbol_query": [
+    "케이크 상자",
+    "상자",
+    "cake box"
+   ],
+   "accept": [
+    "PACKAGING_038"
+   ],
+   "gap": false,
+   "confidence": "low",
+   "disputed": true
+  },
+  {
+   "id": "dev_cafe_13",
+   "job": "cafe",
+   "business_type": "베이커리 카페",
+   "sentence": "들어온 물건 상자를 창고로 옮겨요.",
+   "context": {
+    "business_type": "베이커리 카페"
+   },
+   "symbol_query": [
+    "상자",
+    "창고",
+    "box",
+    "storage room"
+   ],
+   "accept": [
+    "DELIVERY_004"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_cafe_14",
+   "job": "cafe",
+   "business_type": "대형 매장 카페(홀)",
+   "sentence": "고객이 다 마신 컵을 쟁반째 가져오세요.",
+   "context": {
+    "business_type": "대형 매장 카페(홀)"
+   },
+   "symbol_query": [
+    "컵",
+    "쟁반",
+    "tray",
+    "cup"
+   ],
+   "accept": [
+    "SERVING_009",
+    "CAFE_076"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_cafe_15",
+   "job": "cafe",
+   "business_type": "대형 매장 카페(홀)",
+   "sentence": "테이블 위 물기를 마른 걸레로 훔치세요.",
+   "context": {
+    "business_type": "대형 매장 카페(홀)"
+   },
+   "symbol_query": [
+    "테이블",
+    "걸레",
+    "cloth"
+   ],
+   "accept": [
+    "CAFE_077",
+    "SERVING_010"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "정답지 교정(P1, 2026-11-07): 유지. DISPLAY_048은 매장 진열대(선반 달린 매대) 윗면의 먼지를 닦는 그림이라 '카페 테이블의 물기'와 대상이 다르다. 테이블 그림(CAFE_077·SERVING_010)이 따로 있다. dev_retail_08(계산대)에서 DISPLAY_048을 인정한 것은 같은 매장 안의 허리 높이 진열·계산 설비이고 계산대를 닦는 그림이 없어서다(DISPLAY_TOOL_019 계산대는 사물 카드) — 판정 기준: 동작과 대상이 같거나, 대상 그림이 없을 때 같은 장소의 같은 종류 설비면 인정, 다른 종류의 대상을 그린 그림은 불인정."
+  },
+  {
+   "id": "dev_cafe_16",
+   "job": "cafe",
+   "business_type": "대형 매장 카페(홀)",
+   "sentence": "주문한 손님에게 진동벨을 건네주세요.",
+   "context": {
+    "business_type": "대형 매장 카페(홀)"
+   },
+   "symbol_query": [
+    "진동벨",
+    "손님",
+    "pager"
+   ],
+   "accept": [
+    "CAFE_101"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cafe_17",
+   "job": "cafe",
+   "business_type": "대형 매장 카페(홀)",
+   "sentence": "매장 전화가 울리면 받아서 인사해요.",
+   "context": {
+    "business_type": "대형 매장 카페(홀)"
+   },
+   "symbol_query": [
+    "전화",
+    "telephone"
+   ],
+   "accept": [
+    "CAFE_092",
+    "RETAIL_093"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cafe_18",
+   "job": "cafe",
+   "business_type": "대형 매장 카페(홀)",
+   "sentence": "고객 쿠폰에 도장을 하나 찍어 주세요.",
+   "context": {
+    "business_type": "대형 매장 카페(홀)"
+   },
+   "symbol_query": [
+    "쿠폰",
+    "도장",
+    "stamp",
+    "coupon"
+   ],
+   "accept": [
+    "CAFE_102"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cafe_19",
+   "job": "cafe",
+   "business_type": "복지관 내 카페",
+   "sentence": "화장실 휴지가 떨어졌으면 새로 채워 넣으세요.",
+   "context": {
+    "business_type": "복지관 내 카페"
+   },
+   "symbol_query": [
+    "화장실",
+    "휴지",
+    "toilet paper"
+   ],
+   "accept": [
+    "CLEANING_015",
+    "CLEANING_101"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_cafe_20",
+   "job": "cafe",
+   "business_type": "복지관 내 카페",
+   "sentence": "퇴근 전에 출입문이 잠겼는지 확인해요.",
+   "context": {
+    "business_type": "복지관 내 카페"
+   },
+   "symbol_query": [
+    "출입문",
+    "자물쇠",
+    "door",
+    "lock"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_cleaning_01",
+   "job": "cleaning",
+   "business_type": "빌딩 미화 용역업체(오피스 빌딩)",
+   "sentence": "출근하면 출입 카드를 찍고 근무표에 이름을 쓰세요.",
+   "context": {
+    "business_type": "빌딩 미화 용역업체(오피스 빌딩)"
+   },
+   "symbol_query": [
+    "출입카드",
+    "근무표",
+    "출근"
+   ],
+   "accept": [
+    "ASSEMBLY_AUX_036",
+    "CLEANING_192",
+    "CLEANING_191",
+    "ASSEMBLY_178"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_cleaning_02",
+   "job": "cleaning",
+   "business_type": "빌딩 미화 용역업체(오피스 빌딩)",
+   "sentence": "사무실 휴지통을 비워서 큰 봉투에 모아요.",
+   "context": {
+    "business_type": "빌딩 미화 용역업체(오피스 빌딩)"
+   },
+   "symbol_query": [
+    "휴지통",
+    "쓰레기봉투",
+    "trash bin"
+   ],
+   "accept": [
+    "CLEANING_134"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_cleaning_03",
+   "job": "cleaning",
+   "business_type": "빌딩 미화 용역업체(오피스 빌딩)",
+   "sentence": "엘리베이터 버튼을 소독 티슈로 훔쳐 주세요.",
+   "context": {
+    "business_type": "빌딩 미화 용역업체(오피스 빌딩)"
+   },
+   "symbol_query": [
+    "엘리베이터 버튼",
+    "소독 티슈",
+    "elevator button"
+   ],
+   "accept": [
+    "CLEANING_062"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_cleaning_04",
+   "job": "cleaning",
+   "business_type": "빌딩 미화 용역업체(오피스 빌딩)",
+   "sentence": "회의실 의자를 테이블 쪽으로 밀어 넣으세요.",
+   "context": {
+    "business_type": "빌딩 미화 용역업체(오피스 빌딩)"
+   },
+   "symbol_query": [
+    "회의실 의자",
+    "테이블",
+    "chair"
+   ],
+   "accept": [
+    "CAFE_078",
+    "SERVING_011",
+    "ASSEMBLY_168"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_cleaning_05",
+   "job": "cleaning",
+   "business_type": "대형 쇼핑몰(화장실 관리)",
+   "sentence": "소변기 안에 있는 이물질을 집게로 꺼내세요.",
+   "context": {
+    "business_type": "대형 쇼핑몰(화장실 관리)"
+   },
+   "symbol_query": [
+    "소변기",
+    "집게",
+    "이물질"
+   ],
+   "accept": [
+    "CLEANING_196"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cleaning_06",
+   "job": "cleaning",
+   "business_type": "대형 쇼핑몰(화장실 관리)",
+   "sentence": "손 닦는 종이 타월을 통에 꽉 채워요.",
+   "context": {
+    "business_type": "대형 쇼핑몰(화장실 관리)"
+   },
+   "symbol_query": [
+    "종이타월",
+    "타월 디스펜서",
+    "paper towel"
+   ],
+   "accept": [
+    "CLEANING_197"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cleaning_07",
+   "job": "cleaning",
+   "business_type": "대형 쇼핑몰(화장실 관리)",
+   "sentence": "물비누 통이 비었으면 비누를 부어 채우세요.",
+   "context": {
+    "business_type": "대형 쇼핑몰(화장실 관리)"
+   },
+   "symbol_query": [
+    "물비누",
+    "비누 디스펜서",
+    "liquid soap"
+   ],
+   "accept": [
+    "CLEANING_198"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cleaning_08",
+   "job": "cleaning",
+   "business_type": "대형 쇼핑몰(화장실 관리)",
+   "sentence": "고객이 화장실을 쓰고 있으면 밖에서 기다리세요.",
+   "context": {
+    "business_type": "대형 쇼핑몰(화장실 관리)"
+   },
+   "symbol_query": [
+    "고객",
+    "화장실 입구",
+    "기다리기"
+   ],
+   "accept": [
+    "CLEANING_199"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cleaning_09",
+   "job": "cleaning",
+   "business_type": "비즈니스 호텔(객실 정비)",
+   "sentence": "침대에서 쓴 시트를 벗겨 카트에 넣으세요.",
+   "context": {
+    "business_type": "비즈니스 호텔(객실 정비)"
+   },
+   "symbol_query": [
+    "침대 시트",
+    "린넨 카트",
+    "bed sheet"
+   ],
+   "accept": [
+    "CLEANING_075"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_cleaning_10",
+   "job": "cleaning",
+   "business_type": "비즈니스 호텔(객실 정비)",
+   "sentence": "베개에 새 커버를 씌워요.",
+   "context": {
+    "business_type": "비즈니스 호텔(객실 정비)"
+   },
+   "symbol_query": [
+    "베개",
+    "베개 커버",
+    "pillowcase"
+   ],
+   "accept": [
+    "CLEANING_089"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_cleaning_11",
+   "job": "cleaning",
+   "business_type": "비즈니스 호텔(객실 정비)",
+   "sentence": "욕조 안을 샤워기로 헹궈 주세요.",
+   "context": {
+    "business_type": "비즈니스 호텔(객실 정비)"
+   },
+   "symbol_query": [
+    "욕조",
+    "샤워기",
+    "bathtub"
+   ],
+   "accept": [
+    "CLEANING_200"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cleaning_12",
+   "job": "cleaning",
+   "business_type": "비즈니스 호텔(객실 정비)",
+   "sentence": "방 정리가 끝나면 무전기로 매니저에게 방 번호를 알려 주세요.",
+   "context": {
+    "business_type": "비즈니스 호텔(객실 정비)"
+   },
+   "symbol_query": [
+    "무전기",
+    "매니저",
+    "객실 번호"
+   ],
+   "accept": [
+    "CLEANING_201"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cleaning_13",
+   "job": "cleaning",
+   "business_type": "종합병원(병동 환경미화)",
+   "sentence": "고무장갑을 끼고 마스크를 쓰세요.",
+   "context": {
+    "business_type": "종합병원(병동 환경미화)"
+   },
+   "symbol_query": [
+    "고무장갑",
+    "마스크",
+    "보호구"
+   ],
+   "accept": [
+    "SERVING_063"
+   ],
+   "gap": false,
+   "confidence": "low"
+  },
+  {
+   "id": "dev_cleaning_14",
+   "job": "cleaning",
+   "business_type": "종합병원(병동 환경미화)",
+   "sentence": "빨간 의료폐기물 상자는 만지지 말고 담당 선생님을 부르세요.",
+   "context": {
+    "business_type": "종합병원(병동 환경미화)"
+   },
+   "symbol_query": [
+    "의료폐기물 상자",
+    "담당자",
+    "부르기"
+   ],
+   "accept": [
+    "CLEANING_202"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cleaning_15",
+   "job": "cleaning",
+   "business_type": "종합병원(병동 환경미화)",
+   "sentence": "소독약을 묻힌 걸레로 병실 침대 난간을 훔쳐요.",
+   "context": {
+    "business_type": "종합병원(병동 환경미화)"
+   },
+   "symbol_query": [
+    "침대 난간",
+    "소독약",
+    "걸레"
+   ],
+   "accept": [
+    "CLEANING_203"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cleaning_16",
+   "job": "cleaning",
+   "business_type": "아파트 관리사무소(공용부 청소)",
+   "sentence": "계단 난간을 위에서부터 아래로 닦으며 내려가세요.",
+   "context": {
+    "business_type": "아파트 관리사무소(공용부 청소)"
+   },
+   "symbol_query": [
+    "계단 난간",
+    "걸레",
+    "stair handrail"
+   ],
+   "accept": [
+    "CLEANING_204"
+   ],
+   "gap": false,
+   "confidence": "low",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cleaning_17",
+   "job": "cleaning",
+   "business_type": "아파트 관리사무소(공용부 청소)",
+   "sentence": "분리수거장에서 플라스틱과 캔을 따로 나눠 담아요.",
+   "context": {
+    "business_type": "아파트 관리사무소(공용부 청소)"
+   },
+   "symbol_query": [
+    "플라스틱",
+    "캔",
+    "분리수거함"
+   ],
+   "accept": [
+    "CAFE_084",
+    "CLEANING_009"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_cleaning_18",
+   "job": "cleaning",
+   "business_type": "아파트 관리사무소(공용부 청소)",
+   "sentence": "우편함 앞에 흩어진 전단지를 주워 모으세요.",
+   "context": {
+    "business_type": "아파트 관리사무소(공용부 청소)"
+   },
+   "symbol_query": [
+    "전단지",
+    "우편함",
+    "flyer"
+   ],
+   "accept": [
+    "CLEANING_021",
+    "DISPLAY_049"
+   ],
+   "gap": false,
+   "confidence": "low",
+   "disputed": true
+  },
+  {
+   "id": "dev_cleaning_19",
+   "job": "cleaning",
+   "business_type": "피트니스 센터(헬스장 청소)",
+   "sentence": "운동 기구 손잡이에 분무기로 소독제를 뿌리고 닦아요.",
+   "context": {
+    "business_type": "피트니스 센터(헬스장 청소)"
+   },
+   "symbol_query": [
+    "운동기구 손잡이",
+    "분무기",
+    "소독제"
+   ],
+   "accept": [
+    "CLEANING_205"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_cleaning_20",
+   "job": "cleaning",
+   "business_type": "피트니스 센터(헬스장 청소)",
+   "sentence": "퇴근하기 전에 근무 일지에 서명하세요.",
+   "context": {
+    "business_type": "피트니스 센터(헬스장 청소)"
+   },
+   "symbol_query": [
+    "근무일지",
+    "서명",
+    "펜"
+   ],
+   "accept": [
+    "CLEANING_191"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_packaging_01",
+   "job": "packaging",
+   "business_type": "온라인 쇼핑몰 물류센터",
+   "sentence": "주문서에 적힌 상품을 선반에서 꺼내 오세요.",
+   "context": {
+    "business_type": "온라인 쇼핑몰 물류센터"
+   },
+   "symbol_query": [
+    "주문서",
+    "선반",
+    "상품",
+    "order sheet"
+   ],
+   "accept": [
+    "RETAIL_073",
+    "DISPLAY_027",
+    "RETAIL_039"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_packaging_02",
+   "job": "packaging",
+   "business_type": "온라인 쇼핑몰 물류센터",
+   "sentence": "상품 바코드를 스캐너로 찍어 주문과 맞는지 확인해요.",
+   "context": {
+    "business_type": "온라인 쇼핑몰 물류센터"
+   },
+   "symbol_query": [
+    "바코드",
+    "스캐너",
+    "barcode scanner"
+   ],
+   "accept": [
+    "RETAIL_060"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_packaging_03",
+   "job": "packaging",
+   "business_type": "온라인 쇼핑몰 물류센터",
+   "sentence": "깨지기 쉬운 물건은 뽁뽁이로 한 번 감싸세요.",
+   "context": {
+    "business_type": "온라인 쇼핑몰 물류센터"
+   },
+   "symbol_query": [
+    "뽁뽁이",
+    "에어캡",
+    "bubble wrap"
+   ],
+   "accept": [
+    "PACKAGING_053"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_packaging_04",
+   "job": "packaging",
+   "business_type": "온라인 쇼핑몰 물류센터",
+   "sentence": "택배 송장을 상자 윗면에 반듯하게 붙이세요.",
+   "context": {
+    "business_type": "온라인 쇼핑몰 물류센터"
+   },
+   "symbol_query": [
+    "송장",
+    "택배 상자",
+    "shipping label"
+   ],
+   "accept": [
+    "PACKAGING_049",
+    "RETAIL_088",
+    "DELIVERY_059"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_packaging_05",
+   "job": "packaging",
+   "business_type": "제과점 선물세트 포장",
+   "sentence": "손을 씻고 위생 장갑을 끼세요.",
+   "context": {
+    "business_type": "제과점 선물세트 포장"
+   },
+   "symbol_query": [
+    "위생 장갑",
+    "손 씻기",
+    "gloves"
+   ],
+   "accept": [
+    "CAFE_001",
+    "ASSEMBLY_175",
+    "SERVING_061",
+    "SERVING_063"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_packaging_06",
+   "job": "packaging",
+   "business_type": "제과점 선물세트 포장",
+   "sentence": "쿠키를 선물 상자 칸에 하나씩 넣어요.",
+   "context": {
+    "business_type": "제과점 선물세트 포장"
+   },
+   "symbol_query": [
+    "쿠키",
+    "선물 상자",
+    "칸막이",
+    "cookie"
+   ],
+   "accept": [
+    "PACKAGING_085",
+    "PACKAGING_086"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_packaging_07",
+   "job": "packaging",
+   "business_type": "제과점 선물세트 포장",
+   "sentence": "선물 상자에 리본 끈을 묶으세요.",
+   "context": {
+    "business_type": "제과점 선물세트 포장"
+   },
+   "symbol_query": [
+    "리본",
+    "선물 상자",
+    "ribbon"
+   ],
+   "accept": [
+    "PACKAGING_080"
+   ],
+   "gap": false,
+   "confidence": "low"
+  },
+  {
+   "id": "dev_packaging_08",
+   "job": "packaging",
+   "business_type": "제과점 선물세트 포장",
+   "sentence": "상자 옆면에 날짜 도장을 찍으세요.",
+   "context": {
+    "business_type": "제과점 선물세트 포장"
+   },
+   "symbol_query": [
+    "날짜 도장",
+    "유통기한",
+    "stamp"
+   ],
+   "accept": [
+    "PACKAGING_174"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_packaging_09",
+   "job": "packaging",
+   "business_type": "보호작업장 임가공",
+   "sentence": "부품 통을 작업대 위로 가져다 놓으세요.",
+   "context": {
+    "business_type": "보호작업장 임가공"
+   },
+   "symbol_query": [
+    "부품 통",
+    "작업대",
+    "parts bin"
+   ],
+   "accept": [
+    "ASSEMBLY_023_01",
+    "ASSEMBLY_023_02",
+    "ASSEMBLY_030_01"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_packaging_10",
+   "job": "packaging",
+   "business_type": "보호작업장 임가공",
+   "sentence": "볼펜 열 자루를 고무줄로 한 묶음 묶으세요.",
+   "context": {
+    "business_type": "보호작업장 임가공"
+   },
+   "symbol_query": [
+    "볼펜",
+    "고무줄",
+    "rubber band"
+   ],
+   "accept": [
+    "PACKAGING_152"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_packaging_11",
+   "job": "packaging",
+   "business_type": "보호작업장 임가공",
+   "sentence": "지퍼백 입구를 손가락으로 꾹 눌러 잠그세요.",
+   "context": {
+    "business_type": "보호작업장 임가공"
+   },
+   "symbol_query": [
+    "지퍼백",
+    "zipper bag",
+    "입구"
+   ],
+   "accept": [
+    "PACKAGING_063"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_packaging_12",
+   "job": "packaging",
+   "business_type": "보호작업장 임가공",
+   "sentence": "작업 일지에 오늘 만든 개수를 적으세요.",
+   "context": {
+    "business_type": "보호작업장 임가공"
+   },
+   "symbol_query": [
+    "작업 일지",
+    "볼펜",
+    "worksheet"
+   ],
+   "accept": [
+    "PACKAGING_175",
+    "ASSEMBLY_189"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_packaging_13",
+   "job": "packaging",
+   "business_type": "농산물 선별 포장장",
+   "sentence": "사과를 크기별로 나눠 바구니에 담으세요.",
+   "context": {
+    "business_type": "농산물 선별 포장장"
+   },
+   "symbol_query": [
+    "사과",
+    "바구니",
+    "apple"
+   ],
+   "accept": [
+    "PACKAGING_176"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_packaging_14",
+   "job": "packaging",
+   "business_type": "농산물 선별 포장장",
+   "sentence": "사과마다 하얀 그물망을 씌워 주세요.",
+   "context": {
+    "business_type": "농산물 선별 포장장"
+   },
+   "symbol_query": [
+    "과일 그물망",
+    "사과",
+    "foam net"
+   ],
+   "accept": [
+    "PACKAGING_177"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_packaging_15",
+   "job": "packaging",
+   "business_type": "농산물 선별 포장장",
+   "sentence": "다 찬 상자는 손수레에 실어 옮기세요.",
+   "context": {
+    "business_type": "농산물 선별 포장장"
+   },
+   "symbol_query": [
+    "손수레",
+    "상자",
+    "hand cart"
+   ],
+   "accept": [
+    "DELIVERY_015",
+    "PACKAGING_112",
+    "PACKAGING_163",
+    "DELIVERY_002",
+    "RETAIL_090",
+    "DELIVERY_004"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_packaging_16",
+   "job": "packaging",
+   "business_type": "농산물 선별 포장장",
+   "sentence": "바닥에 떨어진 비닐과 끈을 주워 쓰레기통에 버리세요.",
+   "context": {
+    "business_type": "농산물 선별 포장장"
+   },
+   "symbol_query": [
+    "쓰레기통",
+    "비닐",
+    "trash can"
+   ],
+   "accept": [
+    "CAFE_079",
+    "CLEANING_021",
+    "DISPLAY_049",
+    "SERVING_031",
+    "SERVING_032",
+    "GAS_010",
+    "GAS_011"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_packaging_17",
+   "job": "packaging",
+   "business_type": "화장품 세트 포장 라인",
+   "sentence": "출근하면 출입 카드를 찍어 출근 체크를 해요.",
+   "context": {
+    "business_type": "화장품 세트 포장 라인"
+   },
+   "symbol_query": [
+    "출입 카드",
+    "출근 체크기",
+    "ID card"
+   ],
+   "accept": [
+    "ASSEMBLY_AUX_036",
+    "PACKAGING_172",
+    "ASSEMBLY_177",
+    "CAFE_093"
+   ],
+   "gap": false,
+   "confidence": "low"
+  },
+  {
+   "id": "dev_packaging_18",
+   "job": "packaging",
+   "business_type": "화장품 세트 포장 라인",
+   "sentence": "컨베이어에서 오는 병을 집어 케이스에 꽂으세요.",
+   "context": {
+    "business_type": "화장품 세트 포장 라인"
+   },
+   "symbol_query": [
+    "화장품 병",
+    "케이스",
+    "컨베이어",
+    "conveyor"
+   ],
+   "accept": [
+    "PACKAGING_086",
+    "PACKAGING_181"
+   ],
+   "gap": false,
+   "confidence": "low",
+   "disputed": true
+  },
+  {
+   "id": "dev_packaging_19",
+   "job": "packaging",
+   "business_type": "화장품 세트 포장 라인",
+   "sentence": "케이스 안에 사용 설명서를 한 장 넣으세요.",
+   "context": {
+    "business_type": "화장품 세트 포장 라인"
+   },
+   "symbol_query": [
+    "사용 설명서",
+    "케이스",
+    "manual"
+   ],
+   "accept": [
+    "PACKAGING_146"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_packaging_20",
+   "job": "packaging",
+   "business_type": "화장품 세트 포장 라인",
+   "sentence": "모르는 것이 생기면 반장님께 물어보세요.",
+   "context": {
+    "business_type": "화장품 세트 포장 라인"
+   },
+   "symbol_query": [
+    "반장",
+    "질문하기",
+    "ask supervisor"
+   ],
+   "accept": [
+    "PACKAGING_173",
+    "ASSEMBLY_188"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_retail_01",
+   "job": "retail",
+   "business_type": "대형마트",
+   "sentence": "직원 출입구 단말기에 사원증을 찍어 출근 등록을 하세요.",
+   "context": {
+    "business_type": "대형마트"
+   },
+   "symbol_query": [
+    "사원증",
+    "출근 단말기",
+    "출근"
+   ],
+   "accept": [
+    "ASSEMBLY_AUX_036",
+    "RETAIL_095",
+    "ASSEMBLY_177",
+    "CAFE_093"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_retail_02",
+   "job": "retail",
+   "business_type": "대형마트",
+   "sentence": "커터칼로 과자 박스 테이프를 조심해서 뜯으세요.",
+   "context": {
+    "business_type": "대형마트"
+   },
+   "symbol_query": [
+    "커터칼",
+    "박스",
+    "테이프"
+   ],
+   "accept": [
+    "CLEANING_164",
+    "RETAIL_108",
+    "ASSEMBLY_192"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "disputed": true
+  },
+  {
+   "id": "dev_retail_03",
+   "job": "retail",
+   "business_type": "대형마트",
+   "sentence": "날짜가 먼저 끝나는 과자를 앞줄로 꺼내 놓으세요.",
+   "context": {
+    "business_type": "대형마트"
+   },
+   "symbol_query": [
+    "과자",
+    "선입선출",
+    "진열대 앞줄"
+   ],
+   "accept": [
+    "RETAIL_035"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_retail_04",
+   "job": "retail",
+   "business_type": "대형마트",
+   "sentence": "다 쓴 빈 박스는 납작하게 접어서 모아 두세요.",
+   "context": {
+    "business_type": "대형마트"
+   },
+   "symbol_query": [
+    "빈 박스",
+    "종이상자",
+    "분리수거"
+   ],
+   "accept": [
+    "RETAIL_099",
+    "ASSEMBLY_191",
+    "CAFE_108"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_retail_05",
+   "job": "retail",
+   "business_type": "동네 슈퍼마켓",
+   "sentence": "고객님께 봉투가 필요한지 여쭤보세요.",
+   "context": {
+    "business_type": "동네 슈퍼마켓"
+   },
+   "symbol_query": [
+    "비닐봉투",
+    "고객",
+    "질문"
+   ],
+   "accept": [
+    "RETAIL_096"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_retail_06",
+   "job": "retail",
+   "business_type": "동네 슈퍼마켓",
+   "sentence": "카드를 단말기에 꽂아 달라고 말씀드려요.",
+   "context": {
+    "business_type": "동네 슈퍼마켓"
+   },
+   "symbol_query": [
+    "신용카드",
+    "카드 단말기",
+    "결제"
+   ],
+   "accept": [
+    "SERVING_053"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_retail_07",
+   "job": "retail",
+   "business_type": "동네 슈퍼마켓",
+   "sentence": "가게 전화가 울리면 받고 사장님을 불러 주세요.",
+   "context": {
+    "business_type": "동네 슈퍼마켓"
+   },
+   "symbol_query": [
+    "전화기",
+    "전화 받기",
+    "사장님"
+   ],
+   "accept": [
+    "RETAIL_093",
+    "RETAIL_100",
+    "CAFE_092",
+    "CLEANING_206"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_retail_08",
+   "job": "retail",
+   "business_type": "동네 슈퍼마켓",
+   "sentence": "계산대 위를 마른 행주로 훔쳐 주세요.",
+   "context": {
+    "business_type": "동네 슈퍼마켓"
+   },
+   "symbol_query": [
+    "계산대",
+    "행주",
+    "청소"
+   ],
+   "accept": [
+    "CAFE_004",
+    "DISPLAY_048"
+   ],
+   "gap": false,
+   "confidence": "low"
+  },
+  {
+   "id": "dev_retail_09",
+   "job": "retail",
+   "business_type": "식자재 마트",
+   "sentence": "우유 팩을 냉장고 칸 뒤쪽부터 채워 넣으세요.",
+   "context": {
+    "business_type": "식자재 마트"
+   },
+   "symbol_query": [
+    "우유",
+    "냉장고",
+    "진열"
+   ],
+   "accept": [
+    "RETAIL_047"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_retail_10",
+   "job": "retail",
+   "business_type": "식자재 마트",
+   "sentence": "냉동고 문이 꼭 닫혔는지 손으로 밀어 보세요.",
+   "context": {
+    "business_type": "식자재 마트"
+   },
+   "symbol_query": [
+    "냉동고",
+    "문",
+    "냉동식품"
+   ],
+   "accept": [
+    "RETAIL_097"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_retail_11",
+   "job": "retail",
+   "business_type": "식자재 마트",
+   "sentence": "냉장고 온도계 숫자를 점검표에 적어요.",
+   "context": {
+    "business_type": "식자재 마트"
+   },
+   "symbol_query": [
+    "온도계",
+    "점검표",
+    "기록"
+   ],
+   "accept": [
+    "RETAIL_102",
+    "CAFE_107"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_retail_12",
+   "job": "retail",
+   "business_type": "대형마트 온라인몰",
+   "sentence": "손에 든 단말기 화면에서 주문 번호를 확인하세요.",
+   "context": {
+    "business_type": "대형마트 온라인몰"
+   },
+   "symbol_query": [
+    "PDA",
+    "휴대 단말기",
+    "주문번호"
+   ],
+   "accept": [
+    "DELIVERY_011"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_retail_13",
+   "job": "retail",
+   "business_type": "대형마트 온라인몰",
+   "sentence": "계란은 깨지지 않게 맨 위에 올려요.",
+   "context": {
+    "business_type": "대형마트 온라인몰"
+   },
+   "symbol_query": [
+    "계란",
+    "장바구니",
+    "조심"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_retail_14",
+   "job": "retail",
+   "business_type": "대형마트 온라인몰",
+   "sentence": "다 담은 바구니를 포장대로 밀고 가세요.",
+   "context": {
+    "business_type": "대형마트 온라인몰"
+   },
+   "symbol_query": [
+    "피킹 카트",
+    "포장대",
+    "운반"
+   ],
+   "accept": [
+    "RETAIL_083"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_retail_15",
+   "job": "retail",
+   "business_type": "할인마트",
+   "sentence": "주차장에 있는 카트를 줄줄이 끼워서 입구로 가져오세요.",
+   "context": {
+    "business_type": "할인마트"
+   },
+   "symbol_query": [
+    "쇼핑카트",
+    "주차장",
+    "카트 회수"
+   ],
+   "accept": [
+    "RETAIL_068",
+    "RETAIL_069",
+    "DISPLAY_045",
+    "DISPLAY_046",
+    "DISPLAY_047"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_retail_16",
+   "job": "retail",
+   "business_type": "할인마트",
+   "sentence": "바닥에 쏟아진 음료는 대걸레로 닦으세요.",
+   "context": {
+    "business_type": "할인마트"
+   },
+   "symbol_query": [
+    "대걸레",
+    "바닥",
+    "음료"
+   ],
+   "accept": [
+    "SERVING_070",
+    "SERVING_033",
+    "CLEANING_018",
+    "CAFE_081"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_retail_17",
+   "job": "retail",
+   "business_type": "할인마트",
+   "sentence": "손님이 물건 위치를 물으면 그 코너까지 같이 가 드려요.",
+   "context": {
+    "business_type": "할인마트"
+   },
+   "symbol_query": [
+    "손님",
+    "안내",
+    "매장 코너"
+   ],
+   "accept": [
+    "DISPLAY_034"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_retail_18",
+   "job": "retail",
+   "business_type": "할인마트",
+   "sentence": "쉬러 가기 전에 조장님께 말씀드리세요.",
+   "context": {
+    "business_type": "할인마트"
+   },
+   "symbol_query": [
+    "휴식",
+    "조장",
+    "보고"
+   ],
+   "accept": [
+    "RETAIL_094"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_retail_19",
+   "job": "retail",
+   "business_type": "생활용품 할인점",
+   "sentence": "고리에 걸린 상품을 같은 색끼리 모아 걸어 주세요.",
+   "context": {
+    "business_type": "생활용품 할인점"
+   },
+   "symbol_query": [
+    "행거",
+    "진열 고리",
+    "생활용품"
+   ],
+   "accept": [
+    "RETAIL_103"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_retail_20",
+   "job": "retail",
+   "business_type": "생활용품 할인점",
+   "sentence": "일이 끝나면 조끼를 벗어 사물함에 넣어요.",
+   "context": {
+    "business_type": "생활용품 할인점"
+   },
+   "symbol_query": [
+    "유니폼 조끼",
+    "사물함",
+    "퇴근"
+   ],
+   "accept": [
+    "RETAIL_104"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_delivery_01",
+   "job": "delivery",
+   "business_type": "택배 물류센터",
+   "sentence": "출근하면 지문 기계에 손가락을 대세요.",
+   "context": {
+    "business_type": "택배 물류센터"
+   },
+   "symbol_query": [
+    "지문 인식기",
+    "출근",
+    "손가락"
+   ],
+   "accept": [
+    "DELIVERY_048"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_delivery_02",
+   "job": "delivery",
+   "business_type": "택배 물류센터",
+   "sentence": "벨트 위로 오는 상자를 두 손으로 내려요.",
+   "context": {
+    "business_type": "택배 물류센터"
+   },
+   "symbol_query": [
+    "컨베이어 벨트",
+    "상자",
+    "택배 박스"
+   ],
+   "accept": [
+    "DELIVERY_051"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_delivery_03",
+   "job": "delivery",
+   "business_type": "택배 물류센터",
+   "sentence": "상자에 붙은 스티커의 동네 이름을 확인하세요.",
+   "context": {
+    "business_type": "택배 물류센터"
+   },
+   "symbol_query": [
+    "운송장",
+    "송장 스티커",
+    "주소"
+   ],
+   "accept": [
+    "DELIVERY_009",
+    "DELIVERY_021"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_delivery_04",
+   "job": "delivery",
+   "business_type": "택배 물류센터",
+   "sentence": "무거운 상자는 아래에, 가벼운 상자는 위에 쌓으세요.",
+   "context": {
+    "business_type": "택배 물류센터"
+   },
+   "symbol_query": [
+    "롤테이너",
+    "상자 적재",
+    "카트"
+   ],
+   "accept": [
+    "PACKAGING_119",
+    "DELIVERY_002",
+    "DELIVERY_056"
+   ],
+   "gap": false,
+   "confidence": "low",
+   "disputed": true,
+   "note": "정답지 교정(P1, 2026-11-07): DELIVERY_002(택배 직원이 상자를 손수레에 차곡차곡 쌓는 그림) 추가 — 같은 택배 물류센터 직무이고 symbol_query에도 카트·상자 적재가 있다. 무겁고 가벼운 순서는 어느 그림에도 없어 PACKAGING_119와 같은 수준의 근사."
+  },
+  {
+   "id": "dev_delivery_05",
+   "job": "delivery",
+   "business_type": "온라인 쇼핑몰 출고센터",
+   "sentence": "주문 종이를 보고 선반에서 물건을 꺼내요.",
+   "context": {
+    "business_type": "온라인 쇼핑몰 출고센터"
+   },
+   "symbol_query": [
+    "주문서",
+    "선반",
+    "상품"
+   ],
+   "accept": [
+    "RETAIL_073",
+    "DISPLAY_027"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_delivery_06",
+   "job": "delivery",
+   "business_type": "온라인 쇼핑몰 출고센터",
+   "sentence": "물건 바코드를 기계로 찍으세요.",
+   "context": {
+    "business_type": "온라인 쇼핑몰 출고센터"
+   },
+   "symbol_query": [
+    "바코드 스캐너",
+    "바코드",
+    "PDA"
+   ],
+   "accept": [
+    "RETAIL_060",
+    "DELIVERY_010"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_delivery_07",
+   "job": "delivery",
+   "business_type": "온라인 쇼핑몰 출고센터",
+   "sentence": "빈 곳에 뽁뽁이를 채워 넣으세요.",
+   "context": {
+    "business_type": "온라인 쇼핑몰 출고센터"
+   },
+   "symbol_query": [
+    "에어캡",
+    "완충재",
+    "상자"
+   ],
+   "accept": [
+    "PACKAGING_046",
+    "PACKAGING_090"
+   ],
+   "gap": false,
+   "confidence": "low"
+  },
+  {
+   "id": "dev_delivery_08",
+   "job": "delivery",
+   "business_type": "온라인 쇼핑몰 출고센터",
+   "sentence": "상자 뚜껑을 닫고 테이프를 길게 붙여요.",
+   "context": {
+    "business_type": "온라인 쇼핑몰 출고센터"
+   },
+   "symbol_query": [
+    "박스 테이프",
+    "테이프 커터",
+    "상자"
+   ],
+   "accept": [
+    "PACKAGING_048",
+    "PACKAGING_047"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_delivery_09",
+   "job": "delivery",
+   "business_type": "택배 대리점",
+   "sentence": "수레에 택배를 싣고 엘리베이터를 타요.",
+   "context": {
+    "business_type": "택배 대리점"
+   },
+   "symbol_query": [
+    "손수레",
+    "택배",
+    "엘리베이터"
+   ],
+   "accept": [
+    "DELIVERY_015",
+    "DELIVERY_002",
+    "DELIVERY_004",
+    "DELIVERY_053"
+   ],
+   "gap": false,
+   "confidence": "low",
+   "disputed": true
+  },
+  {
+   "id": "dev_delivery_10",
+   "job": "delivery",
+   "business_type": "택배 대리점",
+   "sentence": "호수를 확인하고 문 앞에 택배를 내려놓으세요.",
+   "context": {
+    "business_type": "택배 대리점"
+   },
+   "symbol_query": [
+    "현관문",
+    "호수",
+    "택배 상자"
+   ],
+   "accept": [
+    "DELIVERY_023",
+    "DELIVERY_021"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_delivery_11",
+   "job": "delivery",
+   "business_type": "택배 대리점",
+   "sentence": "휴대폰으로 문 앞 택배 사진을 찍어요.",
+   "context": {
+    "business_type": "택배 대리점"
+   },
+   "symbol_query": [
+    "휴대폰",
+    "사진 촬영",
+    "택배"
+   ],
+   "accept": [
+    "DELIVERY_034",
+    "DELIVERY_033"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_delivery_12",
+   "job": "delivery",
+   "business_type": "택배 대리점",
+   "sentence": "기사님이 전화하면 바로 받으세요.",
+   "context": {
+    "business_type": "택배 대리점"
+   },
+   "symbol_query": [
+    "전화",
+    "휴대폰",
+    "통화"
+   ],
+   "accept": [
+    "DELIVERY_049",
+    "CAFE_092",
+    "CLEANING_206"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_delivery_13",
+   "job": "delivery",
+   "business_type": "구청 우편물실",
+   "sentence": "편지를 부서 이름이 적힌 칸에 넣어요.",
+   "context": {
+    "business_type": "구청 우편물실"
+   },
+   "symbol_query": [
+    "우편물",
+    "분류함",
+    "편지"
+   ],
+   "accept": [
+    "DELIVERY_052"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_delivery_14",
+   "job": "delivery",
+   "business_type": "구청 우편물실",
+   "sentence": "소포를 받은 직원에게 서명을 받으세요.",
+   "context": {
+    "business_type": "구청 우편물실"
+   },
+   "symbol_query": [
+    "소포",
+    "서명",
+    "수령 확인"
+   ],
+   "accept": [
+    "DELIVERY_018",
+    "DELIVERY_017"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_delivery_15",
+   "job": "delivery",
+   "business_type": "구청 우편물실",
+   "sentence": "사무실에 들어가면 먼저 인사하세요.",
+   "context": {
+    "business_type": "구청 우편물실"
+   },
+   "symbol_query": [
+    "인사",
+    "사무실",
+    "직원"
+   ],
+   "accept": [
+    "RETAIL_055"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_delivery_16",
+   "job": "delivery",
+   "business_type": "식자재 유통업체",
+   "sentence": "생수 묶음을 대차에 실어요.",
+   "context": {
+    "business_type": "식자재 유통업체"
+   },
+   "symbol_query": [
+    "생수",
+    "대차",
+    "운반 카트"
+   ],
+   "accept": [
+    "DELIVERY_050"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_delivery_17",
+   "job": "delivery",
+   "business_type": "식자재 유통업체",
+   "sentence": "차가운 물건은 냉장고에 먼저 넣으세요.",
+   "context": {
+    "business_type": "식자재 유통업체"
+   },
+   "symbol_query": [
+    "냉장고",
+    "냉장 식품",
+    "식자재"
+   ],
+   "accept": [
+    "CAFE_088",
+    "RETAIL_047"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_delivery_18",
+   "job": "delivery",
+   "business_type": "식자재 유통업체",
+   "sentence": "사장님께 납품 종이를 드려요.",
+   "context": {
+    "business_type": "식자재 유통업체"
+   },
+   "symbol_query": [
+    "납품서",
+    "거래명세서",
+    "서류"
+   ],
+   "accept": [
+    "ASSEMBLY_157"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_delivery_19",
+   "job": "delivery",
+   "business_type": "의류 쇼핑몰 반품센터",
+   "sentence": "반품 상자를 칼로 조심해서 뜯으세요.",
+   "context": {
+    "business_type": "의류 쇼핑몰 반품센터"
+   },
+   "symbol_query": [
+    "커터칼",
+    "반품 상자",
+    "개봉"
+   ],
+   "accept": [
+    "ASSEMBLY_192",
+    "RETAIL_108"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_delivery_20",
+   "job": "delivery",
+   "business_type": "의류 쇼핑몰 반품센터",
+   "sentence": "옷에 얼룩이 있는지 펴서 살펴봐요.",
+   "context": {
+    "business_type": "의류 쇼핑몰 반품센터"
+   },
+   "symbol_query": [
+    "옷",
+    "얼룩",
+    "검수"
+   ],
+   "accept": [
+    "DELIVERY_054"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_display_01",
+   "job": "display",
+   "business_type": "편의점",
+   "sentence": "아침에 들어온 삼각김밥 상자를 뜯으세요.",
+   "context": {
+    "business_type": "편의점"
+   },
+   "symbol_query": [
+    "삼각김밥",
+    "상자",
+    "rice ball",
+    "box"
+   ],
+   "accept": [
+    "ASSEMBLY_031_03",
+    "ASSEMBLY_031_01",
+    "CLEANING_164",
+    "DISPLAY_023",
+    "ASSEMBLY_192",
+    "RETAIL_108"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_display_02",
+   "job": "display",
+   "business_type": "편의점",
+   "sentence": "새로 온 도시락은 뒤에 넣고, 먼저 온 도시락은 앞으로 빼요.",
+   "context": {
+    "business_type": "편의점"
+   },
+   "symbol_query": [
+    "도시락",
+    "선입선출",
+    "lunch box",
+    "front"
+   ],
+   "accept": [
+    "RETAIL_036",
+    "RETAIL_035"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_display_03",
+   "job": "display",
+   "business_type": "편의점",
+   "sentence": "음료 냉장고 빈 칸에 캔음료를 채우세요.",
+   "context": {
+    "business_type": "편의점"
+   },
+   "symbol_query": [
+    "음료 냉장고",
+    "캔음료",
+    "drink fridge",
+    "can"
+   ],
+   "accept": [
+    "RETAIL_047",
+    "RETAIL_034",
+    "DISPLAY_031"
+   ],
+   "gap": false,
+   "confidence": "low"
+  },
+  {
+   "id": "dev_display_04",
+   "job": "display",
+   "business_type": "편의점",
+   "sentence": "출근하면 포스기에서 출근 버튼을 누르세요.",
+   "context": {
+    "business_type": "편의점"
+   },
+   "symbol_query": [
+    "출근",
+    "포스기",
+    "clock in",
+    "POS"
+   ],
+   "accept": [
+    "SERVING_051"
+   ],
+   "gap": false,
+   "confidence": "low",
+   "disputed": true
+  },
+  {
+   "id": "dev_display_05",
+   "job": "display",
+   "business_type": "대형마트",
+   "sentence": "창고에서 휴지 박스를 대차에 실어 오세요.",
+   "context": {
+    "business_type": "대형마트"
+   },
+   "symbol_query": [
+    "휴지",
+    "박스",
+    "대차",
+    "hand truck"
+   ],
+   "accept": [
+    "RETAIL_020",
+    "DISPLAY_026",
+    "DELIVERY_015",
+    "DELIVERY_002",
+    "PACKAGING_112"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_display_06",
+   "job": "display",
+   "business_type": "대형마트",
+   "sentence": "세제 통을 매대에 줄 맞춰 쌓으세요.",
+   "context": {
+    "business_type": "대형마트"
+   },
+   "symbol_query": [
+    "세제",
+    "매대",
+    "detergent",
+    "stack"
+   ],
+   "accept": [
+    "RETAIL_032",
+    "RETAIL_033",
+    "DISPLAY_003"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_display_07",
+   "job": "display",
+   "business_type": "대형마트",
+   "sentence": "고객이 물건을 찾으면 그 코너까지 같이 가 주세요.",
+   "context": {
+    "business_type": "대형마트"
+   },
+   "symbol_query": [
+    "고객",
+    "안내",
+    "customer",
+    "guide"
+   ],
+   "accept": [
+    "DISPLAY_034"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_display_08",
+   "job": "display",
+   "business_type": "대형마트",
+   "sentence": "빈 박스는 납작하게 접어서 모아 두세요.",
+   "context": {
+    "business_type": "대형마트"
+   },
+   "symbol_query": [
+    "빈 박스",
+    "종이상자",
+    "cardboard",
+    "fold"
+   ],
+   "accept": [
+    "ASSEMBLY_191",
+    "CLEANING_210",
+    "RETAIL_099"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_display_09",
+   "job": "display",
+   "business_type": "드럭스토어",
+   "sentence": "테스터 제품 주변을 물티슈로 훔쳐 주세요.",
+   "context": {
+    "business_type": "드럭스토어"
+   },
+   "symbol_query": [
+    "테스터",
+    "물티슈",
+    "tester",
+    "wipe"
+   ],
+   "accept": [
+    "DISPLAY_048",
+    "DISPLAY_051",
+    "DISPLAY_018"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_display_10",
+   "job": "display",
+   "business_type": "드럭스토어",
+   "sentence": "할인 상품에 빨간 세일 스티커를 붙이세요.",
+   "context": {
+    "business_type": "드럭스토어"
+   },
+   "symbol_query": [
+    "할인 스티커",
+    "세일",
+    "sale sticker",
+    "label"
+   ],
+   "accept": [
+    "PACKAGING_107",
+    "RETAIL_111"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_display_11",
+   "job": "display",
+   "business_type": "드럭스토어",
+   "sentence": "매장 전화가 울리면 받고 \"네, 매장입니다\" 하고 말해요.",
+   "context": {
+    "business_type": "드럭스토어"
+   },
+   "symbol_query": [
+    "전화",
+    "받기",
+    "phone",
+    "call"
+   ],
+   "accept": [
+    "ASSEMBLY_176",
+    "CAFE_092",
+    "RETAIL_093"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_display_12",
+   "job": "display",
+   "business_type": "서점·문구점",
+   "sentence": "새로 온 책을 책장에 제목이 보이게 꽂으세요.",
+   "context": {
+    "business_type": "서점·문구점"
+   },
+   "symbol_query": [
+    "책",
+    "책장",
+    "book",
+    "bookshelf"
+   ],
+   "accept": [
+    "CLEANING_125"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_display_13",
+   "job": "display",
+   "business_type": "서점·문구점",
+   "sentence": "볼펜 칸이 비면 같은 색 볼펜으로 채워요.",
+   "context": {
+    "business_type": "서점·문구점"
+   },
+   "symbol_query": [
+    "볼펜",
+    "칸",
+    "pen",
+    "refill"
+   ],
+   "accept": [
+    "RETAIL_034",
+    "DISPLAY_031"
+   ],
+   "gap": false,
+   "confidence": "low"
+  },
+  {
+   "id": "dev_display_14",
+   "job": "display",
+   "business_type": "서점·문구점",
+   "sentence": "점심 먹고 오면 앞치마를 다시 입으세요.",
+   "context": {
+    "business_type": "서점·문구점"
+   },
+   "symbol_query": [
+    "앞치마",
+    "유니폼",
+    "apron",
+    "wear"
+   ],
+   "accept": [
+    "DISPLAY_052",
+    "CAFE_002",
+    "SERVING_059",
+    "DISPLAY_053"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_display_15",
+   "job": "display",
+   "business_type": "의류매장",
+   "sentence": "피팅룸에 두고 간 옷을 가져오세요.",
+   "context": {
+    "business_type": "의류매장"
+   },
+   "symbol_query": [
+    "피팅룸",
+    "옷",
+    "fitting room",
+    "clothes"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_display_16",
+   "job": "display",
+   "business_type": "의류매장",
+   "sentence": "티셔츠를 반듯하게 개서 테이블에 올려요.",
+   "context": {
+    "business_type": "의류매장"
+   },
+   "symbol_query": [
+    "티셔츠",
+    "개기",
+    "t-shirt",
+    "fold"
+   ],
+   "accept": [
+    "CLEANING_069"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_display_17",
+   "job": "display",
+   "business_type": "의류매장",
+   "sentence": "옷걸이에 걸린 옷을 작은 사이즈부터 순서대로 거세요.",
+   "context": {
+    "business_type": "의류매장"
+   },
+   "symbol_query": [
+    "옷걸이",
+    "사이즈",
+    "hanger",
+    "size"
+   ],
+   "accept": [
+    "CLEANING_099"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_display_18",
+   "job": "display",
+   "business_type": "농협 하나로마트",
+   "sentence": "시든 상추는 골라서 따로 빼 두세요.",
+   "context": {
+    "business_type": "농협 하나로마트"
+   },
+   "symbol_query": [
+    "상추",
+    "시든 채소",
+    "lettuce",
+    "wilted"
+   ],
+   "accept": [
+    "RETAIL_098"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_display_19",
+   "job": "display",
+   "business_type": "농협 하나로마트",
+   "sentence": "사과 위에 꽂힌 가격 카드가 맞는지 보세요.",
+   "context": {
+    "business_type": "농협 하나로마트"
+   },
+   "symbol_query": [
+    "가격 카드",
+    "사과",
+    "price card",
+    "apple"
+   ],
+   "accept": [
+    "RETAIL_049",
+    "DISPLAY_007"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_display_20",
+   "job": "display",
+   "business_type": "농협 하나로마트",
+   "sentence": "퇴근할 때 관리자에게 \"수고하셨습니다\" 하고 인사해요.",
+   "context": {
+    "business_type": "농협 하나로마트"
+   },
+   "symbol_query": [
+    "퇴근",
+    "관리자",
+    "leave work",
+    "manager"
+   ],
+   "accept": [
+    "RETAIL_055"
+   ],
+   "gap": false,
+   "confidence": "low"
+  },
+  {
+   "id": "dev_gas_01",
+   "job": "gas",
+   "business_type": "셀프주유소",
+   "sentence": "가게에 오면 출근 카드를 찍어요.",
+   "context": {
+    "business_type": "셀프주유소"
+   },
+   "symbol_query": [
+    "출근 카드",
+    "출퇴근 기록기",
+    "time card"
+   ],
+   "accept": [
+    "ASSEMBLY_AUX_036",
+    "ASSEMBLY_177",
+    "CAFE_093",
+    "CLEANING_192"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_gas_02",
+   "job": "gas",
+   "business_type": "셀프주유소",
+   "sentence": "주유기 화면을 마른 걸레로 훔쳐 주세요.",
+   "context": {
+    "business_type": "셀프주유소"
+   },
+   "symbol_query": [
+    "주유기",
+    "화면",
+    "걸레",
+    "fuel pump"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_gas_03",
+   "job": "gas",
+   "business_type": "셀프주유소",
+   "sentence": "바닥에 흘린 기름 자국에 흡착포를 덮어요.",
+   "context": {
+    "business_type": "셀프주유소"
+   },
+   "symbol_query": [
+    "기름",
+    "흡착포",
+    "바닥",
+    "oil spill"
+   ],
+   "accept": [
+    "GAS_033"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_gas_04",
+   "job": "gas",
+   "business_type": "셀프주유소",
+   "sentence": "주유 끝난 노즐을 제자리에 걸어 주세요.",
+   "context": {
+    "business_type": "셀프주유소"
+   },
+   "symbol_query": [
+    "주유 노즐",
+    "주유건",
+    "nozzle"
+   ],
+   "accept": [
+    "GAS_005",
+    "GAS_039"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_gas_05",
+   "job": "gas",
+   "business_type": "일반 주유소(주유원 근무)",
+   "sentence": "들어오는 차를 손짓으로 빈 주유기 앞으로 안내해요.",
+   "context": {
+    "business_type": "일반 주유소(주유원 근무)"
+   },
+   "symbol_query": [
+    "자동차",
+    "주유기",
+    "손짓",
+    "안내"
+   ],
+   "accept": [
+    "GAS_002"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_gas_06",
+   "job": "gas",
+   "business_type": "일반 주유소(주유원 근무)",
+   "sentence": "차 옆에 있는 주유구 뚜껑을 열어요.",
+   "context": {
+    "business_type": "일반 주유소(주유원 근무)"
+   },
+   "symbol_query": [
+    "주유구",
+    "뚜껑",
+    "자동차",
+    "fuel cap"
+   ],
+   "accept": [
+    "GAS_003",
+    "GAS_034"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_gas_07",
+   "job": "gas",
+   "business_type": "일반 주유소(주유원 근무)",
+   "sentence": "고객님 카드를 받아서 단말기에 꽂아요.",
+   "context": {
+    "business_type": "일반 주유소(주유원 근무)"
+   },
+   "symbol_query": [
+    "신용카드",
+    "카드 단말기",
+    "결제"
+   ],
+   "accept": [
+    "CAFE_106"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_gas_08",
+   "job": "gas",
+   "business_type": "일반 주유소(주유원 근무)",
+   "sentence": "사무실 전화가 울리면 받아서 \"주유소입니다\" 하고 말해요.",
+   "context": {
+    "business_type": "일반 주유소(주유원 근무)"
+   },
+   "symbol_query": [
+    "전화",
+    "수화기",
+    "사무실"
+   ],
+   "accept": [
+    "CAFE_092",
+    "CLEANING_206",
+    "RETAIL_093"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_gas_09",
+   "job": "gas",
+   "business_type": "손세차장",
+   "sentence": "일하기 전에 장화를 신고 앞치마를 둘러요.",
+   "context": {
+    "business_type": "손세차장"
+   },
+   "symbol_query": [
+    "장화",
+    "방수 앞치마",
+    "작업복"
+   ],
+   "accept": [
+    "CAFE_002",
+    "DISPLAY_052",
+    "SERVING_059"
+   ],
+   "gap": false,
+   "confidence": "low",
+   "disputed": true
+  },
+  {
+   "id": "dev_gas_10",
+   "job": "gas",
+   "business_type": "손세차장",
+   "sentence": "바퀴 휠을 솔로 박박 문질러요.",
+   "context": {
+    "business_type": "손세차장"
+   },
+   "symbol_query": [
+    "휠",
+    "타이어",
+    "솔",
+    "wheel brush"
+   ],
+   "accept": [
+    "CLEANING_058"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_gas_11",
+   "job": "gas",
+   "business_type": "손세차장",
+   "sentence": "차 문을 열고 발판 매트를 꺼내 탈탈 털어요.",
+   "context": {
+    "business_type": "손세차장"
+   },
+   "symbol_query": [
+    "차량 매트",
+    "발판",
+    "자동차 문"
+   ],
+   "accept": [
+    "CLEANING_035"
+   ],
+   "gap": false,
+   "confidence": "low"
+  },
+  {
+   "id": "dev_gas_12",
+   "job": "gas",
+   "business_type": "손세차장",
+   "sentence": "고압 호스로 차에 묻은 거품을 씻어 내요.",
+   "context": {
+    "business_type": "손세차장"
+   },
+   "symbol_query": [
+    "고압 호스",
+    "거품",
+    "자동차",
+    "pressure washer"
+   ],
+   "accept": [
+    "CLEANING_031",
+    "CLEANING_028"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_gas_13",
+   "job": "gas",
+   "business_type": "주유소 부설 자동세차장",
+   "sentence": "손님께 사이드미러를 접어 달라고 말해요.",
+   "context": {
+    "business_type": "주유소 부설 자동세차장"
+   },
+   "symbol_query": [
+    "사이드미러",
+    "자동차",
+    "손님"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_gas_14",
+   "job": "gas",
+   "business_type": "주유소 부설 자동세차장",
+   "sentence": "세차기에서 나온 차의 유리창 물기를 타월로 훔쳐요.",
+   "context": {
+    "business_type": "주유소 부설 자동세차장"
+   },
+   "symbol_query": [
+    "유리창",
+    "극세사 타월",
+    "자동차",
+    "물기"
+   ],
+   "accept": [
+    "GAS_008",
+    "GAS_026",
+    "GAS_027",
+    "GAS_029",
+    "CLEANING_033"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_gas_15",
+   "job": "gas",
+   "business_type": "주유소 부설 자동세차장",
+   "sentence": "다 쓴 젖은 수건은 빨래 바구니에 모아요.",
+   "context": {
+    "business_type": "주유소 부설 자동세차장"
+   },
+   "symbol_query": [
+    "수건",
+    "빨래 바구니",
+    "세탁"
+   ],
+   "accept": [
+    "CLEANING_037"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_gas_16",
+   "job": "gas",
+   "business_type": "주유소 편의매장",
+   "sentence": "냉장고에 생수병을 줄 맞춰 채워요.",
+   "context": {
+    "business_type": "주유소 편의매장"
+   },
+   "symbol_query": [
+    "냉장고",
+    "생수",
+    "음료"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "low",
+   "disputed": true
+  },
+  {
+   "id": "dev_gas_17",
+   "job": "gas",
+   "business_type": "주유소 편의매장",
+   "sentence": "워셔액 통을 선반 앞쪽으로 당겨 놓아요.",
+   "context": {
+    "business_type": "주유소 편의매장"
+   },
+   "symbol_query": [
+    "워셔액",
+    "선반",
+    "진열대"
+   ],
+   "accept": [
+    "RETAIL_035"
+   ],
+   "gap": false,
+   "confidence": "low"
+  },
+  {
+   "id": "dev_gas_18",
+   "job": "gas",
+   "business_type": "주유소 편의매장",
+   "sentence": "주유기 옆 쓰레기통이 차면 봉투를 묶어서 빼요.",
+   "context": {
+    "business_type": "주유소 편의매장"
+   },
+   "symbol_query": [
+    "쓰레기통",
+    "쓰레기봉투",
+    "주유기"
+   ],
+   "accept": [
+    "CAFE_082",
+    "CLEANING_026"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_gas_19",
+   "job": "gas",
+   "business_type": "주유소 편의매장",
+   "sentence": "퇴근하기 전에 사장님께 오늘 한 일을 말해요.",
+   "context": {
+    "business_type": "주유소 편의매장"
+   },
+   "symbol_query": [
+    "사장님",
+    "보고",
+    "퇴근"
+   ],
+   "accept": [
+    "PACKAGING_180"
+   ],
+   "gap": false,
+   "confidence": "medium",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_gas_20",
+   "job": "gas",
+   "business_type": "일반 주유소(타이어 점검 서비스)",
+   "sentence": "공기 주입기를 타이어 꼭지에 끼워 바람을 넣어요.",
+   "context": {
+    "business_type": "일반 주유소(타이어 점검 서비스)"
+   },
+   "symbol_query": [
+    "공기 주입기",
+    "타이어",
+    "공기압",
+    "tire inflator"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_serving_01",
+   "job": "serving",
+   "business_type": "한식당",
+   "sentence": "손님이 나가면 빈 반찬 그릇을 쟁반에 모아요.",
+   "context": {
+    "business_type": "한식당"
+   },
+   "symbol_query": [
+    "반찬 그릇",
+    "쟁반",
+    "side dish bowl",
+    "tray"
+   ],
+   "accept": [
+    "SERVING_020",
+    "SERVING_021",
+    "SERVING_008"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_serving_02",
+   "job": "serving",
+   "business_type": "한식당",
+   "sentence": "쟁반을 들고 주방 퇴식구에 갖다 놓으세요.",
+   "context": {
+    "business_type": "한식당"
+   },
+   "symbol_query": [
+    "쟁반",
+    "퇴식구",
+    "tray",
+    "dish return"
+   ],
+   "accept": [
+    "SERVING_023",
+    "SERVING_024"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_serving_03",
+   "job": "serving",
+   "business_type": "한식당",
+   "sentence": "젖은 행주로 상 위를 훔쳐 주세요.",
+   "context": {
+    "business_type": "한식당"
+   },
+   "symbol_query": [
+    "행주",
+    "상",
+    "cloth",
+    "table"
+   ],
+   "accept": [
+    "SERVING_010",
+    "CAFE_077"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_serving_04",
+   "job": "serving",
+   "business_type": "한식당",
+   "sentence": "비어 있는 수저통에 숟가락과 젓가락을 채워요.",
+   "context": {
+    "business_type": "한식당"
+   },
+   "symbol_query": [
+    "수저통",
+    "숟가락",
+    "젓가락",
+    "cutlery holder"
+   ],
+   "accept": [
+    "SERVING_044"
+   ],
+   "gap": false,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_serving_05",
+   "job": "serving",
+   "business_type": "고깃집",
+   "sentence": "손님이 앉으면 물컵과 물병을 갖다 드려요.",
+   "context": {
+    "business_type": "고깃집"
+   },
+   "symbol_query": [
+    "물컵",
+    "물병",
+    "water cup",
+    "water bottle"
+   ],
+   "accept": [
+    "SERVING_006",
+    "SERVING_005"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_serving_06",
+   "job": "serving",
+   "business_type": "고깃집",
+   "sentence": "집게로 탄 불판을 빼고 새 불판으로 바꿔 드리세요.",
+   "context": {
+    "business_type": "고깃집"
+   },
+   "symbol_query": [
+    "불판",
+    "집게",
+    "grill plate",
+    "tongs"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_serving_07",
+   "job": "serving",
+   "business_type": "고깃집",
+   "sentence": "호출벨이 울리면 그 자리로 가서 무엇이 필요한지 여쭤봐요.",
+   "context": {
+    "business_type": "고깃집"
+   },
+   "symbol_query": [
+    "호출벨",
+    "손님",
+    "call bell",
+    "customer"
+   ],
+   "accept": [
+    "SERVING_049",
+    "SERVING_050"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_serving_08",
+   "job": "serving",
+   "business_type": "고깃집",
+   "sentence": "손님이 남긴 고기 기름과 휴지를 쓰레기통에 버려요.",
+   "context": {
+    "business_type": "고깃집"
+   },
+   "symbol_query": [
+    "휴지",
+    "쓰레기통",
+    "tissue",
+    "trash can"
+   ],
+   "accept": [
+    "SERVING_032"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_serving_09",
+   "job": "serving",
+   "business_type": "푸드코트",
+   "sentence": "출근하면 단말기에 사원증을 찍어 출근 체크를 해요.",
+   "context": {
+    "business_type": "푸드코트"
+   },
+   "symbol_query": [
+    "사원증",
+    "출근 단말기",
+    "employee ID card",
+    "time clock"
+   ],
+   "accept": [
+    "ASSEMBLY_AUX_036",
+    "ASSEMBLY_177",
+    "CAFE_093",
+    "CLEANING_192"
+   ],
+   "gap": false,
+   "confidence": "low"
+  },
+  {
+   "id": "dev_serving_10",
+   "job": "serving",
+   "business_type": "푸드코트",
+   "sentence": "반납된 식판의 남은 음식을 잔반통에 털어 주세요.",
+   "context": {
+    "business_type": "푸드코트"
+   },
+   "symbol_query": [
+    "식판",
+    "잔반통",
+    "food tray",
+    "food waste bin"
+   ],
+   "accept": [
+    "CAFE_065"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_serving_11",
+   "job": "serving",
+   "business_type": "푸드코트",
+   "sentence": "숟가락과 젓가락을 따로 모아 바구니에 넣어요.",
+   "context": {
+    "business_type": "푸드코트"
+   },
+   "symbol_query": [
+    "숟가락",
+    "젓가락",
+    "바구니",
+    "basket"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "medium",
+   "disputed": true
+  },
+  {
+   "id": "dev_serving_12",
+   "job": "serving",
+   "business_type": "푸드코트",
+   "sentence": "고무장갑과 앞치마를 입고 퇴식대 앞에 서요.",
+   "context": {
+    "business_type": "푸드코트"
+   },
+   "symbol_query": [
+    "고무장갑",
+    "앞치마",
+    "rubber gloves",
+    "apron"
+   ],
+   "accept": [
+    "SERVING_063",
+    "SERVING_059",
+    "CAFE_002",
+    "DISPLAY_052"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_serving_13",
+   "job": "serving",
+   "business_type": "분식집",
+   "sentence": "주방에서 나온 떡볶이를 번호 맞는 자리에 가져다 드려요.",
+   "context": {
+    "business_type": "분식집"
+   },
+   "symbol_query": [
+    "떡볶이",
+    "번호표",
+    "food",
+    "table number"
+   ],
+   "accept": [
+    "SERVING_002",
+    "SERVING_003"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_serving_14",
+   "job": "serving",
+   "business_type": "분식집",
+   "sentence": "가게 전화가 울리면 받아서 \"네, 분식집입니다\" 하고 말해요.",
+   "context": {
+    "business_type": "분식집"
+   },
+   "symbol_query": [
+    "전화기",
+    "수화기",
+    "telephone",
+    "phone call"
+   ],
+   "accept": [
+    "ASSEMBLY_176",
+    "CAFE_092",
+    "CLEANING_206",
+    "RETAIL_093"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_serving_15",
+   "job": "serving",
+   "business_type": "분식집",
+   "sentence": "포장 주문 내용을 메모지에 적어 주방에 붙여요.",
+   "context": {
+    "business_type": "분식집"
+   },
+   "symbol_query": [
+    "메모지",
+    "주문서",
+    "memo",
+    "order slip"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high"
+  },
+  {
+   "id": "dev_serving_16",
+   "job": "serving",
+   "business_type": "뷔페",
+   "sentence": "손님이 다 쓴 접시를 겹쳐서 걷어 가요.",
+   "context": {
+    "business_type": "뷔페"
+   },
+   "symbol_query": [
+    "접시",
+    "plate",
+    "dirty dishes"
+   ],
+   "accept": [
+    "SERVING_008",
+    "SERVING_021",
+    "SERVING_020"
+   ],
+   "gap": false,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_serving_17",
+   "job": "serving",
+   "business_type": "뷔페",
+   "sentence": "자리마다 냅킨을 깔고 그 위에 포크와 나이프를 놓으세요.",
+   "context": {
+    "business_type": "뷔페"
+   },
+   "symbol_query": [
+    "냅킨",
+    "포크",
+    "나이프",
+    "napkin"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "medium"
+  },
+  {
+   "id": "dev_serving_18",
+   "job": "serving",
+   "business_type": "뷔페",
+   "sentence": "바닥에 떨어진 음식을 빗자루와 쓰레받기로 쓸어 담아요.",
+   "context": {
+    "business_type": "뷔페"
+   },
+   "symbol_query": [
+    "빗자루",
+    "쓰레받기",
+    "broom",
+    "dustpan"
+   ],
+   "accept": [
+    "SERVING_035",
+    "CAFE_080"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "정답지 교정(P1, 2026-11-07): CAFE_080(빗자루로 바닥 부스러기를 쓸기) 추가 — 쓰레받기는 없지만 쓰는 동작과 대상(바닥에 떨어진 것)이 같고 틀린 것을 보여 주지 않는다. 쓰레받기까지 있는 SERVING_035가 더 낫다."
+  },
+  {
+   "id": "dev_serving_19",
+   "job": "serving",
+   "business_type": "뷔페",
+   "sentence": "영업이 끝나면 의자를 뒤집어 테이블 위에 올려요.",
+   "context": {
+    "business_type": "뷔페"
+   },
+   "symbol_query": [
+    "의자",
+    "테이블",
+    "chair",
+    "table"
+   ],
+   "accept": [
+    "CLEANING_211"
+   ],
+   "gap": false,
+   "confidence": "high",
+   "note": "2026-11-08 새 카드로 갭 해소."
+  },
+  {
+   "id": "dev_serving_20",
+   "job": "serving",
+   "business_type": "국밥집",
+   "sentence": "테이블의 새우젓 통이 비었으면 채워 놓으세요.",
+   "context": {
+    "business_type": "국밥집"
+   },
+   "symbol_query": [
+    "새우젓",
+    "양념통",
+    "condiment container",
+    "salted shrimp"
+   ],
+   "accept": [],
+   "gap": true,
+   "confidence": "high"
+  }
+ ]
+}

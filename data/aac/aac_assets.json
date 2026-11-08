@@ -5,14 +5,14 @@
     768,
     768
   ],
-  "asset_count": 1049,
+  "asset_count": 1160,
   "jobs": {
-    "ASSEMBLY": 235,
-    "CAFE": 101,
-    "CLEANING": 213,
-    "PACKAGING": 164,
-    "RETAIL": 76,
-    "DELIVERY": 55,
+    "ASSEMBLY": 254,
+    "CAFE": 119,
+    "CLEANING": 240,
+    "PACKAGING": 179,
+    "RETAIL": 96,
+    "DELIVERY": 67,
     "DISPLAY": 74,
     "GAS": 45,
     "SERVING": 86
@@ -27210,6 +27210,2545 @@
         "유리",
         "스퀴지"
       ]
+    },
+    {
+      "id": "ASSEMBLY_176",
+      "group_id": "ASSEMBLY_176",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작업장 전화를 받는다",
+      "keywords": [
+        "작업장",
+        "전화를",
+        "받는다",
+        "받기",
+        "건네받기",
+        "수령"
+      ],
+      "aliases": [],
+      "search_text": "assembly 작업장 전화를 받는다 receive 작업장 전화를 받는다 받기 건네받기 수령",
+      "image": "assembly/ASSEMBLY_176.webp",
+      "source_file": "ASSEMBLY_NEW_001.png",
+      "action": "receive",
+      "objects": []
+    },
+    {
+      "id": "ASSEMBLY_177",
+      "group_id": "ASSEMBLY_177",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "출근 단말기에 사원증을 찍는다",
+      "keywords": [
+        "결제 단말기",
+        "출근",
+        "단말기에",
+        "사원증을",
+        "찍는다"
+      ],
+      "aliases": [],
+      "search_text": "assembly 출근 단말기에 사원증을 찍는다 other 결제 단말기 출근 단말기에 사원증을 찍는다",
+      "image": "assembly/ASSEMBLY_177.webp",
+      "source_file": "ASSEMBLY_NEW_002.png",
+      "action": "other",
+      "objects": [
+        "결제 단말기"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_178",
+      "group_id": "ASSEMBLY_178",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "출근부에 이름을 쓴다",
+      "keywords": [
+        "출근부에",
+        "이름을",
+        "쓴다"
+      ],
+      "aliases": [],
+      "search_text": "assembly 출근부에 이름을 쓴다 other 출근부에 이름을 쓴다",
+      "image": "assembly/ASSEMBLY_178.webp",
+      "source_file": "ASSEMBLY_NEW_003.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "ASSEMBLY_179",
+      "group_id": "ASSEMBLY_179",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "볼펜 몸통에 심을 넣는다",
+      "keywords": [
+        "볼펜",
+        "몸통에",
+        "심을",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 볼펜 몸통에 심을 넣는다 put_in 볼펜 몸통에 심을 넣는다 넣기 담기 꽂기",
+      "image": "assembly/ASSEMBLY_179.webp",
+      "source_file": "ASSEMBLY_NEW_004.png",
+      "action": "put_in",
+      "objects": []
+    },
+    {
+      "id": "ASSEMBLY_180",
+      "group_id": "ASSEMBLY_180",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "심 끝에 스프링을 끼운다",
+      "keywords": [
+        "끝에",
+        "스프링을",
+        "끼운다",
+        "끼우기",
+        "장착"
+      ],
+      "aliases": [],
+      "search_text": "assembly 심 끝에 스프링을 끼운다 install 끝에 스프링을 끼운다 끼우기 장착",
+      "image": "assembly/ASSEMBLY_180.webp",
+      "source_file": "ASSEMBLY_NEW_005.png",
+      "action": "install",
+      "objects": []
+    },
+    {
+      "id": "ASSEMBLY_181",
+      "group_id": "ASSEMBLY_181",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "종이에 볼펜을 그어 본다",
+      "keywords": [
+        "종이에",
+        "볼펜을",
+        "그어",
+        "본다"
+      ],
+      "aliases": [],
+      "search_text": "assembly 종이에 볼펜을 그어 본다 other 종이에 볼펜을 그어 본다",
+      "image": "assembly/ASSEMBLY_181.webp",
+      "source_file": "ASSEMBLY_NEW_006.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "ASSEMBLY_182",
+      "group_id": "ASSEMBLY_182",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "볼트에 와셔를 끼운다",
+      "keywords": [
+        "와셔",
+        "볼트에",
+        "와셔를",
+        "끼운다",
+        "끼우기",
+        "장착"
+      ],
+      "aliases": [],
+      "search_text": "assembly 볼트에 와셔를 끼운다 install 와셔 볼트에 와셔를 끼운다 끼우기 장착",
+      "image": "assembly/ASSEMBLY_182.webp",
+      "source_file": "ASSEMBLY_NEW_007.png",
+      "action": "install",
+      "objects": [
+        "와셔"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_183",
+      "group_id": "ASSEMBLY_183",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "전동 드릴로 볼트를 조인다",
+      "keywords": [
+        "전동",
+        "드릴로",
+        "볼트를",
+        "조인다",
+        "조이기",
+        "체결",
+        "나사 조이기"
+      ],
+      "aliases": [
+        "전동 드릴로 볼트를 체결한다"
+      ],
+      "search_text": "assembly 전동 드릴로 볼트를 조인다 tighten 전동 드릴로 볼트를 조인다 조이기 체결 나사 조이기 전동 드릴로 볼트를 체결한다",
+      "image": "assembly/ASSEMBLY_183.webp",
+      "source_file": "ASSEMBLY_NEW_008.png",
+      "action": "tighten",
+      "objects": []
+    },
+    {
+      "id": "ASSEMBLY_184",
+      "group_id": "ASSEMBLY_184",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "휴게실에서 쉰다",
+      "keywords": [
+        "휴게실에서",
+        "쉰다"
+      ],
+      "aliases": [],
+      "search_text": "assembly 휴게실에서 쉰다 other 휴게실에서 쉰다",
+      "image": "assembly/ASSEMBLY_184.webp",
+      "source_file": "ASSEMBLY_NEW_009.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "ASSEMBLY_185",
+      "group_id": "ASSEMBLY_185",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "볼펜을 10개씩 봉투에 담는다",
+      "keywords": [
+        "봉투",
+        "볼펜을",
+        "10개씩",
+        "봉투에",
+        "담는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 볼펜을 10개씩 봉투에 담는다 put_in 봉투 볼펜을 10개씩 봉투에 담는다 넣기 담기 꽂기",
+      "image": "assembly/ASSEMBLY_185.webp",
+      "source_file": "ASSEMBLY_NEW_011.png",
+      "action": "put_in",
+      "objects": [
+        "봉투"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_186",
+      "group_id": "ASSEMBLY_186",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "뚜껑을 돌려서 닫는다",
+      "keywords": [
+        "뚜껑을",
+        "돌려서",
+        "닫는다",
+        "닫기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 뚜껑을 돌려서 닫는다 close 뚜껑을 돌려서 닫는다 닫기",
+      "image": "assembly/ASSEMBLY_186.webp",
+      "source_file": "ASSEMBLY_NEW_012.png",
+      "action": "close",
+      "objects": []
+    },
+    {
+      "id": "ASSEMBLY_187",
+      "group_id": "ASSEMBLY_187",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작업 지시서를 복사기로 복사한다",
+      "keywords": [
+        "작업",
+        "지시서를",
+        "복사기로",
+        "복사한다"
+      ],
+      "aliases": [],
+      "search_text": "assembly 작업 지시서를 복사기로 복사한다 other 작업 지시서를 복사기로 복사한다",
+      "image": "assembly/ASSEMBLY_187.webp",
+      "source_file": "ASSEMBLY_NEW_013.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "ASSEMBLY_188",
+      "group_id": "ASSEMBLY_188",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "모르는 것을 반장님께 물어본다",
+      "keywords": [
+        "모르는",
+        "것을",
+        "반장님께",
+        "물어본다"
+      ],
+      "aliases": [],
+      "search_text": "assembly 모르는 것을 반장님께 물어본다 other 모르는 것을 반장님께 물어본다",
+      "image": "assembly/ASSEMBLY_188.webp",
+      "source_file": "ASSEMBLY_NEW_014.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "ASSEMBLY_189",
+      "group_id": "ASSEMBLY_189",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작업 일지에 만든 개수를 적는다",
+      "keywords": [
+        "작업",
+        "일지에",
+        "만든",
+        "개수를",
+        "적는다"
+      ],
+      "aliases": [],
+      "search_text": "assembly 작업 일지에 만든 개수를 적는다 other 작업 일지에 만든 개수를 적는다",
+      "image": "assembly/ASSEMBLY_189.webp",
+      "source_file": "ASSEMBLY_NEW_015.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "ASSEMBLY_190",
+      "group_id": "ASSEMBLY_190",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "가방을 사물함에 넣는다",
+      "keywords": [
+        "가방을",
+        "사물함에",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 가방을 사물함에 넣는다 put_in 가방을 사물함에 넣는다 넣기 담기 꽂기",
+      "image": "assembly/ASSEMBLY_190.webp",
+      "source_file": "ASSEMBLY_NEW_016.png",
+      "action": "put_in",
+      "objects": []
+    },
+    {
+      "id": "ASSEMBLY_191",
+      "group_id": "ASSEMBLY_191",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빈 상자를 납작하게 접는다",
+      "keywords": [
+        "박스",
+        "상자",
+        "상자를",
+        "납작하게",
+        "접는다",
+        "접기",
+        "접음"
+      ],
+      "aliases": [],
+      "search_text": "assembly 빈 상자를 납작하게 접는다 fold 박스 상자 상자를 납작하게 접는다 접기 접음",
+      "image": "assembly/ASSEMBLY_191.webp",
+      "source_file": "ASSEMBLY_NEW_017.png",
+      "action": "fold",
+      "objects": [
+        "박스",
+        "상자"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_192",
+      "group_id": "ASSEMBLY_192",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "커터칼로 상자를 뜯는다",
+      "keywords": [
+        "박스",
+        "상자",
+        "커터칼로",
+        "상자를",
+        "뜯는다"
+      ],
+      "aliases": [],
+      "search_text": "assembly 커터칼로 상자를 뜯는다 other 박스 상자 커터칼로 상자를 뜯는다",
+      "image": "assembly/ASSEMBLY_192.webp",
+      "source_file": "ASSEMBLY_NEW_018.png",
+      "action": "other",
+      "objects": [
+        "박스",
+        "상자"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_193",
+      "group_id": "ASSEMBLY_193",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "떨어진 부품을 줍는다",
+      "keywords": [
+        "부품",
+        "떨어진",
+        "부품을",
+        "줍는다",
+        "줍기",
+        "집기",
+        "수거"
+      ],
+      "aliases": [],
+      "search_text": "assembly 떨어진 부품을 줍는다 pick_up 부품 떨어진 부품을 줍는다 줍기 집기 수거",
+      "image": "assembly/ASSEMBLY_193.webp",
+      "source_file": "ASSEMBLY_NEW_019.png",
+      "action": "pick_up",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "ASSEMBLY_194",
+      "group_id": "ASSEMBLY_194",
+      "job": "assembly",
+      "asset_type": "action",
+      "variant": null,
+      "label": "부품에 본드를 바른다",
+      "keywords": [
+        "부품",
+        "부품에",
+        "본드를",
+        "바른다",
+        "묻히기",
+        "바르기"
+      ],
+      "aliases": [],
+      "search_text": "assembly 부품에 본드를 바른다 apply 부품 부품에 본드를 바른다 묻히기 바르기",
+      "image": "assembly/ASSEMBLY_194.webp",
+      "source_file": "ASSEMBLY_NEW_020.png",
+      "action": "apply",
+      "objects": [
+        "부품"
+      ]
+    },
+    {
+      "id": "CAFE_091",
+      "group_id": "CAFE_091",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "커피머신 전원을 켠다",
+      "keywords": [
+        "커피머신",
+        "전원을",
+        "켠다"
+      ],
+      "aliases": [],
+      "search_text": "cafe 커피머신 전원을 켠다 other 커피머신 전원을 켠다",
+      "image": "cafe/CAFE_091.webp",
+      "source_file": "CAFE_NEW_001.png",
+      "action": "other",
+      "objects": [
+        "커피머신"
+      ]
+    },
+    {
+      "id": "CAFE_092",
+      "group_id": "CAFE_092",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "매장 전화를 받는다",
+      "keywords": [
+        "매장",
+        "전화를",
+        "받는다",
+        "받기",
+        "건네받기",
+        "수령"
+      ],
+      "aliases": [],
+      "search_text": "cafe 매장 전화를 받는다 receive 매장 전화를 받는다 받기 건네받기 수령",
+      "image": "cafe/CAFE_092.webp",
+      "source_file": "CAFE_NEW_002.png",
+      "action": "receive",
+      "objects": [
+        "매장"
+      ]
+    },
+    {
+      "id": "CAFE_093",
+      "group_id": "CAFE_093",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "출근 단말기에 사원증을 찍는다",
+      "keywords": [
+        "결제 단말기",
+        "출근",
+        "단말기에",
+        "사원증을",
+        "찍는다"
+      ],
+      "aliases": [],
+      "search_text": "cafe 출근 단말기에 사원증을 찍는다 other 결제 단말기 출근 단말기에 사원증을 찍는다",
+      "image": "cafe/CAFE_093.webp",
+      "source_file": "CAFE_NEW_003.png",
+      "action": "other",
+      "objects": [
+        "결제 단말기"
+      ]
+    },
+    {
+      "id": "CAFE_094",
+      "group_id": "CAFE_094",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "우유 거품을 낸다",
+      "keywords": [
+        "우유",
+        "거품을",
+        "낸다"
+      ],
+      "aliases": [],
+      "search_text": "cafe 우유 거품을 낸다 other 우유 거품을 낸다",
+      "image": "cafe/CAFE_094.webp",
+      "source_file": "CAFE_NEW_004.png",
+      "action": "other",
+      "objects": [
+        "우유"
+      ]
+    },
+    {
+      "id": "CAFE_095",
+      "group_id": "CAFE_095",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "스팀 노즐을 행주로 닦는다",
+      "keywords": [
+        "스팀",
+        "노즐을",
+        "행주로",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cafe 스팀 노즐을 행주로 닦는다 clean 스팀 노즐을 행주로 닦는다 청소 닦기",
+      "image": "cafe/CAFE_095.webp",
+      "source_file": "CAFE_NEW_005.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CAFE_096",
+      "group_id": "CAFE_096",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "냉장고에서 재료를 꺼낸다",
+      "keywords": [
+        "냉장고",
+        "재료",
+        "냉장고에서",
+        "재료를",
+        "꺼낸다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [
+        "냉장고에서 재료를 빼낸다"
+      ],
+      "search_text": "cafe 냉장고에서 재료를 꺼낸다 remove 냉장고 재료 냉장고에서 재료를 꺼낸다 꺼내기 빼기 제거 냉장고에서 재료를 빼낸다",
+      "image": "cafe/CAFE_096.webp",
+      "source_file": "CAFE_NEW_007.png",
+      "action": "remove",
+      "objects": [
+        "냉장고",
+        "재료"
+      ]
+    },
+    {
+      "id": "CAFE_097",
+      "group_id": "CAFE_097",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "얼음통을 씻는다",
+      "keywords": [
+        "얼음통",
+        "얼음",
+        "얼음통을",
+        "씻는다",
+        "씻기",
+        "헹구기",
+        "세척"
+      ],
+      "aliases": [],
+      "search_text": "cafe 얼음통을 씻는다 wash 얼음통 얼음 얼음통을 씻는다 씻기 헹구기 세척",
+      "image": "cafe/CAFE_097.webp",
+      "source_file": "CAFE_NEW_008.png",
+      "action": "wash",
+      "objects": [
+        "얼음통",
+        "얼음"
+      ]
+    },
+    {
+      "id": "CAFE_098",
+      "group_id": "CAFE_098",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "트레이를 소독한다",
+      "keywords": [
+        "트레이",
+        "트레이를",
+        "소독한다"
+      ],
+      "aliases": [],
+      "search_text": "cafe 트레이를 소독한다 other 트레이 트레이를 소독한다",
+      "image": "cafe/CAFE_098.webp",
+      "source_file": "CAFE_NEW_009.png",
+      "action": "other",
+      "objects": [
+        "트레이"
+      ]
+    },
+    {
+      "id": "CAFE_099",
+      "group_id": "CAFE_099",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "시럽병에 시럽을 채운다",
+      "keywords": [
+        "시럽병",
+        "시럽병에",
+        "시럽을",
+        "채운다",
+        "채우기",
+        "보충",
+        "진열 보충"
+      ],
+      "aliases": [],
+      "search_text": "cafe 시럽병에 시럽을 채운다 fill 시럽병 시럽병에 시럽을 채운다 채우기 보충 진열 보충",
+      "image": "cafe/CAFE_099.webp",
+      "source_file": "CAFE_NEW_010.png",
+      "action": "fill",
+      "objects": [
+        "시럽병"
+      ]
+    },
+    {
+      "id": "CAFE_100",
+      "group_id": "CAFE_100",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "블렌더에 과일을 넣는다",
+      "keywords": [
+        "블렌더에",
+        "과일을",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "cafe 블렌더에 과일을 넣는다 put_in 블렌더에 과일을 넣는다 넣기 담기 꽂기",
+      "image": "cafe/CAFE_100.webp",
+      "source_file": "CAFE_NEW_011.png",
+      "action": "put_in",
+      "objects": []
+    },
+    {
+      "id": "CAFE_101",
+      "group_id": "CAFE_101",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "진동벨을 고객에게 건넨다",
+      "keywords": [
+        "고객",
+        "손님",
+        "진동벨을",
+        "고객에게",
+        "건넨다",
+        "건네기",
+        "전달"
+      ],
+      "aliases": [],
+      "search_text": "cafe 진동벨을 고객에게 건넨다 handover 고객 손님 진동벨을 고객에게 건넨다 건네기 전달",
+      "image": "cafe/CAFE_101.webp",
+      "source_file": "CAFE_NEW_012.png",
+      "action": "handover",
+      "objects": [
+        "고객",
+        "손님"
+      ]
+    },
+    {
+      "id": "CAFE_102",
+      "group_id": "CAFE_102",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "쿠폰에 도장을 찍는다",
+      "keywords": [
+        "쿠폰에",
+        "도장을",
+        "찍는다"
+      ],
+      "aliases": [],
+      "search_text": "cafe 쿠폰에 도장을 찍는다 other 쿠폰에 도장을 찍는다",
+      "image": "cafe/CAFE_102.webp",
+      "source_file": "CAFE_NEW_013.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CAFE_103",
+      "group_id": "CAFE_103",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "메뉴판을 가지런히 놓는다",
+      "keywords": [
+        "메뉴판을",
+        "가지런히",
+        "놓는다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [
+        "메뉴판을 가지런히 올린다"
+      ],
+      "search_text": "cafe 메뉴판을 가지런히 놓는다 place 메뉴판을 가지런히 놓는다 놓기 올리기 진열 배치 메뉴판을 가지런히 올린다",
+      "image": "cafe/CAFE_103.webp",
+      "source_file": "CAFE_NEW_015.png",
+      "action": "place",
+      "objects": []
+    },
+    {
+      "id": "CAFE_104",
+      "group_id": "CAFE_104",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "매니저에게 말한다",
+      "keywords": [
+        "매니저에게",
+        "말한다"
+      ],
+      "aliases": [],
+      "search_text": "cafe 매니저에게 말한다 other 매니저에게 말한다",
+      "image": "cafe/CAFE_104.webp",
+      "source_file": "CAFE_NEW_016.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CAFE_105",
+      "group_id": "CAFE_105",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "포스기에 주문을 입력한다",
+      "keywords": [
+        "포스기에",
+        "주문을",
+        "입력한다"
+      ],
+      "aliases": [],
+      "search_text": "cafe 포스기에 주문을 입력한다 other 포스기에 주문을 입력한다",
+      "image": "cafe/CAFE_105.webp",
+      "source_file": "CAFE_NEW_017.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CAFE_106",
+      "group_id": "CAFE_106",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "카드를 단말기에 꽂아 결제한다",
+      "keywords": [
+        "결제 단말기",
+        "카드를",
+        "단말기에",
+        "꽂아",
+        "결제한다"
+      ],
+      "aliases": [],
+      "search_text": "cafe 카드를 단말기에 꽂아 결제한다 other 결제 단말기 카드를 단말기에 꽂아 결제한다",
+      "image": "cafe/CAFE_106.webp",
+      "source_file": "CAFE_NEW_018.png",
+      "action": "other",
+      "objects": [
+        "결제 단말기"
+      ]
+    },
+    {
+      "id": "CAFE_107",
+      "group_id": "CAFE_107",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "냉장고 온도를 점검표에 적는다",
+      "keywords": [
+        "냉장고",
+        "온도를",
+        "점검표에",
+        "적는다"
+      ],
+      "aliases": [],
+      "search_text": "cafe 냉장고 온도를 점검표에 적는다 other 냉장고 온도를 점검표에 적는다",
+      "image": "cafe/CAFE_107.webp",
+      "source_file": "CAFE_NEW_019.png",
+      "action": "other",
+      "objects": [
+        "냉장고"
+      ]
+    },
+    {
+      "id": "CAFE_108",
+      "group_id": "CAFE_108",
+      "job": "cafe",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빈 상자를 납작하게 접는다",
+      "keywords": [
+        "박스",
+        "상자를",
+        "납작하게",
+        "접는다",
+        "접기",
+        "접음"
+      ],
+      "aliases": [],
+      "search_text": "cafe 빈 상자를 납작하게 접는다 fold 박스 상자를 납작하게 접는다 접기 접음",
+      "image": "cafe/CAFE_108.webp",
+      "source_file": "CAFE_NEW_020.png",
+      "action": "fold",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "CLEANING_191",
+      "group_id": "CLEANING_191",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "점검표에 이름을 쓴다",
+      "keywords": [
+        "점검표에",
+        "이름을",
+        "쓴다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 점검표에 이름을 쓴다 other 점검표에 이름을 쓴다",
+      "image": "cleaning/CLEANING_191.webp",
+      "source_file": "CLEANING_NEW_001.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_192",
+      "group_id": "CLEANING_192",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "출근 단말기에 사원증을 찍는다",
+      "keywords": [
+        "결제 단말기",
+        "출근",
+        "단말기에",
+        "사원증을",
+        "찍는다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 출근 단말기에 사원증을 찍는다 other 결제 단말기 출근 단말기에 사원증을 찍는다",
+      "image": "cleaning/CLEANING_192.webp",
+      "source_file": "CLEANING_NEW_002.png",
+      "action": "other",
+      "objects": [
+        "결제 단말기"
+      ]
+    },
+    {
+      "id": "CLEANING_193",
+      "group_id": "CLEANING_193",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "대걸레를 짠다",
+      "keywords": [
+        "대걸레",
+        "대걸레를",
+        "짠다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 대걸레를 짠다 other 대걸레 대걸레를 짠다",
+      "image": "cleaning/CLEANING_193.webp",
+      "source_file": "CLEANING_NEW_003.png",
+      "action": "other",
+      "objects": [
+        "대걸레"
+      ]
+    },
+    {
+      "id": "CLEANING_194",
+      "group_id": "CLEANING_194",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "대걸레 헤드를 새것으로 바꾼다",
+      "keywords": [
+        "대걸레",
+        "헤드를",
+        "새것으로",
+        "바꾼다",
+        "교체",
+        "바꾸기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 대걸레 헤드를 새것으로 바꾼다 replace 대걸레 헤드를 새것으로 바꾼다 교체 바꾸기",
+      "image": "cleaning/CLEANING_194.webp",
+      "source_file": "CLEANING_NEW_004.png",
+      "action": "replace",
+      "objects": [
+        "대걸레"
+      ]
+    },
+    {
+      "id": "CLEANING_195",
+      "group_id": "CLEANING_195",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "쓰레기통을 물로 씻는다",
+      "keywords": [
+        "쓰레기통",
+        "물",
+        "쓰레기통을",
+        "물로",
+        "씻는다",
+        "씻기",
+        "헹구기",
+        "세척"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 쓰레기통을 물로 씻는다 wash 쓰레기통 물 쓰레기통을 물로 씻는다 씻기 헹구기 세척",
+      "image": "cleaning/CLEANING_195.webp",
+      "source_file": "CLEANING_NEW_005.png",
+      "action": "wash",
+      "objects": [
+        "쓰레기통",
+        "물"
+      ]
+    },
+    {
+      "id": "CLEANING_196",
+      "group_id": "CLEANING_196",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "소변기 안 이물질을 집게로 꺼낸다",
+      "keywords": [
+        "변기",
+        "집게",
+        "소변기",
+        "이물질을",
+        "집게로",
+        "꺼낸다",
+        "꺼내기",
+        "빼기",
+        "제거"
+      ],
+      "aliases": [
+        "소변기 안 이물질을 집게로 빼낸다"
+      ],
+      "search_text": "cleaning 소변기 안 이물질을 집게로 꺼낸다 remove 변기 집게 소변기 이물질을 집게로 꺼낸다 꺼내기 빼기 제거 소변기 안 이물질을 집게로 빼낸다",
+      "image": "cleaning/CLEANING_196.webp",
+      "source_file": "CLEANING_NEW_007.png",
+      "action": "remove",
+      "objects": [
+        "변기",
+        "집게"
+      ]
+    },
+    {
+      "id": "CLEANING_197",
+      "group_id": "CLEANING_197",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "종이 타월을 통에 채운다",
+      "keywords": [
+        "종이",
+        "타월을",
+        "통에",
+        "채운다",
+        "채우기",
+        "보충",
+        "진열 보충"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 종이 타월을 통에 채운다 fill 종이 타월을 통에 채운다 채우기 보충 진열 보충",
+      "image": "cleaning/CLEANING_197.webp",
+      "source_file": "CLEANING_NEW_008.png",
+      "action": "fill",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_198",
+      "group_id": "CLEANING_198",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "물비누 통에 비누를 채운다",
+      "keywords": [
+        "물비누",
+        "통에",
+        "비누를",
+        "채운다",
+        "채우기",
+        "보충",
+        "진열 보충"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 물비누 통에 비누를 채운다 fill 물비누 통에 비누를 채운다 채우기 보충 진열 보충",
+      "image": "cleaning/CLEANING_198.webp",
+      "source_file": "CLEANING_NEW_009.png",
+      "action": "fill",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_199",
+      "group_id": "CLEANING_199",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "화장실 밖에서 기다린다",
+      "keywords": [
+        "화장실",
+        "밖에서",
+        "기다린다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 화장실 밖에서 기다린다 other 화장실 밖에서 기다린다",
+      "image": "cleaning/CLEANING_199.webp",
+      "source_file": "CLEANING_NEW_010.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_200",
+      "group_id": "CLEANING_200",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "욕조를 샤워기로 헹군다",
+      "keywords": [
+        "욕조를",
+        "샤워기로",
+        "헹군다",
+        "씻기",
+        "헹구기",
+        "세척"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 욕조를 샤워기로 헹군다 wash 욕조를 샤워기로 헹군다 씻기 헹구기 세척",
+      "image": "cleaning/CLEANING_200.webp",
+      "source_file": "CLEANING_NEW_011.png",
+      "action": "wash",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_201",
+      "group_id": "CLEANING_201",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "무전기로 매니저에게 알린다",
+      "keywords": [
+        "무전기로",
+        "매니저에게",
+        "알린다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 무전기로 매니저에게 알린다 other 무전기로 매니저에게 알린다",
+      "image": "cleaning/CLEANING_201.webp",
+      "source_file": "CLEANING_NEW_012.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_202",
+      "group_id": "CLEANING_202",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "의료폐기물 상자는 만지지 않고 간호사를 부른다",
+      "keywords": [
+        "박스",
+        "의료폐기물",
+        "상자는",
+        "만지지",
+        "않고",
+        "간호사를",
+        "부른다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 의료폐기물 상자는 만지지 않고 간호사를 부른다 other 박스 의료폐기물 상자는 만지지 않고 간호사를 부른다",
+      "image": "cleaning/CLEANING_202.webp",
+      "source_file": "CLEANING_NEW_013.png",
+      "action": "other",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "CLEANING_203",
+      "group_id": "CLEANING_203",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "병실 침대 난간을 소독한다",
+      "keywords": [
+        "병실",
+        "침대",
+        "난간을",
+        "소독한다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 병실 침대 난간을 소독한다 other 병실 침대 난간을 소독한다",
+      "image": "cleaning/CLEANING_203.webp",
+      "source_file": "CLEANING_NEW_014.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_204",
+      "group_id": "CLEANING_204",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "계단 난간을 위에서 아래로 닦는다",
+      "keywords": [
+        "계단",
+        "난간을",
+        "위에서",
+        "아래로",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 계단 난간을 위에서 아래로 닦는다 clean 계단 난간을 위에서 아래로 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_204.webp",
+      "source_file": "CLEANING_NEW_015.png",
+      "action": "clean",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_205",
+      "group_id": "CLEANING_205",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "운동 기구 손잡이를 소독한다",
+      "keywords": [
+        "손",
+        "운동",
+        "기구",
+        "손잡이를",
+        "소독한다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 운동 기구 손잡이를 소독한다 other 손 운동 기구 손잡이를 소독한다",
+      "image": "cleaning/CLEANING_205.webp",
+      "source_file": "CLEANING_NEW_016.png",
+      "action": "other",
+      "objects": [
+        "손"
+      ]
+    },
+    {
+      "id": "CLEANING_206",
+      "group_id": "CLEANING_206",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "전화를 받는다",
+      "keywords": [
+        "전화를",
+        "받는다",
+        "받기",
+        "건네받기",
+        "수령"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 전화를 받는다 receive 전화를 받는다 받기 건네받기 수령",
+      "image": "cleaning/CLEANING_206.webp",
+      "source_file": "CLEANING_NEW_017.png",
+      "action": "receive",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_207",
+      "group_id": "CLEANING_207",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "엘리베이터 버튼을 누른다",
+      "keywords": [
+        "버튼",
+        "엘리베이터",
+        "버튼을",
+        "누른다",
+        "누르기",
+        "압착"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 엘리베이터 버튼을 누른다 press 버튼 엘리베이터 버튼을 누른다 누르기 압착",
+      "image": "cleaning/CLEANING_207.webp",
+      "source_file": "CLEANING_NEW_018.png",
+      "action": "press",
+      "objects": [
+        "버튼"
+      ]
+    },
+    {
+      "id": "CLEANING_208",
+      "group_id": "CLEANING_208",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "관리자에게 말한다",
+      "keywords": [
+        "관리자에게",
+        "말한다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 관리자에게 말한다 other 관리자에게 말한다",
+      "image": "cleaning/CLEANING_208.webp",
+      "source_file": "CLEANING_NEW_019.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_209",
+      "group_id": "CLEANING_209",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "휴게실에서 쉰다",
+      "keywords": [
+        "휴게실에서",
+        "쉰다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 휴게실에서 쉰다 other 휴게실에서 쉰다",
+      "image": "cleaning/CLEANING_209.webp",
+      "source_file": "CLEANING_NEW_020.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "CLEANING_210",
+      "group_id": "CLEANING_210",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빈 상자를 납작하게 접는다",
+      "keywords": [
+        "박스",
+        "상자를",
+        "납작하게",
+        "접는다",
+        "접기",
+        "접음"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 빈 상자를 납작하게 접는다 fold 박스 상자를 납작하게 접는다 접기 접음",
+      "image": "cleaning/CLEANING_210.webp",
+      "source_file": "CLEANING_NEW_021.png",
+      "action": "fold",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "CLEANING_211",
+      "group_id": "CLEANING_211",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "의자를 책상 위에 올린다",
+      "keywords": [
+        "책상",
+        "의자",
+        "의자를",
+        "위에",
+        "올린다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 의자를 책상 위에 올린다 place 책상 의자 의자를 위에 올린다 놓기 올리기 진열 배치",
+      "image": "cleaning/CLEANING_211.webp",
+      "source_file": "CLEANING_NEW_022.png",
+      "action": "place",
+      "objects": [
+        "책상",
+        "의자"
+      ]
+    },
+    {
+      "id": "CLEANING_212",
+      "group_id": "CLEANING_212",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "양동이에 물을 받는다",
+      "keywords": [
+        "물",
+        "양동이에",
+        "물을",
+        "받는다",
+        "받기",
+        "건네받기",
+        "수령"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 양동이에 물을 받는다 receive 물 양동이에 물을 받는다 받기 건네받기 수령",
+      "image": "cleaning/CLEANING_212.webp",
+      "source_file": "CLEANING_NEW_023.png",
+      "action": "receive",
+      "objects": [
+        "물"
+      ]
+    },
+    {
+      "id": "CLEANING_213",
+      "group_id": "CLEANING_213",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "소변기를 솔로 닦는다",
+      "keywords": [
+        "변기",
+        "변기솔",
+        "소변기를",
+        "솔로",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 소변기를 솔로 닦는다 clean 변기 변기솔 소변기를 솔로 닦는다 청소 닦기",
+      "image": "cleaning/CLEANING_213.webp",
+      "source_file": "CLEANING_NEW_024.png",
+      "action": "clean",
+      "objects": [
+        "변기",
+        "변기솔"
+      ]
+    },
+    {
+      "id": "CLEANING_214",
+      "group_id": "CLEANING_214",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "분무기에 세제를 채운다",
+      "keywords": [
+        "분무기",
+        "분무기에",
+        "세제를",
+        "채운다",
+        "채우기",
+        "보충",
+        "진열 보충"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 분무기에 세제를 채운다 fill 분무기 분무기에 세제를 채운다 채우기 보충 진열 보충",
+      "image": "cleaning/CLEANING_214.webp",
+      "source_file": "CLEANING_NEW_025.png",
+      "action": "fill",
+      "objects": [
+        "분무기"
+      ]
+    },
+    {
+      "id": "CLEANING_215",
+      "group_id": "CLEANING_215",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "청소 카트에 소모품을 채운다",
+      "keywords": [
+        "카트",
+        "청소",
+        "카트에",
+        "소모품을",
+        "채운다",
+        "채우기",
+        "보충",
+        "진열 보충"
+      ],
+      "aliases": [
+        "청소 운반 카트에 소모품을 채운다"
+      ],
+      "search_text": "cleaning 청소 카트에 소모품을 채운다 fill 카트 청소 카트에 소모품을 채운다 채우기 보충 진열 보충 청소 운반 카트에 소모품을 채운다",
+      "image": "cleaning/CLEANING_215.webp",
+      "source_file": "CLEANING_NEW_026.png",
+      "action": "fill",
+      "objects": [
+        "카트"
+      ]
+    },
+    {
+      "id": "CLEANING_216",
+      "group_id": "CLEANING_216",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "청소기 플러그를 콘센트에 꽂는다",
+      "keywords": [
+        "청소기",
+        "플러그를",
+        "콘센트에",
+        "꽂는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 청소기 플러그를 콘센트에 꽂는다 put_in 청소기 플러그를 콘센트에 꽂는다 넣기 담기 꽂기",
+      "image": "cleaning/CLEANING_216.webp",
+      "source_file": "CLEANING_NEW_027.png",
+      "action": "put_in",
+      "objects": [
+        "청소기"
+      ]
+    },
+    {
+      "id": "CLEANING_217",
+      "group_id": "CLEANING_217",
+      "job": "cleaning",
+      "asset_type": "action",
+      "variant": null,
+      "label": "걸레를 널어 말린다",
+      "keywords": [
+        "걸레를",
+        "널어",
+        "말린다"
+      ],
+      "aliases": [],
+      "search_text": "cleaning 걸레를 널어 말린다 other 걸레를 널어 말린다",
+      "image": "cleaning/CLEANING_217.webp",
+      "source_file": "CLEANING_NEW_028.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_048",
+      "group_id": "DELIVERY_048",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "출근 단말기에 손가락을 댄다",
+      "keywords": [
+        "결제 단말기",
+        "손",
+        "출근",
+        "단말기에",
+        "손가락을",
+        "댄다"
+      ],
+      "aliases": [],
+      "search_text": "delivery 출근 단말기에 손가락을 댄다 other 결제 단말기 손 출근 단말기에 손가락을 댄다",
+      "image": "delivery/DELIVERY_048.webp",
+      "source_file": "DELIVERY_NEW_001.png",
+      "action": "other",
+      "objects": [
+        "결제 단말기",
+        "손"
+      ]
+    },
+    {
+      "id": "DELIVERY_049",
+      "group_id": "DELIVERY_049",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "휴대전화로 전화를 받는다",
+      "keywords": [
+        "휴대전화로",
+        "전화를",
+        "받는다",
+        "받기",
+        "건네받기",
+        "수령"
+      ],
+      "aliases": [],
+      "search_text": "delivery 휴대전화로 전화를 받는다 receive 휴대전화로 전화를 받는다 받기 건네받기 수령",
+      "image": "delivery/DELIVERY_049.webp",
+      "source_file": "DELIVERY_NEW_002.png",
+      "action": "receive",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_050",
+      "group_id": "DELIVERY_050",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "생수 묶음을 카트에 싣는다",
+      "keywords": [
+        "카트",
+        "생수",
+        "묶음을",
+        "카트에",
+        "싣는다",
+        "싣기",
+        "적재"
+      ],
+      "aliases": [
+        "생수 묶음을 운반 카트에 싣는다"
+      ],
+      "search_text": "delivery 생수 묶음을 카트에 싣는다 load 카트 생수 묶음을 카트에 싣는다 싣기 적재 생수 묶음을 운반 카트에 싣는다",
+      "image": "delivery/DELIVERY_050.webp",
+      "source_file": "DELIVERY_NEW_003.png",
+      "action": "load",
+      "objects": [
+        "카트"
+      ]
+    },
+    {
+      "id": "DELIVERY_051",
+      "group_id": "DELIVERY_051",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "벨트 위로 오는 상자를 두 손으로 내린다",
+      "keywords": [
+        "박스",
+        "손",
+        "벨트",
+        "위로",
+        "오는",
+        "상자를",
+        "손으로",
+        "내린다"
+      ],
+      "aliases": [],
+      "search_text": "delivery 벨트 위로 오는 상자를 두 손으로 내린다 other 박스 손 벨트 위로 오는 상자를 손으로 내린다",
+      "image": "delivery/DELIVERY_051.webp",
+      "source_file": "DELIVERY_NEW_004.png",
+      "action": "other",
+      "objects": [
+        "박스",
+        "손"
+      ]
+    },
+    {
+      "id": "DELIVERY_052",
+      "group_id": "DELIVERY_052",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "우편물을 부서 칸에 넣는다",
+      "keywords": [
+        "우편물을",
+        "부서",
+        "칸에",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "delivery 우편물을 부서 칸에 넣는다 put_in 우편물을 부서 칸에 넣는다 넣기 담기 꽂기",
+      "image": "delivery/DELIVERY_052.webp",
+      "source_file": "DELIVERY_NEW_005.png",
+      "action": "put_in",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_053",
+      "group_id": "DELIVERY_053",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "엘리베이터 버튼을 누른다",
+      "keywords": [
+        "버튼",
+        "엘리베이터",
+        "버튼을",
+        "누른다",
+        "누르기",
+        "압착"
+      ],
+      "aliases": [],
+      "search_text": "delivery 엘리베이터 버튼을 누른다 press 버튼 엘리베이터 버튼을 누른다 누르기 압착",
+      "image": "delivery/DELIVERY_053.webp",
+      "source_file": "DELIVERY_NEW_006.png",
+      "action": "press",
+      "objects": [
+        "버튼"
+      ]
+    },
+    {
+      "id": "DELIVERY_054",
+      "group_id": "DELIVERY_054",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "옷을 펼쳐 얼룩이 있는지 살펴본다",
+      "keywords": [
+        "옷",
+        "옷을",
+        "펼쳐",
+        "얼룩이",
+        "있는지",
+        "살펴본다",
+        "펼치기",
+        "펴기"
+      ],
+      "aliases": [],
+      "search_text": "delivery 옷을 펼쳐 얼룩이 있는지 살펴본다 unfold 옷 옷을 펼쳐 얼룩이 있는지 살펴본다 펼치기 펴기",
+      "image": "delivery/DELIVERY_054.webp",
+      "source_file": "DELIVERY_NEW_008.png",
+      "action": "unfold",
+      "objects": [
+        "옷"
+      ]
+    },
+    {
+      "id": "DELIVERY_055",
+      "group_id": "DELIVERY_055",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "주소를 보고 상자를 구역별로 나눈다",
+      "keywords": [
+        "박스",
+        "주소를",
+        "보고",
+        "상자를",
+        "구역별로",
+        "나눈다",
+        "분류",
+        "종류별 분류",
+        "나누기"
+      ],
+      "aliases": [],
+      "search_text": "delivery 주소를 보고 상자를 구역별로 나눈다 sort 박스 주소를 보고 상자를 구역별로 나눈다 분류 종류별 분류 나누기",
+      "image": "delivery/DELIVERY_055.webp",
+      "source_file": "DELIVERY_NEW_009.png",
+      "action": "sort",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_056",
+      "group_id": "DELIVERY_056",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "깨지기 쉬운 상자를 맨 위에 올린다",
+      "keywords": [
+        "박스",
+        "깨지기",
+        "쉬운",
+        "상자를",
+        "위에",
+        "올린다",
+        "놓기",
+        "올리기",
+        "진열",
+        "배치"
+      ],
+      "aliases": [],
+      "search_text": "delivery 깨지기 쉬운 상자를 맨 위에 올린다 place 박스 깨지기 쉬운 상자를 위에 올린다 놓기 올리기 진열 배치",
+      "image": "delivery/DELIVERY_056.webp",
+      "source_file": "DELIVERY_NEW_010.png",
+      "action": "place",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_057",
+      "group_id": "DELIVERY_057",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "관리자에게 말한다",
+      "keywords": [
+        "관리자에게",
+        "말한다"
+      ],
+      "aliases": [],
+      "search_text": "delivery 관리자에게 말한다 other 관리자에게 말한다",
+      "image": "delivery/DELIVERY_057.webp",
+      "source_file": "DELIVERY_NEW_011.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "DELIVERY_058",
+      "group_id": "DELIVERY_058",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빈 상자를 납작하게 접는다",
+      "keywords": [
+        "박스",
+        "상자를",
+        "납작하게",
+        "접는다",
+        "접기",
+        "접음"
+      ],
+      "aliases": [],
+      "search_text": "delivery 빈 상자를 납작하게 접는다 fold 박스 상자를 납작하게 접는다 접기 접음",
+      "image": "delivery/DELIVERY_058.webp",
+      "source_file": "DELIVERY_NEW_012.png",
+      "action": "fold",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "DELIVERY_059",
+      "group_id": "DELIVERY_059",
+      "job": "delivery",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자에 송장을 붙인다",
+      "keywords": [
+        "박스",
+        "상자에",
+        "송장을",
+        "붙인다",
+        "붙이기",
+        "부착"
+      ],
+      "aliases": [],
+      "search_text": "delivery 상자에 송장을 붙인다 attach 박스 상자에 송장을 붙인다 붙이기 부착",
+      "image": "delivery/DELIVERY_059.webp",
+      "source_file": "DELIVERY_NEW_013.png",
+      "action": "attach",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "PACKAGING_171",
+      "group_id": "PACKAGING_171",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자를 저울에 올려 무게를 잰다",
+      "keywords": [
+        "박스",
+        "상자를",
+        "저울에",
+        "올려",
+        "무게를",
+        "잰다"
+      ],
+      "aliases": [],
+      "search_text": "packaging 상자를 저울에 올려 무게를 잰다 other 박스 상자를 저울에 올려 무게를 잰다",
+      "image": "packaging/PACKAGING_171.webp",
+      "source_file": "PACKAGING_NEW_001.png",
+      "action": "other",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "PACKAGING_172",
+      "group_id": "PACKAGING_172",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "출근 단말기에 사원증을 찍는다",
+      "keywords": [
+        "결제 단말기",
+        "출근",
+        "단말기에",
+        "사원증을",
+        "찍는다"
+      ],
+      "aliases": [],
+      "search_text": "packaging 출근 단말기에 사원증을 찍는다 other 결제 단말기 출근 단말기에 사원증을 찍는다",
+      "image": "packaging/PACKAGING_172.webp",
+      "source_file": "PACKAGING_NEW_002.png",
+      "action": "other",
+      "objects": [
+        "결제 단말기"
+      ]
+    },
+    {
+      "id": "PACKAGING_173",
+      "group_id": "PACKAGING_173",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "모르는 것을 반장님께 물어본다",
+      "keywords": [
+        "모르는",
+        "것을",
+        "반장님께",
+        "물어본다"
+      ],
+      "aliases": [],
+      "search_text": "packaging 모르는 것을 반장님께 물어본다 other 모르는 것을 반장님께 물어본다",
+      "image": "packaging/PACKAGING_173.webp",
+      "source_file": "PACKAGING_NEW_003.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "PACKAGING_174",
+      "group_id": "PACKAGING_174",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상자 옆면에 날짜 도장을 찍는다",
+      "keywords": [
+        "박스",
+        "상자",
+        "옆면에",
+        "날짜",
+        "도장을",
+        "찍는다"
+      ],
+      "aliases": [],
+      "search_text": "packaging 상자 옆면에 날짜 도장을 찍는다 other 박스 상자 옆면에 날짜 도장을 찍는다",
+      "image": "packaging/PACKAGING_174.webp",
+      "source_file": "PACKAGING_NEW_004.png",
+      "action": "other",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "PACKAGING_175",
+      "group_id": "PACKAGING_175",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작업 일지에 만든 개수를 적는다",
+      "keywords": [
+        "작업",
+        "일지에",
+        "만든",
+        "개수를",
+        "적는다"
+      ],
+      "aliases": [],
+      "search_text": "packaging 작업 일지에 만든 개수를 적는다 other 작업 일지에 만든 개수를 적는다",
+      "image": "packaging/PACKAGING_175.webp",
+      "source_file": "PACKAGING_NEW_005.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "PACKAGING_176",
+      "group_id": "PACKAGING_176",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "사과를 크기별로 나눠 바구니에 담는다",
+      "keywords": [
+        "사과를",
+        "크기별로",
+        "나눠",
+        "바구니에",
+        "담는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "packaging 사과를 크기별로 나눠 바구니에 담는다 put_in 사과를 크기별로 나눠 바구니에 담는다 넣기 담기 꽂기",
+      "image": "packaging/PACKAGING_176.webp",
+      "source_file": "PACKAGING_NEW_006.png",
+      "action": "put_in",
+      "objects": []
+    },
+    {
+      "id": "PACKAGING_177",
+      "group_id": "PACKAGING_177",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "사과에 그물망을 씌운다",
+      "keywords": [
+        "사과에",
+        "그물망을",
+        "씌운다"
+      ],
+      "aliases": [],
+      "search_text": "packaging 사과에 그물망을 씌운다 other 사과에 그물망을 씌운다",
+      "image": "packaging/PACKAGING_177.webp",
+      "source_file": "PACKAGING_NEW_007.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "PACKAGING_178",
+      "group_id": "PACKAGING_178",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작업장 전화를 받는다",
+      "keywords": [
+        "작업장",
+        "전화를",
+        "받는다",
+        "받기",
+        "건네받기",
+        "수령"
+      ],
+      "aliases": [],
+      "search_text": "packaging 작업장 전화를 받는다 receive 작업장 전화를 받는다 받기 건네받기 수령",
+      "image": "packaging/PACKAGING_178.webp",
+      "source_file": "PACKAGING_NEW_008.png",
+      "action": "receive",
+      "objects": []
+    },
+    {
+      "id": "PACKAGING_179",
+      "group_id": "PACKAGING_179",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빈 상자를 납작하게 접는다",
+      "keywords": [
+        "박스",
+        "상자를",
+        "납작하게",
+        "접는다",
+        "접기",
+        "접음"
+      ],
+      "aliases": [],
+      "search_text": "packaging 빈 상자를 납작하게 접는다 fold 박스 상자를 납작하게 접는다 접기 접음",
+      "image": "packaging/PACKAGING_179.webp",
+      "source_file": "PACKAGING_NEW_009.png",
+      "action": "fold",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "PACKAGING_180",
+      "group_id": "PACKAGING_180",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "반장님께 일이 끝났다고 알린다",
+      "keywords": [
+        "반장님께",
+        "일이",
+        "끝났다고",
+        "알린다"
+      ],
+      "aliases": [],
+      "search_text": "packaging 반장님께 일이 끝났다고 알린다 other 반장님께 일이 끝났다고 알린다",
+      "image": "packaging/PACKAGING_180.webp",
+      "source_file": "PACKAGING_NEW_011.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "PACKAGING_181",
+      "group_id": "PACKAGING_181",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "컨베이어에서 오는 제품을 집는다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "컨베이어에서",
+        "오는",
+        "제품을",
+        "집는다",
+        "줍기",
+        "집기",
+        "수거"
+      ],
+      "aliases": [],
+      "search_text": "packaging 컨베이어에서 오는 제품을 집는다 pick_up 상품 제품 물건 컨베이어에서 오는 제품을 집는다 줍기 집기 수거",
+      "image": "packaging/PACKAGING_181.webp",
+      "source_file": "PACKAGING_NEW_012.png",
+      "action": "pick_up",
+      "objects": [
+        "상품"
+      ]
+    },
+    {
+      "id": "PACKAGING_182",
+      "group_id": "PACKAGING_182",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "실링기로 봉투 입구를 붙인다",
+      "keywords": [
+        "봉투",
+        "실링기로",
+        "입구를",
+        "붙인다",
+        "붙이기",
+        "부착"
+      ],
+      "aliases": [],
+      "search_text": "packaging 실링기로 봉투 입구를 붙인다 attach 봉투 실링기로 입구를 붙인다 붙이기 부착",
+      "image": "packaging/PACKAGING_182.webp",
+      "source_file": "PACKAGING_NEW_013.png",
+      "action": "attach",
+      "objects": [
+        "봉투"
+      ]
+    },
+    {
+      "id": "PACKAGING_183",
+      "group_id": "PACKAGING_183",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "팔레트 상자를 랩으로 감는다",
+      "keywords": [
+        "박스",
+        "팔레트",
+        "상자를",
+        "랩으로",
+        "감는다"
+      ],
+      "aliases": [],
+      "search_text": "packaging 팔레트 상자를 랩으로 감는다 other 박스 팔레트 상자를 랩으로 감는다",
+      "image": "packaging/PACKAGING_183.webp",
+      "source_file": "PACKAGING_NEW_014.png",
+      "action": "other",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "PACKAGING_184",
+      "group_id": "PACKAGING_184",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "작업대를 걸레로 닦는다",
+      "keywords": [
+        "작업대",
+        "작업대를",
+        "걸레로",
+        "닦는다",
+        "청소",
+        "닦기"
+      ],
+      "aliases": [],
+      "search_text": "packaging 작업대를 걸레로 닦는다 clean 작업대 작업대를 걸레로 닦는다 청소 닦기",
+      "image": "packaging/PACKAGING_184.webp",
+      "source_file": "PACKAGING_NEW_015.png",
+      "action": "clean",
+      "objects": [
+        "작업대"
+      ]
+    },
+    {
+      "id": "PACKAGING_185",
+      "group_id": "PACKAGING_185",
+      "job": "packaging",
+      "asset_type": "action",
+      "variant": null,
+      "label": "위생모를 쓴다",
+      "keywords": [
+        "위생모를",
+        "쓴다"
+      ],
+      "aliases": [],
+      "search_text": "packaging 위생모를 쓴다 other 위생모를 쓴다",
+      "image": "packaging/PACKAGING_185.webp",
+      "source_file": "PACKAGING_NEW_016.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "RETAIL_093",
+      "group_id": "RETAIL_093",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "매장 전화를 받는다",
+      "keywords": [
+        "매장",
+        "전화를",
+        "받는다",
+        "받기",
+        "건네받기",
+        "수령"
+      ],
+      "aliases": [],
+      "search_text": "retail 매장 전화를 받는다 receive 매장 전화를 받는다 받기 건네받기 수령",
+      "image": "retail/RETAIL_093.webp",
+      "source_file": "RETAIL_NEW_001.png",
+      "action": "receive",
+      "objects": [
+        "매장"
+      ]
+    },
+    {
+      "id": "RETAIL_094",
+      "group_id": "RETAIL_094",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "관리자에게 말한다",
+      "keywords": [
+        "관리자에게",
+        "말한다"
+      ],
+      "aliases": [],
+      "search_text": "retail 관리자에게 말한다 other 관리자에게 말한다",
+      "image": "retail/RETAIL_094.webp",
+      "source_file": "RETAIL_NEW_002.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "RETAIL_095",
+      "group_id": "RETAIL_095",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "출근 단말기에 사원증을 찍는다",
+      "keywords": [
+        "결제 단말기",
+        "출근",
+        "단말기에",
+        "사원증을",
+        "찍는다"
+      ],
+      "aliases": [],
+      "search_text": "retail 출근 단말기에 사원증을 찍는다 other 결제 단말기 출근 단말기에 사원증을 찍는다",
+      "image": "retail/RETAIL_095.webp",
+      "source_file": "RETAIL_NEW_003.png",
+      "action": "other",
+      "objects": [
+        "결제 단말기"
+      ]
+    },
+    {
+      "id": "RETAIL_096",
+      "group_id": "RETAIL_096",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "고객에게 봉투가 필요한지 묻는다",
+      "keywords": [
+        "고객",
+        "봉투",
+        "손님",
+        "고객에게",
+        "봉투가",
+        "필요한지",
+        "묻는다"
+      ],
+      "aliases": [],
+      "search_text": "retail 고객에게 봉투가 필요한지 묻는다 other 고객 봉투 손님 고객에게 봉투가 필요한지 묻는다",
+      "image": "retail/RETAIL_096.webp",
+      "source_file": "RETAIL_NEW_004.png",
+      "action": "other",
+      "objects": [
+        "고객",
+        "봉투",
+        "손님"
+      ]
+    },
+    {
+      "id": "RETAIL_097",
+      "group_id": "RETAIL_097",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "냉장고 문을 닫는다",
+      "keywords": [
+        "냉장고",
+        "문을",
+        "닫는다",
+        "닫기"
+      ],
+      "aliases": [],
+      "search_text": "retail 냉장고 문을 닫는다 close 냉장고 문을 닫는다 닫기",
+      "image": "retail/RETAIL_097.webp",
+      "source_file": "RETAIL_NEW_005.png",
+      "action": "close",
+      "objects": [
+        "냉장고"
+      ]
+    },
+    {
+      "id": "RETAIL_098",
+      "group_id": "RETAIL_098",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "시든 채소를 골라낸다",
+      "keywords": [
+        "시든",
+        "채소를",
+        "골라낸다",
+        "고르기",
+        "선별",
+        "골라내기"
+      ],
+      "aliases": [],
+      "search_text": "retail 시든 채소를 골라낸다 select 시든 채소를 골라낸다 고르기 선별 골라내기",
+      "image": "retail/RETAIL_098.webp",
+      "source_file": "RETAIL_NEW_006.png",
+      "action": "select",
+      "objects": []
+    },
+    {
+      "id": "RETAIL_099",
+      "group_id": "RETAIL_099",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "빈 상자를 납작하게 접는다",
+      "keywords": [
+        "박스",
+        "상자를",
+        "납작하게",
+        "접는다",
+        "접기",
+        "접음"
+      ],
+      "aliases": [],
+      "search_text": "retail 빈 상자를 납작하게 접는다 fold 박스 상자를 납작하게 접는다 접기 접음",
+      "image": "retail/RETAIL_099.webp",
+      "source_file": "RETAIL_NEW_007.png",
+      "action": "fold",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "RETAIL_100",
+      "group_id": "RETAIL_100",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "관리자를 부른다",
+      "keywords": [
+        "관리자를",
+        "부른다"
+      ],
+      "aliases": [],
+      "search_text": "retail 관리자를 부른다 other 관리자를 부른다",
+      "image": "retail/RETAIL_100.webp",
+      "source_file": "RETAIL_NEW_008.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "RETAIL_101",
+      "group_id": "RETAIL_101",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "휴게실에서 쉰다",
+      "keywords": [
+        "휴게실에서",
+        "쉰다"
+      ],
+      "aliases": [],
+      "search_text": "retail 휴게실에서 쉰다 other 휴게실에서 쉰다",
+      "image": "retail/RETAIL_101.webp",
+      "source_file": "RETAIL_NEW_009.png",
+      "action": "other",
+      "objects": []
+    },
+    {
+      "id": "RETAIL_102",
+      "group_id": "RETAIL_102",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "냉장고 온도를 점검표에 적는다",
+      "keywords": [
+        "냉장고",
+        "온도를",
+        "점검표에",
+        "적는다"
+      ],
+      "aliases": [],
+      "search_text": "retail 냉장고 온도를 점검표에 적는다 other 냉장고 온도를 점검표에 적는다",
+      "image": "retail/RETAIL_102.webp",
+      "source_file": "RETAIL_NEW_010.png",
+      "action": "other",
+      "objects": [
+        "냉장고"
+      ]
+    },
+    {
+      "id": "RETAIL_103",
+      "group_id": "RETAIL_103",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "고리에 같은 색 상품끼리 건다",
+      "keywords": [
+        "상품",
+        "제품",
+        "물건",
+        "고리에",
+        "같은",
+        "상품끼리",
+        "건다"
+      ],
+      "aliases": [
+        "고리에 같은 색 제품끼리 건다",
+        "고리에 동일한 색 상품끼리 건다",
+        "고리에 동일한 색 제품끼리 건다"
+      ],
+      "search_text": "retail 고리에 같은 색 상품끼리 건다 other 상품 제품 물건 고리에 같은 상품끼리 건다 고리에 같은 색 제품끼리 건다 고리에 동일한 색 상품끼리 건다 고리에 동일한 색 제품끼리 건다",
+      "image": "retail/RETAIL_103.webp",
+      "source_file": "RETAIL_NEW_012.png",
+      "action": "other",
+      "objects": [
+        "상품"
+      ]
+    },
+    {
+      "id": "RETAIL_104",
+      "group_id": "RETAIL_104",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "조끼를 벗어 사물함에 넣는다",
+      "keywords": [
+        "조끼를",
+        "벗어",
+        "사물함에",
+        "넣는다",
+        "넣기",
+        "담기",
+        "꽂기"
+      ],
+      "aliases": [],
+      "search_text": "retail 조끼를 벗어 사물함에 넣는다 put_in 조끼를 벗어 사물함에 넣는다 넣기 담기 꽂기",
+      "image": "retail/RETAIL_104.webp",
+      "source_file": "RETAIL_NEW_013.png",
+      "action": "put_in",
+      "objects": []
+    },
+    {
+      "id": "RETAIL_105",
+      "group_id": "RETAIL_105",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "가격표를 인쇄한다",
+      "keywords": [
+        "가격표",
+        "가격표를",
+        "인쇄한다"
+      ],
+      "aliases": [],
+      "search_text": "retail 가격표를 인쇄한다 other 가격표 가격표를 인쇄한다",
+      "image": "retail/RETAIL_105.webp",
+      "source_file": "RETAIL_NEW_014.png",
+      "action": "other",
+      "objects": [
+        "가격표"
+      ]
+    },
+    {
+      "id": "RETAIL_106",
+      "group_id": "RETAIL_106",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "매장 문을 연다",
+      "keywords": [
+        "매장",
+        "문을",
+        "연다",
+        "열기"
+      ],
+      "aliases": [],
+      "search_text": "retail 매장 문을 연다 open 매장 문을 연다 열기",
+      "image": "retail/RETAIL_106.webp",
+      "source_file": "RETAIL_NEW_015.png",
+      "action": "open",
+      "objects": [
+        "매장"
+      ]
+    },
+    {
+      "id": "RETAIL_107",
+      "group_id": "RETAIL_107",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "창고로 간다",
+      "keywords": [
+        "창고로",
+        "간다",
+        "분쇄",
+        "갈기"
+      ],
+      "aliases": [],
+      "search_text": "retail 창고로 간다 grind 창고로 간다 분쇄 갈기",
+      "image": "retail/RETAIL_107.webp",
+      "source_file": "RETAIL_NEW_016.png",
+      "action": "grind",
+      "objects": []
+    },
+    {
+      "id": "RETAIL_108",
+      "group_id": "RETAIL_108",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "커터칼로 상자를 뜯는다",
+      "keywords": [
+        "박스",
+        "커터칼로",
+        "상자를",
+        "뜯는다"
+      ],
+      "aliases": [],
+      "search_text": "retail 커터칼로 상자를 뜯는다 other 박스 커터칼로 상자를 뜯는다",
+      "image": "retail/RETAIL_108.webp",
+      "source_file": "RETAIL_NEW_017.png",
+      "action": "other",
+      "objects": [
+        "박스"
+      ]
+    },
+    {
+      "id": "RETAIL_109",
+      "group_id": "RETAIL_109",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "매장 문을 잠근다",
+      "keywords": [
+        "매장",
+        "문을",
+        "잠근다"
+      ],
+      "aliases": [],
+      "search_text": "retail 매장 문을 잠근다 other 매장 문을 잠근다",
+      "image": "retail/RETAIL_109.webp",
+      "source_file": "RETAIL_NEW_018.png",
+      "action": "other",
+      "objects": [
+        "매장"
+      ]
+    },
+    {
+      "id": "RETAIL_110",
+      "group_id": "RETAIL_110",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "고객에게 거스름돈을 건넨다",
+      "keywords": [
+        "고객",
+        "손님",
+        "고객에게",
+        "거스름돈을",
+        "건넨다",
+        "건네기",
+        "전달"
+      ],
+      "aliases": [],
+      "search_text": "retail 고객에게 거스름돈을 건넨다 handover 고객 손님 고객에게 거스름돈을 건넨다 건네기 전달",
+      "image": "retail/RETAIL_110.webp",
+      "source_file": "RETAIL_NEW_019.png",
+      "action": "handover",
+      "objects": [
+        "고객",
+        "손님"
+      ]
+    },
+    {
+      "id": "RETAIL_111",
+      "group_id": "RETAIL_111",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "상품에 할인 스티커를 붙인다",
+      "keywords": [
+        "라벨",
+        "상품",
+        "제품",
+        "물건",
+        "상품에",
+        "할인",
+        "스티커를",
+        "붙인다",
+        "붙이기",
+        "부착"
+      ],
+      "aliases": [
+        "제품에 할인 스티커를 붙인다"
+      ],
+      "search_text": "retail 상품에 할인 스티커를 붙인다 attach 라벨 상품 제품 물건 상품에 할인 스티커를 붙인다 붙이기 부착 제품에 할인 스티커를 붙인다",
+      "image": "retail/RETAIL_111.webp",
+      "source_file": "RETAIL_NEW_020.png",
+      "action": "attach",
+      "objects": [
+        "라벨",
+        "상품"
+      ]
+    },
+    {
+      "id": "RETAIL_112",
+      "group_id": "RETAIL_112",
+      "job": "retail",
+      "asset_type": "action",
+      "variant": null,
+      "label": "조끼를 입는다",
+      "keywords": [
+        "조끼를",
+        "입는다"
+      ],
+      "aliases": [],
+      "search_text": "retail 조끼를 입는다 other 조끼를 입는다",
+      "image": "retail/RETAIL_112.webp",
+      "source_file": "RETAIL_NEW_021.png",
+      "action": "other",
+      "objects": []
     }
   ]
 }
