@@ -385,3 +385,23 @@ def test_gpt_wrong_polite_form_is_fixed_or_flagged(monkeypatch):
     _gpt(monkeypatch, [_step("천천히 걸어세요.", "걷다")])
     steps = run("천천히 걸으세요.", {}).steps
     assert steps[0].split_check is True
+
+
+def test_split_hint_ignores_noun_endings_but_sees_two_actions():
+    # 편집기 저장 때 GPT를 부를지 정하는 규칙 판정(LLM 없음).
+    for text in ("냉장고 문을 닫으세요", "계산대 위를 닦으세요", "덮개 안쪽을 닦으세요", "창고 선반을 정리하세요",
+                 "매장 바닥을 쓸어 주세요", "컵을 깨끗이 닦으세요"):
+        assert decompose.may_split(text)["may_split"] is False, text
+    for text in ("컵을 씻고 선반에 올리세요", "컵을 씻어서 건조대에 올리세요", "창고 정리를 하고 퇴근하세요",
+                 "물을 끓인 뒤 티백을 넣으세요", "컵을 씻으세요. 접시를 닦으세요"):
+        assert decompose.may_split(text)["may_split"] is True, text
+
+
+def test_split_hint_endpoint(monkeypatch):
+    from fastapi.testclient import TestClient
+    import main
+    monkeypatch.setattr(llm, "llm_available", lambda: False)
+    with TestClient(main.app) as c:
+        r = c.post("/ai/split-hint", json={"sentence": "냉장고 문을 닫으세요"})
+        assert r.status_code == 200 and r.json() == {"may_split": False, "actions": 1}
+        assert c.post("/ai/split-hint", json={"sentence": "컵을 씻고 선반에 올리세요"}).json()["may_split"] is True

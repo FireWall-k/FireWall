@@ -388,3 +388,66 @@ def test_confirmed_steps_total_length_is_capped(client, employer_token):
     r = client.post("/api/tasks", headers=auth(employer_token), json={
         "raw_input": "긴 직무", "steps": [{"sentence": "가" * 400} for _ in range(n)]})
     assert r.status_code == 422
+
+
+# ---- 2차 검증 회귀 ------------------------------------------------------------------------------
+
+def test_edited_confirmed_row_is_classified_not_saved_as_other(client, employer_token, monkeypatch):
+    # 고친 줄은 {sentence}만 온다 → 규칙 분류기로 매긴다. 미리보기 값을 보낸 줄은 그대로 쓴다.
+    seen = []
+
+    def classify(sentence):
+        seen.append(sentence)
+        return "clean" if "쓸" in sentence or "닦" in sentence else "other"
+    monkeypatch.setattr(ai_client, "classify_action", classify)
+    r = client.post("/api/tasks", headers=auth(employer_token), json={
+        "raw_input": "바닥을 쓸고 컵을 옮겨요", "steps": [
+            {"sentence": "바닥을 쓸어 주세요"},
+            {"sentence": "컵을 옮겨요", "action_type": "move", "symbol_query": ["컵"]}]})
+    assert r.status_code == 201, r.text
+    assert [s["action_type"] for s in r.json()["steps"]] == ["clean", "move"]
+    assert seen == ["바닥을 쓸어 주세요"]
+
+
+def test_validation_errors_are_korean_sentences(client, employer_token):
+    r = client.post("/api/tasks", headers=auth(employer_token), json={
+        "raw_input": "많은 줄", "steps": [{"sentence": f"컵 {i}번을 씻어요"} for i in range(31)]})
+    assert r.status_code == 422
+    assert isinstance(r.json()["detail"], str) and "30줄" in r.json()["detail"]
+    r = client.post("/api/tasks", headers=auth(employer_token), json={
+        "raw_input": "긴 줄", "steps": [{"sentence": "가" * 501}]})
+    assert r.status_code == 422 and "500자" in r.json()["detail"]
+    r = client.post("/api/tasks", headers=auth(employer_token), json={"raw_input": "   "})
+    assert r.status_code == 422 and r.json()["detail"] == "직무 내용을 입력해 주세요."
+
+
+def test_split_preview_over_step_cap_is_refused_in_korean(client, employer_token, monkeypatch):
+    def many(raw_input, context=None, **kw):
+        return {"task_title": "t", "steps": [{"order": i, "sentence": f"컵 {i}번을 씻으세요."} for i in range(40)]}
+    monkeypatch.setattr(ai_client, "decompose", many)
+    r = client.post("/api/tasks/split-preview", headers=auth(employer_token), json={"raw_input": "컵 씻기 " * 40})
+    assert r.status_code == 422
+    assert "30단계" in r.json()["detail"]
+
+
+def test_editor_save_asks_rule_hint_before_gpt(client, employer_token, monkeypatch):
+    # 규칙 동작 세기가 '하나'라 하면 겉모양('냉장고'의 '고')과 상관없이 GPT를 부르지 않는다.
+    task = _make_task(client, employer_token, ["문을 닫아요."])
+    sid = task["steps"][0]["id"]
+    calls, hints = [], []
+
+    def spy(raw_input, context=None, **kw):
+        calls.append(raw_input)
+        return _two_actions(raw_input)
+    monkeypatch.setattr(ai_client, "decompose", spy)
+    monkeypatch.setattr(ai_client, "split_hint", lambda s: hints.append(s) or False)
+    for sentence in ("냉장고 문을 닫으세요", "계산대 위를 닦으세요", "덮개 안쪽을 닦으세요"):
+        r = client.post(f"/api/tasks/{task['id']}/steps/{sid}/rewrite", headers=auth(employer_token),
+                        json={"sentence": sentence})
+        assert r.status_code == 200 and r.json()["split_step_ids"] == []
+    assert calls == [] and len(hints) == 3
+    # 규칙이 '둘일 수 있다'고 하면 부른다.
+    monkeypatch.setattr(ai_client, "split_hint", lambda s: True)
+    r = client.post(f"/api/tasks/{task['id']}/steps/{sid}/rewrite", headers=auth(employer_token),
+                    json={"sentence": "컵을 씻어서 건조대에 올려요"})
+    assert calls and len(r.json()["split_step_ids"]) == 2

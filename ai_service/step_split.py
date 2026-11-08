@@ -299,6 +299,8 @@ class SplitOutcome:
     hidden_lemmas: frozenset[str] = frozenset()
     # 사전에 없는 동사가 '-(으)ㄴ 뒤/후/다음' 앞에 있다("물을 끓인 뒤 …") — 동작일 수 있는데 세지 못했다.
     unparsed_verbs: int = 0
+    # 형식 동사 '하다'의 연결형·조건에 묶인 연결형처럼 동작일 수 있는데 세지 않은 어절 수(_Sentence.unseen_verbs).
+    unseen_verbs: int = 0
 
 
 @lru_cache(maxsize=1)
@@ -1229,25 +1231,26 @@ def split_clause(text: str, question: bool = False) -> SplitOutcome:
     acts = _counted(s, all_acts, sure)
     # 갈라 담기(_sorts_into)로 세지 않은 동사는 확실한 쪽이라 hidden에 넣지 않는다.
     unparsed = s.unparsed_adnominals()
+    unseen = s.unseen_verbs()
     hidden = (len(all_acts) - len(acts) - len(sure) + sum(1 for a in all_acts if a.compound)
-              + s.unseen_verbs() + unparsed)
+              + unseen + unparsed)
     hidden_lemmas = frozenset(lm for a in all_acts if a not in acts and a not in sure and a.boundary in ("go", "seo")
                               for lm in a.lemmas)
     soft = any(a.lemmas & BARE_MOTION for a in acts[:-1]) or any(s.quoted) or any(
         q in original for q in _QUOTE_CHARS)
     if len(acts) < 2:
-        return SplitOutcome(steps=[original], actions=len(acts), hidden_verbs=hidden, unparsed_verbs=unparsed,
+        return SplitOutcome(steps=[original], actions=len(acts), hidden_verbs=hidden, unparsed_verbs=unparsed, unseen_verbs=unseen,
                             hidden_lemmas=hidden_lemmas,
                             list_object=_has_list_object(s), sorted_into=bool(sure), with_joined=s.with_joined)
     if has_negation(original, an):
         return SplitOutcome(steps=[original], suggestion=None, reason="negation", actions=len(acts),
-                            why_not=["negation"], hidden_verbs=hidden, unparsed_verbs=unparsed,
+                            why_not=["negation"], hidden_verbs=hidden, unparsed_verbs=unparsed, unseen_verbs=unseen,
                             hidden_lemmas=hidden_lemmas,
                             soft_boundary=soft)
     # 세지 않은 동작(방법·사건·사고)이 사이에 있으면 절 경계가 어긋나므로 문장을 만들지 않는다(힌트만).
     if len(all_acts) != len(acts):
         return SplitOutcome(steps=[original], suggestion=None, reason="multi_action", actions=len(acts),
-                            why_not=["uncounted_action"], hidden_verbs=hidden, unparsed_verbs=unparsed,
+                            why_not=["uncounted_action"], hidden_verbs=hidden, unparsed_verbs=unparsed, unseen_verbs=unseen,
                             hidden_lemmas=hidden_lemmas,
                             soft_boundary=soft)
     why = _auto_blockers(s, all_acts)
@@ -1256,7 +1259,7 @@ def split_clause(text: str, question: bool = False) -> SplitOutcome:
     pieces = _build(s, all_acts)
     if not why and pieces:
         return SplitOutcome(steps=pieces, auto=True, actions=len(acts), source=original, hidden_verbs=hidden,
-                            unparsed_verbs=unparsed,
+                            unparsed_verbs=unparsed, unseen_verbs=unseen,
                             hidden_lemmas=hidden_lemmas, soft_boundary=soft)
     draft_why = _first_verb_blockers(s, all_acts)
     suggestion = pieces if pieces and not draft_why else None
@@ -1266,7 +1269,7 @@ def split_clause(text: str, question: bool = False) -> SplitOutcome:
         suggestion, gaps = _fill_gaps(s, all_acts, suggestion, gaps)
     return SplitOutcome(steps=[original], suggestion=suggestion, reason="multi_action", actions=len(acts),
                         why_not=why or ["grammar"], suggestion_gaps=gaps or None, hidden_verbs=hidden,
-                        unparsed_verbs=unparsed,
+                        unparsed_verbs=unparsed, unseen_verbs=unseen,
                         hidden_lemmas=hidden_lemmas, soft_boundary=soft, comma_draft=comma_draft,
                         draft_blockers=draft_why)
 

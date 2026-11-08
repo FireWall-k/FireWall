@@ -118,6 +118,8 @@ def _patch_ai(monkeypatch):
     monkeypatch.setattr(ai_client, "decompose", _fake_decompose)
     monkeypatch.setattr(ai_client, "map_symbols", _fake_map_symbols)
     monkeypatch.setattr(ai_client, "classify_action", _fake_classify_action)
+    # 규칙 동작 세기(/ai/split-hint)는 기본 '답 없음' — 편집기 저장은 겉모양 검사로 대신한다.
+    monkeypatch.setattr(ai_client, "split_hint", lambda sentence: None)
     monkeypatch.setattr(
         ai_client,
         "search_aac",

@@ -10,6 +10,9 @@ MAX_RAW_INPUT = 2000
 # 입력 화면에서 확인한 단계 문장 합계의 상한. 단계마다 그림 검색(임베딩 API)·음성 합성을 하므로 원문 상한과 같은
 # 이유로 막는다. 사업주가 줄을 고치거나 더하면 원문보다 조금 길어질 수 있어 여유를 둔다.
 MAX_CONFIRMED_TOTAL = MAX_RAW_INPUT + 500
+# 입력 화면에서 확인한 단계 줄 수·한 줄 글자 수의 상한(프런트 SplitPreviewList도 같은 값으로 미리 막는다).
+MAX_CONFIRMED_STEPS = 30
+MAX_STEP_SENTENCE = 500
 
 
 # --- 인증 ---
@@ -34,8 +37,10 @@ class TokenOut(BaseModel):
 # --- 요청 ---
 class ConfirmedStep(BaseModel):
     """입력 화면에서 사업주가 확인한 단계 한 줄(한 줄 = 한 동작 = 그림 1장)."""
-    sentence: str = Field(min_length=1, max_length=500)
-    action_type: str = Field(default="other", max_length=20)
+    sentence: str = Field(min_length=1, max_length=MAX_STEP_SENTENCE)
+    # 미리보기가 준 동작 계열. 사업주가 고치거나 합치거나 새로 쓴 줄은 보내지 않는다(None) — 서버가 규칙 분류기로
+    # 다시 매긴다(2차 검증: 'other'로 저장돼 근로자 화면 동작 꼬리표가 숨고 그림 검색이 동작 맥락을 못 썼다).
+    action_type: str | None = Field(default=None, max_length=20)
     # 나누기 미리보기가 준 그림 검색어. 사업주가 문장을 고치지 않은 줄만 그대로 돌려보낸다
     # (고친 줄은 비워 보내고, 서버가 문장에서 검색어를 다시 뽑는다).
     symbol_query: list[str] | None = Field(default=None, max_length=8)
@@ -69,7 +74,7 @@ class TaskCreate(BaseModel):
     worker_id: str | None = Field(default=None, max_length=64)
     # 입력 화면에서 확인한 단계 목록(POST /api/tasks/split-preview 결과를 사업주가 다듬은 것).
     # 있으면 다시 나누지 않고 이 문장들 그대로 그림·음성을 붙인다. 없으면 예전처럼 서버가 나눈다.
-    steps: list[ConfirmedStep] | None = Field(default=None, min_length=1, max_length=30)
+    steps: list[ConfirmedStep] | None = Field(default=None, min_length=1, max_length=MAX_CONFIRMED_STEPS)
     # 미리보기가 준 직무 제목·직무 추정값. steps와 함께 온다(없으면 기본값).
     title: str | None = Field(default=None, max_length=100)
     job: str | None = Field(default=None, max_length=50)

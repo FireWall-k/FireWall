@@ -75,6 +75,13 @@ class ClassifyActionResult(BaseModel):
     action_type: ActionType = "other"
 
 
+class SplitHintResult(BaseModel):
+    """편집기에서 고친 문장 하나에 동작이 둘 이상일 수 있는가(규칙 동작 세기만, LLM 없음).
+    백엔드가 저장할 때 GPT 분해를 부를지 먼저 묻는다."""
+    may_split: bool = False
+    actions: int = 1
+
+
 # --- /ai/map-symbols -------------------------------------------------------
 
 

@@ -686,6 +686,18 @@ def _reconcile(steps: list[Step], where: list[int], clauses: list[Clause]) -> li
     return out
 
 
+def may_split(sentence: str) -> dict:
+    """문장 하나에 동작이 둘 이상일 수 있는가(규칙만). 조각이 둘 이상이거나, 센 동작이 둘 이상이거나, 세지 않았지만
+    따로 하는 동작일 수 있는 동사(방법 동사 '-고/-어서'·사전에 없는 '-ㄴ 뒤' 동사·형식 동사·조건에 묶인 동사)가 있으면
+    True. 보조 용언 묶음("쓸어 주세요")만 있는 문장은 False다."""
+    clauses = clauses_of(sentence.strip())
+    actions = sum(max(1, c.plan.actions) for c in clauses) if clauses else 1
+    unsure = any(c.plan.hidden_lemmas or c.plan.unparsed_verbs or c.plan.unseen_verbs or c.plan.reason
+                 or c.plan.suggestion
+                 or c.cut_refused for c in clauses)
+    return {"may_split": len(clauses) >= 2 or actions >= 2 or bool(unsure), "actions": actions}
+
+
 def decompose(raw_input: str, context: dict) -> DecomposeResult:
     """원문을 단계 배열로 분해한다.
 

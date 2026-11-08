@@ -28,6 +28,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import unquote
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -105,6 +106,7 @@ from schemas import (
     WorkerWithCodeOut,
     WorkplaceOut,
 )
+from schemas import MAX_CONFIRMED_STEPS, MAX_RAW_INPUT, MAX_STEP_SENTENCE
 from ratelimit import client_ip, employer_throttle, ensure_not_blocked, take_ai_split_call, worker_throttle
 import maintenance
 import media
@@ -128,6 +130,35 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="JOB CARD - Backend", version="0.3.0", lifespan=lifespan)
+
+
+def _validation_message(errors: list) -> str:
+    """요청 검증 실패(422)를 화면에 그대로 띄울 한국어 한 문장으로. FastAPI 기본값은 detail이 목록이라
+    프런트 오류 칸에 '[object Object]'가 떴다(입력 화면 나누기 2차 검증)."""
+    for err in errors:
+        loc = [str(x) for x in err.get("loc") or []]
+        kind = str(err.get("type") or "")
+        if kind == "value_error":
+            msg = str(err.get("msg") or "")
+            return msg.removeprefix("Value error, ").strip() or "입력한 내용을 다시 확인해 주세요."
+        if "steps" in loc and loc[-1] == "steps" and kind == "too_long":
+            return f"단계는 {MAX_CONFIRMED_STEPS}줄까지 만들 수 있어요. 줄을 합치거나 지워 주세요."
+        if "steps" in loc and loc[-1] == "steps" and kind == "too_short":
+            return "단계가 한 줄 이상 있어야 해요."
+        if loc and loc[-1] == "sentence" and kind == "string_too_long":
+            return f"한 줄은 {MAX_STEP_SENTENCE}자까지 쓸 수 있어요. 줄을 나눠 주세요."
+        if loc and loc[-1] == "sentence" and kind == "string_too_short":
+            return "빈 단계 문장이 있습니다."
+        if loc and loc[-1] == "raw_input" and kind == "string_too_long":
+            return f"직무 내용은 {MAX_RAW_INPUT}자까지 쓸 수 있어요."
+        if loc and loc[-1] == "raw_input" and kind in ("string_too_short", "missing"):
+            return "직무 내용을 입력해 주세요."
+    return "입력한 내용을 다시 확인해 주세요."
+
+
+@app.exception_handler(RequestValidationError)
+async def _korean_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
+    return JSONResponse(status_code=422, content={"detail": _validation_message(exc.errors())})
 
 # 정적 파일의 Content-Type은 운영체제 MIME 표를 따른다. python:3.12-slim 이미지에는 .webp가 없어
 # AAC 그림이 text/plain으로 나갔다(Windows 개발 환경에서는 레지스트리 덕에 정상이라 몰랐다).
@@ -898,6 +929,11 @@ def split_preview(payload: TaskCreate, db: Session = Depends(get_db),
             symbol_query=[masker.unmask(t) for t in _step_terms(step)][:8],
             **_split_fields(step, masker),
         ))
+    if len(steps) > MAX_CONFIRMED_STEPS:
+        # 확인하면 반드시 실패하는 목록을 보여 주지 않는다(GPT가 안 될 때 쓰는 규칙 경로는 단계 수를 자르지 않는다).
+        raise HTTPException(status_code=422, detail=(
+            f"단계가 {len(steps)}개로 나뉘었어요. 한 직무는 {MAX_CONFIRMED_STEPS}단계까지예요. "
+            "직무를 둘로 나눠 입력해 주세요."))
     return SplitPreviewOut(task_title=masker.unmask(str(decomposed.get("task_title") or "직무")),
                            job=str(decomposed.get("job") or "").strip(), steps=steps)
 
@@ -918,7 +954,8 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
                 {
                     "order": i,
                     "sentence": masker.mask(cs.sentence),
-                    "action_type": cs.action_type or "other",
+                    # 보내지 않은 줄(고친·합친·새 줄)은 규칙 분류기로 매긴다(LLM 없음). 실패하면 other.
+                    "action_type": cs.action_type or ai_client.classify_action(masker.mask(cs.sentence)),
                     "symbol_query": masker.mask_obj(
                         cs.symbol_query or re.findall(r"[가-힣A-Za-z]+", cs.sentence)[:4]),
                 }
@@ -1176,14 +1213,19 @@ def _detect_split(db: Session, task: Task, employer_id: str, sentence: str) -> l
     - AI가 '애매하다'(split_check)고 한 줄이 하나라도 있으면 나누지 않는다. GPT는 한 동작 문장도 나누는
       경향이 있어(개발셋 한 단계 문장 92개 중 30개), 확실한 것만 저장하는 순간 나눈다. 틀려도 [되돌리기]가 있다.
     - AI 하네스 장애·시간 초과(_SPLIT_CHECK_TIMEOUT)면 나누지 않고 그대로 저장한다(편집을 막지 않는다).
-    - 겉모양으로 동작이 하나뿐인 문장(_may_have_two_actions)은 AI를 부르지 않는다 — 오타 고치기마다 GPT를 부르면
-      저장이 느리고 비용이 든다. 사업주별 호출 한도(ratelimit.ai_split_throttle)를 넘어도 부르지 않는다.
+    - 동작이 하나뿐인 문장은 AI 분해(GPT)를 부르지 않는다 — 오타 고치기마다 GPT를 부르면 저장이 느리고 비용이
+      든다. 먼저 AI 하네스의 규칙 동작 세기(/ai/split-hint, LLM 없음)에 묻고, 하네스가 답하지 못하면 겉모양 검사
+      (_may_have_two_actions)로 대신한다. 겉모양 검사만 쓰면 '냉장고 문을 닫으세요'처럼 명사 끝 글자에도 걸렸다(2차 검증).
+      사업주별 호출 한도(ratelimit.ai_split_throttle)를 넘어도 부르지 않는다.
     - 근로자 특성 메모는 보내지 않는다. 문장·맥락의 근로자 실명은 별칭으로 바꿔 보낸다.
     """
-    if not _may_have_two_actions(sentence) or not take_ai_split_call(employer_id):
-        return []
     masker = employer_pseudonymizer(db, employer_id)
     masked = masker.mask(sentence)
+    hint = ai_client.split_hint(masked)
+    if hint is None:
+        hint = _may_have_two_actions(sentence)
+    if not hint or not take_ai_split_call(employer_id):
+        return []
     context = {
         "business_type": masker.mask(task.business_type or ""),
         "work_environment": masker.mask(task.work_environment or ""),
