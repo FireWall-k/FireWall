@@ -182,6 +182,20 @@ def test_one_search_per_case(monkeypatch):
     assert len(calls) == 1
 
 
+def test_action_source_guess_uses_rule_decompose_classifier(monkeypatch):
+    """--action-source guess는 케이스 정답 계열 대신 decompose._guess_action 값을 넣는다 — 동작 분류기를 바꿨을 때
+    그림 매칭에 미치는 영향을 표준 하네스로 재현하려고(label로 돌리면 분류기 변경이 결과에 전혀 안 보인다)."""
+    import decompose
+
+    monkeypatch.setattr(decompose, "_guess_action", lambda sentence: "assemble")
+    case = _load("golden")["cases"][0]
+    label = run(only_case=case["id"], dataset=DATASET_PATH, embedding="off")
+    guess = run(only_case=case["id"], dataset=DATASET_PATH, embedding="off", action_source="guess")
+    assert label["action_source"] == "label" and guess["action_source"] == "guess"
+    assert label["cases"][0]["action_type"] == case.get("action_type", "other")
+    assert guess["cases"][0]["action_type"] == "assemble"
+
+
 # --- 임베딩 모드 ---------------------------------------------------------------
 
 def _row(embedding: bool) -> dict:

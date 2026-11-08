@@ -35,6 +35,20 @@ def decompose(raw_input: str, context: dict | None = None) -> dict:
     return resp.json()
 
 
+def classify_action(sentence: str) -> str:
+    """단계 문장 -> 동작 계열(action_type). AI 하네스가 죽어 있거나 실패하면 'other'(꼬리표 숨김·그림 벌점 없음).
+
+    하네스는 규칙 분류만 한다(LLM·외부 API 호출 없음).
+    """
+    try:
+        resp = _http.post(f"{AI_BASE_URL}/ai/classify-action", json={"sentence": sentence})
+        resp.raise_for_status()
+        return str(resp.json().get("action_type") or "other")
+    except Exception as e:  # noqa: BLE001
+        logger.warning("classify_action fallback: %s", e)
+        return "other"
+
+
 def map_symbols(keywords: list[str], context: dict | None = None) -> dict:
     """키워드 -> {symbols[]}. 실패하면 모두 폴백으로 처리한 결과를 돌려준다."""
     try:

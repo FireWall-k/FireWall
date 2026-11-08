@@ -64,6 +64,14 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // wide: 가로로 넓은 화면(가로 태블릿·노트북). 근로자 단계 화면은 여기서 그림·문장을 왼쪽, 버튼을 오른쪽에
+    // 둬 그림이 화면 높이를 다 쓰게 한다(세로로 쌓으면 1024×768에서 그림이 가로의 26%뿐이었다).
+    // theme.screens에 raw 값으로 넣으면 Tailwind가 max-sm: 같은 max-* 변형을 만들지 않아(근로자 머리글이 쓴다)
+    // 변형으로 따로 더한다.
+    ({ addVariant }) => {
+      addVariant("wide", "@media (orientation: landscape) and (min-width: 768px)");
+    },
+  ],
 }
 
