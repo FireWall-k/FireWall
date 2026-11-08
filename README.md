@@ -44,12 +44,14 @@ FireWall/
 │   ├── ai_client.py        백엔드↔AI 하네스 경계
 │   └── schemas.py          프론트 대면 입출력 스키마
 ├── frontend/          React + TS + Vite (5173)
-│   └── src/pages/
-│       ├── LoginPage.tsx      사업주/근로자 로그인
-│       ├── ManagerPage.tsx    직무 생성·검토·게시
-│       ├── WorkersPage.tsx    근로자 관리
-│       ├── WorkerPage.tsx     근로자 오늘 할 일 카드
-│       └── DashboardPage.tsx  완료율/소요/막힘/AI 코칭 대시보드
+│   └── src/
+│       ├── pages/
+│       │   ├── LoginPage.tsx      사업주/근로자 로그인
+│       │   ├── ManagerPage.tsx    직무 생성·검토·게시
+│       │   ├── WorkersPage.tsx    근로자 관리
+│       │   └── DashboardPage.tsx  완료율/소요/막힘/AI 코칭 대시보드
+│       └── worker/
+│           └── WorkerApp.tsx      근로자 화면(/w: 번호 키패드·오늘·단계·완료·했던 일, 옛 /worker는 /w로)
 ├── data/aac/           프로젝트 소유 AAC 이미지·메타데이터(1,049장, 9개 직무)
 └── scripts/            자산 등록·메타데이터 보강·인덱스/임베딩 생성 스크립트
 ```
