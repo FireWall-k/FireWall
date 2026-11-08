@@ -61,8 +61,9 @@ describe("근로자 화면 접근성 Tailwind 클래스가 실제 CSS로 생성�
     expect(css).toContain(".max-sm\\:hidden{display:none");
   });
 
-  it("그림 바닥 min(10rem, 20dvh)와 좁은 칸에서 버튼을 쌓는 컨테이너 쿼리", () => {
+  it("그림 바닥 min(10rem, 20dvh)·맞추기 3단계 바닥 min(8rem, 15dvh)와 아주 좁은 칸에서만 버튼을 쌓는 컨테이너 쿼리", () => {
     expect(css).toContain("min-height:min(10rem,20dvh)");
-    expect(css).toContain("@container(min-width:19rem){");
+    expect(css).toContain("min-height:min(8rem,15dvh)");
+    expect(css).toContain("@container(min-width:16rem){");
   });
 });

@@ -56,6 +56,17 @@ class DecomposeResult(BaseModel):
     steps: list[Step]
 
 
+# --- /ai/classify-action ---------------------------------------------------
+
+class ClassifyActionRequest(BaseModel):
+    """사업주가 고친 단계 문장 하나. 규칙 분류만 하므로 LLM·외부 API로 나가지 않는다."""
+    sentence: str = Field(max_length=500)
+
+
+class ClassifyActionResult(BaseModel):
+    action_type: ActionType = "other"
+
+
 # --- /ai/map-symbols -------------------------------------------------------
 
 

@@ -159,3 +159,39 @@ def test_push_with_cleaning_tool_is_clean():
     assert _action("청소기를 돌리세요") == "clean"
     # 도구가 없으면 그대로 옮기기다.
     assert _action("카트를 밀어 주세요") == "move"
+
+
+# ---- /ai/classify-action — 사업주가 문장을 고치면 백엔드가 이것으로 계열을 다시 매긴다 ----
+
+def test_classify_action_endpoint_uses_same_rule_as_decompose(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    import llm
+    import main as ai_main
+
+    # 규칙 분류만 한다 — LLM을 부르면 실패하게 해 둔다(비용·해외 전송 없음).
+    def _no_llm(*a, **kw):
+        raise AssertionError("classify-action은 LLM을 부르지 않는다")
+
+    monkeypatch.setattr(llm, "chat_json", _no_llm, raising=False)
+    client = TestClient(ai_main.app)
+    for sentence, expected in [
+        ("박스 바닥 덮개를 접으세요", "pack"),
+        ("밀대로 바닥을 닦으세요", "clean"),
+        ("상자 수량을 확인하세요", "observe"),
+        ("손을 씻고 위생 장갑을 끼세요", "other"),  # 동작이 둘이면 other(꼬리표 숨김)
+        ("상자를 접어 테이프를 붙이세요", "other"),
+    ]:
+        r = client.post("/ai/classify-action", json={"sentence": sentence})
+        assert r.status_code == 200, r.text
+        assert r.json()["action_type"] == expected, sentence
+        assert r.json()["action_type"] == _action(sentence)
+
+
+def test_classify_action_rejects_overlong_sentence():
+    from fastapi.testclient import TestClient
+
+    import main as ai_main
+
+    r = TestClient(ai_main.app).post("/ai/classify-action", json={"sentence": "가" * 501})
+    assert r.status_code == 422

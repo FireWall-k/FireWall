@@ -61,22 +61,22 @@ describe("WorkerPage stuck 수집", () => {
 
   it("'도움이 필요해요'를 누르면 즉시 stuck=true 로 보고된다(대시보드에 바로 반영)", async () => {
     await renderAndWait();
-    fireEvent.click(screen.getByText("🙋 도움이 필요해요"));
+    fireEvent.click(screen.getByRole("button", { name: "🙋 도움이 필요해요" }));
     await waitFor(() => expect(logStep).toHaveBeenCalledTimes(1));
     expect(logStep.mock.calls[0][0]).toMatchObject({ step_id: "s1", stuck: true });
   });
 
   it("'도움이 필요해요'만 눌러서는 다음 단계로 넘어가지 않는다(완료를 따로 눌러야 한다)", async () => {
     await renderAndWait();
-    fireEvent.click(screen.getByText("🙋 도움이 필요해요"));
+    fireEvent.click(screen.getByRole("button", { name: "🙋 도움이 필요해요" }));
     await waitFor(() => expect(logStep).toHaveBeenCalledTimes(1));
     expect(screen.getByText("상자를 옮기세요")).toBeInTheDocument();
-    expect(screen.getByText("🙋 요청했어요")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "🙋 요청했어요" })).toBeInTheDocument();
   });
 
   it("도움 요청 후 완료를 누르면 같은 단계가 한 번 더(최종 상태로) 보고되고 다음 단계로 넘어간다", async () => {
     await renderAndWait();
-    fireEvent.click(screen.getByText("🙋 도움이 필요해요"));
+    fireEvent.click(screen.getByRole("button", { name: "🙋 도움이 필요해요" }));
     await waitFor(() => expect(logStep).toHaveBeenCalledTimes(1));
     fireEvent.click(screen.getByText("✓ 완료"));
     await waitFor(() => expect(logStep).toHaveBeenCalledTimes(2));
@@ -86,10 +86,10 @@ describe("WorkerPage stuck 수집", () => {
 
   it("도움 요청 후 다시 눌러도 중복 보고하지 않는다", async () => {
     await renderAndWait();
-    const help = screen.getByText("🙋 도움이 필요해요");
+    const help = screen.getByRole("button", { name: "🙋 도움이 필요해요" });
     fireEvent.click(help);
     await waitFor(() => expect(logStep).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByText("🙋 요청했어요"));
+    fireEvent.click(screen.getByRole("button", { name: "🙋 요청했어요" }));
     await new Promise((r) => setTimeout(r, 0));
     expect(logStep).toHaveBeenCalledTimes(1);
   });

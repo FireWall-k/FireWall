@@ -95,6 +95,33 @@ describe("stepActionChip — 근로자 화면 동작 꼬리표", () => {
     expect(stepActionChip("바닥을 닦으며 쓰레기를 치우세요")).toBeNull();
   });
 
+  // 3차 검증: 맨 '-어' 연결형(접어·벗어·올려·나눠)과 사전에 없는 동사의 연결형(뿌리고·묶어서)도 앞 동작이다.
+  it("맨 '-어' 연결형이나 사전에 없는 동사의 연결형 뒤 다른 동작이면 꼬리표를 숨긴다", () => {
+    for (const s of [
+      "상자를 접어 테이프를 붙이세요",
+      "조끼를 벗어 사물함에 넣어요",
+      "지퍼백을 저울에 올려 숫자를 보세요",
+      "공기 주입기를 타이어 꼭지에 끼워 바람을 넣어요",
+      "플라스틱과 캔을 따로 나눠 담아요",
+      "소독제를 뿌리고 닦아요",
+      "쓰레기봉투를 묶어서 밖에 버리세요",
+      "행주를 빨아서 걸레통에 넣으세요",
+      "손잡이를 잡으며 계단을 닦으세요",
+    ]) expect(stepActionChip(s), s).toBeNull();
+  });
+
+  it("한 동작인 합성 동사(바로 붙은 '채워 넣다' 등)와 '-고·-서'로 끝나는 명사는 그대로 꼬리표를 붙인다", () => {
+    expect(stepActionChip("빈 칸에 컵을 채워 넣으세요")?.label).toBe("넣기");
+    expect(stepActionChip("부품을 구멍에 끼워 넣으세요")?.label).toBe("넣기");
+    expect(stepActionChip("창고 선반을 닦으세요")?.label).toBe("닦기");
+    expect(stepActionChip("냉장고 문을 열어 보세요")?.label).toBe("열기");
+    expect(stepActionChip("주문서를 확인하세요")?.label).toBe("확인하기");
+    expect(stepActionChip("창고에서 상자를 꺼내세요")?.label).toBe("꺼내기");
+    expect(stepActionChip("순서대로 상자를 쌓으세요")?.label).toBe("쌓기");
+    expect(stepActionChip("컵을 선반에 올려 놓으세요")?.label).toBe("올리기");
+    expect(stepActionChip("트레이를 내려 놓으세요")?.label).toBe("내려놓기");
+  });
+
   it("같은 동작을 되풀이하는 문장은 그 동작 꼬리표를 붙인다", () => {
     expect(stepActionChip("포장된 상자를 카트에 놓으세요. 큰 상자는 아래쪽에, 작은 상자는 위쪽에 놓으세요")?.label)
       .toBe("놓기");
