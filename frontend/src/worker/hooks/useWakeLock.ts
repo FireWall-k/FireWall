@@ -15,6 +15,9 @@ interface WakeLockApi {
 
 let sentinel: Sentinel | null = null;
 let pending: Promise<void> | null = null;
+// 지금 꺼짐 방지를 원하는지. 요청이 아직 답을 받기 전에 화면을 떠나면(release) 답이 온 뒤 바로 놓는다 —
+// 예전에는 늦게 온 잠금을 아무도 놓지 않아 완료·홈 화면에서도 화면이 꺼지지 않았다(1차 검증).
+let wanted = false;
 
 function api(): WakeLockApi | null {
   if (typeof navigator === "undefined") return null;
@@ -26,12 +29,17 @@ function api(): WakeLockApi | null {
 export function acquireWakeLock(): Promise<void> {
   const wl = api();
   if (!wl) return Promise.resolve();
+  wanted = true;
   if (sentinel && !sentinel.released) return Promise.resolve();
   if (typeof document !== "undefined" && document.visibilityState === "hidden") return Promise.resolve();
   if (pending) return pending;
   pending = wl
     .request("screen")
     .then((s) => {
+      if (!wanted) {
+        s.release().catch(() => {});
+        return;
+      }
       sentinel = s;
       s.addEventListener?.("release", () => {
         if (sentinel === s) sentinel = null;
@@ -47,6 +55,7 @@ export function acquireWakeLock(): Promise<void> {
 }
 
 export function releaseWakeLock(): void {
+  wanted = false;
   const s = sentinel;
   sentinel = null;
   s?.release().catch(() => {});

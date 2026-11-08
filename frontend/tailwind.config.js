@@ -86,6 +86,8 @@ export default {
         touch: "80px",
         // 주 행동([다 했어요]·[시작하기]) 88px.
         "touch-lg": "88px",
+        // 작은 기기 위 띠(버튼 없는 띠만 이 높이까지 줄어든다).
+        "worker-top-sm": "72px",
       },
       minWidth: {
         // 아이콘만 있는 정사각형 버튼도 같은 터치 영역을 갖도록 짝을 맞춰 둔다.
@@ -151,6 +153,9 @@ export default {
       // tablet: 폭 768 이상이고 높이도 넉넉한 화면(태블릿 세로·가로). 휴대폰 가로(844×390)는 폭만 넓어 md:로는
       // 태블릿과 구분되지 않는다 — 높이 조건을 붙인다. small과는 겹치지 않는다(높이 700 이상).
       addVariant("tablet", "@media (min-width: 768px) and (min-height: 700px)");
+      // land: 가로로 눕힌 휴대폰(844×390 등). 높이가 낮아 세로로 쌓으면 넘친다 — 번호 넣기는 제목·칸을 왼쪽,
+      // 키패드를 오른쪽에 둔다.
+      addVariant("land", "@media (orientation: landscape) and (max-height: 620px)");
       // 근로자 화면 설정(a11y_prefs). WorkerApp이 루트에 data 속성을 붙인다.
       addVariant("hc", '[data-contrast="high"] &');
       addVariant("lefty", '[data-hand="left"] &');

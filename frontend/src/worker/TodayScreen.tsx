@@ -55,7 +55,8 @@ export default function TodayScreen() {
       testId="today-screen"
       top={
         <TopBar
-          left={<h1 className="truncate text-worker font-bold">{COPY.home.greeting(me.display_name)}</h1>}
+          // 좁은 휴대폰에서 인사가 "안녕하..."로 잘리지 않게 두 줄까지(낱말 단위로 넘김), 작은 기기는 20px.
+          left={<h1 className="line-clamp-2 text-worker font-bold leading-snug small:text-worker-caption small:font-bold">{COPY.home.greeting(me.display_name)}</h1>}
           center={offlineMark ? <OfflineMark /> : undefined}
           right={
             <SecondaryAction icon={IconEnd} onPress={() => setConfirmEnd(true)} className="!gap-2 !px-3 !text-worker-caption">

@@ -24,7 +24,8 @@ function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
     stepId: step?.id ?? null,
     initial: job.active_help,
   });
-  useWakeLock(true);
+  // 단계를 실제로 보일 때만 켠다. 이미 끝난 일의 단계 주소로 오면 곧바로 완료 화면으로 가므로 켜지 않는다.
+  useWakeLock(index != null && String(index + 1) === n);
 
   const base = `/w/job/${job.assignment_id}`;
   const onDone = useCallback(

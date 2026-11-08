@@ -90,6 +90,8 @@ function baseSentencePx(tablet: boolean, wide: boolean, large: boolean): number 
 }
 
 const FIT_MAX = 2;
+/** 문장 글자 바닥(명세 4.0·4.4-D: 32 → 28 → 24, 그다음은 가운데 스크롤). 가로 휴대폰은 28에서 시작해 24에서 멈춘다. */
+const SENTENCE_MIN_PX = 24;
 
 /**
  * 넘침 규칙 2번: 문장이 2줄을 넘거나 가운데가 넘치면 글자를 4px씩 두 번까지 줄인다(32 → 28 → 24).
@@ -112,16 +114,39 @@ function useSentenceFit(stepId: string, basePx: number, layoutKey: string) {
   }, []);
 
   useLayoutEffect(() => {
-    if (level >= FIT_MAX) return;
+    // 바닥(24px)에 닿으면 더 줄이지 않는다. 예전에는 가로 휴대폰(28)에서 두 번 줄여 20px이 됐다(1차 검증).
+    if (level >= FIT_MAX || basePx - level * 4 <= SENTENCE_MIN_PX) return;
     const h1 = h1Ref.current;
     if (!h1) return;
     const lh = parseFloat(getComputedStyle(h1).lineHeight);
     const lines = lh > 0 ? Math.round(h1.getBoundingClientRect().height / lh) : 1;
     const over = (el: HTMLElement | null) => !!el && el.clientHeight > 0 && el.scrollHeight > el.clientHeight + 1;
     if (lines > 2 || over(scrollRef.current) || over(cellRef.current)) setFit({ key, level: level + 1 });
-  }, [key, level]);
+  }, [key, level, basePx]);
 
-  return { h1Ref, scrollRef, cellRef, px: basePx - level * 4, level };
+  return { h1Ref, scrollRef, cellRef, px: Math.max(SENTENCE_MIN_PX, basePx - level * 4), level };
+}
+
+/**
+ * 가로 화면의 문장 칸은 따로 스크롤한다(글자 바닥 24px 아래로 줄이지 않으므로). 아래에 더 있으면 칸 아래쪽을
+ * 흐리게 해서 "더 있다"를 보인다(1차 검증: 844×390 도움 띠가 있을 때 마지막 줄이 말없이 잘려 보였다).
+ */
+function useMoreBelow(ref: { current: HTMLElement | null }, key: string): boolean {
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setMore(el.scrollHeight - el.scrollTop - el.clientHeight > 2);
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
+    ro?.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro?.disconnect();
+    };
+  }, [ref, key]);
+  return more;
 }
 
 // --- 그림 ---
@@ -232,6 +257,7 @@ export function StepPlayer({
   const tablet = useMedia(TABLET_QUERY);
   const wide = useMedia(WIDE_QUERY);
   const { h1Ref, scrollRef, cellRef, px: sentencePx, level: fitLevel } = useSentenceFit(step?.id ?? "", baseSentencePx(tablet, wide, prefs.font_size === "large"), layoutKey);
+  const captionMore = useMoreBelow(cellRef, `${step?.id ?? ""}|${sentencePx}|${layoutKey}|${wide}`);
   const audio = useStepAudio(step ?? null, {
     autoplay: live && prefs.autoplay_sound,
     rate: prefs.tts_rate,
@@ -347,9 +373,12 @@ export function StepPlayer({
           <figcaption
             key={`text-${step.id}`}
             ref={cellRef}
+            data-more={captionMore ? "true" : undefined}
+            data-testid="step-caption"
             className={cn(
               "flex shrink-0 flex-col gap-1 pb-2 pt-3",
               "wide:col-start-2 wide:row-start-4 wide:min-h-0 wide:overflow-y-auto wide:pr-4 wide:pt-2 tablet:wide:pr-8",
+              "wide:data-[more=true]:[mask-image:linear-gradient(to_bottom,#000_calc(100%_-_2rem),transparent)]",
               "animate-step-in motion-reduce:animate-none",
             )}
           >

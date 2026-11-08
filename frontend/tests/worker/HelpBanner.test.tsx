@@ -3,7 +3,7 @@ import { act, fireEvent, render, renderHook, screen } from "@testing-library/rea
 import type { HelpOut } from "../../src/api";
 import { NetworkError } from "../../src/apiErrors";
 import { HelpBanner, HelpButton } from "../../src/worker/Help";
-import { HELP_ACK_CLOSE_MS, HELP_POLL_MS, useHelp, type HelpPhase } from "../../src/worker/hooks/useHelp";
+import { HELP_ACK_CLOSE_MS, HELP_POLL_MS, HELP_SEND_TIMEOUT_MS, useHelp, type HelpPhase } from "../../src/worker/hooks/useHelp";
 
 // 도움 띠 4상태(명세 4.5 + 창업자 결정 8)와 도움 요청 흐름(contract §7).
 afterEach(() => {
@@ -83,7 +83,7 @@ describe("useHelp", () => {
     expect(result.current.phase).toBe("sending");
     await act(async () => {});
     expect(result.current.phase).toBe("sent");
-    expect(api.createHelp).toHaveBeenCalledWith(expect.objectContaining({ assignment_id: "a1", step_id: "s1" }));
+    expect(api.createHelp).toHaveBeenCalledWith(expect.objectContaining({ assignment_id: "a1", step_id: "s1" }), expect.any(AbortSignal));
     expect(typeof api.createHelp.mock.calls[0][0].client_request_id).toBe("string");
   });
 
@@ -161,6 +161,66 @@ describe("useHelp", () => {
     );
     expect(result.current.phase).toBe("sent");
     act(() => result.current.cancel());
+    expect(api.cancelHelp).toHaveBeenCalledWith("h1");
+  });
+
+  // --- 1차 검증 반영 ---
+  it("답이 없으면 8초 뒤 끊고 '아직 못 불렀어요', [다시 부르기]는 같은 client_request_id", async () => {
+    vi.useFakeTimers();
+    const hang = vi.fn((_body: unknown, signal?: AbortSignal) =>
+      new Promise<HelpOut>((_resolve, reject) => {
+        signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+      }));
+    const api = fakeApi({ createHelp: hang });
+    const { result } = renderHook(() => useHelp({ assignmentId: "a1", stepId: "s1", api }));
+    act(() => result.current.request());
+    expect(result.current.phase).toBe("sending");
+    expect(hang.mock.calls[0][1]).toBeInstanceOf(AbortSignal);
+    await act(async () => {
+      vi.advanceTimersByTime(HELP_SEND_TIMEOUT_MS);
+    });
+    expect(result.current.phase).toBe("failed");
+    hang.mockImplementation(() => Promise.resolve(help("open")));
+    act(() => result.current.request());
+    await act(async () => {});
+    expect(result.current.phase).toBe("sent");
+    const ids = hang.mock.calls.map((c) => (c[0] as { client_request_id: string }).client_request_id);
+    expect(ids[0]).toBe(ids[1]);
+  });
+
+  it("성공한 뒤 새로 부르면 새 client_request_id(다른 누름)", async () => {
+    const api = fakeApi();
+    const { result } = renderHook(() => useHelp({ assignmentId: "a1", stepId: "s1", api }));
+    act(() => result.current.request());
+    await act(async () => {});
+    act(() => result.current.cancel());
+    act(() => result.current.request());
+    await act(async () => {});
+    const ids = api.createHelp.mock.calls.map((c) => c[0].client_request_id);
+    expect(ids[0]).not.toBe(ids[1]);
+  });
+
+  it("[다 했어요]는 '아직 못 불렀어요'도 닫는다(다음 단계에 남지 않게)", async () => {
+    const api = fakeApi({ createHelp: vi.fn().mockRejectedValue(new NetworkError()) });
+    const { result } = renderHook(() => useHelp({ assignmentId: "a1", stepId: "s1", api }));
+    act(() => result.current.request());
+    await act(async () => {});
+    expect(result.current.phase).toBe("failed");
+    act(() => result.current.markStepDone());
+    expect(result.current.phase).toBe("idle");
+  });
+
+  it("보내는 중에 [다 했어요]를 누르면, 늦게 닿은 요청은 답이 오자마자 취소한다", async () => {
+    let resolve!: (h: HelpOut) => void;
+    const api = fakeApi({ createHelp: vi.fn(() => new Promise<HelpOut>((r) => { resolve = r; })) });
+    const { result } = renderHook(() => useHelp({ assignmentId: "a1", stepId: "s1", api }));
+    act(() => result.current.request());
+    act(() => result.current.markStepDone());
+    expect(result.current.phase).toBe("idle");
+    await act(async () => {
+      resolve(help("open"));
+    });
+    expect(result.current.phase).toBe("idle");
     expect(api.cancelHelp).toHaveBeenCalledWith("h1");
   });
 });

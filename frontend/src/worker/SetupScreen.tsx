@@ -58,7 +58,7 @@ export default function SetupScreen() {
           </PrimaryAction>
         </BottomBar>
       }
-      mainClassName="justify-center gap-4 py-6"
+      mainClassName="gap-4 py-6 [justify-content:safe_center]"
     >
       <h1 className="text-worker-lg font-bold">{SETUP_COPY.title}</h1>
       <p className="text-worker text-worker-ink-soft hc:text-black">{SETUP_COPY.body}</p>

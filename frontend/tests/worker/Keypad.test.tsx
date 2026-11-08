@@ -85,9 +85,13 @@ describe("번호 넣기 키패드", () => {
     const notice = await screen.findByTestId("login-notice");
     expect(notice).toHaveTextContent("번호가 맞지 않아요. 다시 눌러 봐요.");
     expect(notice).not.toHaveTextContent("선생님께");
-    expect(screen.getByTestId("code-boxes").textContent).toBe("");
+    // 안내는 제목·번호 칸 자리에 대신 나온다(키패드를 밀어내지 않게). 칸은 비워졌고, 첫 숫자를 누르면 다시 보인다.
+    expect(screen.queryByTestId("code-boxes")).toBeNull();
     expect(document.body.textContent).not.toContain("접속 코드");
-    await press("2222");
+    await press("2");
+    expect(screen.queryByTestId("login-notice")).toBeNull();
+    expect(screen.getByTestId("code-boxes")).toHaveTextContent(/^2$/);
+    await press("222");
     await waitFor(() => expect(loginWorker).toHaveBeenCalledTimes(2));
     expect(screen.getByTestId("login-notice")).not.toHaveTextContent("선생님께");
     await press("3333");

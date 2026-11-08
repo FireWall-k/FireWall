@@ -3,7 +3,7 @@
 // '불렀어요' 띠는 문장과 [취소]를 한 줄 가로로 둔다: 문장은 왼쪽에서 줄을 바꿔도 되고, [취소]는 오른쪽에
 // 붙어 글자가 줄을 바꾸지 않는다(결정 8).
 import { cn } from "../cn";
-import { IconHelp, IconStop } from "../ui/icons";
+import { IconCancel, IconHelp } from "../ui/icons";
 import { COPY } from "./copy";
 import type { HelpPhase } from "./hooks/useHelp";
 import { SecondaryAction } from "./ui/WorkerButton";
@@ -46,7 +46,7 @@ export function HelpBanner({ phase, onCancel, onRetry }: { phase: HelpPhase; onC
       <Band tone="help" testId="help-band">
         {/* 결정 8: 문장 왼쪽(flex-1, 줄바꿈 가능) · [취소] 오른쪽(줄바꿈 없음, 줄지 않음) 한 줄. */}
         <p data-testid="help-band-text" className="min-w-0 flex-1">{COPY.help.sent}</p>
-        <SecondaryAction icon={IconStop} onPress={onCancel} className="shrink-0 !gap-2 !px-4">
+        <SecondaryAction icon={IconCancel} onPress={onCancel} className="shrink-0 !gap-2 !px-4">
           {COPY.btn.cancel}
         </SecondaryAction>
       </Band>

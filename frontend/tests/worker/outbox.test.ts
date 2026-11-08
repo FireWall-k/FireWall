@@ -80,16 +80,57 @@ describe("Outbox", () => {
     expect(box.size).toBe(0);
   });
 
-  it("보내는 중에 같은 단계가 새로 들어오면 새 기록은 남는다", async () => {
+  it("보내는 중에 같은 단계가 새로 들어오면 옛 기록 대신 새 기록을 이어서 보낸다", async () => {
     const box = new Outbox("w1");
-    box.put({ ...base, assignment_id: "a1", step_id: "s1" });
+    const old = box.put({ ...base, assignment_id: "a1", step_id: "s1" });
     let release!: () => void;
-    const send = vi.fn(() => new Promise<unknown>((res) => (release = () => res({ ok: true }))));
+    const send = vi.fn<(b: LogBody) => Promise<unknown>>(() => new Promise<unknown>((res) => (release = () => res({ ok: true }))));
     const p = box.flush(send);
     const newer = box.put({ ...base, assignment_id: "a1", step_id: "s1", replay_count: 5 });
     release();
-    await p;
-    expect(box.list().map((x) => x.client_event_id)).toEqual([newer.client_event_id]);
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+    release();
+    const r = await p;
+    expect(send.mock.calls.map((c) => c[0].client_event_id)).toEqual([old.client_event_id, newer.client_event_id]);
+    expect(r).toMatchObject({ sent: 2, remaining: 0 });
+  });
+
+  it("보내는 동안 들어온 다음 단계 기록도 같은 보내기에서 보낸다(30초 타이머를 기다리지 않음)", async () => {
+    const box = new Outbox("w1");
+    box.put({ ...base, assignment_id: "a1", step_id: "s1" });
+    let release!: () => void;
+    const send = vi.fn<(b: LogBody) => Promise<unknown>>(() => new Promise<unknown>((res) => (release = () => res({ ok: true }))));
+    const first = box.flush(send);
+    box.put({ ...base, assignment_id: "a1", step_id: "s2" });
+    const second = box.flush(send); // 보내는 중이면 같은 보내기를 기다린다
+    release();
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+    release();
+    const [r1, r2] = await Promise.all([first, second]);
+    expect(send.mock.calls.map((c) => c[0].step_id)).toEqual(["s1", "s2"]);
+    expect(r1).toMatchObject({ sent: 2, remaining: 0 });
+    expect(r2).toBe(r1);
+    expect(box.size).toBe(0);
+  });
+
+  it("같은 근로자의 탭 두 개가 서로의 기록을 덮어쓰지 않는다", async () => {
+    const tabA = new Outbox("wt");
+    const tabB = new Outbox("wt");
+    tabA.put({ ...base, assignment_id: "a1", step_id: "s1" });
+    tabB.put({ ...base, assignment_id: "a1", step_id: "s2" });
+    const stored = JSON.parse(localStorage.getItem(`${OUTBOX_PREFIX}wt`) ?? "[]") as { step_id: string }[];
+    expect(stored.map((x) => x.step_id).sort()).toEqual(["s1", "s2"]);
+    // 탭 B가 둘 다 보내면 탭 A도 다시 읽었을 때 비어 있다(보낸 것을 되살리지 않는다).
+    const sent: string[] = [];
+    await tabB.flush(async (b) => {
+      sent.push(b.step_id);
+      return { ok: true };
+    });
+    expect(sent.sort()).toEqual(["s1", "s2"]);
+    expect(localStorage.getItem(`${OUTBOX_PREFIX}wt`)).toBeNull();
+    window.dispatchEvent(new StorageEvent("storage", { key: `${OUTBOX_PREFIX}wt` }));
+    // 탭 A는 메모리에 s1이 있었다 — 한 번 더 보낼 수는 있지만(서버가 event id로 한 번만 센다) 잃지는 않는다.
+    expect(tabA.size).toBeLessThanOrEqual(1);
   });
 
   it("동시에 두 번 flush해도 한 번만 보낸다", async () => {

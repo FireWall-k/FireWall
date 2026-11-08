@@ -112,8 +112,9 @@ export const workerApi = {
   history: () => req<HistoryCard[]>("/api/worker/me/history"),
   logStep: (body: LogBody) =>
     req<LogResult>("/api/performance-logs", { method: "POST", body: JSON.stringify(body) }),
-  createHelp: (body: { assignment_id: string; step_id: string | null; client_request_id: string }) =>
-    req<HelpOut>("/api/worker/help", { method: "POST", body: JSON.stringify(body) }),
+  /** signal로 끊을 수 있다(useHelp가 8초 넘게 답이 없으면 끊고 '아직 못 불렀어요'를 보인다). */
+  createHelp: (body: { assignment_id: string; step_id: string | null; client_request_id: string }, signal?: AbortSignal) =>
+    req<HelpOut>("/api/worker/help", { method: "POST", body: JSON.stringify(body), signal }),
   getHelp: (id: string) => req<HelpOut>(`/api/worker/help/${encodeURIComponent(id)}`),
   cancelHelp: (id: string) =>
     req<HelpOut>(`/api/worker/help/${encodeURIComponent(id)}/cancel`, { method: "POST" }),

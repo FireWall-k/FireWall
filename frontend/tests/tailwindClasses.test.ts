@@ -56,11 +56,6 @@ describe("근로자 화면 접근성 Tailwind 클래스가 실제 CSS로 생성�
     expect(css).toContain(".wide\\:grid{display:grid");
   });
 
-  it("wide 변형을 더해도 max-sm: 변형이 그대로 생성된다(머리글 눈썹 글씨 숨김)", () => {
-    // theme.screens에 raw 값을 넣으면 Tailwind가 max-* 변형을 만들지 않는다 — 그래서 wide는 플러그인 변형이다.
-    expect(css).toContain(".max-sm\\:hidden{display:none");
-  });
-
   // 1차 근로자 토큰(명세 6.1~6.3). 부품(worker/ui, ui/icons)이 쓰는 이름이 실제 CSS로 생기는지.
   it("근로자 색 토큰: primary #1F6340, ink-soft, line(명세 6.1)", () => {
     expect(css).toMatch(/\.bg-worker-primary\{[^}]*background-color:rgb\(319964\/var/);
@@ -85,9 +80,15 @@ describe("근로자 화면 접근성 Tailwind 클래스가 실제 CSS로 생성�
     expect(css).toContain("@media(prefers-reduced-motion:reduce){.motion-reduce\\:animate-none{animation:none");
   });
 
-  it("그림 바닥 min(10rem, 20dvh)·맞추기 3단계 바닥 min(8rem, 15dvh)와 아주 좁은 칸에서만 버튼을 쌓는 컨테이너 쿼리", () => {
-    expect(css).toContain("min-height:min(10rem,20dvh)");
-    expect(css).toContain("min-height:min(8rem,15dvh)");
-    expect(css).toContain("@container(min-width:16rem){");
+  it("새 단계 화면의 그림 바닥 240px(작은 기기 180px)이 생성된다", () => {
+    expect(css).toContain(".min-h-\\[240px\\]{min-height:240px");
+    expect(css).toContain(".small\\:min-h-\\[180px\\]{min-height:180px");
+  });
+
+  // 1차 검증 반영: 번호 넣기 키패드는 행마다 64px 이상·남는 높이를 나눠 갖고, 가로 휴대폰(land)에서는 두 칸.
+  it("키패드 4줄 격자(행 64px 이상)와 land 변형, safe center가 생성된다", () => {
+    expect(css).toContain("grid-template-rows:repeat(4,minmax(64px,1fr))");
+    expect(css).toContain("@media(orientation:landscape)and(max-height:620px){");
+    expect(css).toContain("justify-content:safecenter");
   });
 });

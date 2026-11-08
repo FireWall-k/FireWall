@@ -136,8 +136,12 @@ test.describe("3. 번호 넣기(/w)", () => {
     };
     await press("1235");
     await expect(page.getByTestId("login-notice")).toHaveText("번호가 맞지 않아요. 다시 눌러 봐요.");
-    await expect(page.getByTestId("code-boxes")).toHaveText("");
-    await press("1236");
+    // 안내가 제목·번호 칸 자리에 대신 나온다(칸은 비워졌다). 첫 숫자를 누르면 안내가 닫히고 칸이 다시 보인다.
+    await expect(page.getByTestId("code-boxes")).toHaveCount(0);
+    await press("1");
+    await expect(page.getByTestId("login-notice")).toHaveCount(0);
+    await expect(page.getByTestId("code-boxes")).toHaveText("1");
+    await press("236");
     await expect(page.getByTestId("login-notice")).not.toContainText("선생님께");
     await press("1237");
     await expect(page.getByTestId("login-notice")).toContainText("선생님께 번호를 물어봐요.");

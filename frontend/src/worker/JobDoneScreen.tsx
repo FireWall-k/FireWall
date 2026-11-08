@@ -26,7 +26,10 @@ export default function JobDoneScreen() {
   const quiet = prefs.praise === "quiet";
 
   const title = job ? COPY.done.title(job.task_title) : "";
-  const spoken = next ? `${title}. ${COPY.done.praise}` : `${COPY.allDone.title}. ${COPY.allDone.body}`;
+  // 칭찬을 먼저 읽는다(명세 4.6, 2026-11-09 창업자 결정: '정말 잘했어요'가 맨 위·가장 크게·먼저).
+  const spoken = next
+    ? `${COPY.done.praise}. ${title}.`
+    : `${COPY.done.praise}. ${COPY.allDone.title}. ${COPY.allDone.body}`;
   useEffect(() => {
     if (job && !quiet && prefs.autoplay_sound) speakText(spoken, { rate: prefs.tts_rate });
     // 들어올 때 한 번만 읽는다.
@@ -77,18 +80,24 @@ export default function JobDoneScreen() {
           )}
         </BottomBar>
       }
-      mainClassName="items-center justify-center gap-3 py-4 text-center"
+      // safe center: 내용이 칸보다 크면 위에서부터 스크롤한다(그냥 center는 그림 머리가 위 띠 밑으로 잘렸다).
+      mainClassName="items-center gap-3 py-4 text-center [justify-content:safe_center] small:gap-2 small:py-2"
     >
-      <div role="status" className="flex flex-col items-center gap-3">
-        {!quiet && <Illustration kind="praise" size={240} className="max-h-[30dvh] small:size-40" />}
+      {/* 명세 4.6: '정말 잘했어요'가 맨 위, 가장 크게(32px 굵게), 근로자 초록. 그 아래 그림, 그 아래 무엇을 다 했는지.
+          모두 끝난 날도 같다. 칭찬 '조용히'면 그림 없이 글만. */}
+      <div role="status" className="flex flex-col items-center gap-2">
+        <p data-testid="done-praise" className="text-worker-lg font-bold text-worker-primary hc:text-black">
+          {COPY.done.praise}
+        </p>
+        {!quiet && (
+          <Illustration kind="praise" size={240}
+            className="max-h-[30dvh] max-w-full small:max-h-[24dvh] land:max-h-[26dvh]" />
+        )}
         {next ? (
-          <>
-            <h1 className="text-worker-lg font-bold">{title}</h1>
-            <p className="text-worker text-worker-ink-soft hc:text-black">{COPY.done.praise}</p>
-          </>
+          <h1 className="text-worker-title font-bold">{title}</h1>
         ) : (
           <>
-            <h1 className="text-worker-lg font-bold">{COPY.allDone.title}</h1>
+            <h1 className="text-worker-title font-bold">{COPY.allDone.title}</h1>
             <p className="text-worker text-worker-ink-soft hc:text-black">{COPY.allDone.body}</p>
           </>
         )}

@@ -20,6 +20,7 @@ import {
   RotateCw,
   Square,
   TriangleAlert,
+  Undo2,
   Volume2,
   WifiOff,
   X,
@@ -54,6 +55,8 @@ export const IconExit = make(ArrowLeft, "IconExit");
 export const IconHelp = make(Hand, "IconHelp");
 export const IconSpeak = make(Volume2, "IconSpeak");
 export const IconStop = make(Square, "IconStop");
+/** 도움 요청 [취소](되돌리기 화살표). 네모(멈춤)는 소리 멈춤 전용으로 둔다 — 한 화면에 같은 그림이 두 뜻으로 섞였다(1차 검증). */
+export const IconCancel = make(Undo2, "IconCancel");
 export const IconDone = make(Check, "IconDone");
 export const IconCaution = make(TriangleAlert, "IconCaution");
 export const IconOffline = make(WifiOff, "IconOffline");

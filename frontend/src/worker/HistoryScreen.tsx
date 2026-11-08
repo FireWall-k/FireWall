@@ -127,7 +127,7 @@ export function HistoryDetailScreen() {
   const card = state.items.find((c) => c.assignment_id === aid);
   if (!card || card.steps.length === 0) {
     return (
-      <WorkerScreen top={<TopBar />} mainClassName="items-center justify-center gap-4 text-center">
+      <WorkerScreen top={<TopBar />} mainClassName="items-center gap-4 text-center [justify-content:safe_center]">
         <p className="text-worker-lg font-bold">{COPY.history.empty}</p>
         <PrimaryAction icon={IconRetry} onPress={() => navigate("/w/history")} className="w-full max-w-sm">
           {COPY.btn.history}

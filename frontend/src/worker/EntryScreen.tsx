@@ -30,7 +30,7 @@ function CodeBoxes({ digits, busy }: { digits: string; busy: boolean }) {
           <span
             key={i}
             className={cn(
-              "flex h-16 w-[52px] items-center justify-center rounded-worker-btn bg-worker-card text-[2rem] font-bold tabular-nums",
+              "flex h-16 w-[52px] items-center justify-center rounded-worker-btn bg-worker-card text-[2rem] font-bold tabular-nums small:h-14",
               current ? "border-[3px] border-worker-primary" : "border-2 border-worker-line",
               "hc:border-black",
             )}
@@ -43,8 +43,10 @@ function CodeBoxes({ digits, busy }: { digits: string; busy: boolean }) {
   );
 }
 
+// 키 높이는 키패드 칸(grid 행)이 정한다: 행마다 64px 이상, 남는 높이를 나눠 갖는다(작은 휴대폰·가로 화면에서도
+// 4줄이 다 보이게, 1차 검증 지적). 키 자체에는 고정 높이를 두지 않는다.
 const keyClass = cn(
-  "flex min-h-touch select-none items-center justify-center rounded-worker-btn border-2 border-worker-line bg-worker-card font-bold text-worker-ink tablet:min-h-24",
+  "flex h-full min-h-0 select-none items-center justify-center rounded-worker-btn border-2 border-worker-line bg-worker-card font-bold text-worker-ink",
   "active:bg-worker-line-soft disabled:cursor-not-allowed disabled:opacity-50 hc:border-black",
 );
 
@@ -56,7 +58,10 @@ function Keypad({ disabled, onDigit, onBackspace, onClear }: {
 }) {
   const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
   return (
-    <div className="mx-auto grid w-full max-w-sm grid-cols-3 gap-3" data-testid="keypad">
+    <div
+      className="mx-auto grid h-full max-h-[26rem] w-full max-w-sm grid-cols-3 grid-rows-[repeat(4,minmax(64px,1fr))] gap-3 small:gap-2 tablet:max-h-[30rem]"
+      data-testid="keypad"
+    >
       {digits.map((d) => (
         <button key={d} type="button" disabled={disabled} onClick={() => onDigit(d)} className={cn(keyClass, "text-[2.25rem]")}>
           {d}
@@ -156,6 +161,9 @@ export default function EntryScreen({ onLogin }: { onLogin: (a: AuthState) => vo
           : [COPY.login.wrong]
         : null;
 
+  // 틀림·너무 많음 안내는 제목과 번호 칸 자리에 대신 나온다(칸은 이미 비워졌고, 첫 숫자를 누르면 다시 제목과
+  // 칸이 나온다). 안내가 세 줄로 늘어도 키패드를 밀어내지 않게 하려는 것이다(1차 검증: 360×640에서 맨 아래 줄이
+  // 화면 밖). 키패드만 남는 높이에 맞춰 늘고 준다.
   return (
     <WorkerScreen
       testId="entry-screen"
@@ -168,43 +176,53 @@ export default function EntryScreen({ onLogin }: { onLogin: (a: AuthState) => vo
           }
         />
       }
-      mainClassName="items-center gap-4 py-4 small:gap-3 small:py-3"
+      mainClassName="items-center gap-4 overflow-hidden py-4 small:gap-2 small:py-2 land:grid land:grid-cols-2 land:grid-rows-[minmax(0,1fr)_auto] land:items-stretch land:gap-x-6 land:gap-y-2"
     >
-      <h1 className="text-center text-worker-lg font-bold">{COPY.login.title}</h1>
-      <CodeBoxes digits={digits} busy={busy} />
-      {/* 화면 읽기 프로그램용: 넣은 자릿수(숫자는 화면에 보이므로 그대로 읽는다). */}
-      <p className="sr-only" aria-live="polite">{digits.split("").join(" ")}</p>
-      <div className="flex min-h-12 w-full max-w-sm flex-col items-center justify-center">
-        {busy && (
-          <p role="status" className="flex items-center gap-2 text-worker font-semibold text-worker-ink-soft">
-            <IconSpinner size={28} />
-            {COPY.login.entering}
-          </p>
-        )}
-        {!busy && message && (
+      <div
+        data-testid="entry-slot"
+        className="flex min-h-[7.5rem] w-full max-w-sm flex-col items-center justify-center gap-3 small:min-h-[6.25rem] small:gap-2 land:col-start-1 land:row-start-1 land:max-w-none"
+      >
+        {!busy && message ? (
           <div role="alert" data-testid="login-notice"
-            className="flex w-full items-start gap-2 rounded-worker-btn border-2 border-worker-caution-ink bg-worker-caution px-4 py-2 text-worker font-semibold text-worker-caution-ink hc:border-black hc:bg-white hc:text-black">
-            <IconCaution size={28} className="mt-1" />
+            className="flex w-full items-start gap-2 rounded-worker-btn border-2 border-worker-caution-ink bg-worker-caution px-4 py-2 text-worker font-semibold text-worker-caution-ink small:px-3 small:text-worker-caption hc:border-black hc:bg-white hc:text-black">
+            <IconCaution size={28} className="mt-1 shrink-0" />
             <div>
               {message.map((m) => (
                 <p key={m}>{m}</p>
               ))}
             </div>
           </div>
+        ) : (
+          <>
+            {busy ? (
+              <p role="status" className="flex items-center gap-2 text-worker font-semibold text-worker-ink-soft">
+                <IconSpinner size={28} />
+                {COPY.login.entering}
+              </p>
+            ) : (
+              <h1 className="text-center text-worker-lg font-bold small:text-worker-title">{COPY.login.title}</h1>
+            )}
+            <CodeBoxes digits={digits} busy={busy} />
+          </>
         )}
       </div>
-      <Keypad
-        disabled={busy}
-        onDigit={onDigit}
-        onBackspace={() => setDigits((d) => d.slice(0, -1))}
-        onClear={() => setDigits("")}
-      />
-      {/* 선생님만 쓰는 작은 링크(근로자가 우연히 누르지 않게 작게). 예전 5자리 이상 번호용. */}
+      {/* 화면 읽기 프로그램용: 넣은 자릿수(숫자는 화면에 보이므로 그대로 읽는다). */}
+      <p className="sr-only" aria-live="polite">{digits.split("").join(" ")}</p>
+      <div className="flex min-h-0 w-full flex-1 !shrink items-center justify-center land:col-start-2 land:row-span-2 land:row-start-1">
+        <Keypad
+          disabled={busy}
+          onDigit={onDigit}
+          onBackspace={() => setDigits((d) => d.slice(0, -1))}
+          onClear={() => setDigits("")}
+        />
+      </div>
+      {/* 선생님만 쓰는 작은 링크(근로자가 우연히 누르지 않게 작게). 예전 5자리 이상 번호용.
+          세로 화면은 키패드 아래, 가로 화면은 왼쪽 칸 아래. */}
       <button
         type="button"
         data-teacher-only=""
         onClick={() => navigate("/login?tab=worker")}
-        className="mt-2 min-h-12 shrink-0 rounded-worker-btn px-4 text-worker-caption text-worker-ink-soft underline underline-offset-4 hc:text-black"
+        className="min-h-11 shrink-0 self-center rounded-worker-btn px-4 text-worker-caption text-worker-ink-soft underline underline-offset-4 hc:text-black land:col-start-1 land:row-start-2"
       >
         {COPY.btn.teacherLongCode}
       </button>

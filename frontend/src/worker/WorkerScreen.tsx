@@ -44,11 +44,13 @@ export function WorkerScreen({
   );
 }
 
-/** 위 띠: 왼쪽(나가기·홈으로·인사) / 가운데(오프라인 표시 자리) / 오른쪽(도와주세요·끝내기). */
+/** 위 띠: 왼쪽(나가기·홈으로·인사) / 가운데(오프라인 표시 자리) / 오른쪽(도와주세요·끝내기).
+ *  높이 80, 태블릿 96. 작은 화면(명세 4.0 작은 기기 규칙)은 72 — 다만 버튼은 그때도 80px 이상이라(명세 4.0),
+ *  80px 버튼이 있는 띠는 버튼 높이만큼(80)이고, 버튼 없는 띠(번호 넣기 등)만 72로 줄어든다. 띠에 위아래 여백은 없다. */
 export function TopBar({ left, center, right }: { left?: ReactNode; center?: ReactNode; right?: ReactNode }) {
   return (
     <header className="w-full shrink-0 border-b-2 border-worker-line-soft bg-worker-bg pt-[env(safe-area-inset-top)] hc:border-black hc:bg-white">
-      <div className="mx-auto flex h-worker-top w-full max-w-[1024px] items-center justify-between gap-2 px-4 tablet:h-worker-top-tab tablet:px-8">
+      <div className="mx-auto flex h-worker-top w-full max-w-[1024px] items-center justify-between gap-2 px-4 small:h-auto small:min-h-worker-top-sm tablet:h-worker-top-tab tablet:px-8">
         <div className="flex min-w-0 items-center">{left}</div>
         <div className="flex min-w-0 flex-1 items-center justify-center">{center}</div>
         <div className="flex shrink-0 items-center">{right}</div>
@@ -64,7 +66,8 @@ export function BottomBar({ children, stacked = false, className }: { children: 
       <div
         className={cn(
           "mx-auto flex w-full max-w-[1024px] gap-6 px-4 py-3 small:py-2 tablet:px-8 tablet:py-4",
-          stacked ? "flex-col" : "items-stretch lefty:flex-row-reverse",
+          // 쌓은 두 버튼도 가로 휴대폰(낮은 화면)에서는 나란히 둔다 — 쌓으면 아래 막대가 화면 절반을 먹는다.
+          stacked ? "flex-col land:flex-row land:items-stretch land:lefty:flex-row-reverse" : "items-stretch lefty:flex-row-reverse",
           className,
         )}
       >

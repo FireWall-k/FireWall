@@ -15,42 +15,8 @@ import { preloadPictures } from "./preload";
 import { jobProgress, mergeDoneIds } from "./resume";
 import { OUTBOX_RETRY_MS, SYNC_NOTICE_MS, SessionContext, TODAY_POLL_MS, type StepCompletion, type WorkerSessionValue } from "./session";
 import { StatusScreen } from "./ui/StatusScreen";
-import { normalizePrefs, workerApi, type TodayJob, type WorkerMe } from "./workerApi";
-
-// --- 기기에 둔 마지막 응답(오프라인용) ---
-const ME_CACHE_KEY = "jobcard_worker_me_v1";
-const TODAY_CACHE_PREFIX = "jobcard_today_v1:";
-
-function localDay(d = new Date()): string {
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-}
-
-function readJson<T>(key: string): T | null {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeJson(key: string, value: unknown) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* 저장 못 하면 오프라인에서 새로 받을 수 없을 뿐 */
-  }
-}
-
-function cachedMe(token: string | undefined): WorkerMe | null {
-  const c = readJson<{ token: string; me: WorkerMe }>(ME_CACHE_KEY);
-  return c && token && c.token === token ? { ...c.me, a11y_prefs: normalizePrefs(c.me.a11y_prefs) } : null;
-}
-
-function cachedJobs(workerId: string): TodayJob[] | null {
-  const c = readJson<{ day: string; jobs: TodayJob[] }>(`${TODAY_CACHE_PREFIX}${workerId}`);
-  return c && c.day === localDay() && Array.isArray(c.jobs) ? c.jobs : null;
-}
+import { cachedJobs, cachedMe, localDay, ME_CACHE_KEY, noteSentInTodayCache, TODAY_CACHE_PREFIX, writeJson } from "./todayCache";
+import { workerApi, type TodayJob, type WorkerMe } from "./workerApi";
 
 type Fatal = "expired" | "offline" | "error" | null;
 
@@ -136,11 +102,18 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
   // 대기열 보내기.
   const flush = useCallback(async () => {
     if (!outbox || outbox.size === 0) return;
+    const workerId = outbox.workerId;
     const r = await outbox.flush((body) =>
-      workerApi.logStep(body).catch((e: unknown) => {
-        if (e instanceof NetworkError) setOnline(false);
-        throw e;
-      }),
+      workerApi.logStep(body).then(
+        (res) => {
+          if (body.completed) noteSentInTodayCache(workerId, body.assignment_id, body.step_id);
+          return res;
+        },
+        (e: unknown) => {
+          if (e instanceof NetworkError) setOnline(false);
+          throw e;
+        },
+      ),
     );
     if (r.expired) {
       setFatal("expired");
@@ -186,7 +159,10 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
     const poll = window.setInterval(tick, Math.min(TODAY_POLL_MS, OUTBOX_RETRY_MS));
     const onVisible = () => {
       if (document.visibilityState === "visible") tick();
+      // 화면을 잠그거나 탭을 숨기기 직전에도 남은 기록을 한 번 보낸다(숨은 동안은 30초 타이머가 돌지 않는다).
+      else void flush();
     };
+    const onPageHide = () => void flush();
     const onOnline = () => {
       setOnline(true);
       void flush();
@@ -194,11 +170,13 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
     };
     const onOffline = () => setOnline(false);
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pagehide", onPageHide);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
     return () => {
       window.clearInterval(poll);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pagehide", onPageHide);
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
     };

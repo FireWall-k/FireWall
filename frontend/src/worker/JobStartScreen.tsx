@@ -61,10 +61,13 @@ export default function JobStartScreen() {
           )}
         </BottomBar>
       }
-      mainClassName="items-center justify-center gap-4 py-4 text-center"
+      // safe center: 내용이 칸보다 크면 가운데 맞춤을 풀고 위에서부터 스크롤한다(그냥 center는 위가 잘려
+      // 스크롤로도 못 본다, 1차 검증). 대표 그림은 정사각형 그대로 남는 높이에 맞춰 준다(가로 휴대폰에서
+      // 300×156 빈 띠가 생기던 문제).
+      mainClassName="items-center gap-4 py-4 text-center [justify-content:safe_center] small:gap-2 small:py-2"
     >
       <Thumb url={job.steps[0]?.symbol_url} size={300}
-        className="max-h-[40dvh] max-w-full !rounded-worker-pic object-contain tablet:!size-[480px] tablet:max-h-[45dvh]" />
+        className="aspect-square max-h-[40dvh] max-w-full !w-auto !rounded-worker-pic object-contain land:max-h-[34dvh] tablet:!h-[480px] tablet:max-h-[45dvh]" />
       <h1 className="text-worker-lg font-bold">{COPY.start.title(job.task_title)}</h1>
       <p className="text-worker text-worker-ink-soft hc:text-black">
         {resuming ? COPY.card.resume(p.resumeIndex + 1) : COPY.start.stepCount(job.steps.length)}

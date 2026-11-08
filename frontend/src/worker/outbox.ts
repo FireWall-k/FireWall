@@ -6,6 +6,10 @@
 // - 응답 처리(§6.3): 2xx → 지움 / 400·404·422 → 버림(다시 보내도 안 됨) / 401 → 남기고 멈춤(다시 들어오기) /
 //   429·5xx·네트워크 → 남기고 멈춤(다음에 다시).
 // localStorage가 막힌 기기(사생활 보호 모드)에서도 화면은 동작한다: 그때는 메모리에만 둔다.
+// - 같은 근로자의 탭이 둘이어도 서로 덮어쓰지 않는다: 바꾸기 전마다 저장된 목록을 다시 읽어 합친다(같은 단계는
+//   더 나중 기록), storage 이벤트로 다른 탭의 변경을 받는다. 다른 탭이 이미 보낸 기록을 한 번 더 보낼 수는
+//   있지만 서버가 client_event_id로 한 번만 센다(1차 검증: 탭 A의 기록이 탭 B 저장에 덮여 사라졌다).
+// - 보내는 동안 새로 들어온 기록도 같은 보내기에서 이어서 보낸다(30초 타이머·숨은 탭을 기다리지 않게).
 import { ApiError, AuthError } from "../apiErrors";
 import { newId, type LogBody } from "./workerApi";
 
@@ -57,9 +61,31 @@ export class Outbox {
   private listeners = new Set<() => void>();
   private flushing: Promise<FlushResult> | null = null;
 
+  /** 이 탭에서 보냈거나 버린 기록(다른 탭 저장본과 합칠 때 되살리지 않게). */
+  private gone = new Set<string>();
+
   constructor(workerId: string) {
     this.workerId = workerId;
     this.items = this.load();
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", (e) => {
+        if (e.key !== this.storageKey) return;
+        this.sync();
+        this.listeners.forEach((fn) => fn());
+      });
+    }
+  }
+
+  /** 저장된 목록(다른 탭이 쓴 것 포함)과 메모리 목록을 합친다. 같은 단계는 더 나중에 끝낸 기록 하나만. */
+  private sync() {
+    const merged = new Map<string, OutboxItem>();
+    for (const x of [...this.load(), ...this.items]) {
+      if (this.gone.has(x.client_event_id)) continue;
+      const cur = merged.get(x.key);
+      if (!cur || (x.client_completed_at ?? "") > (cur.client_completed_at ?? "")) merged.set(x.key, x);
+    }
+    this.items = [...merged.values()].sort((a, b) =>
+      (a.client_completed_at ?? "").localeCompare(b.client_completed_at ?? ""));
   }
 
   private get storageKey() {
@@ -113,6 +139,8 @@ export class Outbox {
       client_completed_at: body.client_completed_at ?? new Date().toISOString(),
       key: outboxKey(body.assignment_id, body.step_id),
     };
+    this.sync();
+    for (const x of this.items) if (x.key === item.key) this.gone.add(x.client_event_id);
     this.items = [...this.items.filter((x) => x.key !== item.key), item];
     this.save();
     return item;
@@ -120,9 +148,9 @@ export class Outbox {
 
   /** 보낸 기록을 지운다. 보내는 사이 같은 단계가 새로 들어왔으면(다른 event id) 새 것은 남긴다. */
   private remove(item: OutboxItem) {
-    const before = this.items.length;
-    this.items = this.items.filter((x) => x.client_event_id !== item.client_event_id);
-    if (this.items.length !== before) this.save();
+    this.gone.add(item.client_event_id);
+    this.sync();
+    this.save();
   }
 
   /** 대기열을 앞에서부터 보낸다. 이미 보내는 중이면 그 결과를 같이 기다린다(두 번 보내지 않음). */
@@ -130,9 +158,14 @@ export class Outbox {
     if (this.flushing) return this.flushing;
     const run = async (): Promise<FlushResult> => {
       const result: FlushResult = { sent: 0, dropped: 0, remaining: 0, expired: false, failed: false };
-      for (const item of [...this.items]) {
-        // 보내기 전에 같은 단계의 새 기록으로 바뀌었으면 건너뛴다(새 기록은 뒤에 있다).
-        if (!this.items.some((x) => x.client_event_id === item.client_event_id)) continue;
+      this.sync();
+      const tried = new Set<string>();
+      // 앞에서부터 하나씩 보낸다. 보내는 동안 새로 들어온 기록(다음 단계 [다 했어요])도 이번 보내기에서 보낸다 —
+      // 예전에는 시작할 때 목록을 복사해 두고 그것만 보내서, 새 기록은 30초 타이머(숨은 탭에서는 안 돎)를 기다렸다.
+      for (;;) {
+        const item = this.items.find((x) => !tried.has(x.client_event_id));
+        if (!item) break;
+        tried.add(item.client_event_id);
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { key, ...body } = item;
         try {
@@ -154,6 +187,7 @@ export class Outbox {
           break;
         }
       }
+      this.sync();
       result.remaining = this.items.length;
       return result;
     };
