@@ -95,7 +95,7 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
           <button
             key={t}
             onClick={() => { setTab(t); setError(null); }}
-            className={cn("flex-1 rounded-md px-3 py-2 text-sm font-medium",
+            className={cn("min-h-12 flex-1 rounded-md px-3 py-2 text-base font-medium",
               tab === t ? "bg-white text-slate-900 shadow" : "text-slate-500")}
           >
             {t === "employer" ? "사업주" : "근로자"}
@@ -148,7 +148,7 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
       {error && <div role="alert" className="mt-3 rounded-lg bg-red-50 p-2 text-sm text-red-800">{error}</div>}
 
       <button onClick={submit} disabled={busy || !ready}
-        className="mt-4 w-full rounded-lg bg-moss-600 py-2.5 font-semibold text-white hover:bg-moss-700 disabled:opacity-50">
+        className="mt-4 min-h-12 w-full rounded-lg bg-moss-600 py-2.5 font-semibold text-white hover:bg-moss-700 disabled:opacity-50">
         {busy ? "확인 중…" : "로그인"}
       </button>
       {/* 근로자는 번호 키패드 화면(/w)으로. Router 밖에서도 렌더되도록(테스트) 일반 링크를 쓴다. */}

@@ -54,6 +54,14 @@ def _fake_decompose(raw_input: str, context=None) -> dict:
     }
 
 
+def _fake_classify_action(sentence: str) -> str:
+    # 실제 /ai/classify-action(규칙 분류)를 흉내 낸다. 모르는 동사는 other.
+    for hint, action in (("쓸어", "clean"), ("닦", "clean"), ("옮기", "move"), ("확인", "observe")):
+        if hint in sentence:
+            return action
+    return "other"
+
+
 def _fake_map_symbols(keywords, context=None) -> dict:
     # 실제 /ai/map-symbols와 같은 모양을 유지한다(reason/candidates 포함).
     return {"symbols": [
@@ -110,6 +118,7 @@ def _patch_ai(monkeypatch):
     monkeypatch.setattr(main, "synthesize_tts", lambda text, scope: None)
     monkeypatch.setattr(ai_client, "decompose", _fake_decompose)
     monkeypatch.setattr(ai_client, "map_symbols", _fake_map_symbols)
+    monkeypatch.setattr(ai_client, "classify_action", _fake_classify_action)
     monkeypatch.setattr(
         ai_client,
         "search_aac",

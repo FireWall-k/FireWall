@@ -169,23 +169,27 @@ function matchWord(word: string, allowFusedAux: boolean): VerbEntry | null {
   return null;
 }
 
-// 한 문장(마침표로 끝나는 한 덩어리)의 서술어 동사. 확실하지 않으면 null.
-function predicateVerb(words: string[]): VerbEntry | null {
-  const last = words[words.length - 1];
-  if (AUX_WORDS.has(last) && words.length >= 2) {
-    const prev = words[words.length - 2];
+// 한 문장(마침표로 끝나는 한 덩어리)의 서술어 동사와 서술어가 시작하는 낱말 위치. 확실하지 않으면 null.
+// "올려 놓으세요"처럼 본동사 + 보조 용언이면 서술어는 두 낱말(start = 끝에서 둘째)이다.
+function predicateVerb(words: string[]): { verb: VerbEntry; start: number } | null {
+  const n = words.length;
+  const last = words[n - 1];
+  if (AUX_WORDS.has(last) && n >= 2) {
+    const prev = words[n - 2];
     // "내려 놓으세요"처럼 띄어 쓴 합성 동사(내려놓다)가 사전에 따로 있으면 그것으로 읽는다.
     const joined = matchWord(prev + last, false);
-    if (joined) return joined;
+    if (joined) return { verb: joined, start: n - 2 };
     const main = VERBS.find((e) => e.a.includes(prev));
-    if (main) return main;
+    if (main) return { verb: main, start: n - 2 };
     // 앞말이 사전에 없는 '-아/-어' 모양이면("모아 두세요"·"꽂아 두세요"·"밀어 보세요") 진짜 동작은 그 앞말인데
     // 무엇인지 모른다 — 보조 용언(두기·보기)을 꼬리표로 보여 주면 틀린 말이 된다. 앞말이 조사로 끝날 때만
     // 보조 용언이 아니라 본동사로 읽는다.
     if (!endsWithParticle(prev)) return null;
-    return matchWord(last, false);
+    const verb = matchWord(last, false);
+    return verb ? { verb, start: n - 1 } : null;
   }
-  return matchWord(last, true);
+  const verb = matchWord(last, true);
+  return verb ? { verb, start: n - 1 } : null;
 }
 
 // 한글 음절 끝에 받침 ㄴ을 붙인다("접으" → "접은", "옮기" → "옮긴"). 받침이 이미 있으면 null.
@@ -195,35 +199,66 @@ function withNieun(stem: string): string | null {
   return stem.slice(0, -1) + String.fromCharCode(0xac00 + code + 4);
 }
 
-// 서술어 앞에서 다른 동작을 시키는 연결형("씻고"·"접어서"·"닦으며"·"접은 뒤")의 동사.
+// 서술어 앞에서 다른 동작을 시키는 연결형("씻고"·"접어서"·"닦으며"·"접은 뒤"·"접어 …")의 사전 동사.
 function connectiveVerb(word: string, next: string | undefined): VerbEntry | null {
   for (const e of VERBS) {
     const root = e.label.slice(0, -1); // 접기 → 접, 옮기기 → 옮기
     if (word === `${root}고`) return e;
-    if (e.a.some((a) => word === `${a}서`)) return e;
+    // 맨 '-아/-어' 연결형도 앞 동작이다("상자를 접어 테이프를 붙이세요"·"조끼를 벗어 사물함에 넣어요").
+    if (e.a.some((a) => word === a || word === `${a}서`)) return e;
     if (e.stem && (word === `${e.stem}며` || word === `${e.stem}면서`)) return e;
     if (e.stem && (next === "뒤" || next === "후" || next === "다음") && word === withNieun(e.stem)) return e;
   }
   return null;
 }
 
+// '-아/-어' 연결형 + 다른 동사가 한 동작인 합성 동사(바로 붙어 있을 때만). "채워 넣으세요"는 넣기 하나다.
+// "끼워 바람을 넣어요"처럼 사이에 다른 말이 끼면 동작 둘로 본다.
+const COMPOUND_PAIRS = new Set(["채우기>넣기", "끼우기>넣기", "붓기>채우기", "쓸기>담기", "누르기>끼우기"]);
+
+// '-고'로 끝나는 흔한 명사 — 연결형 동사로 읽지 않는다("냉장고 문을 열어 보세요"는 열기 하나다).
+const GO_NOUNS = new Set(["창고", "냉장고", "냉동고", "금고", "재고", "차고", "광고", "최고", "사고", "보고", "참고", "신고", "원고", "포고"]);
+// 받침 없는 '-아/-어' 모음(ㅏ ㅐ ㅓ ㅕ ㅘ ㅙ ㅝ ㅞ). '에서'·'께서'(ㅔ)는 조사라 넣지 않는다.
+const A_VOWELS = new Set([0, 1, 4, 6, 9, 10, 14, 15]);
+
+// 사전에 없는 동사의 연결형("뿌리고"·"묶어서"·"닦으며")인지. 앞 동작이 무엇인지는 몰라도 동작이 둘이라는 건
+// 안다 — 이때 서술어 하나만 꼬리표로 보여 주면 앞 동작을 빠뜨린 꼬리표가 된다.
+function looksConnective(word: string): boolean {
+  if (word.length < 2) return false;
+  if (word.endsWith("고")) return !GO_NOUNS.has(word);
+  if (word.endsWith("며") || word.endsWith("면서")) return true;
+  if (word.endsWith("서")) {
+    const code = word.charCodeAt(word.length - 2) - 0xac00;
+    if (code < 0 || code > 11171 || code % 28 !== 0) return false; // 받침이 있으면 명사('순서'·'주문서')
+    return A_VOWELS.has(Math.floor(code / 28) % 21);
+  }
+  return false;
+}
+
 /** 문장 서술어의 동사로 만든 꼬리표. 사전에 없는 동사로 끝나면 null(꼬리표를 보여 주지 않는다).
  *
- * 한 단계가 서로 다른 동작 둘을 시키면("손을 씻고 장갑을 끼세요"·"그릇을 씻으세요. 그 다음 헹구세요")
- * 마지막 동사 하나만 보여 주는 꼬리표는 나머지 동작을 빠뜨린 틀린 꼬리표다 — 이때도 null이다
- * (ai_service decompose._guess_action도 같은 규칙으로 other를 돌려준다). */
+ * 한 단계가 서로 다른 동작 둘을 시키면("손을 씻고 장갑을 끼세요"·"상자를 접어 테이프를 붙이세요"·
+ * "소독제를 뿌리고 닦아요"·"그릇을 씻으세요. 그 다음 헹구세요") 마지막 동사 하나만 보여 주는 꼬리표는
+ * 나머지 동작을 빠뜨린 틀린 꼬리표다 — 이때도 null이다. (ai_service decompose._guess_action은 문장의 모든
+ * 동사 계열이 하나일 때만 계열을 정하므로 이런 문장에 other를 준다. 규칙은 따로지만 방향은 같다.) */
 export function stepActionChip(sentence: string): { label: string; action: string } | null {
   const sentences = sentence.split(/[.!?。\n]+/).map((s) => s.match(/[가-힣]+/g) ?? []).filter((w) => w.length);
   if (!sentences.length) return null;
   let chosen: VerbEntry | null = null;
   for (const words of sentences) {
-    const verb = predicateVerb(words);
+    const pred = predicateVerb(words);
     // 문장마다 서술어가 같은 동사여야 한다("…놓으세요. 큰 상자는 아래쪽에 … 놓으세요"는 놓기 하나).
-    if (!verb || (chosen && verb.label !== chosen.label)) return null;
+    if (!pred || (chosen && pred.verb.label !== chosen.label)) return null;
+    const verb = pred.verb;
     chosen = verb;
-    for (let i = 0; i < words.length - 1; i++) {
+    for (let i = 0; i < pred.start; i++) {
       const other = connectiveVerb(words[i], words[i + 1]);
-      if (other && other.label !== verb.label) return null;
+      if (other) {
+        if (other.label === verb.label) continue;
+        if (i === pred.start - 1 && COMPOUND_PAIRS.has(`${other.label}>${verb.label}`)) continue;
+        return null;
+      }
+      if (looksConnective(words[i])) return null;
     }
   }
   return chosen ? { label: chosen.label, action: chosen.action } : null;

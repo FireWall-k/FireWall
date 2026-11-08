@@ -6,6 +6,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conftest import auth, publish  # noqa: E402
 from auth import make_token, verify_password, hash_password, verify_token  # noqa: E402
+import ai_client  # noqa: E402
+
+# conftest의 autouse 픽스처가 테스트마다 ai_client.classify_action을 가짜로 바꾼다. 하네스 장애 폴백을 재려면
+# 진짜 함수가 필요해 모듈을 불러올 때(패치 전) 잡아 둔다.
+_real_classify_action = ai_client.classify_action
 
 
 # ---------- 인증 단위 ----------
@@ -385,8 +390,9 @@ def test_editing_sentence_clears_stale_symbol_query(client, employer_token):
         assert db.get(Step, step_id).symbol_query == ""
 
 
-def test_editing_sentence_resets_stale_action_type(client, employer_token):
-    """문장을 고치면 옛 문장의 동작 계열(move)이 남지 않는다 — 틀린 꼬리표·그림 감점을 막는다."""
+def test_editing_sentence_reclassifies_action_type(client, employer_token):
+    """문장을 고치면 옛 문장의 동작 계열(move)이 남지 않고 새 문장으로 다시 매긴다 — 틀린 꼬리표·그림 감점을 막고,
+    사업주 화면 꼬리표가 '작업하기'로 뭉개지지 않는다."""
     r = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요"},
                     headers=auth(employer_token))
     task = r.json()
@@ -399,7 +405,24 @@ def test_editing_sentence_resets_stale_action_type(client, employer_token):
 
     edited = client.patch(f"/api/tasks/{task['id']}/steps/{step['id']}",
                           json={"sentence": "바닥을 쓸어주세요."}, headers=auth(employer_token))
-    assert edited.json()["action_type"] == "other"
+    assert edited.json()["action_type"] == "clean"
+
+    # 분류기가 모르는 동사면 other(꼬리표 숨김·벌점 없음) — 옛 계열(clean)이 남지 않는다.
+    unknown = client.patch(f"/api/tasks/{task['id']}/steps/{step['id']}",
+                           json={"sentence": "손님께 인사하세요."}, headers=auth(employer_token))
+    assert unknown.json()["action_type"] == "other"
+
+
+def test_classify_action_falls_back_to_other_when_harness_down(monkeypatch):
+    """AI 하네스가 죽어 있으면 문장 수정이 실패하지 않고 other로 떨어진다."""
+    import ai_client
+
+    class _Down:
+        def post(self, *a, **kw):
+            raise RuntimeError("connection refused")
+
+    monkeypatch.setattr(ai_client, "_http", _Down())
+    assert _real_classify_action("바닥을 쓸어주세요.") == "other"
 
 
 def test_accepted_rematch_is_offered_as_a_single_candidate(client, employer_token, monkeypatch):

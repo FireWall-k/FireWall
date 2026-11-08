@@ -53,9 +53,10 @@ services:
       OPENAI_MODEL: "${OPENAI_MODEL:-gpt-4o-mini}"
       OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://api.openai.com/v1}"
       LLM_TIMEOUT: "${LLM_TIMEOUT:-20}"
-      # AAC 그림 GPT 재순위(ai_service/aac_rerank.py). 컨테이너 기본은 off — 키가 있으면 단계마다 유료 호출이
-      # 나가므로, 봉인 시험지 3 확인 전에는 .env에서 AAC_LLM_RERANK=auto로 직접 켤 때만 돈다. 끄면 규칙만 쓴다.
-      AAC_LLM_RERANK: "${AAC_LLM_RERANK:-off}"
+      # AAC 그림 GPT 재순위(ai_service/aac_rerank.py). 컨테이너 기본은 auto — 키가 있으면 단계마다 유료 호출
+      # (단계 100개에 약 $0.0045). 봉인 시험지 3에서 틀린 자동 채택 21→9로 확인한 뒤 켰다(2026-11-09 사용자 승인).
+      # 키가 없거나 오류·시간 초과면 규칙만 쓴다. 끄려면 .env에 AAC_LLM_RERANK=off.
+      AAC_LLM_RERANK: "${AAC_LLM_RERANK:-auto}"
       AAC_LLM_RERANK_POLICY: "${AAC_LLM_RERANK_POLICY:-top1}"
       AAC_LLM_RERANK_TIMEOUT: "${AAC_LLM_RERANK_TIMEOUT:-4}"
       AAC_LLM_RERANK_COOLDOWN: "${AAC_LLM_RERANK_COOLDOWN:-60}"

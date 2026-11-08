@@ -83,11 +83,18 @@ export default function WorkerPage() {
 // 1) 채우기: 그림 칸이 flex-1이라 남는 높이를 그림이 다 가져간다. 머리글 높이는 이름 길이·글꼴에 따라
 //    달라질 수 있어 상수로 빼지 않고 실제 위치를 잰다. 아래 여백 0.75rem은 근로자 Shell의 py-3(App.tsx)과 같다.
 // 2) 맞추기: 그림이 바닥(min-h)까지 줄었는데도 "완료"가 화면 아래로 넘치면(작은 휴대폰 360×740·375×667,
-//    긴 문장, 글자 크기를 키운 휴대폰) 문장 글씨를 32px → 24px → 20px(굵게)로 낮추고, 그래도 넘치면 동작
-//    꼬리표를 접는다. 터치 영역(80px)은 줄이지 않는다. 단계가 바뀌거나 화면 크기가 바뀌면 큰 글씨부터 다시 잰다.
+//    긴 문장, 글자 크기를 키운 휴대폰) 한 단계씩 줄인다.
+//      0: 문장 32px(text-worker-lg) · 동작 꼬리표 · 그림 바닥 min(10rem, 20dvh)
+//      1: 문장 24px(text-worker)
+//      2: 동작 꼬리표를 접고 카드 안 여백을 줄인다
+//      3: 그림 바닥을 min(8rem, 15dvh)로 낮춘다
+//      4: 그래도 넘치면(100자가 넘는 문장을 작은 화면·큰 글자로 볼 때) 한 화면에 넣기를 포기하고 스크롤한다.
+//         이때는 그림을 작게 둘 까닭이 없으므로 1단계 모양(큰 그림 바닥·꼬리표)으로 되돌린다. 단계가 바뀌면 맨 위로 돌아간다.
+//    문장은 근로자 글씨 크기(text-worker, 24px) 아래로 내리지 않는다(Phase 0.4 큰 글씨) — 남는 자리는 꼬리표와
+//    그림이 양보한다. 터치 영역(80px)도 줄이지 않는다. 단계가 바뀌거나 화면 크기가 바뀌면 처음 단계부터 다시 잰다.
 //    useLayoutEffect 안에서 고치므로 줄이는 과정이 화면에 깜빡이지 않는다.
-const FIT_MAX = 3;
-type FitLevel = 0 | 1 | 2 | 3;
+const FIT_MAX = 4;
+type FitLevel = 0 | 1 | 2 | 3 | 4;
 
 function useStepScreenFit(stepKey: string) {
   // 콜백 ref로 받는다: 직무 완료 화면 → 다음 직무처럼 단계 화면이 다시 그려지면 새 요소에서 다시 잰다.
@@ -119,11 +126,14 @@ function useStepScreenFit(stepKey: string) {
       // ① 단계 화면 전체(그림·문장·버튼)의 아래 끝이 첫 화면 밖이면 줄인다. 0.5px은 반올림 여유.
       const bottom = el.getBoundingClientRect().bottom + window.scrollY;
       const overflowing = bottom > window.innerHeight + 0.5;
-      // ② 다 들어와도 그림이 10rem(160px)보다 작으면 글씨를 줄여 그림 자리를 늘린다 — 작은 휴대폰(375×667)에서
-      //    32px 문장이 두 줄을 먹고 그림이 133px로 줄던 것. 꼬리표까지 접는 마지막 단계는 넘칠 때만 쓴다.
+      // ② 다 들어와도 그림이 10rem(160px)보다 작으면 문장을 32px → 24px로 줄이고, 그래도 작으면 꼬리표를 접어
+      //    그림 자리를 늘린다 — 작은 휴대폰(375×667)에서 32px 문장이 두 줄을 먹고 그림이 133px로 줄던 것. 그림이
+      //    꼬리표보다 중요하다. 3단계는 그림 바닥을 낮추는 단계라 그림을 키우지 못하므로 넘칠 때만 쓴다.
       const pic = el.querySelector("[data-testid='step-picture']")?.getBoundingClientRect();
       const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-      const pictureSmall = !!pic && Math.min(pic.width, pic.height) < 10 * rem - 0.5 && level < FIT_MAX - 1;
+      // 크기가 0이면 아직 배치되지 않은 것(숨김·레이아웃 없는 환경)이라 판단하지 않는다.
+      const side = pic ? Math.min(pic.width, pic.height) : 0;
+      const pictureSmall = side > 0 && side < 10 * rem - 0.5 && level < 2;
       if (overflowing || pictureSmall) setFit({ key, level: (level + 1) as FitLevel });
     };
     shrinkIfCrowded();
@@ -158,7 +168,17 @@ function StepProgress({ title, current, total }: { title: string; current: numbe
 // 그림 칸은 남은 높이를 다 가져가고(flex-1), 그 안에서 칸의 가로·세로 중 짧은 쪽에 맞춘 정사각형으로 그린다
 // (100cqmin). 그래서 휴대폰에서는 가로를 거의 다 쓰고, 문장이 길면 잘리지 않고 작아진다. 바닥은
 // min(160px, 화면 높이의 20%) — 그보다 작으면 그림을 알아보기 어렵고, 작은 휴대폰(667px)에서는 160px을
-// 고집하면 "완료"가 화면 밖으로 밀린다.
+// 고집하면 "완료"가 화면 밖으로 밀린다. 그래도 넘치면(맞추기 2·3단계) 문장 글씨 대신 그림 바닥을 낮춘다.
+const PICTURE_FLOOR: Record<FitLevel, string> = {
+  0: "min-h-[min(10rem,20dvh)]",
+  1: "min-h-[min(10rem,20dvh)]",
+  2: "min-h-[min(10rem,20dvh)]",
+  3: "min-h-[min(8rem,15dvh)]",
+  4: "min-h-[min(10rem,20dvh)]", // 스크롤하기로 한 단계 — 그림을 다시 키운다
+};
+// 2·3단계(꼭 맞춰 넣는 단계)에서만 꼬리표를 접고 카드 안 여백을 줄인다.
+const tight = (level: FitLevel) => level === 2 || level === 3;
+
 function StepCard({ step, level, onMediaError, children }: {
   step: Step;
   level: FitLevel;
@@ -166,8 +186,9 @@ function StepCard({ step, level, onMediaError, children }: {
   children?: ReactNode;
 }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-slate-200 bg-white p-3 text-center">
-      <div className="relative max-h-[100cqw] min-h-[min(10rem,20dvh)] flex-1">
+    <div className={cn("flex min-h-0 flex-1 flex-col rounded-2xl border border-slate-200 bg-white text-center",
+      tight(level) ? "p-2" : "p-3")}>
+      <div className={cn("relative max-h-[100cqw] flex-1", PICTURE_FLOOR[level])}>
         <div data-testid="step-picture" className="absolute inset-0 flex items-center justify-center [container-type:size]">
           {step.symbol_url ? (
             <img src={step.symbol_url} alt={step.sentence}
@@ -183,8 +204,8 @@ function StepCard({ step, level, onMediaError, children }: {
       </div>
       {/* 동작 꼬리표(ActionChip)는 뺐다(0차 3번). 문장과 그림이 이미 동작을 말하고, 꼬리표가 틀리면 근로자가 헷갈린다. */}
       <p data-testid="step-sentence" data-fit={level}
-        className={cn("mt-2 text-pretty font-bold text-slate-900",
-          level === 0 ? "text-worker-lg leading-snug" : level === 1 ? "text-worker leading-snug" : "text-xl")}>
+        className={cn("text-pretty font-bold leading-snug text-slate-900", tight(level) ? "mt-1" : "mt-2",
+          level === 0 ? "text-worker-lg" : "text-worker")}>
         {step.sentence}
       </p>
       {children}
@@ -361,27 +382,30 @@ function TodayView({ cards, onMediaError }: {
       </div>
     );
 
+  // 직무 사이 화면: 누를 것("다음 일 시작하기")을 축하 문구 바로 아래, 목록보다 위에 둔다. 목록을 버튼 위에
+  // 두면 오늘 할 일이 4~5개이거나 글자를 키운 작은 휴대폰에서 버튼이 첫 화면 밖으로 밀렸다(3차 검증).
   if (jobDone)
     return (
-      <div className="mx-auto rounded-2xl border-2 border-green-600 bg-green-50 p-8 text-center wide:max-w-2xl">
-        <div className="text-6xl">👏</div>
-        <p className="mt-4 text-balance text-worker-lg font-bold text-green-800">"{card.task_title}" 일을 마쳤어요!</p>
+      <div className="mx-auto rounded-2xl border-2 border-green-600 bg-green-50 px-4 py-5 text-center wide:max-w-2xl">
+        <p className="text-balance text-worker-lg font-bold text-green-800">
+          <span aria-hidden="true">👏 </span>"{card.task_title}" 일을 마쳤어요!
+        </p>
+        <button onClick={startNextJob}
+          className="mt-4 min-h-touch w-full text-balance rounded-2xl bg-green-700 px-3 text-worker-lg font-bold leading-tight text-white">
+          다음 일 시작하기 →
+        </button>
         {/* 오늘 받은 일 중 몇 번째인지는 단계 화면이 아니라 여기(일과 일 사이)에서 목록으로 보여 준다. */}
-        <p className="mt-2 text-worker text-green-700">오늘 할 일 {cards.length}개 중 {cardIdx + 1}개를 마쳤어요.</p>
-        <ol aria-label="오늘 할 일" className="mx-auto mt-4 max-w-sm space-y-2 text-left">
+        <p className="mt-5 text-worker text-green-700">오늘 할 일 {cards.length}개 중 {cardIdx + 1}개를 마쳤어요.</p>
+        <ol aria-label="오늘 할 일" className="mx-auto mt-2 max-w-sm space-y-1 text-left">
           {cards.map((c, i) => (
             <li key={c.assignment_id}
-              className={cn("flex items-center gap-3 rounded-xl px-4 py-2 text-worker",
-                i <= cardIdx ? "bg-white text-green-800" : i === nextIdx ? "bg-white font-bold text-slate-900" : "text-slate-700")}>
-              <span aria-hidden="true">{i <= cardIdx ? "✓" : i === nextIdx ? "→" : "·"}</span>
+              className={cn("flex items-baseline gap-3 rounded-xl px-3 py-1 text-worker leading-snug",
+                i <= cardIdx ? "text-green-800" : i === nextIdx ? "bg-white font-bold text-slate-900" : "text-slate-700")}>
+              <span aria-hidden="true" className="w-5 shrink-0 text-center">{i <= cardIdx ? "✓" : i === nextIdx ? "→" : "·"}</span>
               <span className="text-pretty">{c.task_title}</span>
             </li>
           ))}
         </ol>
-        <button onClick={startNextJob}
-          className="mt-6 min-h-touch w-full text-balance rounded-2xl bg-green-700 px-3 text-worker-lg font-bold text-white">
-          다음 일 시작하기 →
-        </button>
       </div>
     );
 
@@ -391,7 +415,7 @@ function TodayView({ cards, onMediaError }: {
         <div className="text-6xl">🎉</div>
         <p className="mt-4 text-balance text-worker-lg font-bold text-green-800">오늘 일을 모두 마쳤어요!</p>
         <p className="mt-2 text-worker text-green-700">정말 잘했어요.</p>
-        <p className="mt-4 text-base text-green-700">"지난 일 보기"에서 다시 볼 수 있어요.</p>
+        <p className="mt-4 text-base text-green-700">아래 "지난 일 보기"에서 다시 볼 수 있어요.</p>
       </div>
     );
 
@@ -401,21 +425,26 @@ function TodayView({ cards, onMediaError }: {
     <StepScreen title={card.task_title} current={stepIdx + 1} total={total} step={step} onMediaError={onMediaError}>
       {/* 도움 요청: 누르는 즉시 이 단계가 '막힘'으로 기록되어 사업주 대시보드에 바로 표시된다.
           단계는 넘기지 않는다 — 다음 단계로 가려면 "완료"를 따로 눌러야 한다.
-          다시 듣기와 한 줄에 둬서 "완료"가 휴대폰 첫 화면 안에 들어오게 한다. 다만 칸이 좁으면(19rem 미만:
-          화면 확대·큰 글자 설정) 반쪽 버튼에 "요청했어요"가 다 안 들어가 "요청했어 / 요"처럼 낱말이 쪼개지므로
-          한 줄에 하나씩 쌓는다. rem 기준이라 글자 크기를 키우면 그만큼 일찍 쌓인다. */}
-      <div className="mt-3 grid grid-cols-1 gap-3 [@container(min-width:19rem)]:grid-cols-2">
+          다시 듣기와 한 줄에 둬서 "완료"가 휴대폰 첫 화면 안에 들어오게 한다. 반쪽 버튼에 글자가 다 안 들어가면
+          낱말 경계에서 두 줄이 된다("🔊 다시 / 듣기"). 한 줄에 하나씩 쌓으면 버튼 한 개(80px + 간격)만큼 그림
+          자리를 잃어, 작은 휴대폰·큰 글자에서 "완료"가 화면 밖으로 밀렸다 — 그래서 칸이 아주 좁을 때(16rem 미만:
+          "필요해요" 한 낱말도 반쪽에 안 들어가는 폭)만 쌓는다. rem 기준이라 글자 크기를 키우면 그만큼 일찍 쌓인다. */}
+      <div className="mt-3 grid grid-cols-1 gap-3 [@container(min-width:16rem)]:grid-cols-2">
         <button onClick={playTts}
-          className="inline-flex min-h-touch items-center justify-center gap-2 rounded-2xl border-2 border-blue-200 bg-blue-50 px-2 text-worker font-semibold text-blue-800">
+          className="inline-flex min-h-touch items-center justify-center gap-x-2 rounded-2xl border-2 border-blue-200 bg-blue-50 px-1 text-worker font-semibold leading-tight text-blue-800">
           🔊 다시 듣기
         </button>
         <button onClick={reportHelpNow} aria-pressed={needHelp}
-          className={cn("min-h-touch rounded-2xl border-2 px-2 text-worker font-semibold leading-tight",
+          className={cn("min-h-touch rounded-2xl border-2 px-1 text-worker font-semibold leading-tight",
             needHelp
               ? "border-amber-500 bg-amber-100 text-amber-900"
               : "border-amber-300 bg-amber-50 text-amber-800")}>
-          {/* 누른 뒤 글자는 짧게 둔다("도움을 요청했어요"는 반쪽 버튼에서 낱말이 쪼개졌다). */}
-          {needHelp ? "🙋 요청했어요" : "🙋 도움이 필요해요"}
+          {/* 누른 뒤 글자는 짧게 둔다("도움을 요청했어요"는 반쪽 버튼에서 낱말이 쪼개졌다). 좁은 반쪽 버튼에서
+              "요청했어요" 한 낱말이 안 들어가면 "요청했어 / 요"가 아니라 말의 마디인 "요청 / 했어요"에서 넘긴다(<wbr>).
+              그림 글자(🙋)는 첫 낱말과 붙여 둔다 — 혼자 한 줄을 차지하면 버튼이 세 줄(117px)로 커져 "완료"를 밀어낸다. */}
+          {needHelp
+            ? <><span className="whitespace-nowrap">🙋 요청</span><wbr />했어요</>
+            : <><span className="whitespace-nowrap">🙋 도움이</span> 필요해요</>}
         </button>
       </div>
       {helpFailed && (
