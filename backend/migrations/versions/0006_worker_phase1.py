@@ -109,6 +109,11 @@ def downgrade() -> None:
             if name in cols:
                 batch.drop_column(name)
     cols = _columns(bind, "performance_logs")
+    if "completed" in cols:
+        # 0005 코드는 "기록이 있는 단계 수 >= 단계 수"면 다 함으로 본다. completed=0(어려움 신호만 있고 끝내지
+        # 않은 단계) 행을 남긴 채 컬럼만 지우면, 그 행이 완료로 세어져 예전 완료 판정 버그가 되살아난다(1차 검증 지적).
+        # 되돌릴 때는 그 행을 지운다(잃는 것은 어려움 신호 기록뿐이다).
+        op.execute(sa.text("DELETE FROM performance_logs WHERE completed = 0"))
     with op.batch_alter_table("performance_logs") as batch:
         for name in ("client_event_id", "completed"):
             if name in cols:

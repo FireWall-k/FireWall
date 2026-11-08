@@ -735,13 +735,20 @@ def test_0006_backfills_and_downgrades():
     names = {i["name"] for i in inspect(engine).get_indexes("help_requests")}
     assert "ix_help_requests_assignment_state" in names
 
-    # 되돌리면 데이터는 남고 새 컬럼·테이블만 빠진다. 다시 올려도 head.
+    # 0006 앱이 남긴 '완료 아님' 신호 기록(어려움만 알리고 끝내지 않은 단계).
+    with engine.begin() as conn:
+        conn.execute(text(
+            "INSERT INTO performance_logs (id, assignment_id, step_id, completed_at, duration_sec, replay_count, "
+            "stuck, completed) VALUES ('l6b', 'a6', 'sp2', '2026-01-01 00:01:00', 1.0, 0, 1, 0)"))
+
+    # 되돌리면 완료 기록은 남고 새 컬럼·테이블만 빠진다. 신호 전용 행은 지운다 — 남기면 0005 코드가
+    # '기록 2개 = 단계 2개'로 보고 이 배정을 다 함으로 만든다. 다시 올려도 head.
     db_migrate.downgrade(engine, "0005_access_code_cipher")
     assert "help_requests" not in inspect(engine).get_table_names()
     assert "completed" not in {c["name"] for c in inspect(engine).get_columns("performance_logs")}
     assert "a11y_prefs" not in {c["name"] for c in inspect(engine).get_columns("workers")}
     with engine.connect() as conn:
-        assert conn.execute(text("SELECT count(*) FROM performance_logs")).scalar() == 1
+        assert conn.execute(text("SELECT id FROM performance_logs")).scalars().all() == ["l6"]
     db_migrate.upgrade_to_head(engine)
     assert db_migrate.is_at_head(engine)
 

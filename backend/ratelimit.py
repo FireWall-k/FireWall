@@ -81,6 +81,20 @@ worker_wp_throttle = LoginThrottle(
     max_failures=int(os.getenv("WORKER_LOGIN_WP_MAX_FAILURES", "60")),
     window_sec=float(os.getenv("WORKER_LOGIN_WINDOW_SEC", "600")),
 )
+# 근로자: 하루 창(1차 검증 지적). 10분 창만 있으면 창이 풀릴 때마다 다시 시도해 사업장당 하루 8,640번까지 넣어 볼
+# 수 있었다. 근로자 20명이면 1만 개 중 21개가 맞아 평균 약 476번(80분 안팎)이면 동료 계정 하나가 열린다.
+# 하루 창을 위에 하나 더 둔다: 사업장 하루 100번, IP 하루 100번 틀리면 24시간 막는다. 이 한도로는 같은 계산에서
+# 평균 약 5일이 걸린다. 성공은 세지 않으므로, 근로자 몇 명이 몇 번 잘못 누르는 정도로는 닿지 않는다.
+# TODO(2차): 사업장 하루 한도에 닿으면 사업주 화면에 알림(도움 띠와 같은 폴링).
+_DAY = 24 * 60 * 60
+worker_day_throttle = LoginThrottle(
+    max_failures=int(os.getenv("WORKER_LOGIN_DAILY_MAX_FAILURES", "100")),
+    window_sec=float(os.getenv("WORKER_LOGIN_DAILY_WINDOW_SEC", str(_DAY))),
+)
+worker_wp_day_throttle = LoginThrottle(
+    max_failures=int(os.getenv("WORKER_LOGIN_WP_DAILY_MAX_FAILURES", "100")),
+    window_sec=float(os.getenv("WORKER_LOGIN_DAILY_WINDOW_SEC", str(_DAY))),
+)
 # 도움 요청 도배 방지(키 "help:{worker_id}"). 실패가 아니라 "새 요청"을 센다 — 60초에 10건이 넘으면 429.
 help_throttle = LoginThrottle(max_failures=10, window_sec=60)
 

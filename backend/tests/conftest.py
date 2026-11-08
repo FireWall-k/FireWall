@@ -96,6 +96,8 @@ def _reset_login_throttle():
     ratelimit.employer_throttle.clear()
     ratelimit.worker_throttle.clear()
     ratelimit.worker_wp_throttle.clear()
+    ratelimit.worker_day_throttle.clear()
+    ratelimit.worker_wp_day_throttle.clear()
     ratelimit.help_throttle.clear()
     yield
 

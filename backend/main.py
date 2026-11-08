@@ -127,7 +127,9 @@ from ratelimit import (
     employer_throttle,
     ensure_not_blocked,
     help_throttle,
+    worker_day_throttle,
     worker_throttle,
+    worker_wp_day_throttle,
     worker_wp_throttle,
 )
 import maintenance
@@ -391,6 +393,9 @@ def worker_login(payload: WorkerLogin, request: Request,
     wp_key = f"wp:{normalize_workplace_code(payload.workplace_code)}"
     ensure_not_blocked(worker_throttle, key)
     ensure_not_blocked(worker_wp_throttle, wp_key)
+    # 하루 창: 10분 창이 풀릴 때마다 다시 훑는 느린 대입을 막는다(사업장·IP 각각 하루 100번).
+    ensure_not_blocked(worker_day_throttle, key)
+    ensure_not_blocked(worker_wp_day_throttle, wp_key)
     # 접속 코드는 사업장 안에서만 unique다. 사업장 코드로 사업장을 먼저 정하고, 그 사업장 기준
     # 해시로만 찾는다 — 다른 사업장 근로자의 코드는 여기서 절대 맞지 않는다.
     employer = db.scalar(select(Employer).where(
@@ -408,6 +413,8 @@ def worker_login(payload: WorkerLogin, request: Request,
     if worker is None:
         worker_throttle.fail(key)
         worker_wp_throttle.fail(wp_key)
+        worker_day_throttle.fail(key)
+        worker_wp_day_throttle.fail(wp_key)
         # 사업장 코드가 틀린 경우와 접속 코드가 틀린 경우를 같은 응답으로 돌려준다.
         # 다르게 답하면 사업장 코드가 존재하는지를 이 엔드포인트로 탐지할 수 있다.
         raise HTTPException(status_code=401, detail="사업장 코드 또는 접속 코드가 올바르지 않습니다.")
@@ -692,6 +699,9 @@ def export_worker(worker_id: str, request: Request, db: Session = Depends(get_db
             "id": worker.id, "display_name": worker.display_name, "note": worker.note or "",
             "ai_note_allowed": bool(worker.ai_note_allowed), "created_at": _iso(worker.created_at),
             "access_code_hint": worker.access_code_hint,
+            # 0006: 근로자 화면 설정과 마지막 접속 시각도 그 사람에 관한 정보라 사본에 싣는다.
+            "a11y_prefs": parse_a11y_prefs(worker.a11y_prefs).model_dump(mode="json"),
+            "last_seen_at": _iso(worker.last_seen_at),
         },
         "consents": [_consent_out(c).model_dump(mode="json") for c in consents],
         "assignments": [{
@@ -1306,15 +1316,12 @@ def delete_step(task_id: str, step_id: str, db: Session = Depends(get_db),
     return _task_out(task)
 
 
-@app.post("/api/tasks/{task_id}/publish", response_model=TaskOut)
-def publish_task(task_id: str, db: Session = Depends(get_db),
-                 user: dict = Depends(require_employer)) -> TaskOut:
-    """직무를 근로자에게 보낼 수 있게 한다(0차 7번: 그림 없는 단계가 있으면 막는다).
+def _ensure_sendable(task: Task) -> None:
+    """근로자에게 나갈 수 있는 직무인지 본다: 단계가 있고, 모든 단계에 그림이 있어야 한다(422).
 
-    창업자 결정 9: 단계마다 그림 1장. 그림 없는 단계가 근로자 화면에 빈 칸으로 나가면 그 단계를 따라 할 수 없다.
-    이미 보낸 직무를 다시 보낼 때도 같은 검사를 한다(보낸 뒤 사진을 지운 경우).
+    보내기(publish)와 배정(assign) 둘 다 부른다. 보낸 뒤 단계를 더하거나 사진을 지우면 status는 'published'
+    그대로라, 배정에서 다시 보지 않으면 그림 없는 단계가 근로자에게 나간다(1차 검증 지적).
     """
-    task = _owned_task(task_id, user["sub"], db)
     if not task.steps:
         raise HTTPException(status_code=422, detail="단계가 없는 직무는 보낼 수 없어요.")
     missing = [s.order_index for s in sorted(task.steps, key=lambda x: x.order_index)
@@ -1325,6 +1332,18 @@ def publish_task(task_id: str, db: Session = Depends(get_db),
             detail=f"그림이 없는 단계가 있어요({', '.join(str(n) for n in missing)}단계). "
                    "그림을 고르거나 사진을 올린 뒤 보내 주세요.",
         )
+
+
+@app.post("/api/tasks/{task_id}/publish", response_model=TaskOut)
+def publish_task(task_id: str, db: Session = Depends(get_db),
+                 user: dict = Depends(require_employer)) -> TaskOut:
+    """직무를 근로자에게 보낼 수 있게 한다(0차 7번: 그림 없는 단계가 있으면 막는다).
+
+    창업자 결정 9: 단계마다 그림 1장. 그림 없는 단계가 근로자 화면에 빈 칸으로 나가면 그 단계를 따라 할 수 없다.
+    이미 보낸 직무를 다시 보낼 때도 같은 검사를 한다(보낸 뒤 사진을 지운 경우).
+    """
+    task = _owned_task(task_id, user["sub"], db)
+    _ensure_sendable(task)
     # TODO(2차 편집기): 확인 안 한 자동 그림(auto_high/choose)도 서버에서 막는다. 지금 사업주 화면은 확인을
     # 서버에 저장하지 않고(클라이언트 상태) 화면에서만 막는다. 편집기가 picture/confirm API를 쓰기 시작하면 바꾼다.
     task.status = "published"
@@ -1400,6 +1419,7 @@ def assign_task(task_id: str, payload: AssignRequest = AssignRequest(),
     task = _owned_task(task_id, user["sub"], db)
     if task.status != "published":
         raise HTTPException(status_code=400, detail="게시된 직무만 배정할 수 있습니다.")
+    _ensure_sendable(task)
 
     if payload.worker_ids:
         worker_ids = list(dict.fromkeys(payload.worker_ids))  # 순서 보존 중복 제거
@@ -1598,7 +1618,22 @@ def create_log(payload: PerformanceLogCreate, response: Response, db: Session = 
     """단계 완료(또는 어려움 신호) 기록. 새로 적용하면 201, 중복·늦게 온 옛 기록은 바꾸지 않고 200.
 
     근로자 기기의 오프라인 대기열은 2xx면 지우고, 400·404·422는 버리고, 401·429·5xx는 다시 보낸다.
+
+    알려진 한계: 같은 단계의 기록 순서는 기기 시각(client_completed_at)으로 정한다. 시계가 크게 늦은 기기가
+    나중에 다시 한 기록은 '옛 기록'으로 보고 200으로 버린다(5분 넘게 앞선 시각만 서버 시각으로 바꾼다).
     """
+    try:
+        return _create_log_once(payload, response, db, user)
+    except IntegrityError:
+        # 두 기기가 같은 단계의 첫 기록을 동시에 보냈다: 둘 다 "기록 없음"을 보고 넣다가 하나가
+        # UNIQUE(assignment_id, step_id)에 걸린다. 되돌리고 한 번 더 하면 이번에는 있는 기록을 찾아
+        # 중복·옛 기록 규칙대로 처리한다(예전에는 500이었다, 1차 검증 지적).
+        db.rollback()
+        return _create_log_once(payload, response, db, user)
+
+
+def _create_log_once(payload: PerformanceLogCreate, response: Response, db: Session,
+                     user: dict) -> LogResultOut:
     a = db.get(Assignment, payload.assignment_id)
     if a is None or a.worker_id != user["sub"]:
         raise HTTPException(status_code=404, detail="배정을 찾을 수 없습니다.")
@@ -1734,6 +1769,27 @@ def create_help(payload: HelpCreate, response: Response, db: Session = Depends(g
             response.status_code = 200
             return _help_out(db, same)
     active = _active_help(db, a.id)
+    if active is not None and active.state == "acknowledged":
+        # 선생님이 확인했지만 아직 오지 않았을 때 근로자가 다시 불렀다(새 누름 = 새 client_request_id).
+        # 예전에는 확인된 요청을 그대로 돌려줘서 근로자는 '선생님이 확인했어요'를 바로 보고, 사업주 화면에는
+        # 새 호출이 뜨지 않았다(1차 검증 지적). 같은 요청을 다시 '열림'으로 되돌리고 부른 시각을 새로 적는다.
+        key = f"help:{user['sub']}"
+        wait = help_throttle.retry_after(key)
+        if wait:
+            raise HTTPException(status_code=429, detail="잠깐 기다렸다가 다시 불러 주세요.",
+                                headers={"Retry-After": str(wait)})
+        active.state = "open"
+        active.acknowledged_at = None
+        active.created_at = _utcnow()
+        active.client_request_id = payload.client_request_id
+        if step_id is not None:
+            active.step_id = step_id
+        db.commit()
+        db.refresh(active)
+        help_throttle.fail(key)
+        notify_help_opened(db, active)
+        response.status_code = 200
+        return _help_out(db, active)
     if active is not None:
         if step_id is not None and active.step_id != step_id:
             active.step_id = step_id  # 다른 단계에서 다시 불렀다 — 사업주가 지금 단계를 보게 한다

@@ -708,6 +708,8 @@ def test_export_includes_help_requests(client, employer_token, worker):
     assert set(h) == {"assignment_id", "step_order", "state", "resolution", "created_at",
                       "acknowledged_at", "cancelled_at", "resolved_at"}
     assert data["performance_logs"][0]["completed"] is True
+    assert data["worker"]["a11y_prefs"]["autoplay_sound"] is True
+    assert "last_seen_at" in data["worker"]
 
 
 def test_delete_worker_removes_help_requests(client, employer_token):
@@ -762,3 +764,114 @@ def test_purge_removes_expired_help_requests(client, employer_token, worker, mon
     with SessionLocal() as db:
         assert db.get(HelpRequest, old["id"]) is None
         assert db.get(HelpRequest, fresh["id"]) is not None
+
+
+# --- 1차 검증 반영 ----------------------------------------------------------------------------
+
+def test_assign_blocked_when_published_task_gains_pictureless_step(client, employer_token, worker):
+    """보낸 뒤 그림 없는 단계를 더해도 status는 'published'다. 배정에서 다시 봐서 근로자에게 나가지 않게 한다."""
+    task = _task(client, employer_token)
+    assert publish(client, employer_token, task["id"]).status_code == 200
+    r = client.post(f"/api/tasks/{task['id']}/steps", json={"sentence": "바닥을 닦아요"},
+                    headers=auth(employer_token))
+    assert r.status_code == 201
+    new_step = r.json()["steps"][-1]
+    _set_step(new_step["id"], symbol_url=None, symbol_media_id=None)
+    r = client.post(f"/api/tasks/{task['id']}/assignments", json={"worker_id": worker["id"]},
+                    headers=auth(employer_token))
+    assert r.status_code == 422
+    assert r.json()["detail"] == ("그림이 없는 단계가 있어요(3단계). "
+                                  "그림을 고르거나 사진을 올린 뒤 보내 주세요.")
+    assert _today(client, worker["token"]) == []
+
+
+def test_help_recall_after_ack_reopens_request(client, employer_token, worker):
+    """선생님이 확인한 뒤 근로자가 다시 부르면(새 누름) 요청이 다시 '열림'이 되고 사업주 목록에 다시 뜬다."""
+    _, aid, (s1, s2) = _assigned(client, employer_token, worker["id"])
+    emp = auth(employer_token)
+    first = _help(client, worker["token"], aid, s1, client_request_id="press-1").json()
+    client.post(f"/api/employer/help/{first['id']}/acknowledge", headers=emp)
+    assert client.get("/api/employer/help?state=open", headers=emp).json() == []
+
+    again = _help(client, worker["token"], aid, s2, client_request_id="press-2")
+    assert again.status_code == 200
+    body = again.json()
+    assert body["state"] == "open" and body["acknowledged_at"] is None and body["step_id"] == s2
+    assert body["created_at"] >= first["created_at"]
+    open_ids = [h["id"] for h in client.get("/api/employer/help?state=open", headers=emp).json()]
+    assert open_ids == [first["id"]]
+    # 같은 누름의 재전송은 그대로 한 건(다시 열지 않는다).
+    resend = _help(client, worker["token"], aid, s2, client_request_id="press-2")
+    assert resend.status_code == 200 and resend.json()["state"] == "open"
+
+
+def test_help_recall_after_ack_calls_notify_hook(client, employer_token, worker, monkeypatch):
+    _, aid, (s1, _) = _assigned(client, employer_token, worker["id"])
+    calls = []
+    monkeypatch.setattr(main, "notify_help_opened", lambda db, h: calls.append(h.id))
+    h = _help(client, worker["token"], aid, s1, client_request_id="a").json()
+    client.post(f"/api/employer/help/{h['id']}/acknowledge", headers=auth(employer_token))
+    _help(client, worker["token"], aid, s1, client_request_id="b")
+    assert calls == [h["id"], h["id"]]
+
+
+def test_worker_login_daily_limit_per_workplace(client, monkeypatch):
+    """10분 창이 풀려도 하루 창이 남는다: 사업장 하루 한도를 넘으면 IP를 바꿔도, 맞는 코드여도 429."""
+    monkeypatch.setenv("TRUST_FORWARDED_FOR", "1")
+    monkeypatch.setattr(ratelimit.worker_wp_day_throttle, "max_failures", 5)
+    for i in range(5):
+        r = client.post("/api/auth/worker-login", json={"workplace_code": "DEMO01", "access_code": f"7{i:03d}"},
+                        headers={"X-Forwarded-For": f"10.3.0.{i}"})
+        assert r.status_code == 401
+        ratelimit.worker_wp_throttle.clear()  # 10분 창이 지났다고 친다
+    r = client.post("/api/auth/worker-login", json={"workplace_code": "DEMO01", "access_code": "1234"},
+                    headers={"X-Forwarded-For": "10.3.9.9"})
+    assert r.status_code == 429 and int(r.headers["Retry-After"]) > 600
+
+
+def test_worker_login_daily_limit_per_ip(client, monkeypatch):
+    monkeypatch.setattr(ratelimit.worker_day_throttle, "max_failures", 4)
+    for i in range(4):
+        assert client.post("/api/auth/worker-login",
+                           json={"workplace_code": f"ZZ{i:04d}", "access_code": "1111"}).status_code == 401
+        ratelimit.worker_throttle.clear()
+        ratelimit.worker_wp_throttle.clear()
+    assert client.post("/api/auth/worker-login",
+                       json={"workplace_code": "DEMO01", "access_code": "1234"}).status_code == 429
+
+
+def test_daily_limit_defaults_bound_guessing_budget():
+    """기본 하루 예산: 사업장·IP 각각 하루 100번 이하(1만 개 코드 대입이 며칠 걸리게)."""
+    assert ratelimit.worker_wp_day_throttle.max_failures <= 200
+    assert ratelimit.worker_day_throttle.max_failures <= 200
+    assert ratelimit.worker_wp_day_throttle.window_sec >= 24 * 60 * 60
+    assert ratelimit.worker_day_throttle.window_sec >= 24 * 60 * 60
+
+
+def test_concurrent_first_log_integrity_error_is_retried(client, employer_token, worker, monkeypatch):
+    """두 기기가 같은 단계의 첫 기록을 동시에 보내 UNIQUE에 걸려도 500이 아니라 다시 처리한다."""
+    from sqlalchemy.exc import IntegrityError
+
+    _, aid, (s1, _) = _assigned(client, employer_token, worker["id"])
+    original = main._create_log_once
+    state = {"n": 0}
+
+    def racing(payload, response, db, user):
+        state["n"] += 1
+        if state["n"] == 1:
+            # 다른 기기의 기록이 먼저 들어갔다.
+            with SessionLocal() as other:
+                other.add(PerformanceLog(assignment_id=aid, step_id=s1, completed=True,
+                                         completed_at=datetime(2020, 1, 1), duration_sec=1.0,
+                                         replay_count=0, stuck=False, client_event_id="dev-b"))
+                other.commit()
+            raise IntegrityError("INSERT", {}, Exception("UNIQUE constraint failed"))
+        return original(payload, response, db, user)
+
+    monkeypatch.setattr(main, "_create_log_once", racing)
+    r = _log(client, worker["token"], aid, s1, client_event_id="dev-a")
+    assert r.status_code in (200, 201), r.text
+    assert state["n"] == 2
+    with SessionLocal() as db:
+        rows = db.scalars(select(PerformanceLog).where(PerformanceLog.assignment_id == aid)).all()
+    assert len(rows) == 1
