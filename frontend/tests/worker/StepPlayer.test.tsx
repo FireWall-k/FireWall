@@ -109,6 +109,9 @@ describe("StepPlayer live", () => {
 
   it("소리 자동 재생 끔(근로자 설정): 들어가도 재생하지 않는다", () => {
     setup({ prefs: { autoplay_sound: false } });
+    // 이름이 '듣기'↔'멈춤'으로 바뀌므로 aria-pressed는 쓰지 않는다(3차 검증).
+    expect(screen.getByTestId("speak-button")).not.toHaveAttribute("aria-pressed");
+    expect(screen.getByTestId("speak-button")).toHaveTextContent("듣기");
     expect(playSpy).not.toHaveBeenCalled();
     expect(speak).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId("speak-button"));

@@ -213,9 +213,11 @@ async function send(url: string, init?: RequestInit): Promise<Response> {
 }
 
 /** 2xx가 아닌 응답을 ApiError(또는 AuthError)로 바꾼다. */
-async function toError(path: string, res: Response, fallback?: string): Promise<ApiError> {
+async function toError(path: string, res: Response, fallback?: string, sentToken?: string | null): Promise<ApiError> {
   if (res.status === 401 && !isLoginPath(path)) {
-    clearAuth();
+    // 저장된 로그인은 이 요청이 실어 보낸 토큰일 때만 지운다(3차 검증). 앞사람(근로자 A)의 대기열이 A 토큰으로
+    // 보낸 기록이 401이 됐다고, 그사이 같은 기기로 들어온 근로자 B의 로그인을 지우면 안 된다.
+    if (sentToken === undefined || getAuth()?.token === sentToken) clearAuth();
     return new AuthError();
   }
   const body = (await res.json().catch(() => ({}))) as { detail?: unknown };
@@ -225,17 +227,24 @@ async function toError(path: string, res: Response, fallback?: string): Promise<
   return new ApiError(res.status, null, errorDetail(body, res.status));
 }
 
+export interface ReqOptions {
+  /** 저장된 로그인 대신 이 토큰을 붙인다. */
+  token?: string | null;
+}
+
 /**
  * 인증 토큰을 붙여 JSON API를 부른다. 실패하면 던지는 것:
  * NetworkError(닿지 못함) / AuthError(로그인 밖의 401, 저장된 로그인을 지움) / ApiError(그 밖, message = 서버 detail).
  * 근로자 화면 호출(worker/workerApi.ts)도 이 함수를 쓴다.
  */
-export async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const auth = getAuth();
+export async function req<T>(path: string, init?: RequestInit, opts?: ReqOptions): Promise<T> {
+  // opts.token: 이 토큰으로 보낸다(저장된 로그인이 그사이 바뀌어도). 근로자 세션·대기열은 세션을 연 토큰을 쓴다 —
+  // 같은 기기에서 다른 근로자가 들어온 뒤 앞사람 기록이 뒷사람 토큰으로 가 404로 버려지던 문제(3차 검증).
+  const token = opts?.token !== undefined ? opts.token : (getAuth()?.token ?? null);
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (auth) headers.Authorization = `Bearer ${auth.token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await send(`${BASE}${path}`, { ...init, headers: { ...headers, ...(init?.headers ?? {}) } });
-  if (!res.ok) throw await toError(path, res);
+  if (!res.ok) throw await toError(path, res, undefined, token);
   return res.json() as Promise<T>;
 }
 

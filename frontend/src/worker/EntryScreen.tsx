@@ -194,8 +194,9 @@ export default function EntryScreen({ onLogin }: { onLogin: (a: AuthState) => vo
         )}
         {!busy && message ? (
           <div role="alert" data-testid="login-notice"
-            className="flex w-full items-start gap-2 rounded-worker-btn border-2 border-worker-caution-ink bg-worker-caution px-4 py-2 text-worker font-semibold text-worker-caution-ink small:px-3 small:text-worker-caption hc:border-black hc:bg-white hc:text-black">
-            <IconCaution size={28} className="mt-1 shrink-0" />
+            className="flex w-full items-start gap-2 rounded-worker-btn border-2 border-worker-caution-ink bg-worker-caution px-4 py-2 text-worker font-semibold leading-snug text-worker-caution-ink small:gap-1.5 small:px-2 small:py-1 hc:border-black hc:bg-white hc:text-black">
+            {/* 글씨는 작은 화면에서도 24px(명세 4.1, 3차 검증). 자리가 모자라면 아이콘·여백을 줄인다. */}
+            <IconCaution size={28} className="mt-0.5 shrink-0 small:size-6" />
             <div>
               {message.map((m) => (
                 <p key={m}>{m}</p>

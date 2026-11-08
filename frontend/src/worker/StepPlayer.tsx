@@ -76,7 +76,9 @@ export interface StepPlayerProps {
 
 // --- 화면 크기 ---
 const TABLET_QUERY = "(min-width: 768px) and (min-height: 700px)";
-const WIDE_QUERY = "(orientation: landscape) and (min-width: 768px)";
+// tailwind.config.js의 wide·land 변형과 같은 값이어야 한다.
+const WIDE_QUERY = "(orientation: landscape) and (min-width: 560px)";
+const LAND_QUERY = "(orientation: landscape) and (max-height: 620px)";
 
 function useMedia(query: string): boolean {
   return useSyncExternalStore(
@@ -108,7 +110,7 @@ const SENTENCE_MIN_PX = 24;
 function useSentenceFit(stepId: string, basePx: number, layoutKey: string) {
   const h1Ref = useRef<HTMLHeadingElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const cellRef = useRef<HTMLElement | null>(null);
+  const cellRef = useRef<HTMLDivElement | null>(null);
   const [vp, setVp] = useState(() => (typeof window === "undefined" ? "" : `${window.innerWidth}x${window.innerHeight}`));
   const key = `${stepId}|${basePx}|${vp}|${layoutKey}`;
   const [fit, setFit] = useState<{ key: string; level: number }>({ key, level: 0 });
@@ -158,6 +160,8 @@ function useMoreBelow(ref: { current: HTMLElement | null }, key: string): boolea
 }
 
 // --- 그림 ---
+// TODO(2차): 위험 단계 '조심해요' 띠(명세 4.4-C·7.1). 단계에 위험 표시(safety_flags)가 아직 없다 — 백엔드 Step·근로자
+// today 응답·사업주 편집 화면에 필드를 더한 뒤 그림 위에 40px 띠(COPY.step.caution)를 그린다.
 function StepPicture({ step, onMediaError }: { step: Step; onMediaError?: (url: string | null | undefined) => void }) {
   const url = step.symbol_url;
   const [st, setSt] = useState<{ url: string | null; state: "loading" | "ok" | "failed"; nonce: number }>({
@@ -228,13 +232,14 @@ function SpeakButton({ playing, blocked, onPress }: { playing: boolean; blocked:
       type="button"
       onClick={onPress}
       data-testid="speak-button"
-      aria-pressed={playing}
       className={cn(
         "flex size-20 shrink-0 select-none flex-col items-center justify-center gap-0.5 rounded-worker-btn bg-worker-sound text-worker-caption font-bold text-worker-sound-ink",
         blocked ? "border-[3px] border-worker-sound-ink" : "border-2 border-transparent",
         "hc:border-black hc:bg-white hc:text-black",
       )}
     >
+      {/* 이름이 '듣기'↔'멈춤'으로 바뀌므로 aria-pressed는 쓰지 않는다(3차 검증: 화면낭독기가 '멈춤, 눌림'으로 상태를
+          두 번 읽었다, WAI-ARIA APG 토글 버튼). */}
       {playing ? <IconStop size={28} /> : <IconSpeak size={28} />}
       <span>{playing ? COPY.btn.stop : COPY.btn.listen}</span>
     </button>
@@ -265,6 +270,7 @@ export function StepPlayer({
   const layoutKey = `${helpPhaseForFit}|${band ? "band" : ""}`;
   const tablet = useMedia(TABLET_QUERY);
   const wide = useMedia(WIDE_QUERY);
+  const land = useMedia(LAND_QUERY);
   const { h1Ref, scrollRef, cellRef, px: sentencePx, level: fitLevel } = useSentenceFit(step?.id ?? "", baseSentencePx(tablet, wide, prefs.font_size === "large"), layoutKey);
   const captionMore = useMoreBelow(cellRef, `${step?.id ?? ""}|${sentencePx}|${layoutKey}|${wide}`);
   // 세로 화면은 가운데 칸 전체가 스크롤한다. 넘치면 아래쪽을 흐리게 해 "더 있다"를 보인다(2차 검증: 작은 휴대폰에서
@@ -327,6 +333,19 @@ export function StepPlayer({
     : null;
   const shownBand = helpBand ?? band ?? null;
   const offlineMark = !!helpBand && offline;
+  // 가로 휴대폰(낮은 화면)에서 띠가 떠 있으면 진행 점과 [듣기]를 위 띠 가운데로 옮긴다(3차 검증: 844×390에서 띠가
+  // 110px을 먹어 오른쪽 칸에 점·문장·[듣기]가 다 들어가지 못했고 [듣기]/[멈춤] 글자가 흐림에 가려졌다. 640×360에서는
+  // 위 띠 82 + 도움 띠 110 + 아래 막대 106이라 문장 칸이 62px뿐이라 80px [듣기]가 들어갈 수 없다). 오른쪽 칸은 문장만.
+  const dotsInTop = wide && land && !!shownBand;
+  const dots = (
+    <ProgressDots
+      total={steps.length}
+      current={index}
+      done={(i) => doneIds.has(steps[i].id)}
+      size={dotsInTop && steps.length > 6 ? "sm" : "md"}
+    />
+  );
+  const speak = <SpeakButton playing={audio.playing} blocked={audio.blocked} onPress={audio.toggle} />;
 
   const exit = () => {
     if (live) {
@@ -351,7 +370,17 @@ export function StepPlayer({
               {COPY.btn.exit}
             </SecondaryAction>
           }
-          center={offlineMark ? <OfflineMark /> : undefined}
+          center={
+            dotsInTop ? (
+              <div className="flex min-w-0 items-center gap-6 px-4" data-testid="top-dots">
+                {offlineMark && <OfflineMark />}
+                {dots}
+                {speak}
+              </div>
+            ) : offlineMark ? (
+              <OfflineMark />
+            ) : undefined
+          }
           right={live && help ? <HelpButton phase={helpPhase} onPress={help.request} /> : undefined}
         />
       </div>
@@ -367,8 +396,13 @@ export function StepPlayer({
           "data-[more=true]:[mask-image:linear-gradient(to_bottom,#000_calc(100%_-_2.5rem),transparent)]",
         )}
       >
-        <div className="flex h-10 shrink-0 items-center small:h-8 tablet:h-12 wide:col-start-2 wide:row-start-3 wide:px-0 wide:pt-4">
-          <ProgressDots total={steps.length} current={index} done={(i) => doneIds.has(steps[i].id)} />
+        <div
+          className={cn(
+            "flex h-10 shrink-0 items-center small:h-8 tablet:h-12 wide:col-start-2 wide:row-start-3 wide:px-0 wide:pt-4",
+            dotsInTop && "wide:hidden",
+          )}
+        >
+          {!dotsInTop && dots}
           <p className="sr-only" aria-live="polite">{`${title}, ${COPY.step.srProgress(index + 1, steps.length)}`}</p>
         </div>
 
@@ -391,30 +425,39 @@ export function StepPlayer({
             </div>
           </div>
 
+          {/* 가로로 넓은 화면: 문장만 따로 스크롤하고 [듣기]는 문장 칸 오른쪽 위에 고정한다(3차 검증: 예전에는 [듣기]도
+              함께 스크롤돼, 띠가 떠 칸이 낮아지면 [듣기]/[멈춤] 글자가 흐림에 가려졌다). */}
           <figcaption
             key={`text-${step.id}`}
-            ref={cellRef}
-            data-more={captionMore ? "true" : undefined}
-            data-testid="step-caption"
+            data-testid="step-caption-cell"
             className={cn(
               "flex shrink-0 flex-col gap-1 pb-2 pt-3",
-              "wide:col-start-2 wide:row-start-4 wide:min-h-0 wide:overflow-y-auto wide:pr-4 wide:pt-2 tablet:wide:pr-8",
-              "wide:data-[more=true]:[mask-image:linear-gradient(to_bottom,#000_calc(100%_-_2rem),transparent)]",
+              "wide:col-start-2 wide:row-start-4 wide:min-h-0 wide:pr-4 wide:pt-2 tablet:wide:pr-8",
               "animate-step-in motion-reduce:animate-none",
             )}
           >
-            <div className="flex items-start gap-3">
-              <h1
-                ref={h1Ref}
-                tabIndex={-1}
-                data-testid="step-sentence"
-                data-fit={fitLevel}
-                style={{ fontSize: `${sentencePx / 16}rem` }}
-                className="min-w-0 flex-1 font-bold leading-[1.35] outline-none focus-visible:outline-none"
+            <div className="flex items-start gap-3 wide:min-h-0 wide:flex-1">
+              <div
+                ref={cellRef}
+                data-more={captionMore ? "true" : undefined}
+                data-testid="step-caption"
+                className={cn(
+                  "min-w-0 flex-1 wide:max-h-full wide:self-stretch wide:overflow-y-auto",
+                  "wide:data-[more=true]:[mask-image:linear-gradient(to_bottom,#000_calc(100%_-_2rem),transparent)]",
+                )}
               >
-                {step.sentence}
-              </h1>
-              <SpeakButton playing={audio.playing} blocked={audio.blocked} onPress={audio.toggle} />
+                <h1
+                  ref={h1Ref}
+                  tabIndex={-1}
+                  data-testid="step-sentence"
+                  data-fit={fitLevel}
+                  style={{ fontSize: `${sentencePx / 16}rem` }}
+                  className="font-bold leading-[1.35] outline-none focus-visible:outline-none"
+                >
+                  {step.sentence}
+                </h1>
+              </div>
+              {!dotsInTop && speak}
             </div>
             {audio.blocked && (
               <p className="text-right text-worker-caption text-worker-sound-ink hc:text-black">{COPY.step.tapToListen}</p>

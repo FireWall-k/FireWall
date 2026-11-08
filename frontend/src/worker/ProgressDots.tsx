@@ -27,10 +27,15 @@ export function ProgressDots({
     return (
       <div role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}
         data-testid="progress-dots" className={cn("flex w-full items-center gap-1", className)}>
+        {/* 지금 칸은 색만이 아니라 높이(20px)와 초록 테두리로도 다르다(3차 검증: 예전에는 주황(도움 색) 칸 하나로만 보였다,
+            명세 6.1·8.1). 끝낸 칸은 초록 바탕, 남은 칸은 테두리만. */}
         {items.map((i) => (
           <span key={i}
-            className={cn("h-3 flex-1 rounded-full",
-              done(i) ? "bg-worker-primary" : i === current ? "bg-worker-help-line" : "border-2 border-worker-line bg-worker-card")} />
+            data-state={i === current ? "current" : done(i) ? "done" : "todo"}
+            className={cn("flex-1 rounded-full",
+              i === current
+                ? cn("h-5 border-[3px] border-worker-primary", done(i) ? "bg-worker-primary" : "bg-worker-card")
+                : done(i) ? "h-3 bg-worker-primary" : "h-3 border-2 border-worker-line bg-worker-card")} />
         ))}
       </div>
     );

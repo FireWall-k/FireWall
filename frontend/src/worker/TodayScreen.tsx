@@ -74,7 +74,7 @@ export default function TodayScreen() {
           </SecondaryAction>
         </BottomBar>
       }
-      mainClassName="gap-4 py-4"
+      mainClassName="gap-4 py-4 land:py-2"
     >
       {jobs.length === 0 ? (
         <div role="status" className="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
@@ -87,7 +87,9 @@ export default function TodayScreen() {
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between gap-3">
+          {/* 가로 휴대폰(낮은 화면)에서는 소제목 줄을 화면에서 빼고(화면낭독기는 읽는다) 카드를 두 칸으로 둔다 — 3차 검증:
+              844×390·640×360에서 강조된 다음 카드의 '시작하기 ›'가 아래 막대에 잘리고 두 번째 카드는 보이지 않았다. */}
+          <div className="flex items-center justify-between gap-3 land:sr-only">
             <h2 className="text-worker font-bold">{COPY.home.todayCount(jobs.length)}</h2>
             <span aria-hidden="true" className="flex gap-1.5">
               {views.map((v) => (
@@ -96,7 +98,7 @@ export default function TodayScreen() {
               ))}
             </span>
           </div>
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col gap-4 land:grid land:grid-cols-2 land:gap-3">
             {[...open, ...finished].map(({ job, p }) => {
               const done = p.status === "done";
               const statusText = done

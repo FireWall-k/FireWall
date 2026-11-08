@@ -5,6 +5,8 @@
 // - 'sent'인 동안 5초마다 상태를 본다(숨은 탭에서는 멈춤). 사업주가 확인·해결하면 acked.
 //   근로자가 누르지 않은 '취소됨'이 보이면(다른 기기 등) 말없이 닫지 않고 '아직 못 불렀어요'로 알린다(2차 검증).
 // - [다 했어요]를 누르면 서버가 그 단계의 요청을 '해결됨'으로 닫으므로 띠도 닫는다(markStepDone).
+//   서버와 같은 규칙으로, 다른 단계에서 부른 요청은 그대로 둔다(3차 검증: 3단계에서 부르고 [이전]으로 2단계를 끝내면
+//   띠만 사라지고 서버에는 열린 요청이 남아, 선생님이 확인해도 근로자는 '선생님이 확인했어요'를 못 봤다).
 // - 화면에 들어오면 열려 있던 요청(today 카드의 active_help, 또는 이 탭이 기억한 요청)을 서버에 한 번 물어본 뒤에
 //   띠를 보인다(2차 검증: 30초 묵은 목록으로 띠를 그려, 취소한 요청이 '불렀어요'로 되살아나거나 부른 요청이 안 보였다).
 //   '선생님이 확인했어요'는 이 기기에서 이미 보인 확인이면 다시 보이지 않는다(sessionStorage).
@@ -24,8 +26,8 @@ export interface HelpController {
   phase: HelpPhase;
   request: () => void;
   cancel: () => void;
-  /** 근로자가 [다 했어요]를 눌렀다(서버가 열린 요청을 닫는다). */
-  markStepDone: () => void;
+  /** 근로자가 그 단계에서 [다 했어요]를 눌렀다(서버가 그 단계·단계 없는 열린 요청을 닫는다). */
+  markStepDone: (doneStepId?: string | null) => void;
 }
 
 export const HELP_POLL_MS = 5_000;
@@ -89,6 +91,8 @@ export function useHelp({ assignmentId, stepId, initial, api = workerApi }: Opti
   const [startId] = useState<string | null>(() => initial?.id ?? sget(openKey));
   const [phase, setPhase] = useState<HelpPhase>("idle");
   const helpId = useRef<string | null>(null);
+  // 지금 띠의 요청을 부른 단계(서버 HelpOut.step_id). null = 단계 없이 부름.
+  const helpStep = useRef<string | null>(null);
   const apiRef = useRef(api);
   const stepRef = useRef(stepId);
   // 화면을 떠난 뒤 늦게 온 응답이 상태를 바꾸지 않게.
@@ -99,8 +103,9 @@ export function useHelp({ assignmentId, stepId, initial, api = workerApi }: Opti
   });
 
   const remember = useCallback(
-    (id: string | null) => {
+    (id: string | null, step: string | null = null) => {
       helpId.current = id;
+      helpStep.current = id ? step : null;
       sset(openKey, id);
     },
     [openKey],
@@ -141,7 +146,7 @@ export function useHelp({ assignmentId, stepId, initial, api = workerApi }: Opti
           remember(null);
           return;
         }
-        remember(h.id);
+        remember(h.id, h.step_id);
         if (h.state === "open") setPhase("sent");
         else if (!ackSeenBefore(h)) setPhase("acked");
         // 이미 본 확인: 선생님이 오는 중이다. 띠는 닫아 두고, 다시 부르면 서버가 같은 요청을 다시 연다.
@@ -150,7 +155,7 @@ export function useHelp({ assignmentId, stepId, initial, api = workerApi }: Opti
         if (gen.current !== my) return;
         // 확인을 못 했다(인터넷 끊김). 목록에 열린 요청이 있었으면 그것을 믿는다.
         if (initial && initial.id === startId) {
-          remember(initial.id);
+          remember(initial.id, initial.step_id);
           if (initial.state === "open") setPhase("sent");
           else if (!ackSeenBefore({ id: initial.id, acknowledged_at: null })) setPhase("acked");
         }
@@ -194,12 +199,12 @@ export function useHelp({ assignmentId, stepId, initial, api = workerApi }: Opti
         }
         if (gen.current !== my) return;
         if (h.state === "acknowledged") {
-          remember(h.id);
+          remember(h.id, h.step_id);
           retryRequestId.current = null;
           ackSeenBefore(h);
           setPhase("acked");
         } else if (h.state === "open") {
-          remember(h.id);
+          remember(h.id, h.step_id);
           retryRequestId.current = null;
           setPhase("sent");
         } else {
@@ -237,7 +242,17 @@ export function useHelp({ assignmentId, stepId, initial, api = workerApi }: Opti
     }
   }, [remember]);
 
-  const markStepDone = useCallback(() => {
+  const markStepDone = useCallback((doneStepId?: string | null) => {
+    // 다른 단계에서 부른 요청이 열려 있으면(불렀어요·확인했어요) 서버도 닫지 않는다 — 띠와 상태 확인을 그대로 둔다.
+    if (
+      (phase === "sent" || phase === "acked") &&
+      helpId.current &&
+      helpStep.current &&
+      doneStepId &&
+      helpStep.current !== doneStepId
+    ) {
+      return;
+    }
     if (inflight.current !== null) dropped.current.add(inflight.current.gen);
     gen.current += 1;
     remember(null);
@@ -246,7 +261,7 @@ export function useHelp({ assignmentId, stepId, initial, api = workerApi }: Opti
     for (const clientId of [...orphans.current]) closeByClient(clientId);
     // '아직 못 불렀어요'도 닫는다: 근로자가 [다 했어요]를 눌렀다 = 막혔던 일을 풀었다. 다음 단계까지 남기지 않는다.
     setPhase("idle");
-  }, [remember, closeByClient]);
+  }, [phase, remember, closeByClient]);
 
   // 'sent' 동안 5초마다 상태 확인.
   useEffect(() => {

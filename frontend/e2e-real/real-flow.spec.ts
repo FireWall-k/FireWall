@@ -374,6 +374,8 @@ test.describe("실제 백엔드 — 사업주", () => {
     await page.locator("textarea").first().fill("테이블을 행주로 닦아요. 의자를 테이블 안으로 넣어요.");
     await page.getByLabel("업종").fill("카페").catch(() => undefined);
     await page.getByRole("button", { name: "단계로 나누기" }).click();
+    // dev의 입력 화면 나누기: 나눈 단계 목록을 먼저 보이고, 사업주가 확인하면 직무를 만든다.
+    await page.getByRole("button", { name: "이대로 그림 고르기 ›" }).click({ timeout: 30_000 });
     await expect(page.getByText(/그림이 없는 단계가 있어요\(\d/)).toBeVisible({ timeout: 30_000 });
     await page.getByRole("checkbox").first().check();
     await expect(page.getByRole("button", { name: /게시하고/ })).toBeDisabled();

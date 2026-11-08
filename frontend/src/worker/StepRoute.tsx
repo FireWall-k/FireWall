@@ -33,7 +33,7 @@ function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
   const onRecord = useCallback(
     (info: StepDoneInfo) => {
       completeStep(job, info.step, { durationSec: info.durationSec, replayCount: info.replayCount, stuck: info.stuck });
-      help.markStepDone();
+      help.markStepDone(info.step.id);
     },
     [completeStep, job, help],
   );

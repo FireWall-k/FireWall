@@ -32,6 +32,9 @@ export interface WorkerSessionValue {
   unsentNote: string | null;
   refresh: () => Promise<void>;
   progressOf: (job: TodayJob) => JobProgress;
+  /** 이 기기가 끝냈다고 아는 단계(아직 못 보낸·보내는 중인 대기열 + 이 화면에서 끝낸 것). 했던 일 화면이 서버
+   *  기록과 합친다(3차 검증: 홈은 '다 했어요'인데 했던 일은 '하다가 멈췄어요'였다). */
+  localDoneIds: (assignmentId: string) => string[];
   completeStep: (job: TodayJob, step: Step, info: StepCompletion) => void;
   onMediaError: (url: string | null | undefined) => void;
   /** 끝내기(로그아웃): 남은 기록을 잠깐(최대 3초) 보내 본 뒤 로그인 상태를 지우고 번호 넣기 화면으로.

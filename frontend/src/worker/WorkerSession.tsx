@@ -4,6 +4,9 @@
 // - 완료 기록은 대기열(outbox.ts)로 보낸다: 바로, 다시 연결될 때(online), 30초마다.
 // - 인터넷이 끊겨도 받아 둔 일은 할 수 있게 마지막 응답을 기기에 둔다(같은 날·같은 로그인일 때만 쓴다).
 // - 401(로그인 풀림)이면 '다시 들어와 주세요' 화면. 대기열은 지우지 않는다(다시 들어오면 보낸다).
+// - 모든 호출은 세션을 연 토큰(token)으로 보낸다(3차 검증). 저장된 로그인은 기기에 하나라, 앞사람이 [끝내기]를 누른 뒤
+//   (대기열은 계속 보낸다) 뒷사람이 들어오거나 다른 탭에서 다른 근로자가 들어오면, 예전에는 앞사람 기록이 뒷사람
+//   토큰으로 가 404로 버려졌고, 오늘 할 일도 뒷사람 것이 앞사람 화면·기기 사본에 들어갔다.
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth, type Step } from "../api";
@@ -20,7 +23,7 @@ import { workerApi, type TodayJob, type WorkerMe } from "./workerApi";
 
 type Fatal = "expired" | "offline" | "error" | null;
 
-export function WorkerSession({ onLogout, children }: { onLogout: () => void; children: ReactNode }) {
+export function WorkerSession({ token, onLogout, children }: { token: string; onLogout: () => void; children: ReactNode }) {
   const navigate = useNavigate();
   const [me, setMe] = useState<WorkerMe | null>(null);
   const [jobs, setJobs] = useState<TodayJob[] | null>(null);
@@ -40,11 +43,13 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
     else if (kind === "offline") setOnline(false);
   }, []);
 
+  /** 저장된 로그인이 아직 이 세션의 것인지(다른 탭·다음 근로자가 바꿨으면 App이 곧 세션을 새로 만든다). */
+  const stillMine = useCallback(() => getAuth()?.token === token, [token]);
+
   const load = useCallback(async () => {
-    const token = getAuth()?.token;
     let m: WorkerMe | null = meRef.current;
     try {
-      m = await workerApi.me();
+      m = await workerApi.me(token);
       writeJson(ME_CACHE_KEY, { token, me: m });
       setOnline(true);
     } catch (e) {
@@ -57,7 +62,7 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
     meRef.current = m;
     setMe(m);
     try {
-      const list = writeTodayCache(m.id, await workerApi.today());
+      const list = writeTodayCache(m.id, await workerApi.today(token));
       setJobs(list);
       setOnline(true);
     } catch (e) {
@@ -71,7 +76,7 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
       }
       setFatal(kind === "offline" ? "offline" : "error");
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     // 첫 화면을 그린 뒤 불러온다(effect 안에서 바로 상태를 바꾸지 않게).
@@ -87,22 +92,23 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
   // 조용히 다시 받기(폴링·화면 복귀·다시 연결). 실패해도 지금 화면을 그대로 둔다.
   const refresh = useCallback(async () => {
     const m = meRef.current;
-    if (!m) return;
+    if (!m || !stillMine()) return;
     try {
-      const list = writeTodayCache(m.id, await workerApi.today());
+      const list = writeTodayCache(m.id, await workerApi.today(token));
       setJobs(list);
       setOnline(true);
     } catch (e) {
       noteError(e);
     }
-  }, [noteError]);
+  }, [noteError, stillMine, token]);
 
   // 대기열 보내기.
   const flush = useCallback(async () => {
     if (!outbox || outbox.size === 0) return;
     const workerId = outbox.workerId;
     const r = await outbox.flush((body) =>
-      workerApi.logStep(body).then(
+      // 대기열 주인(이 세션)의 토큰으로 보낸다. 화면을 떠난 뒤에도 이어지는 보내기도 같은 토큰을 쓴다.
+      workerApi.logStep(body, undefined, token).then(
         (res) => {
           if (body.completed) noteSentInTodayCache(workerId, body.assignment_id, body.step_id);
           return res;
@@ -115,7 +121,7 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
       ),
     );
     if (r.expired) {
-      setFatal("expired");
+      if (stillMine()) setFatal("expired");
       return;
     }
     if (r.failed) {
@@ -127,7 +133,7 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
       backlog.current = false;
       setSynced(true);
     }
-  }, [outbox]);
+  }, [outbox, token, stillMine]);
 
   useEffect(() => {
     if (!synced) return;
@@ -187,7 +193,7 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
   }, [jobs]);
 
   const onMediaError = useMediaRefresh(async () => {
-    const fresh = await workerApi.today();
+    const fresh = await workerApi.today(token);
     setJobs((cur) => (cur ? mergeStepMedia(cur, fresh) : cur));
   });
 
@@ -198,6 +204,15 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
       return jobProgress(job.steps, ids, job.status === "done");
     },
     // outbox 내용은 subscribe로 다시 그릴 때 새로 읽는다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [outbox, sessionDone, outbox?.size],
+  );
+
+  const localDoneIds = useCallback(
+    (assignmentId: string) => {
+      const pending = (outbox?.list() ?? []).filter((x) => x.assignment_id === assignmentId && x.completed);
+      return [...pending.map((x) => x.step_id), ...(sessionDone[assignmentId] ?? [])];
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [outbox, sessionDone, outbox?.size],
   );
@@ -258,6 +273,7 @@ export function WorkerSession({ onLogout, children }: { onLogout: () => void; ch
     unsentNote: (outbox?.size ?? 0) > 0 && !online ? COPY.confirm.unsent : null,
     refresh,
     progressOf,
+    localDoneIds,
     completeStep,
     onMediaError,
     logout,

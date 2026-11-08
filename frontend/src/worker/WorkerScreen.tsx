@@ -77,7 +77,8 @@ export function BottomBar({ children, stacked = false, className }: { children: 
   );
 }
 
-/** 띠 공통 모양(64px 이상, 24px 글씨, role=status). */
+/** 띠 공통 모양(64px 이상, 24px 글씨, role=status). 작은 화면에서도 글씨는 24px이다(3차 검증: 20px로 줄였었다,
+ *  명세 4.5) — 대신 여백을 줄인다. */
 export function Band({
   tone,
   children,
@@ -104,7 +105,7 @@ export function Band({
     >
       <div
         className={cn(
-          "mx-auto flex min-h-16 w-full max-w-[1024px] items-center gap-3 px-4 py-1 text-worker font-semibold small:min-h-14 small:text-worker-caption tablet:px-8",
+          "mx-auto flex min-h-16 w-full max-w-[1024px] items-center gap-3 px-4 py-1 text-worker font-semibold small:min-h-14 small:gap-2 small:px-3 tablet:px-8",
           // 버튼이 있는 띠([취소]·[다시 부르기])는 위 띠의 [도와주세요]와 24px 넘게 떨어뜨린다(명세 8.1: 다른 행동
           // 버튼 사이 24px. 2차 검증: 6px 아래라 '불렀어요'를 조금 낮게 누르면 취소됐다).
           spaced && "pt-6",

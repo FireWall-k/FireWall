@@ -10,6 +10,8 @@ const SIZES = [
   ["390x740", { width: 390, height: 740 }],
   ["360x560", { width: 360, height: 560 }],
   ["844x390", { width: 844, height: 390 }],
+  ["640x360", { width: 640, height: 360 }],
+  ["667x375", { width: 667, height: 375 }],
   ["820x1180", { width: 820, height: 1180 }],
 ] as const;
 

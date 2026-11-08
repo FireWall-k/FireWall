@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useNavigate } from "react-router-dom";
 import { Briefcase, BarChart3, LogOut, Users } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { clearAuth, getAuth, type AuthState, type Role } from "./api";
 import { cn } from "./cn";
 import { getSavedWorkplaceCode } from "./workerCodes";
@@ -109,6 +109,21 @@ function AppRoutes() {
     clearAuth();
     setAuth(null);
   }
+
+  // 다른 탭(또는 홈 화면 앱)에서 로그인이 바뀌면 이 탭도 따른다(3차 검증). 저장된 로그인은 기기에 하나라, 따르지
+  // 않으면 이 탭은 앞사람 화면을 그린 채 뒷사람 토큰으로 기록을 보냈다.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== null && !e.key.startsWith("jobcard_token") && !e.key.startsWith("jobcard_role")) return;
+      setAuth((cur) => {
+        const next = getAuth();
+        if (cur?.token === next?.token && cur?.role === next?.role) return cur;
+        return next;
+      });
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   const home = auth?.role === "worker" ? WORKER_HOME : "/manager";
 

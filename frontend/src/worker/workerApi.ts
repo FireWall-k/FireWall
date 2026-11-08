@@ -103,13 +103,14 @@ export function newId(): string {
 export const LOG_SEND_TIMEOUT_MS = 12_000;
 
 export const workerApi = {
-  me: async (): Promise<WorkerMe> => {
-    const m = await req<WorkerMe>("/api/worker/me");
+  // token: 세션을 연 토큰(WorkerSession). 없으면 저장된 로그인을 쓴다.
+  me: async (token?: string): Promise<WorkerMe> => {
+    const m = await req<WorkerMe>("/api/worker/me", undefined, { token });
     return { ...m, teacher_title: m.teacher_title || "선생님", a11y_prefs: normalizePrefs(m.a11y_prefs) };
   },
   /** 오늘 끝낸 일까지(include_done=true) — 홈이 다 한 카드를 맨 아래에 보인다. */
-  today: async (): Promise<TodayJob[]> => {
-    const list = await req<JobInput[]>("/api/worker/me/today?include_done=true");
+  today: async (token?: string): Promise<TodayJob[]> => {
+    const list = await req<JobInput[]>("/api/worker/me/today?include_done=true", undefined, { token });
     return list.map(normalizeJob);
   },
   history: () => req<HistoryCard[]>("/api/worker/me/history"),
@@ -118,14 +119,14 @@ export const workerApi = {
    * 본다(2차 검증: 끊김 없이 멈춘 요청 하나가 대기열 전체를 붙잡아, 다시 연결·화면 숨김·30초 보내기가 모두 그
    * 요청을 기다리기만 했다). 늦게라도 서버에 닿았으면 다시 보낸 기록은 client_event_id로 한 번만 센다.
    */
-  logStep: (body: LogBody, timeoutMs = LOG_SEND_TIMEOUT_MS) => {
+  logStep: (body: LogBody, timeoutMs = LOG_SEND_TIMEOUT_MS, token?: string) => {
     const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
     const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
     return req<LogResult>("/api/performance-logs", {
       method: "POST",
       body: JSON.stringify(body),
       signal: ctrl?.signal,
-    }).finally(() => {
+    }, { token }).finally(() => {
       if (timer) clearTimeout(timer);
     });
   },

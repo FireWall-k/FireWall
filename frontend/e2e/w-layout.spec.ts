@@ -201,3 +201,110 @@ test("새 화면 axe: 시작·완료·했던 일에 심각 위반이 없다", as
     expect(serious, `${url}: ${serious.map((v) => v.id).join(", ")}`).toEqual([]);
   }
 });
+
+// --- 3차 검증 ---------------------------------------------------------------------------------------------
+
+/** 요소가 화면 안에 다 보이고, 아래 막대(footer) 위끝보다 위에 있는지. */
+async function expectAboveBottomBar(page: Page, testId: string, label: string) {
+  const r = await page.evaluate((id) => {
+    const el = document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect();
+    const footer = document.querySelector('[data-testid="step-player"] footer')!.getBoundingClientRect();
+    return { top: el.top, bottom: el.bottom, footerTop: footer.top, inner: window.innerHeight, inner_w: window.innerWidth, right: el.right };
+  }, testId);
+  expect(r.top, `${label}: ${testId} 위끝`).toBeGreaterThanOrEqual(0);
+  expect(r.bottom, `${label}: ${testId} 아래끝 ${r.bottom} > 아래 막대 ${r.footerTop}`).toBeLessThanOrEqual(r.footerTop + 0.5);
+  expect(r.right, `${label}: ${testId} 오른쪽 넘침`).toBeLessThanOrEqual(r.inner_w + 0.5);
+}
+
+const LANDSCAPE_PHONES = [
+  ["640×360", { width: 640, height: 360 }],
+  ["667×375", { width: 667, height: 375 }],
+  ["740×360", { width: 740, height: 360 }],
+  ["844×390", { width: 844, height: 390 }],
+] as const;
+
+test.describe("가로 휴대폰: 단계 화면은 두 칸, 문장 첫 줄과 [듣기]가 늘 보인다(도움 띠가 떠도)", () => {
+  for (const [name, vp] of LANDSCAPE_PHONES) {
+    test(name, async ({ page }) => {
+      await loginAsWorker(page);
+      await page.setViewportSize(vp);
+      for (const n of [3, 2]) {
+        await page.goto(`/w/job/asg-1/step/${n}`);
+        await page.getByTestId("step-sentence").waitFor();
+        await page.waitForTimeout(300); // 단계 넘김 움직임(200ms)이 끝난 뒤 잰다
+        // 두 칸: 문장은 그림 오른쪽에 있다.
+        const pic = (await page.getByTestId("step-picture").boundingBox())!;
+        const sen = (await page.getByTestId("step-sentence").boundingBox())!;
+        expect(sen.x, `${name} ${n}단계: 문장이 그림 오른쪽`).toBeGreaterThanOrEqual(pic.x + pic.width - 1);
+        await expectAboveBottomBar(page, "speak-button", `${name} ${n}단계`);
+        // 문장 첫 줄이 문장 칸 안에 보인다.
+        const cap = (await page.getByTestId("step-caption").boundingBox())!;
+        expect(cap.height, `${name} ${n}단계: 문장 칸 높이`).toBeGreaterThanOrEqual(32);
+        const done = (await page.getByRole("button", { name: "다 했어요" }).boundingBox())!;
+        expect(done.y + done.height).toBeLessThanOrEqual(vp.height + 0.5);
+      }
+      // 도움 띠: 진행 점과 [듣기]는 위 띠 가운데로 옮겨 가 늘 다 보이고, 오른쪽 칸은 문장만 쓴다.
+      await page.getByTestId("help-button").click();
+      await expect(page.getByTestId("help-band")).toContainText("선생님을 불렀어요");
+      await page.waitForTimeout(300);
+      await expectAboveBottomBar(page, "speak-button", `${name} 도움 띠`);
+      await expect(page.getByTestId("top-dots").getByTestId("speak-button")).toBeVisible();
+      await expect(page.getByTestId("speak-button")).toHaveCount(1);
+      const sp = (await page.getByTestId("speak-button").boundingBox())!;
+      expect(sp.height).toBeGreaterThanOrEqual(79.5);
+      // [듣기]와 [불렀어요]는 다른 행동이라 24px 넘게 떨어져 있다(명세 8.1).
+      const hb = (await page.getByTestId("help-button").boundingBox())!;
+      expect(hb.x - (sp.x + sp.width), `${name}: [듣기]~[불렀어요] 간격`).toBeGreaterThanOrEqual(24);
+      const cap = (await page.getByTestId("step-caption").boundingBox())!;
+      expect(cap.height, `${name} 도움 띠: 문장 칸 높이`).toBeGreaterThanOrEqual(32);
+      const band = page.getByTestId("help-band");
+      const cancel = (await band.getByRole("button", { name: "취소" }).boundingBox())!;
+      const text = (await page.getByTestId("help-band-text").boundingBox())!;
+      // 결정 8: 문장과 [취소]는 한 줄(문장 왼쪽, 버튼 오른쪽).
+      expect(cancel.x).toBeGreaterThan(text.x + text.width - 1);
+    });
+  }
+});
+
+test("가로 휴대폰 홈: 강조된 다음 카드의 '시작하기'와 두 번째 카드가 첫 화면에 보인다", async ({ page }) => {
+  await loginAsWorker(page);
+  for (const vp of [{ width: 844, height: 390 }, { width: 640, height: 360 }]) {
+    await page.setViewportSize(vp);
+    await page.goto("/w/today");
+    await page.getByTestId("today-screen").waitFor();
+    const footerTop = await page.evaluate(() => document.querySelector('[data-testid="today-screen"] footer')!.getBoundingClientRect().top);
+    const cards = page.getByTestId("job-card");
+    await expect(cards).toHaveCount(2);
+    for (let i = 0; i < 2; i++) {
+      const b = (await cards.nth(i).boundingBox())!;
+      expect(b.y + b.height, `${vp.width}×${vp.height}: ${i + 1}번째 카드 아래끝`).toBeLessThanOrEqual(footerTop + 0.5);
+    }
+    const start = (await page.getByText("시작하기").boundingBox())!;
+    expect(start.y + start.height).toBeLessThanOrEqual(footerTop + 0.5);
+  }
+});
+
+test("작은 화면에서도 번호 틀림 안내와 도움 띠 글씨는 24px, 문서 제목은 '잡카드'", async ({ page }) => {
+  for (const vp of [{ width: 360, height: 640 }, { width: 844, height: 390 }]) {
+    state = newState();
+    await mockWorkerBackend(page, state);
+    await pairedDevice(page);
+    await page.setViewportSize(vp);
+    await page.goto("/w");
+    await page.getByTestId("keypad").waitFor();
+    expect(await page.title()).toBe("잡카드");
+    for (const d of ["1", "2", "3", "5"]) await page.getByRole("button", { name: d, exact: true }).click();
+    const notice = page.getByTestId("login-notice");
+    await notice.waitFor();
+    const fs = await notice.locator("p").first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    expect(fs, `${vp.width}: 번호 틀림 글씨`).toBe(24);
+    await expectAllKeysVisible(page, `${vp.width}×${vp.height} 틀림 24px`);
+  }
+  await loginAsWorker(page);
+  await page.setViewportSize({ width: 360, height: 640 });
+  await page.goto("/w/job/asg-1/step/1");
+  await page.getByTestId("help-button").click();
+  const fs = await page.getByTestId("help-band-text").evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  expect(fs).toBe(24);
+  expect(await page.title()).toBe("잡카드");
+});

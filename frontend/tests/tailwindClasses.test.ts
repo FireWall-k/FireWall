@@ -52,7 +52,7 @@ describe("근로자 화면 접근성 Tailwind 클래스가 실제 CSS로 생성�
 
   // 근로자 단계 화면 배치(2026-11 UI 진단). 아래 규칙이 빠지면 화면은 그대로 그려지지만 배치가 조용히 무너진다.
   it("wide 변형(가로로 넓은 화면) → 그림 왼쪽·버튼 오른쪽 격자", () => {
-    expect(css).toContain("@media(orientation:landscape)and(min-width:768px){");
+    expect(css).toContain("@media(orientation:landscape)and(min-width:560px){");
     expect(css).toContain(".wide\\:grid{display:grid");
   });
 

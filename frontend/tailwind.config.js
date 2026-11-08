@@ -147,7 +147,9 @@ export default {
     // theme.screens에 raw 값으로 넣으면 Tailwind가 max-sm: 같은 max-* 변형을 만들지 않아(근로자 머리글이 쓴다)
     // 변형으로 따로 더한다.
     ({ addVariant }) => {
-      addVariant("wide", "@media (orientation: landscape) and (min-width: 768px)");
+      // 3차 검증: 예전에는 폭 768 이상만 wide라 640×360·667×375·740×360 가로 휴대폰이 세로처럼 쌓여 문장이 화면 밖으로
+      // 밀렸다. 가로이면서 폭 560 이상이면 두 칸으로 둔다(StepPlayer의 WIDE_QUERY와 같은 값).
+      addVariant("wide", "@media (orientation: landscape) and (min-width: 560px)");
       // small: 작은 휴대폰(360 폭 이하) 또는 낮은 화면(620 높이 이하). 위 띠·아래 막대를 줄인다.
       addVariant("small", "@media (max-width: 360px), (max-height: 620px)");
       // tablet: 폭 768 이상이고 높이도 넉넉한 화면(태블릿 세로·가로). 휴대폰 가로(844×390)는 폭만 넓어 md:로는

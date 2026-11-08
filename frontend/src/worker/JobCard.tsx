@@ -43,14 +43,15 @@ export function JobCard({
       data-next={highlight || undefined}
       data-done={done || undefined}
       className={cn(
-        "flex min-h-32 w-full shrink-0 items-center gap-4 rounded-worker-card p-4 text-left shadow-worker-card",
+        "flex min-h-32 w-full shrink-0 items-center gap-4 rounded-worker-card p-4 text-left shadow-worker-card land:min-h-0 land:gap-3 land:p-3",
         done ? "border-2 border-worker-primary bg-worker-primary-tint" : "bg-worker-card",
         highlight ? "border-4 border-worker-primary" : !done && "border-2 border-worker-line-soft",
         "hc:border-black",
       )}
     >
       <span className="relative shrink-0">
-        <Thumb url={steps[0]?.symbol_url} size={96} />
+        {/* 가로 휴대폰에서는 대표 그림을 64px로 줄여 이름 자리를 넓힌다(카드 두 칸이 첫 화면에 다 들어가게). */}
+        <Thumb url={steps[0]?.symbol_url} size={96} className="land:!size-16" />
         {done && (
           <span className="absolute -right-2 -top-2 flex size-9 items-center justify-center rounded-full bg-worker-primary text-white">
             <IconDone size={22} strokeWidth={3.5} />
@@ -60,13 +61,16 @@ export function JobCard({
       <span className="flex min-w-0 flex-1 flex-col gap-1.5">
         <span className="line-clamp-2 whitespace-normal text-worker-title">{title}</span>
         <ProgressDots total={steps.length} current={-1} done={(i) => doneIds.has(steps[i]?.id ?? "")} size="sm" />
-        <span className="whitespace-normal text-worker-caption text-worker-ink-soft hc:text-black">{statusText}</span>
-        {highlight && (
-          <span className="flex items-center gap-1 text-worker font-bold text-worker-primary hc:text-black">
-            {COPY.btn.start}
-            <IconNext size={24} />
-          </span>
-        )}
+        {/* 가로 휴대폰에서는 상태 글과 '시작하기 ›'를 한 줄에(카드 높이를 줄여 두 칸이 첫 화면에 다 보이게). */}
+        <span className="flex flex-col gap-1.5 land:flex-row land:flex-wrap land:items-center land:gap-x-3 land:gap-y-0">
+          <span className="whitespace-normal text-worker-caption text-worker-ink-soft hc:text-black">{statusText}</span>
+          {highlight && (
+            <span className="flex items-center gap-1 whitespace-nowrap text-worker font-bold text-worker-primary hc:text-black">
+              {COPY.btn.start}
+              <IconNext size={24} />
+            </span>
+          )}
+        </span>
       </span>
     </button>
   );

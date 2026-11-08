@@ -18,7 +18,7 @@ function value(jobs: TodayJob[], prefs: Partial<A11yPrefs>): WorkerSessionValue 
   return {
     me: { id: "w1", display_name: "민수", workplace_name: "행복카페", teacher_title: "선생님", a11y_prefs: p },
     prefs: p, jobs, online: true, synced: false, pendingCount: 0, unsentNote: null,
-    refresh: async () => {}, progressOf: (j) => jobProgress(j.steps, new Set()),
+    refresh: async () => {}, progressOf: (j) => jobProgress(j.steps, new Set()), localDoneIds: () => [],
     completeStep: () => {}, onMediaError: () => {}, logout: () => {}, reportError: () => {},
   };
 }
