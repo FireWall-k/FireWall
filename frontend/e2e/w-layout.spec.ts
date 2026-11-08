@@ -491,3 +491,115 @@ test("번호 넣기 360×560 130%: 세 번 틀려도 선생님용 링크가 키�
     expect(k.bottom, `${k.key}: 화면 안`).toBeLessThanOrEqual(inner + 0.5);
   }
 });
+
+// --- 4차 검증 2회 ---------------------------------------------------------------------------------------------
+
+/** asg-1을 n단계 일로 바꾼다(앞 k단계는 끝낸 상태). */
+function makeLongJob(n: number, doneCount: number) {
+  const base = state.jobs[0].steps[0];
+  state.jobs[0].steps = Array.from({ length: n }, (_, i) => ({
+    ...base, id: `s${i + 1}`, order: i + 1, symbol_url: `http://e2e-api.invalid/media/symbols/s${i + 1}.png`,
+    sentence: i === 2 ? state.jobs[0].steps[2]?.sentence ?? base.sentence : `${i + 1}번째 단계를 해요`,
+  }));
+  state.jobs[0].done_step_ids = state.jobs[0].steps.slice(0, doneCount).map((s) => s.id);
+}
+
+test.describe("가로 휴대폰 + 도움 띠: 위 띠의 진행 표시가 잘리지 않고 단계 수만큼 다 보인다", () => {
+  for (const [name, vp] of LANDSCAPE_PHONES) {
+    for (const big of [false, true]) {
+      for (const [n, at] of [[3, 3], [10, 1], [10, 5], [10, 10]] as const) {
+        for (const phase of ["sent", "failed"] as const) {
+          test(`${name} ${big ? "130%" : "100%"} ${n}단계 중 ${at}단계 ${phase}`, async ({ page }) => {
+            if (big) await bigText(page);
+            await loginAsWorker(page);
+            makeLongJob(n, at - 1);
+            state.helpOffline = phase === "failed";
+            await page.setViewportSize(vp);
+            await page.goto(`/w/job/asg-1/step/${at}`);
+            await page.getByTestId("step-sentence").waitFor();
+            await page.getByTestId("help-button").click();
+            await expect(page.getByTestId("help-band")).toContainText(phase === "sent" ? "선생님을 불렀어요" : "아직 못 불렀어요");
+            await page.waitForTimeout(300);
+            const r = await page.evaluate(() => {
+              const dots = document.querySelector('[data-testid="top-dots"] [data-testid="progress-dots"]') as HTMLElement;
+              const header = document.querySelector('[data-testid="step-player"] header')!.getBoundingClientRect();
+              const d = dots.getBoundingClientRect();
+              const segs = Array.from(dots.children).map((c) => {
+                const b = c.getBoundingClientRect();
+                return { state: (c as HTMLElement).dataset.state, l: b.left, r: b.right, t: b.top, b: b.bottom, w: b.width };
+              });
+              let clipped = false;
+              for (let el: HTMLElement | null = dots; el && el.tagName !== "HEADER"; el = el.parentElement) {
+                if (getComputedStyle(el).overflowX !== "visible" && el.scrollWidth > el.clientWidth + 1) clipped = true;
+              }
+              return { sw: dots.scrollWidth, cw: dots.clientWidth, d: { l: d.left, r: d.right }, header: { l: header.left, r: header.right, t: header.top, b: header.bottom }, segs, clipped };
+            });
+            const label = `${name} ${big ? 130 : 100}% ${n}단계 ${at}`;
+            expect(r.sw, `${label}: 진행 표시 넘침 ${r.sw} > ${r.cw}`).toBeLessThanOrEqual(r.cw + 1);
+            expect(r.clipped, `${label}: 위 칸이 진행 표시를 잘라 냄`).toBe(false);
+            expect(r.segs).toHaveLength(n);
+            for (const [i, s] of r.segs.entries()) {
+              expect(s.w, `${label}: ${i + 1}번째 칸 폭`).toBeGreaterThanOrEqual(3.5);
+              expect(s.l, `${label}: ${i + 1}번째 칸 왼쪽`).toBeGreaterThanOrEqual(r.d.l - 0.5);
+              expect(s.r, `${label}: ${i + 1}번째 칸 오른쪽`).toBeLessThanOrEqual(r.d.r + 0.5);
+              expect(s.t).toBeGreaterThanOrEqual(r.header.t - 0.5);
+              expect(s.b).toBeLessThanOrEqual(r.header.b + 0.5);
+            }
+            const cur = r.segs.filter((s) => s.state === "current");
+            expect(cur, `${label}: 지금 칸 하나`).toHaveLength(1);
+            expect(r.segs.findIndex((s) => s.state === "current")).toBe(at - 1);
+            // 지금 칸은 다른 칸과 높이로도 다르다(색만으로 구별하지 않는다).
+            const other = r.segs.find((s) => s.state !== "current");
+            if (other) expect(cur[0].b - cur[0].t).toBeGreaterThan(other.b - other.t + 4);
+            await expect(page.getByTestId("top-dots").getByTestId("speak-button")).toBeVisible();
+          });
+        }
+      }
+    }
+  }
+});
+
+test.describe("세로 좁은 휴대폰 130% + 도움 띠: 띠 글이 좁은 칸에 갇히지 않고, 문장 첫 줄이 흐림 위에 보인다", () => {
+  for (const vp of [{ width: 360, height: 640 }, { width: 360, height: 560 }, { width: 390, height: 740 }]) {
+    for (const phase of ["sent", "failed"] as const) {
+      for (const at of [1, 3]) {
+        test(`${vp.width}×${vp.height} ${phase} ${at}단계`, async ({ page }) => {
+          await bigText(page);
+          await loginAsWorker(page);
+          state.helpOffline = phase === "failed";
+          state.jobs[0].done_step_ids = state.jobs[0].steps.slice(0, at - 1).map((s) => s.id);
+          await page.setViewportSize(vp);
+          await page.goto(`/w/job/asg-1/step/${at}`);
+          await page.getByTestId("step-sentence").waitFor();
+          await page.getByTestId("help-button").click();
+          await expect(page.getByTestId("help-band")).toContainText(phase === "sent" ? "선생님을 불렀어요" : "아직 못 불렀어요");
+          await page.waitForTimeout(400);
+          const r = await page.evaluate(() => {
+            const q = (s: string) => document.querySelector(s)!.getBoundingClientRect();
+            const sc = document.querySelector('[data-testid="step-scroll"]') as HTMLElement;
+            const h1 = document.querySelector('[data-testid="step-sentence"]') as HTMLElement;
+            const line = parseFloat(getComputedStyle(h1).lineHeight);
+            const mask = sc.dataset.more === "true" ? parseFloat(getComputedStyle(document.documentElement).fontSize) * 2.5 : 0;
+            const s = sc.getBoundingClientRect();
+            return {
+              band: q('[data-testid="help-band"]').height, text: q('[data-testid="help-band-text"]').width, vw: window.innerWidth,
+              lineTop: h1.getBoundingClientRect().top, lineBottom: h1.getBoundingClientRect().top + line, visTop: s.top, visBottom: s.bottom - mask,
+            };
+          });
+          const label = `${vp.width}×${vp.height} ${phase} ${at}단계`;
+          // 띠 글은 띠 폭의 60% 넘게 쓴다(예전: 150px 칸에 4~5줄, 띠 약 290px).
+          expect(r.text, `${label}: 띠 글 폭`).toBeGreaterThan(r.vw * 0.6);
+          expect(r.band, `${label}: 띠 높이`).toBeLessThanOrEqual(180);
+          expect(r.lineTop, `${label}: 문장 첫 줄 위끝`).toBeGreaterThanOrEqual(r.visTop - 0.5);
+          expect(r.lineBottom, `${label}: 문장 첫 줄 아래끝 ${r.lineBottom} > 흐림 시작 ${r.visBottom}`).toBeLessThanOrEqual(r.visBottom + 0.5);
+          // 결정 8: 띠 글 왼쪽, 버튼 오른쪽 한 줄.
+          const btn = (await page.getByTestId("help-band").getByRole("button").boundingBox())!;
+          const text = (await page.getByTestId("help-band-text").boundingBox())!;
+          expect(btn.x).toBeGreaterThan(text.x + text.width - 1);
+          expect(btn.x + btn.width).toBeLessThanOrEqual(vp.width + 0.5);
+          expect(btn.height).toBeGreaterThanOrEqual(79.5);
+        });
+      }
+    }
+  }
+});

@@ -48,7 +48,9 @@ export function HelpBanner({ phase, onCancel, onRetry }: { phase: HelpPhase; onC
       <Band tone="help" testId="help-band" spaced>
         {/* 결정 8: 문장 왼쪽(flex-1, 줄바꿈 가능) · [취소] 오른쪽(줄바꿈 없음, 줄지 않음) 한 줄. */}
         <p data-testid="help-band-text" className="min-w-0 flex-1">{COPY.help.sent}</p>
-        <SecondaryAction icon={IconCancel} onPress={onCancel} className="shrink-0 !gap-2 !px-4">
+        {/* 좁은 띠(글자를 키운 360·390 폭): 아이콘을 글자 위로 올려 버튼 폭을 줄이고 띠 글에 자리를 준다(4차 검증 2회). */}
+        <SecondaryAction icon={IconCancel} onPress={onCancel}
+          className="shrink-0 !gap-2 !px-4 bandnarrow:min-w-touch bandnarrow:flex-col bandnarrow:!gap-0 bandnarrow:!px-2 bandnarrow:text-worker-caption bandnarrow:font-bold">
           {COPY.btn.cancel}
         </SecondaryAction>
       </Band>
@@ -59,7 +61,9 @@ export function HelpBanner({ phase, onCancel, onRetry }: { phase: HelpPhase; onC
       <Band tone="help" testId="help-band" spaced>
         {/* 좁은 휴대폰에서 문장 자리를 넓히려고 왼쪽 아이콘과 버튼 아이콘을 뺐다. */}
         <p data-testid="help-band-text" className="min-w-0 flex-1">{COPY.help.failed}</p>
-        <SecondaryAction onPress={onRetry} className="shrink-0 !px-4">
+        {/* 좁은 띠: '다시 / 부르기' 두 줄로 꺾어 버튼 폭을 줄인다(낱말 중간에서는 꺾지 않는다, 4차 검증 2회). */}
+        <SecondaryAction onPress={onRetry}
+          className="shrink-0 !px-4 bandnarrow:min-w-touch bandnarrow:!px-2 bandnarrow:text-center bandnarrow:text-worker-caption bandnarrow:font-bold bandnarrow:leading-tight bandnarrow:w-min bandnarrow:whitespace-normal bandnarrow:break-keep bandnarrow:[overflow-wrap:normal]">
           {COPY.btn.recall}
         </SecondaryAction>
       </Band>

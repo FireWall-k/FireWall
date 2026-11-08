@@ -131,7 +131,7 @@ export function Band({
       role="status"
       data-testid={testId}
       className={cn(
-        "w-full shrink-0 border-b-2",
+        "w-full shrink-0 border-b-2 [container-name:band] [container-type:inline-size]",
         tone === "help" && "border-worker-help-line bg-worker-help text-worker-help-ink",
         tone === "offline" && "border-worker-caution-ink bg-worker-caution text-worker-caution-ink",
         tone === "synced" && "border-worker-primary bg-worker-primary-tint text-worker-primary",

@@ -162,6 +162,9 @@ export default {
       // 따른다(미디어 쿼리는 따르지 않는다) — 그래서 글자를 키운 좁은 휴대폰(360·390 폭, 130%)에서만 걸리고 100%
       // 글자 휴대폰에서는 걸리지 않는다. 4차 검증: 360폭 130%에서 [나가기]와 [도와주세요]가 16~46px 겹쳤다.
       addVariant("topnarrow", "@container topbar (max-width: 22rem)");
+      // bandnarrow: 띠(Band, container-name band)가 22rem보다 좁을 때(topnarrow와 같은 기준). 4차 검증 2회: 360폭 130%에서
+      // [취소]·[다시 부르기]가 띠 폭의 절반을 먹어 띠 글이 150px 칸에 4~5줄로 꺾였고 띠가 약 290px이 되어 문장이 밀렸다.
+      addVariant("bandnarrow", "@container band (max-width: 22rem)");
       // 근로자 화면 설정(a11y_prefs). WorkerApp이 루트에 data 속성을 붙인다.
       addVariant("hc", '[data-contrast="high"] &');
       addVariant("lefty", '[data-hand="left"] &');

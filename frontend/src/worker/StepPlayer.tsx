@@ -234,9 +234,10 @@ function SpeakButton({ playing, blocked, onPress, compact = false }: { playing: 
       data-testid="speak-button"
       className={cn(
         "flex shrink-0 select-none items-center justify-center rounded-worker-btn bg-worker-sound text-worker-caption font-bold text-worker-sound-ink",
-        // compact(가로 휴대폰 위 띠 안): 높이를 80px로 고정하고 아이콘·글자를 옆으로 둔다. 4차 검증: 5rem 정사각형이라
+        // compact(가로 휴대폰 위 띠 안): 높이를 80px로 고정한다. 4차 검증: 5rem 정사각형이라
         // 글자 130%에서 104px이 되어 위 띠를 키웠고, 그만큼 문장 칸이 4px까지 줄었다.
-        compact ? "h-[80px] min-w-touch flex-row gap-1 px-2" : "size-20 flex-col gap-0.5",
+        // 4차 검증 2회: 옆으로 두면 130%에서 103px이라 진행 표시 칸을 먹었다 — 높이 80px 안에서 아이콘을 글자 위로 둔다.
+        compact ? "h-[80px] min-w-touch flex-col gap-0 px-2 leading-tight" : "size-20 flex-col gap-0.5",
         blocked ? "border-[3px] border-worker-sound-ink" : "border-2 border-transparent",
         "hc:border-black hc:bg-white hc:text-black",
       )}
@@ -297,6 +298,28 @@ export function StepPlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step?.id]);
 
+  // 세로 화면에 띠(도움·끊김)가 떠서 문장 첫 줄이 가운데 칸 아래(흐림 속)로 밀리면, 가운데 칸을 그만큼만 내려 첫 줄을
+  // 보이게 한다 — 위쪽의 진행 점·그림 윗부분이 먼저 올라간다(4차 검증 2회: 360×560·360×640 130% + 띠에서 문장이
+  // 화면에 한 글자도 없거나 흐림 속에만 있었다). 문장이 이미 보이면 건드리지 않는다.
+  const bandShown = (live && !!help && helpPhaseForFit !== "idle") || !!band;
+  useEffect(() => {
+    if (!bandShown || wide) return;
+    const raf = window.requestAnimationFrame(() => {
+      const sc = scrollRef.current;
+      const h1 = h1Ref.current;
+      if (!sc || !h1) return;
+      const box = h1.getBoundingClientRect();
+      const line = parseFloat(getComputedStyle(h1).lineHeight) || box.height;
+      const room = sc.scrollHeight - sc.clientHeight - sc.scrollTop;
+      // 아래 흐림(data-more일 때 2.5rem)은 더 내릴 것이 남아 있을 때만 그려진다.
+      const mask = room > 2 ? parseFloat(getComputedStyle(document.documentElement).fontSize) * 2.5 : 0;
+      const need = box.top + line - (sc.getBoundingClientRect().bottom - mask);
+      if (need > 0.5 && room > 0) sc.scrollTop += Math.min(need, room);
+    });
+    return () => window.cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bandShown, wide, step?.id, sentencePx, layoutKey]);
+
   useEffect(
     () => () => {
       if (praiseTimer.current) window.clearTimeout(praiseTimer.current);
@@ -345,8 +368,7 @@ export function StepPlayer({
       total={steps.length}
       current={index}
       done={(i) => doneIds.has(steps[i].id)}
-      size={dotsInTop ? "sm" : "md"}
-      nowrap={dotsInTop}
+      fit={dotsInTop}
     />
   );
   const speak = <SpeakButton playing={audio.playing} blocked={audio.blocked} onPress={audio.toggle} compact={dotsInTop} />;
@@ -371,13 +393,19 @@ export function StepPlayer({
         <TopBar
           left={
             <SecondaryAction icon={IconExit} onPress={exit}
-              className="!gap-2 !px-3 topnarrow:min-w-touch topnarrow:flex-col topnarrow:!gap-0 topnarrow:!px-2 topnarrow:text-worker-caption topnarrow:font-bold">
+              className={cn(
+                // 진행 점·[듣기]가 위 띠로 올라오면(가로 휴대폰 + 띠) [나가기]도 아이콘을 글자 위로 올려 폭을 내준다
+                // (4차 검증 2회: 640×360 130%에서 10단계 일의 진행 표시 칸이 63px뿐이었다).
+                dotsInTop
+                  ? "min-w-touch flex-col !gap-0 !px-2 !text-worker-caption !font-bold"
+                  : "!gap-2 !px-3 topnarrow:min-w-touch topnarrow:flex-col topnarrow:!gap-0 topnarrow:!px-2 topnarrow:text-worker-caption topnarrow:font-bold",
+              )}>
               {COPY.btn.exit}
             </SecondaryAction>
           }
           center={
             dotsInTop ? (
-              <div className="flex min-w-0 items-center gap-3 pl-2 pr-4 [&>[data-testid=progress-dots]]:min-w-0 [&>[data-testid=progress-dots]]:overflow-hidden" data-testid="top-dots">
+              <div className="flex w-full min-w-0 items-center justify-center gap-3 pl-2 pr-4" data-testid="top-dots">
                 {offlineMark && <OfflineMark />}
                 {dots}
                 {speak}
@@ -451,7 +479,9 @@ export function StepPlayer({
                 data-testid="step-caption"
                 className={cn(
                   "min-w-0 flex-1 wide:max-h-full wide:self-stretch wide:overflow-y-auto",
-                  "wide:data-[more=true]:[mask-image:linear-gradient(to_bottom,#000_calc(100%_-_2rem),transparent)]",
+                  // 흐림은 2rem이되 칸 높이의 35%를 넘지 않는다(4차 검증 2회: 가로 휴대폰 130% + '못 불렀어요' 띠에서 문장 칸이
+                  // 한 줄(42px)뿐이라 2rem 흐림이 그 한 줄을 통째로 회색으로 덮었다).
+                  "wide:data-[more=true]:[mask-image:linear-gradient(to_bottom,#000_calc(100%_-_min(2rem,35%)),transparent)]",
                 )}
               >
                 <h1
