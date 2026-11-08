@@ -302,6 +302,10 @@ class PerformanceLogCreate(BaseModel):
     client_event_id: str | None = Field(default=None, max_length=64)
     # 기기에서 단계를 끝낸 시각(시간대 포함 ISO). 서버가 범위를 자른다. 없으면 서버 시각.
     client_completed_at: datetime | None = None
+    # 기기가 이 기록을 보낸 순간의 기기 시각(4차 검증). 서버는 (보낸 시각 - 끝낸 시각)으로 '몇 초 전에 끝냈는지'를
+    # 같은 기기 시계끼리 재고, 서버 시각 기준의 완료 순간을 얻는다. 기기 시계가 서버와 달라도 도움 요청
+    # (서버 시각 created_at)과 순서를 바르게 비교할 수 있다. 없으면 client_completed_at을 그대로 쓴다.
+    client_sent_at: datetime | None = None
 
 
 class LogResultOut(BaseModel):

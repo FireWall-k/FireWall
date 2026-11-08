@@ -1975,8 +1975,25 @@ def worker_history(db: Session = Depends(get_db),
 _CLIENT_CLOCK_SKEW = timedelta(minutes=5)
 
 
-# 늦게 닿은 완료 기록이 도움 요청을 닫을지 정할 때, 기기 시계가 늦은 만큼을 봐주는 폭(_create_log_once).
-_HELP_CLOSE_GRACE = timedelta(seconds=60)
+def _completed_at_server_clock(payload: PerformanceLogCreate, now: datetime) -> datetime:
+    """이 단계를 끝낸 순간을 서버 시계로 옮긴다(늦게 닿은 완료 기록이 어느 도움 요청까지 닫을지 정할 때 쓴다).
+
+    4차 검증: 예전 기준 max(기기 완료 시각, now - 60초)는 기기 시각과 서버 시각을 그대로 비교해서 (1) 기기 시계가
+    늦으면 방금 누른 [다 했어요]가 도움을 닫지 못했고 (2) 기록이 60초 넘게 늦게 닿으면 완료 뒤에 부른 도움도 닫았다.
+    이제 '보낸 시각 - 끝낸 시각'(둘 다 같은 기기 시계)만큼 서버 수신 시각에서 뺀다. 시계가 틀려도 차이는 맞다.
+    """
+    done = payload.client_completed_at
+    sent = payload.client_sent_at
+    if done is None:
+        return now
+    if sent is None:
+        # 보낸 시각이 없는 옛 기기: 기기 완료 시각을 그대로 쓴다(시계 차이는 보정하지 못한다).
+        return _clamp_client_time(done, now, None)
+    elapsed = _naive_utc(sent) - _naive_utc(done)
+    if elapsed < timedelta(0):
+        # 끝낸 뒤 기기 시계가 뒤로 갔다(시각 맞춤 등). 순서를 알 수 없으니 방금 끝낸 것으로 본다.
+        return now
+    return now - elapsed
 
 
 def _clamp_client_time(value: datetime | None, now: datetime, floor: datetime | None) -> datetime:
@@ -2092,8 +2109,8 @@ def _create_log_once(payload: PerformanceLogCreate, response: Response, db: Sess
             close = close.where(or_(HelpRequest.step_id == payload.step_id, HelpRequest.step_id.is_(None)))
             # 3차 검증: 같은 단계라도 완료보다 뒤에 부른 요청은 닫지 않는다. 대기열에 남아 있던 옛 [다 했어요] 기록이
             # 늦게 닿으면, 근로자가 [이전]으로 그 단계에 돌아와 새로 부른 요청이 말없이 닫혔다(선생님은 못 봤다).
-            # 기준은 기기 완료 시각이지만, 기기 시계가 늦을 수 있어 1분 전보다 오래된 요청은 늘 닫는다.
-            cutoff = max(at, now - _HELP_CLOSE_GRACE)
+            # 4차 검증: 비교는 서버 시계로 옮긴 완료 순간과 서버가 적은 created_at끼리 한다(_completed_at_server_clock).
+            cutoff = _completed_at_server_clock(payload, now)
             close = close.where(HelpRequest.created_at <= cutoff)
         db.execute(close.values(state="resolved", resolution="step_done", resolved_at=now))
     db.commit()

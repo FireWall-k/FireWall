@@ -1173,6 +1173,43 @@ def test_late_completion_does_not_close_help_called_after_it(client, employer_to
     assert got["state"] == "resolved" and got["resolution"] == "step_done"
 
 
+def test_completion_closes_help_even_when_device_clock_is_behind(client, employer_token, worker):
+    """4차 검증: 기기 시계가 서버보다 20초 늦어도, 도움을 부른 뒤 누른 [다 했어요]는 그 도움을 닫는다."""
+    _, aid, (s1, _s2) = _assigned(client, employer_token, worker["id"])
+    h = _help(client, worker["token"], aid, s1, client_request_id="lag").json()
+    device_now = (datetime.now(timezone.utc) - timedelta(seconds=20)).isoformat()
+    r = _log(client, worker["token"], aid, s1, client_completed_at=device_now, client_sent_at=device_now,
+             client_event_id="e-lag")
+    assert r.status_code == 201, r.text
+    got = client.get(f"/api/worker/help/{h['id']}", headers=auth(worker["token"])).json()
+    assert got["state"] == "resolved" and got["resolution"] == "step_done"
+    active = client.get("/api/employer/help", headers=auth(employer_token)).json()
+    assert h["id"] not in {x["id"] for x in (active if isinstance(active, list) else active.get("items", []))}
+
+
+def test_completion_arriving_90s_after_later_help_does_not_close_it(client, employer_token, worker):
+    """4차 검증: 끝낸 뒤에 부른 같은 단계 도움은, 옛 완료 기록이 그 도움보다 90초 늦게 닿아도 닫지 않는다."""
+    _, aid, (s1, _s2) = _assigned(client, employer_token, worker["id"])
+    h = _help(client, worker["token"], aid, s1, client_request_id="late90").json()
+    with SessionLocal() as db:  # 도움은 90초 전에 서버에 닿았다
+        row = db.get(HelpRequest, h["id"])
+        row.created_at = row.created_at - timedelta(seconds=90)
+        db.commit()
+    now = datetime.now(timezone.utc)
+    # 기기에서 100초 전에 끝냈고(도움보다 10초 앞), 지금에서야 보냈다.
+    r = _log(client, worker["token"], aid, s1, client_completed_at=(now - timedelta(seconds=100)).isoformat(),
+             client_sent_at=now.isoformat(), client_event_id="e-old90")
+    assert r.status_code == 201, r.text
+    got = client.get(f"/api/worker/help/{h['id']}", headers=auth(worker["token"])).json()
+    assert got["state"] == "open"
+    # 도움보다 뒤(30초 전)에 끝낸 기록은 늦게 닿아도 닫는다.
+    r = _log(client, worker["token"], aid, s1, client_completed_at=(now - timedelta(seconds=30)).isoformat(),
+             client_sent_at=now.isoformat(), client_event_id="e-after")
+    assert r.status_code == 201, r.text
+    got = client.get(f"/api/worker/help/{h['id']}", headers=auth(worker["token"])).json()
+    assert got["state"] == "resolved" and got["resolution"] == "step_done"
+
+
 def test_cancel_by_client_precreate_is_throttled_and_refused_for_closed_jobs(client, employer_token, worker):
     """3차 검증: 아직 없는 누름 키로 '취소됨' 행을 미리 만드는 길도 도움 요청 몫(60초 10건)으로 센다."""
     _, aid, (s1, s2) = _assigned(client, employer_token, worker["id"])
