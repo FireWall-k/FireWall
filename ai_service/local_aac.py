@@ -670,6 +670,9 @@ _VERB_ANTONYMS: tuple[frozenset[str], ...] = (
     frozenset({"쓰다", "벗다"}),
     frozenset({"끼다", "벗다"}),
     frozenset({"채우다", "비우다"}),
+    # '채우다'(빈 곳에 넣어 메운다)와 '꺼내다'(안에서 밖으로 뺀다)는 넣다/꺼내다와 같은 방향 쌍이다.
+    # 진열 칸을 채우라는 지시에 냉장고에서 꺼내는 그림이 붙던 문제(개발셋 진열).
+    frozenset({"채우다", "꺼내다"}),
     frozenset({"꽂다", "뽑다"}),
     frozenset({"싣다", "내리다"}),
 )
@@ -969,11 +972,87 @@ def _object_variants(word: str) -> set[str]:
     return out
 
 
+# 위치 명사. '책상 위를 닦으세요'에서 을/를이 붙은 것은 '위'지만 동작의 대상은 앞의 '책상'이다.
+# 한국어에서 위치 명사는 홀로 대상을 가리키지 못하고 늘 앞 명사의 어느 곳인지를 나타내는
+# 의존적인 말이라, 대상으로 잡으면 게이트가 엉뚱하게 통과한다 — '위'는 거의 모든 그림 라벨
+# ('매대 위', '선반 위')에 있어 '문장 대상이 그림에 나온다'는 검사를 늘 만족시킨다.
+_POSITION_NOUNS = frozenset({
+    "위", "아래", "밑", "안", "안쪽", "속", "옆", "앞", "뒤", "겉", "바깥", "바깥쪽", "쪽",
+    "가운데", "사이", "끝", "위쪽", "아래쪽", "옆쪽", "앞쪽", "뒤쪽", "윗부분", "아랫부분",
+    "주변", "근처",
+})
+
+
 def _query_objects(sentence: str) -> set[str]:
-    return {m.group(1) for m in _QUERY_OBJECT_RE.finditer(sentence or "")}
+    """문장에서 '명사+을/를' 대상 명사를 뽑는다.
+
+    대상 자리에 위치 명사가 오면('책상 위를') 바로 앞 어절의 명사('책상')를 대상으로 본다.
+    앞 어절이 없으면 대상을 모르는 것으로 둔다 — 위치 명사 자체는 대상으로 쓰지 않는다.
+    """
+    text = sentence or ""
+    out: set[str] = set()
+    for m in _QUERY_OBJECT_RE.finditer(text):
+        noun = m.group(1)
+        if noun not in _POSITION_NOUNS:
+            out.add(noun)
+            continue
+        before = text[: m.start()].rstrip()
+        prev = re.search(r"([가-힣]+)$", before)
+        if not prev or before[prev.start() - 1: prev.start()] not in ("", " "):
+            continue
+        head = prev.group(1)
+        # '매대의 위를' — 관형격 '의'만 떼어 낸다(다른 조사는 위치 명사를 꾸미지 못한다).
+        if head.endswith("의") and len(head) > 2:
+            head = head[:-1]
+        if head not in _POSITION_NOUNS and not _is_verb_word(head):
+            out.add(head)
+    return out
 
 
-def _object_conflict(asset: dict, sentence: str, query: str) -> bool:
+# 은/는으로 대상을 앞세운 지시문('계란은 맨 위에 올려요', '떨어진 상품은 주워 주세요')은 을/를
+# 목적어가 없어 대상 게이트가 근거 없음으로 넘어갔다. 을/를 목적어가 없을 때만 주제어를 대상으로 본다.
+_QUERY_TOPIC_RE = re.compile(r"([가-힣]+)(?:은|는)(?=\s|$|[.,!?])")
+# 주제어 자리에 오지만 대상이 아닌 말: 때·순서·대명사·전체를 가리키는 말.
+_TOPIC_STOPWORDS = frozenset({
+    "오늘", "내일", "이번", "다음", "처음", "마지막", "먼저", "나중", "지금", "평소", "보통",
+    "이것", "그것", "저것", "이거", "그거", "여기", "거기", "저기", "우리", "저희", "나머지", "전부",
+})
+# 부사격 조사 뒤의 '는'('냉장고에는', '손으로는')과 '-하는/-되는/-있는/-없는/-않는' 같은
+# 용언 활용형은 대상이 아니다.
+_TOPIC_BAD_SUFFIX = ("에", "에서", "로", "으로", "까지", "에게", "한테", "부터",
+                     "하", "되", "있", "없", "않")
+# 관형형 용언은 의존 명사 앞에 온다('모르는 것', '쉬는 때'). 주제어 뒤에는 이 말들이 오지 않는다.
+_DEPENDENT_NOUNS = frozenset({"것", "거", "수", "때", "곳", "데", "줄", "적", "만큼", "대로", "동안"})
+# '-지는 않다/말다/못하다'의 '-지는'은 부정 보조 용언 앞의 어미다('넣지는 마세요').
+_NEGATIVE_AUX_PREFIX = ("않", "말", "마", "못")
+
+
+def _query_topics(sentence: str) -> set[str]:
+    """을/를 목적어가 없는 문장에서 은/는이 붙은 주제어 명사를 대상 후보로 뽑는다."""
+    text = sentence or ""
+    out: set[str] = set()
+    for m in _QUERY_TOPIC_RE.finditer(text):
+        noun = m.group(1)
+        if len(noun) < 2 or noun in _TOPIC_STOPWORDS or noun in _GENERIC_OBJECTS:
+            continue
+        if noun in _POSITION_NOUNS or noun.endswith(_TOPIC_BAD_SUFFIX):
+            continue
+        if _is_verb_word(m.group(0)):
+            continue
+        nxt = re.match(r"\s*([가-힣]+)", text[m.end():])
+        if nxt:
+            word = nxt.group(1)
+            if word.startswith(_NEGATIVE_AUX_PREFIX) and noun.endswith("지"):
+                continue
+            # 의존 명사 뒤 조사 한 글자('것이'·'때에')까지 떼어 본다.
+            if word in _DEPENDENT_NOUNS or (len(word) >= 2 and word[:-1] in _DEPENDENT_NOUNS
+                                            and word[-1] in "이을를은는도에만가"):
+                continue
+        out.add(noun)
+    return out
+
+
+def _object_conflict(asset: dict, sentence: str, query: str, job: str | None = None) -> bool:
     """문장이 말하는 대상과 그림의 대상이 분명히 다른가.
 
     판단 근거가 없으면(문장에 목적어가 없거나 그림에 대상 정보가 없으면) 충돌로 보지
@@ -981,12 +1060,18 @@ def _object_conflict(asset: dict, sentence: str, query: str) -> bool:
     """
     q_objects = _query_objects(sentence)
     if not q_objects:
+        q_objects = _query_topics(sentence)
+    if not q_objects:
         return False
     obj = (asset.get("_frame") or {}).get("object")
     if not obj:
         return False
     obj_norm = _normalize(obj)
-    if obj_norm.replace(" ", "") in _GENERIC_OBJECTS:
+    # 일반 명사('부품'·'스티커'·'상품')는 '이 일터에서 다루는 물건'이라는 뜻이라 같은 직무의
+    # 그림일 때만 문장의 구체 대상을 덮는다. 조립 그림의 '부품'이 주유 노즐을, '스티커'가 지퍼백
+    # 입구를 대신하지는 않는다. 직무를 모르면(job=None) 덮는다고 볼 근거가 없으므로 면제하지
+    # 않는다 — 그래도 아래 검사(문장 대상이 그림 라벨·검색어에 나오는가)는 그대로 한다.
+    if obj_norm.replace(" ", "") in _GENERIC_OBJECTS and job and asset.get("job") == job:
         return False
     q_compact = _normalize(query or sentence).replace(" ", "")
     # 그림 대상(의 낱말 하나라도)이 질의에 나오면 일치.
@@ -1085,7 +1170,8 @@ def _margin_settings(embedding: bool) -> tuple[float, float, str, float]:
 
 
 def decide(results: list[dict], embedding: bool = False, *,
-           sentence: str | None = None, query: str | None = None) -> dict:
+           sentence: str | None = None, query: str | None = None,
+           job: str | None = None) -> dict:
     """검색 결과를 자동 채택할지 판정한다.
 
     절대 임계값 하나로는 정답과 오답이 갈리지 않는다. 임계값 스윕 곡선에 오답채택과
@@ -1123,6 +1209,8 @@ def decide(results: list[dict], embedding: bool = False, *,
 
     sentence/query를 주면 마지막에 대상 일치 게이트를 건다: 채택될 1순위 그림의 대상이
     문장의 대상과 분명히 다르면 frame_mismatch로 채택을 보류한다(후보는 그대로 준다).
+    job은 일터의 직무(명시 또는 추론, 모르면 None)다 — 그림 대상이 일반 명사('부품'·'상품')일 때
+    같은 직무의 그림만 문장의 구체 대상을 덮는 것으로 본다(_object_conflict).
     """
     threshold, min_margin, margin_mode, min_rel_margin = _margin_settings(embedding)
 
@@ -1150,7 +1238,7 @@ def decide(results: list[dict], embedding: bool = False, *,
                 "embedding": embedding}
     if sentence:
         asset = _assets_by_id().get(best["asset_id"])
-        if asset is not None and _object_conflict(asset, sentence, query or sentence):
+        if asset is not None and _object_conflict(asset, sentence, query or sentence, job):
             return {"match": None, "reason": "frame_mismatch", "candidates": results,
                     "margin": margin, "embedding": embedding}
     return {"match": best, "reason": "accepted", "candidates": results, "margin": margin,
@@ -1181,4 +1269,5 @@ def search_for_step_detailed(keywords: list[str], context: dict | None = None,
     query = step_query(keywords, ctx)
     results, used_embedding = _search(query, ctx, limit=limit)
     sentence = str(ctx.get("sentence") or "").strip()
-    return decide(results, embedding=used_embedding, sentence=sentence, query=query)
+    job = _explicit_job(ctx) or infer_job(ctx, query)
+    return decide(results, embedding=used_embedding, sentence=sentence, query=query, job=job)
