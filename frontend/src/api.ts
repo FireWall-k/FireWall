@@ -1,6 +1,11 @@
 // 백엔드 계약을 그대로 비추는 타입 + 호출 함수.
 // 이 파일이 프론트엔드 <-> 백엔드 경계의 전부다. (인증 토큰 부착 포함)
 
+import { ApiError, AuthError, NetworkError } from "./apiErrors";
+import { saveWorkplaceName } from "./workerCodes";
+
+export { ApiError, AuthError, NetworkError };
+
 const BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
 
 // --- 인증 상태 (localStorage 유지) ---
@@ -46,6 +51,70 @@ export interface Step {
   symbol_source: string;
   needs_fallback: boolean;
   tts_audio_url: string | null;
+  /**
+   * 그림 4상태(contract §2). confirmed = 사업주가 확인함, auto_high = 자동으로 고름(확인 필요),
+   * choose = 그림은 있으나 골라 주세요, none = 그림 없음(보내기 막힘). 예전 서버는 이 필드가 없다.
+   */
+  picture_state?: PictureState;
+}
+
+export type PictureState = "confirmed" | "auto_high" | "choose" | "none";
+
+/** 근로자 화면 설정(contract §4.1). 서버는 늘 8개 키를 채워 준다. */
+export interface A11yPrefs {
+  font_size: "normal" | "large";
+  /** 단계에 들어가면 소리를 한 번 자동으로 읽는다(창업자 결정 4, 기본 켬). */
+  autoplay_sound: boolean;
+  tts_rate: 0.8 | 0.9 | 1.0;
+  sfx: boolean;
+  vibration: boolean;
+  praise: "normal" | "quiet";
+  hand: "right" | "left";
+  contrast: "normal" | "high";
+}
+
+export const DEFAULT_A11Y_PREFS: A11yPrefs = {
+  font_size: "normal",
+  autoplay_sound: true,
+  tts_rate: 0.9,
+  sfx: true,
+  vibration: false,
+  praise: "normal",
+  hand: "right",
+  contrast: "normal",
+};
+
+export type HelpState = "open" | "acknowledged" | "cancelled" | "resolved";
+
+/** 도움 요청(contract §7 공통 응답). 근로자 쪽 호출은 worker/workerApi.ts가 만든다. */
+export interface HelpOut {
+  id: string;
+  assignment_id: string;
+  step_id: string | null;
+  step_order: number | null;
+  state: HelpState;
+  resolution: string | null;
+  created_at: string;
+  acknowledged_at: string | null;
+  cancelled_at: string | null;
+  resolved_at: string | null;
+}
+
+/** 사업주 화면 도움 요청 목록 한 줄(contract §7.4). 단계가 지워졌으면 step_* 는 null. */
+export interface EmployerHelp {
+  id: string;
+  state: HelpState;
+  created_at: string;
+  acknowledged_at: string | null;
+  worker_id: string;
+  worker_name: string;
+  assignment_id: string;
+  task_id: string;
+  task_title: string;
+  step_id: string | null;
+  step_order: number | null;
+  step_sentence: string | null;
+  step_symbol_url: string | null;
 }
 
 export interface Task {
@@ -127,21 +196,46 @@ export interface DashboardWorker {
   status: string;
 }
 
-export class AuthError extends Error {}
+// 로그인 요청(/api/auth/*)의 401은 "로그인이 풀렸다"가 아니라 "아이디·번호가 틀렸다"다. 저장된 로그인을
+// 지우지 않고 서버 문장을 그대로 보여 준다(0차 2번). 예전에는 '로그인이 필요합니다'가 떠서 무엇이 틀렸는지 몰랐다.
+function isLoginPath(path: string): boolean {
+  return path.startsWith("/api/auth/");
+}
 
-async function req<T>(path: string, init?: RequestInit): Promise<T> {
+/** fetch를 부르고, 닿지 못하면 NetworkError로 감싼다(영어 "Failed to fetch"를 화면에 내지 않게). */
+async function send(url: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "AbortError") throw e; // 호출한 쪽이 일부러 끊었다.
+    throw new NetworkError(undefined, { cause: e });
+  }
+}
+
+/** 2xx가 아닌 응답을 ApiError(또는 AuthError)로 바꾼다. */
+async function toError(path: string, res: Response, fallback?: string): Promise<ApiError> {
+  if (res.status === 401 && !isLoginPath(path)) {
+    clearAuth();
+    return new AuthError();
+  }
+  const body = (await res.json().catch(() => ({}))) as { detail?: unknown };
+  if (typeof body.detail === "string") return new ApiError(res.status, body.detail);
+  // pydantic 검증 오류(422)는 detail이 배열이다 — 사람이 읽을 문장이 아니므로 일반 문구로 바꾼다.
+  if (Array.isArray(body.detail)) return new ApiError(res.status, null, "입력값을 확인해 주세요.");
+  return new ApiError(res.status, null, fallback ? `${fallback} (${res.status})` : undefined);
+}
+
+/**
+ * 인증 토큰을 붙여 JSON API를 부른다. 실패하면 던지는 것:
+ * NetworkError(닿지 못함) / AuthError(로그인 밖의 401, 저장된 로그인을 지움) / ApiError(그 밖, message = 서버 detail).
+ * 근로자 화면 호출(worker/workerApi.ts)도 이 함수를 쓴다.
+ */
+export async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const auth = getAuth();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (auth) headers.Authorization = `Bearer ${auth.token}`;
-  const res = await fetch(`${BASE}${path}`, { ...init, headers: { ...headers, ...(init?.headers ?? {}) } });
-  if (res.status === 401) {
-    clearAuth();
-    throw new AuthError("로그인이 필요합니다. 다시 로그인해 주세요.");
-  }
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as { detail?: string }).detail ?? `요청 실패 (${res.status})`);
-  }
+  const res = await send(`${BASE}${path}`, { ...init, headers: { ...headers, ...(init?.headers ?? {}) } });
+  if (!res.ok) throw await toError(path, res);
   return res.json() as Promise<T>;
 }
 
@@ -157,12 +251,14 @@ export const auth = {
   },
   /** 접속 코드는 사업장 안에서만 unique라 사업장 코드가 함께 있어야 근로자를 찾을 수 있다. */
   async loginWorker(workplace_code: string, access_code: string): Promise<AuthState> {
-    const r = await req<{ token: string; role: Role; display_name: string }>(
+    const r = await req<{ token: string; role: Role; display_name: string; workplace_name?: string | null }>(
       "/api/auth/worker-login",
       { method: "POST", body: JSON.stringify({ workplace_code, access_code }) }
     );
     const state: AuthState = { token: r.token, role: r.role, displayName: r.display_name };
     setAuth(state);
+    // 사업장 이름은 근로자 기기의 번호 넣기 화면 위 띠에 보인다(로그인 전에는 서버가 알려 주지 않는다).
+    if (r.workplace_name) saveWorkplaceName(r.workplace_name);
     return state;
   },
   /**
@@ -207,6 +303,8 @@ export interface Worker {
   access_code_length: number;
   /** 사업주 메모(근로자 특성). 기본으로는 AI에 보내지 않는다. */
   note?: string;
+  /** 근로자 화면 설정(contract §4.3). 예전 서버는 이 필드가 없다. */
+  a11y_prefs?: A11yPrefs;
   /** "AI 코칭에 메모 사용" — 사업주가 켜야 하고, AI 처리 동의도 있어야 실제로 보낸다. */
   ai_note_allowed?: boolean;
   /** AI 처리(국외 이전) 동의가 살아 있는지. 없으면 AI 코칭은 규칙 기반 제안만 나온다. */
@@ -304,20 +402,14 @@ export const api = {
     const a = getAuth();
     const form = new FormData();
     form.append("file", file);
-    const res = await fetch(`${BASE}/api/tasks/${taskId}/steps/${stepId}/photo`, {
+    const path = `/api/tasks/${taskId}/steps/${stepId}/photo`;
+    const res = await send(`${BASE}${path}`, {
       method: "POST",
       // multipart 경계는 브라우저가 설정하므로 Content-Type을 직접 넣지 않는다.
       headers: a ? { Authorization: `Bearer ${a.token}` } : {},
       body: form,
     });
-    if (res.status === 401) {
-      clearAuth();
-      throw new AuthError("로그인이 필요합니다. 다시 로그인해 주세요.");
-    }
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error((body as { detail?: string }).detail ?? `사진 업로드 실패 (${res.status})`);
-    }
+    if (!res.ok) throw await toError(path, res, "사진 업로드 실패");
     return res.json() as Promise<Step>;
   },
   removeStepPhoto: (taskId: string, stepId: string) =>
@@ -332,20 +424,23 @@ export const api = {
   workerTasks: (workerId: string, date?: string) =>
     req<TaskSummary[]>(`/api/workers/${workerId}/tasks${date ? `?date=${date}` : ""}`),
   workerActiveDates: (workerId: string) => req<string[]>(`/api/workers/${workerId}/active-dates`),
-  /** access_code를 비우면 서버가 겹치지 않는 6자리 무작위 코드를 만든다. */
+  /** access_code를 비우면 서버가 사업장 안에서 겹치지 않는 4자리 무작위 코드를 만든다. */
   createWorker: (display_name: string, access_code?: string) =>
     req<WorkerWithCode>("/api/workers", {
       method: "POST",
       body: JSON.stringify(access_code ? { display_name, access_code } : { display_name }),
     }),
-  /** 접속 코드를 새 6자리 무작위 코드로 바꾼다(예전 짧은 코드 교체·유출 시). */
+  /** 접속 코드를 새 4자리 무작위 코드로 바꾼다(유출 시·예전 긴 코드 교체). */
   reissueAccessCode: (id: string) =>
     req<WorkerWithCode>(`/api/workers/${id}/access-code`, { method: "POST" }),
   /** 내 사업장 코드(근로자 기기의 로그인 화면에 한 번 입력해 둔다). */
   workplace: () => req<Workplace>("/api/workplace"),
   deleteWorker: (id: string) => req<DeleteWorkerResult>(`/api/workers/${id}`, { method: "DELETE" }),
-  /** 이름·메모·"AI 코칭에 메모 사용"을 바꾼다. 보낸 필드만 바뀐다. */
-  updateWorker: (id: string, patch: { display_name?: string; note?: string; ai_note_allowed?: boolean }) =>
+  /** 이름·메모·"AI 코칭에 메모 사용"·화면 설정을 바꾼다. 보낸 필드만 바뀐다(a11y_prefs도 보낸 키만 병합). */
+  updateWorker: (
+    id: string,
+    patch: { display_name?: string; note?: string; ai_note_allowed?: boolean; a11y_prefs?: Partial<A11yPrefs> },
+  ) =>
     req<Worker>(`/api/workers/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
   listConsents: (id: string) => req<Consent[]>(`/api/workers/${id}/consents`),
   grantConsent: (id: string, consent_type: ConsentType, subject: ConsentSubject) =>
@@ -367,6 +462,13 @@ export const api = {
     replay_count: number;
     stuck: boolean;
   }) => req<{ ok: boolean }>("/api/performance-logs", { method: "POST", body: JSON.stringify(body) }),
+  /** 사업주: 근로자 도움 요청 목록(contract §7.4). 기본 active = 열림 + 확인함. */
+  employerHelp: (state: "active" | "open" | "today" = "active") =>
+    req<EmployerHelp[]>(`/api/employer/help?state=${state}`),
+  /** 사업주 [확인했어요]: 근로자 화면에 '선생님이 확인했어요'가 뜬다. */
+  ackHelp: (id: string) => req<HelpOut>(`/api/employer/help/${id}/acknowledge`, { method: "POST" }),
+  /** 사업주 [도와줬어요]: 요청을 닫는다. */
+  resolveHelp: (id: string) => req<HelpOut>(`/api/employer/help/${id}/resolve`, { method: "POST" }),
   dashboard: (id: string, workerId?: string) =>
     req<Dashboard>(`/api/dashboard/tasks/${id}${workerId ? `?worker_id=${workerId}` : ""}`),
   dashboardWorkers: (id: string) => req<DashboardWorker[]>(`/api/dashboard/tasks/${id}/workers`),
