@@ -83,6 +83,18 @@ def test_cross_job_generic_card_is_not_auto_accepted():
     assert _object_conflict(asm, q, q, job="assembly") is False
 
 
+def test_generic_exemption_job_comes_from_workplace_context():
+    # 문장의 '진열대'가 아니라 업종(베이커리 카페)으로 직무를 정한다 — 카페 그림의 '상품'이 빵을 덮는다.
+    from local_aac import search_for_step_detailed
+    s = "빵을 진열대에 놓아요"
+    r = search_for_step_detailed([s], {"business_type": "호텔 베이커리 카페", "sentence": s})
+    assert r["match"] is not None and r["match"]["asset_id"] == "CAFE_058"
+    # 다른 직무 일터에서는 여전히 막는다.
+    s2 = "주유기 노즐을 끝까지 넣어요"
+    r2 = search_for_step_detailed([s2], {"business_type": "주유소", "sentence": s2})
+    assert r2["reason"] == "frame_mismatch"
+
+
 def test_position_noun_is_not_the_object():
     # '책상 위를'에서 을/를이 붙은 '위'는 자리일 뿐이고 대상은 '책상'이다.
     assert _query_objects("책상 위를 마른 걸레로 닦으세요.") == {"책상"}
@@ -90,6 +102,10 @@ def test_position_noun_is_not_the_object():
     assert _query_objects("컵을 씻으세요") == {"컵"}
     # 앞 명사가 없으면 대상을 모른다 — 위치 명사를 대상으로 쓰지 않는다.
     assert _query_objects("위를 닦으세요") == set()
+    # '매대'는 분석기가 '매다'+'-대'로 잘못 읽지만 그림 frame에 나오는 명사라 대상으로 본다.
+    assert _query_objects("매대 위를 닦으세요") == {"매대"}
+    assert _query_objects("매대의 위를 닦으세요") == {"매대"}
+    assert _query_objects("매대 앞을 쓸어 주세요") == {"매대"}
 
 
 def test_position_noun_does_not_satisfy_object_gate():
@@ -112,6 +128,16 @@ def test_topic_marked_object_is_used_when_no_object_particle():
     assert _query_topics("넣지는 마세요") == set()
     # 일반 명사('상품은')는 대상으로 쓰지 않는다 — 어느 그림의 대상과도 겹칠 수 있다.
     assert _query_topics("떨어진 상품은 주워 주세요") == set()
+    # 경우·차례를 나타내는 형식 명사, 동작 명사('청소는'), 지시하는 사람은 대상이 아니다.
+    assert _query_topics("이런 경우는 걸레로 닦아요") == set()
+    assert _query_topics("두 번째는 행주로 닦아요") == set()
+    assert _query_topics("점심시간에는 쉬어요") == set()
+    assert _query_topics("청소는 이렇게 해요") == set()
+    assert _query_topics("설거지는 마지막에 해요") == set()
+    assert _query_topics("사장님은 오늘 안 계세요") == set()
+    # 한 글자 주제어는 그림 frame의 명사일 때만 쓴다('컵은' O, '저는' X).
+    assert _query_topics("컵은 씻어서 엎어 두세요") == {"컵"}
+    assert _query_topics("저는 먼저 갈게요") == set()
     box = {"id": "Y", "job": "delivery", "label": "깨지기 쉬운 상자를 맨 위에 올린다",
            "_norm": "깨지기 쉬운 상자를 맨 위에 올린다", "_kw_norm": "",
            "_frame": {"object": "상자"}}
@@ -124,10 +150,17 @@ def test_topic_marked_object_is_used_when_no_object_particle():
 
 def test_business_type_names_infer_job():
     assert infer_job({"business_type": "비즈니스 호텔(객실 정비)"}) == "cleaning"
-    assert infer_job({"business_type": "오피스 빌딩 관리"}) == "cleaning"
     assert infer_job({"business_type": "고깃집"}) == "serving"
     assert infer_job({"business_type": "동네 슈퍼마켓"}) == "retail"
     assert infer_job({"business_type": "옷가게"}) == "display"
+
+
+def test_place_names_do_not_pick_a_job():
+    # 호텔·빌딩·오피스는 장소 이름이라 그 안의 카페·식당 일도 가리킨다 — 청소로 잡지 않는다.
+    assert infer_job({"business_type": "빌딩 1층 카페"}) == "cafe"
+    assert infer_job({"business_type": "호텔 베이커리 카페"}) == "cafe"
+    assert infer_job({"business_type": "호텔 레스토랑"}) is None
+    assert infer_job({"business_type": "오피스텔 편의점"}) == "retail"
 
 
 def test_no_query_object_means_no_conflict():

@@ -983,6 +983,25 @@ _POSITION_NOUNS = frozenset({
 })
 
 
+@lru_cache(maxsize=1)
+def _asset_noun_vocab() -> frozenset[str]:
+    """그림 인덱스 frame(대상·장소·도구)에 나오는 명사 어절. '매대'처럼 형태소 분석기가 동사
+    활용형('매다'+'-대')으로 잘못 읽는 명사를 명사로 확인하는 데 쓴다."""
+    vocab: set[str] = set()
+    for asset in load_assets():
+        frame = asset.get("_frame") or {}
+        for key in ("object", "location", "instrument"):
+            value = frame.get(key)
+            if value:
+                vocab.update(str(value).split())
+    return frozenset(vocab)
+
+
+def _is_noun_word(word: str) -> bool:
+    """대상 자리에 올 수 있는 명사인가. 그림 frame의 명사면 분석기 판정보다 먼저 명사로 본다."""
+    return word in _asset_noun_vocab() or not _is_verb_word(word)
+
+
 def _query_objects(sentence: str) -> set[str]:
     """문장에서 '명사+을/를' 대상 명사를 뽑는다.
 
@@ -1004,7 +1023,7 @@ def _query_objects(sentence: str) -> set[str]:
         # '매대의 위를' — 관형격 '의'만 떼어 낸다(다른 조사는 위치 명사를 꾸미지 못한다).
         if head.endswith("의") and len(head) > 2:
             head = head[:-1]
-        if head not in _POSITION_NOUNS and not _is_verb_word(head):
+        if head not in _POSITION_NOUNS and _is_noun_word(head):
             out.add(head)
     return out
 
@@ -1012,11 +1031,30 @@ def _query_objects(sentence: str) -> set[str]:
 # 은/는으로 대상을 앞세운 지시문('계란은 맨 위에 올려요', '떨어진 상품은 주워 주세요')은 을/를
 # 목적어가 없어 대상 게이트가 근거 없음으로 넘어갔다. 을/를 목적어가 없을 때만 주제어를 대상으로 본다.
 _QUERY_TOPIC_RE = re.compile(r"([가-힣]+)(?:은|는)(?=\s|$|[.,!?])")
-# 주제어 자리에 오지만 대상이 아닌 말: 때·순서·대명사·전체를 가리키는 말.
+# 주제어 자리에 오지만 대상이 아닌 말: 때·순서·대명사·전체를 가리키는 말, 경우·차례를 나타내는
+# 형식 명사, 지시를 하는 사람.
 _TOPIC_STOPWORDS = frozenset({
     "오늘", "내일", "이번", "다음", "처음", "마지막", "먼저", "나중", "지금", "평소", "보통",
+    "아침", "점심", "저녁", "오전", "오후", "주말", "평일", "시간", "점심시간", "쉬는시간", "휴식시간",
     "이것", "그것", "저것", "이거", "그거", "여기", "거기", "저기", "우리", "저희", "나머지", "전부",
+    "경우", "번째", "때문", "정도", "부분", "방법", "순서", "차례", "일", "저", "나",
+    "사장님", "점장님", "매니저", "직원", "선배",
 })
+# 하다가 붙는 동작 명사('청소는 이렇게 해요', '주문은 제가 받을게요')는 동작의 이름이지 그림의
+# 대상이 아니다. 그림 라벨의 'X한다' 꼴에서 뽑은 것과 일터에서 흔한 동작 명사를 함께 본다.
+_ACTION_NOUNS = frozenset({
+    "청소", "정리", "정돈", "주문", "설거지", "계산", "결제", "포장", "진열", "배달", "배송", "조립",
+    "세척", "소독", "점검", "검수", "확인", "준비", "마감", "마무리", "교대", "휴식", "서빙", "안내",
+})
+
+
+@lru_cache(maxsize=1)
+def _label_action_nouns() -> frozenset[str]:
+    out: set[str] = set(_ACTION_NOUNS)
+    pattern = re.compile(r"([가-힣]{2,})(?:한다|하고|해서|하기|해요|하며|하여|합니다|하는)(?![가-힣])")
+    for asset in load_assets():
+        out.update(m.group(1) for m in pattern.finditer(str(asset.get("label") or "")))
+    return frozenset(out)
 # 부사격 조사 뒤의 '는'('냉장고에는', '손으로는')과 '-하는/-되는/-있는/-없는/-않는' 같은
 # 용언 활용형은 대상이 아니다.
 _TOPIC_BAD_SUFFIX = ("에", "에서", "로", "으로", "까지", "에게", "한테", "부터",
@@ -1033,7 +1071,13 @@ def _query_topics(sentence: str) -> set[str]:
     out: set[str] = set()
     for m in _QUERY_TOPIC_RE.finditer(text):
         noun = m.group(1)
-        if len(noun) < 2 or noun in _TOPIC_STOPWORDS or noun in _GENERIC_OBJECTS:
+        if noun in _TOPIC_STOPWORDS or noun in _GENERIC_OBJECTS or noun in _DEPENDENT_NOUNS:
+            continue
+        # 한 글자 주제어('컵은'·'옷은')는 그림 frame의 명사일 때만 쓴다 — 나머지 한 글자는
+        # 대명사·의존 명사('저는'·'건')인 때가 많다.
+        if len(noun) < 2 and noun not in _asset_noun_vocab():
+            continue
+        if noun in _label_action_nouns():
             continue
         if noun in _POSITION_NOUNS or noun.endswith(_TOPIC_BAD_SUFFIX):
             continue
@@ -1269,5 +1313,8 @@ def search_for_step_detailed(keywords: list[str], context: dict | None = None,
     query = step_query(keywords, ctx)
     results, used_embedding = _search(query, ctx, limit=limit)
     sentence = str(ctx.get("sentence") or "").strip()
-    job = _explicit_job(ctx) or infer_job(ctx, query)
+    # 일반 명사 면제(_object_conflict)의 직무는 일터 문맥(업종·환경·원문)에서 먼저 정한다. 단계
+    # 문장의 장소 말('진열대')은 그 단계의 자리일 뿐 일터의 직무가 아니다 — 베이커리 카페에서
+    # '빵을 진열대에 놓아요'가 진열 직무로 잡혀 카페 그림 '상품을 진열대에 놓는다'가 막혔다.
+    job = _explicit_job(ctx) or infer_job(ctx) or infer_job(ctx, query)
     return decide(results, embedding=used_embedding, sentence=sentence, query=query, job=job)

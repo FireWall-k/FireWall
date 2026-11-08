@@ -92,3 +92,17 @@ def test_fallback_job_inference_matches_matcher():
     assert decompose("차에 물을 뿌리세요.", {"business_type": "주유소 세차장"}).job == "gas"
     assert decompose("상품을 앞으로 당기세요.", {"business_type": "매장 진열"}).job == "display"
     assert decompose("빈 그릇을 치우세요.", {"business_type": "식당"}).job == "serving"
+
+
+def test_fallback_job_inference_uses_business_type_names():
+    """업종명 별칭(taxonomy.JOB_ALIASES)은 매칭뿐 아니라 분해기의 직무 추론도 바꾼다.
+
+    원문(raw_input)도 함께 보므로, 장소 이름(호텔·빌딩·오피스)은 별칭에 두지 않는다 — 그 안의
+    카페·식당 일까지 청소로 잡게 된다.
+    """
+    assert decompose("침대 시트를 바꾸세요.", {"business_type": "호텔 객실 정비"}).job == "cleaning"
+    assert decompose("불판을 갈아 주세요.", {"business_type": "고깃집"}).job == "serving"
+    assert decompose("옷을 개어 걸어 두세요.", {"business_type": "옷가게"}).job == "display"
+    assert decompose("컵을 씻으세요.", {"business_type": "빌딩 1층 카페"}).job == "cafe"
+    assert decompose("빌딩 1층 카페에서 컵을 씻으세요.", {}).job == "cafe"
+    assert decompose("호텔 레스토랑에서 접시를 치우세요.", {}).job != "cleaning"
