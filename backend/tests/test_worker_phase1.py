@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest  # noqa: E402
 from PIL import Image  # noqa: E402
-from sqlalchemy import select  # noqa: E402
+from sqlalchemy import func, select  # noqa: E402
 
 import main  # noqa: E402
 import ratelimit  # noqa: E402
@@ -1050,8 +1050,71 @@ def test_trusted_device_failures_are_bounded_per_worker(client, monkeypatch):
     for i in range(30):
         assert _login(client, f"5{i:03d}", f"10.7.1.{i}", device).status_code == 401
     assert _login(client, "1234", "10.7.2.1", device).status_code == 429
-    # 사업장 공용 키에는 세지 않았다 — 다른 기기는 영향이 없다.
+    # 틀린 번호는 사업장 공용 키에도 셌다(3차 검증) — 그래도 공용 10분 한도(60번) 안이라 다른 기기는 들어간다.
+    assert ratelimit.worker_wp_throttle.retry_after("wp:DEMO01") == 0
+    assert len(ratelimit.worker_wp_throttle._failures["wp:DEMO01"]) == 30
     assert _login(client, "1234", "10.7.3.1").status_code == 200
+
+
+def test_trusted_device_wrong_codes_use_shared_budget_and_cannot_chain(client, employer_token, monkeypatch):
+    """3차 검증: 믿는 기기는 주인 근로자에게만 믿음을 준다. 틀린 번호는 사업장 하루 한도에도 세고, 동료 번호로
+    들어가려면 공용 잠금을 지나야 한다 — 잠겼으면 맞는 동료 번호도 틀린 번호와 같은 401이다."""
+    monkeypatch.setenv("TRUST_FORWARDED_FOR", "1")
+    b = client.post("/api/workers", json={"display_name": "동료B", "access_code": "8642"},
+                    headers=auth(employer_token)).json()
+    dev_a = _login(client, "1234", "10.11.0.1").json()["device_token"]
+    for i in range(99):
+        assert _login(client, f"7{i:03d}", "10.11.0.2", dev_a).status_code == 401, i
+        ratelimit.worker_throttle.clear()  # 10분 창이 지났다고 친다(하루 창은 남는다)
+        ratelimit.worker_wp_throttle.clear()
+    # A 기기의 틀린 번호도 사업장 하루 키에 쌓였다.
+    assert len(ratelimit.worker_wp_day_throttle._failures["wp:DEMO01"]) == 99
+    _login(client, "7999", "10.11.9.9")  # 믿지 않는 기기 한 번 더 → 사업장 하루 한도(100)
+    assert ratelimit.worker_wp_day_throttle.retry_after("wp:DEMO01") > 0
+    # 사업장이 잠긴 뒤 A 기기로 맞는 동료 번호를 넣어도 틀린 번호와 같은 401(맞았다는 신호가 없다), 새 표시도 없다.
+    ratelimit.worker_day_throttle.clear()  # A 몫·IP 하루 키는 비워 둔다 — 공용 사업장 잠금만 본다
+    r = _login(client, "8642", "10.11.0.3", dev_a)
+    assert r.status_code == 401 and "device_token" not in r.json()
+    # 주인 A는 사업장이 잠겨도 들어간다.
+    assert _login(client, "1234", "10.11.0.4", dev_a).status_code == 200
+    client.delete(f"/api/workers/{b['id']}", headers=auth(employer_token))
+
+
+def test_trusted_device_other_worker_success_goes_through_shared_checks(client, employer_token, monkeypatch):
+    """공용 잠금이 없을 때 A 기기로 동료 B가 들어가면 B 몫의 표시를 받는다(믿지 않는 기기와 같은 결과)."""
+    monkeypatch.setenv("TRUST_FORWARDED_FOR", "1")
+    b = client.post("/api/workers", json={"display_name": "동료B", "access_code": "8642"},
+                    headers=auth(employer_token)).json()
+    dev_a = _login(client, "1234", "10.12.0.1").json()["device_token"]
+    r = _login(client, "8642", "10.12.0.2", dev_a)
+    assert r.status_code == 200 and r.json()["display_name"] == "동료B"
+    # IP 키가 잠겨 있으면 A 기기로도 B는 못 들어간다(401).
+    for i in range(30):
+        _login(client, f"3{i:03d}", "10.12.0.9")
+    assert _login(client, "8642", "10.12.0.9", dev_a).status_code == 401
+    assert _login(client, "1234", "10.12.0.9", dev_a).status_code == 200  # 주인은 들어간다
+    client.delete(f"/api/workers/{b['id']}", headers=auth(employer_token))
+
+
+def test_device_token_of_deleted_or_reissued_worker_is_not_trusted(client, employer_token, monkeypatch):
+    """3차 검증: 지운 근로자·코드를 다시 발급한 근로자의 기기 표시는 사업장 잠금을 건너뛰지 못한다."""
+    monkeypatch.setenv("TRUST_FORWARDED_FOR", "1")
+    b = client.post("/api/workers", json={"display_name": "지울", "access_code": "8642"},
+                    headers=auth(employer_token)).json()
+    c = client.post("/api/workers", json={"display_name": "재발급", "access_code": "8643"},
+                    headers=auth(employer_token)).json()
+    dev_b = _login(client, "8642", "10.13.0.1").json()["device_token"]
+    dev_c = _login(client, "8643", "10.13.0.2").json()["device_token"]
+    assert client.delete(f"/api/workers/{b['id']}", headers=auth(employer_token)).status_code in (200, 204)
+    r = client.post(f"/api/workers/{c['id']}/access-code", headers=auth(employer_token))
+    assert r.status_code == 200, r.text
+    new_c = r.json()["access_code"]
+    monkeypatch.setattr(ratelimit.worker_wp_throttle, "max_failures", 1)
+    assert _login(client, "0000", "10.13.0.3").status_code == 401
+    assert _login(client, "1234", "10.13.0.4").status_code == 429  # 사업장 공용 잠김
+    assert _login(client, "1234", "10.13.0.5", dev_b).status_code == 429
+    assert _login(client, new_c, "10.13.0.6", dev_c).status_code == 429
+    client.delete(f"/api/workers/{c['id']}", headers=auth(employer_token))
 
 
 def test_device_token_for_other_workplace_or_forged_is_ignored(client, other_employer, monkeypatch):
@@ -1093,3 +1156,37 @@ def test_four_digit_code_cannot_be_prefix_of_longer_code(client, employer_token,
             assert main._new_access_code(db, "emp-demo", exclude_worker_id=long.json()["id"]) == "9876"
     finally:
         client.delete(f"/api/workers/{long.json()['id']}", headers=auth(employer_token))
+
+
+def test_late_completion_does_not_close_help_called_after_it(client, employer_token, worker):
+    """3차 검증: 대기열에 남은 옛 1단계 완료 기록이 늦게 닿아도, 그 뒤에 1단계에서 다시 부른 도움은 열려 있다."""
+    _, aid, (s1, _s2) = _assigned(client, employer_token, worker["id"])
+    old = (datetime.now(timezone.utc) - timedelta(minutes=3)).isoformat()
+    h = _help(client, worker["token"], aid, s1, client_request_id="p2").json()
+    r = _log(client, worker["token"], aid, s1, client_completed_at=old, client_event_id="e-old")
+    assert r.status_code == 201, r.text
+    got = client.get(f"/api/worker/help/{h['id']}", headers=auth(worker["token"])).json()
+    assert got["state"] == "open"
+    # 지금 누른 [다 했어요](기기 시각 = 지금)는 그 요청을 닫는다.
+    assert _log(client, worker["token"], aid, s1, client_event_id="e-new").status_code == 201
+    got = client.get(f"/api/worker/help/{h['id']}", headers=auth(worker["token"])).json()
+    assert got["state"] == "resolved" and got["resolution"] == "step_done"
+
+
+def test_cancel_by_client_precreate_is_throttled_and_refused_for_closed_jobs(client, employer_token, worker):
+    """3차 검증: 아직 없는 누름 키로 '취소됨' 행을 미리 만드는 길도 도움 요청 몫(60초 10건)으로 센다."""
+    _, aid, (s1, s2) = _assigned(client, employer_token, worker["id"])
+    url = "/api/worker/help/cancel-by-client"
+    codes = [client.post(url, headers=auth(worker["token"]),
+                         json={"assignment_id": aid, "client_request_id": f"x{i}"}).status_code
+             for i in range(15)]
+    assert codes[:10] == [200] * 10 and set(codes[10:]) == {429}
+    with SessionLocal() as db:
+        n = db.scalar(select(func.count()).select_from(HelpRequest).where(HelpRequest.assignment_id == aid))
+    assert n == 10
+    # 다 끝낸 일에는 미리 만들지 않는다(409).
+    ratelimit.help_throttle.clear()
+    _log(client, worker["token"], aid, s1)
+    assert _log(client, worker["token"], aid, s2).json()["assignment_status"] == "done"
+    r = client.post(url, headers=auth(worker["token"]), json={"assignment_id": aid, "client_request_id": "late"})
+    assert r.status_code == 409

@@ -203,11 +203,16 @@ def _device_sig(body: str) -> str:
                           hashlib.sha256).digest())
 
 
-def make_device_token(employer_id: str, worker_id: str, ttl: int = DEVICE_TOKEN_TTL_SEC) -> str:
+def make_device_token(employer_id: str, worker_id: str, cf: str | None = None,
+                      ttl: int = DEVICE_TOKEN_TTL_SEC) -> str:
     """근로자가 한 번 맞게 들어온 기기에 주는 표시. 다음 로그인 때 함께 보내면 사업장·IP 공용 잠금 대신
     이 근로자 몫의 잠금만 본다(ratelimit.py 참고). 사업장 코드를 아는 누군가가 일부러 틀려 사업장 전체를
-    막아도, 이미 쓰던 기기의 근로자는 계속 들어갈 수 있다."""
+    막아도, 이미 쓰던 기기의 근로자는 계속 들어갈 수 있다.
+    cf는 접속 코드 지문이다(로그인 토큰과 같은 값). 근로자를 지우거나 코드를 다시 발급하면 맞지 않게 되어
+    그 기기 표시는 더 믿지 않는다(3차 검증)."""
     payload = {"e": employer_id, "w": worker_id, "exp": int(time.time()) + ttl}
+    if cf is not None:
+        payload["cf"] = cf
     body = _b64e(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
     return f"{body}.{_device_sig(body)}"
 

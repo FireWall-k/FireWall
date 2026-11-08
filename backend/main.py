@@ -432,21 +432,36 @@ def worker_login(payload: WorkerLogin, request: Request,
     employer = db.scalar(select(Employer).where(
         Employer.workplace_code == normalize_workplace_code(payload.workplace_code)))
     # 믿는 기기(2차 검증): 이 사업장에 한 번 맞게 들어온 기기는 서명된 기기 표시(device_token)를 갖고 있다.
-    # 그런 기기는 사업장·IP 공용 잠금을 보지도 세지도 않고, 표시에 적힌 근로자 몫의 잠금("dev:{근로자 id}")만 쓴다.
+    # 그런 기기의 "주인 근로자"는 사업장·IP 공용 잠금에 막히지 않고, 근로자 몫의 잠금("dev:{근로자 id}")만 본다.
     # 예전에는 사업장 코드를 아는 사람이 100번 틀리면(또는 근로자들이 하루 동안 잘못 누른 것이 쌓이면) 맞는 번호를
-    # 넣은 근로자까지 24시간 막혔다. 대입 한도는 그대로다: 믿지 않는 기기는 예전처럼 사업장·IP 키로, 믿는 기기는
-    # 근로자마다 따로(10분 30번·하루 100번) 센다. 같은 근로자가 다시 로그인해 표시를 새로 받아도 같은 키라 한도가
-    # 늘지 않는다.
+    # 넣은 근로자까지 24시간 막혔다.
+    # 3차 검증: 믿음은 그 기기의 주인에게만 준다. 예전에는 표시가 있으면 틀린 번호를 사업장 키에 세지 않았고, 동료
+    # 번호로도 들어가 동료 몫의 새 표시를 받았다 — 나쁜 동료가 사업장 하루 한도 위에 자기 몫 100번을 더 얹고,
+    # 뚫은 동료마다 100번씩 늘릴 수 있었다. 지금은
+    #   - 틀린 번호는 근로자 몫에 더해 IP·사업장 키에도 센다(믿지 않는 기기와 같은 예산을 쓴다).
+    #   - 주인이 아닌 근로자로 맞으면 믿지 않는 기기와 같은 IP·사업장 잠금을 본다. 잠겨 있으면 틀린 번호와 같은
+    #     401로 답한다(429로 답하면 "이 번호는 맞다"를 알려 주게 된다).
+    #   - 표시의 근로자가 지워졌거나 코드가 다시 발급됐으면(지문 cf가 다르면) 믿지 않는다.
     device = verify_device_token(payload.device_token)
-    trusted = device is not None and employer is not None and device["e"] == employer.id
+    owner = None
+    if device is not None and employer is not None and device["e"] == employer.id:
+        owner = db.get(Worker, device["w"])
+        if (owner is None or owner.employer_id != employer.id
+                or device.get("cf") != code_fingerprint(owner.access_code_hash)):
+            owner = None
+    trusted = owner is not None
+    shared_keys = ((worker_throttle, key), (worker_wp_throttle, wp_key),
+                   (worker_day_throttle, key), (worker_wp_day_throttle, wp_key))
     if trusted:
-        check_keys = ((worker_throttle, f"dev:{device['w']}"), (worker_day_throttle, f"dev:{device['w']}"))
+        own_keys = ((worker_throttle, f"dev:{owner.id}"), (worker_day_throttle, f"dev:{owner.id}"))
+        check_keys = own_keys
+        fail_keys = own_keys + shared_keys
     else:
         # 자동 코드는 4자리라(창업자 결정 3) 시도 제한이 방어선이다. IP 키에 더해 사업장 키로도 센다 — IP를 바꿔 가며
         # 한 사업장의 1만 개를 훑는 대입을 막는다. 없는 사업장 코드도 같은 키 규칙으로 센다(존재 오라클 방지).
         # 하루 창: 10분 창이 풀릴 때마다 다시 훑는 느린 대입을 막는다(사업장·IP 각각 하루 100번).
-        check_keys = ((worker_throttle, key), (worker_wp_throttle, wp_key),
-                      (worker_day_throttle, key), (worker_wp_day_throttle, wp_key))
+        check_keys = shared_keys
+        fail_keys = shared_keys
     for throttle, k in check_keys:
         ensure_not_blocked(throttle, k)
     # 접속 코드는 사업장 안에서만 unique다. 사업장 코드로 사업장을 먼저 정하고, 그 사업장 기준
@@ -461,8 +476,12 @@ def worker_login(payload: WorkerLogin, request: Request,
     ))
     if employer is None:
         worker = None
+    if worker is not None and trusted and worker.id != owner.id:
+        # 주인이 아닌 근로자: 믿지 않는 기기와 같은 공용 잠금을 본다. 잠겼으면 틀린 번호와 똑같이 답한다.
+        if any(throttle.retry_after(k) for throttle, k in shared_keys):
+            worker = None
     if worker is None:
-        for throttle, k in check_keys:
+        for throttle, k in fail_keys:
             throttle.fail(k)
         # 사업장 코드가 틀린 경우와 접속 코드가 틀린 경우를 같은 응답으로 돌려준다.
         # 다르게 답하면 사업장 코드가 존재하는지를 이 엔드포인트로 탐지할 수 있다.
@@ -478,7 +497,8 @@ def worker_login(payload: WorkerLogin, request: Request,
                     display_name=worker.display_name,
                     # 근로자 기기가 키패드 위 띠에 보여 줄 사업장 이름(로그인한 뒤에만 알려 준다).
                     workplace_name=employer.org_name or employer.name,
-                    device_token=make_device_token(employer.id, worker.id))
+                    device_token=make_device_token(employer.id, worker.id,
+                                                   code_fingerprint(worker.access_code_hash)))
 
 
 def current_worker(user: dict = Depends(require_worker), db: Session = Depends(get_db)) -> dict:
@@ -1955,6 +1975,10 @@ def worker_history(db: Session = Depends(get_db),
 _CLIENT_CLOCK_SKEW = timedelta(minutes=5)
 
 
+# 늦게 닿은 완료 기록이 도움 요청을 닫을지 정할 때, 기기 시계가 늦은 만큼을 봐주는 폭(_create_log_once).
+_HELP_CLOSE_GRACE = timedelta(seconds=60)
+
+
 def _clamp_client_time(value: datetime | None, now: datetime, floor: datetime | None) -> datetime:
     """기기가 보낸 완료 시각을 [배정 시각, 서버 now + 5분] 안으로 자른다. 없으면 서버 now."""
     if value is None:
@@ -2066,6 +2090,11 @@ def _create_log_once(payload: PerformanceLogCreate, response: Response, db: Sess
         )
         if a.status != "done":
             close = close.where(or_(HelpRequest.step_id == payload.step_id, HelpRequest.step_id.is_(None)))
+            # 3차 검증: 같은 단계라도 완료보다 뒤에 부른 요청은 닫지 않는다. 대기열에 남아 있던 옛 [다 했어요] 기록이
+            # 늦게 닿으면, 근로자가 [이전]으로 그 단계에 돌아와 새로 부른 요청이 말없이 닫혔다(선생님은 못 봤다).
+            # 기준은 기기 완료 시각이지만, 기기 시계가 늦을 수 있어 1분 전보다 오래된 요청은 늘 닫는다.
+            cutoff = max(at, now - _HELP_CLOSE_GRACE)
+            close = close.where(HelpRequest.created_at <= cutoff)
         db.execute(close.values(state="resolved", resolution="step_done", resolved_at=now))
     db.commit()
     return LogResultOut(assignment_status=a.status, duplicate=False, applied=True)
@@ -2252,6 +2281,16 @@ def _cancel_by_client_once(payload: HelpCreate, db: Session, user: dict) -> Help
     ).limit(1))
     now = _utcnow()
     if h is None:
+        # 3차 검증: 아직 닿지 않은 누름의 '취소됨' 행을 미리 만드는 길이라, 키만 바꿔 부르면 행이 끝없이 쌓였다.
+        # 끝낸 일·지난 일에는 만들지 않고(create_help와 같은 409), 새 행은 도움 요청과 같은 몫(60초 10건)으로 센다.
+        if _help_closed_assignment(a):
+            raise HTTPException(status_code=409, detail="이미 끝난 일이에요.")
+        key = f"help:{user['sub']}"
+        wait = help_throttle.retry_after(key)
+        if wait:
+            raise HTTPException(status_code=429, detail="잠깐 기다렸다가 다시 해 주세요.",
+                                headers={"Retry-After": str(wait)})
+        help_throttle.fail(key)
         h = HelpRequest(employer_id=db.get(Worker, a.worker_id).employer_id, worker_id=a.worker_id,
                         assignment_id=a.id, step_id=step_id, state="cancelled",
                         client_request_id=payload.client_request_id, created_at=now, cancelled_at=now)
