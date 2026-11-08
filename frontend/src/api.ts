@@ -257,6 +257,46 @@ export interface TaskContext {
   worker_id?: string;
 }
 
+/** 입력 화면 나누기 미리보기의 한 줄(POST /api/tasks/split-preview). 한 줄 = 한 동작 = 그림 1장. */
+export interface SplitPreviewStep {
+  order: number;
+  sentence: string;
+  action_type: string;
+  symbol_query: string[];
+  /** 같은 원래 절에서 나온 줄끼리 같은 번호. 원문 그대로인 줄은 null. */
+  split_group: number | null;
+  /** 나눈 곳이 애매해 사업주가 봐야 하는 줄(노란 표시). */
+  split_check: boolean;
+  /** 이 줄들이 나온 원래 절 — [합치기]로 되돌릴 문장. */
+  source_text: string | null;
+}
+
+export interface SplitPreview {
+  task_title: string;
+  job: string;
+  steps: SplitPreviewStep[];
+}
+
+/** 사업주가 입력 화면에서 확인한 단계. symbol_query는 문장을 고치지 않은 줄만 보낸다. */
+export interface ConfirmedStep {
+  sentence: string;
+  action_type?: string;
+  symbol_query?: string[] | null;
+}
+
+export interface CreateTaskOptions extends TaskContext {
+  steps?: ConfirmedStep[];
+  title?: string;
+  job?: string;
+}
+
+/** 편집기 문장 저장 결과. 동작이 둘이라 나눴으면 split_step_ids에 새 단계 id가 온다(되돌리기용). */
+export interface StepRewriteResult {
+  task: Task;
+  split_step_ids: string[];
+  sentence: string;
+}
+
 export interface CoachingSuggestion {
   order: number;
   issue: string;
@@ -273,10 +313,28 @@ export interface Coaching {
 
 export const api = {
   listTasks: () => req<TaskSummary[]>("/api/tasks"),
-  createTask: (raw_input: string, context: TaskContext = {}) =>
+  createTask: (raw_input: string, context: CreateTaskOptions = {}) =>
     req<Task>("/api/tasks", {
       method: "POST",
       body: JSON.stringify({ raw_input, ...context }),
+    }),
+  /** 직무를 만들지 않고 단계로 나눈 결과만 받는다(입력 화면에서 바로 확인·수정). */
+  splitPreview: (raw_input: string, context: TaskContext = {}) =>
+    req<SplitPreview>("/api/tasks/split-preview", {
+      method: "POST",
+      body: JSON.stringify({ raw_input, ...context }),
+    }),
+  /** 편집기에서 문장을 고쳐 저장. 동작이 둘이면 서버가 두 단계로 나눠 돌려준다. */
+  rewriteStep: (taskId: string, stepId: string, sentence: string) =>
+    req<StepRewriteResult>(`/api/tasks/${taskId}/steps/${stepId}/rewrite`, {
+      method: "POST",
+      body: JSON.stringify({ sentence }),
+    }),
+  /** 이어진 단계들을 한 단계로 합친다(저장하며 나눈 것 되돌리기). */
+  mergeSteps: (taskId: string, stepIds: string[], sentence: string) =>
+    req<Task>(`/api/tasks/${taskId}/steps/merge`, {
+      method: "POST",
+      body: JSON.stringify({ step_ids: stepIds, sentence }),
     }),
   coaching: (taskId: string, workerId?: string) =>
     req<Coaching>(`/api/dashboard/tasks/${taskId}/coaching${workerId ? `?worker_id=${workerId}` : ""}`),

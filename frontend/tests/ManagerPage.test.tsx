@@ -4,6 +4,9 @@ import userEvent from "@testing-library/user-event";
 import ManagerPage from "../src/pages/ManagerPage";
 
 const createTask = vi.fn();
+const splitPreview = vi.fn();
+const rewriteStep = vi.fn();
+const mergeSteps = vi.fn();
 const uploadStepPhoto = vi.fn();
 const removeStepPhoto = vi.fn();
 const listWorkers = vi.fn();
@@ -16,6 +19,9 @@ const stepSymbolCandidates = vi.fn().mockResolvedValue({ step_id: "s1", reason: 
 vi.mock("../src/api", () => ({
   api: {
     createTask: (raw: string, ctx: unknown) => createTask(raw, ctx),
+    splitPreview: (raw: string, ctx: unknown) => splitPreview(raw, ctx),
+    rewriteStep: (t: string, s: string, sentence: string) => rewriteStep(t, s, sentence),
+    mergeSteps: (t: string, ids: string[], sentence: string) => mergeSteps(t, ids, sentence),
     uploadStepPhoto: (t: string, s: string, f: File) => uploadStepPhoto(t, s, f),
     removeStepPhoto: (t: string, s: string) => removeStepPhoto(t, s),
     stepSymbolCandidates: (t: string, s: string) => stepSymbolCandidates(t, s),
@@ -28,10 +34,17 @@ vi.mock("../src/api", () => ({
 }));
 
 // 단계로 나누기 버튼은 직무 내용이 비어 있으면 비활성 상태다 — 모든 테스트가 이걸 거친다.
+// 나누기는 입력 화면에서 끝낸다: [단계로 나누기] → 나눈 줄 확인 → [이대로 그림 고르기]를 눌러야 초안·편집기가 생긴다.
 async function typeAndDecompose(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("직무 내용"), "상자를 옮겨주세요.");
   await user.click(screen.getByRole("button", { name: "단계로 나누기" }));
+  await user.click(await screen.findByRole("button", { name: "이대로 그림 고르기 ›" }));
 }
+
+const previewStep = {
+  order: 1, sentence: "상자를 옮기세요", action_type: "move", symbol_query: ["상자"],
+  split_group: null as number | null, split_check: false, source_text: null as string | null,
+};
 
 const baseStep = {
   id: "s1", order: 1, sentence: "상자를 옮기세요", action_type: "move",
@@ -41,6 +54,10 @@ const baseStep = {
 
 beforeEach(() => {
   createTask.mockReset();
+  splitPreview.mockReset();
+  rewriteStep.mockReset();
+  mergeSteps.mockReset();
+  splitPreview.mockResolvedValue({ task_title: "직무", job: "", steps: [previewStep] });
   uploadStepPhoto.mockReset();
   removeStepPhoto.mockReset();
   listWorkers.mockReset();
@@ -256,11 +273,15 @@ describe("ManagerPage — 근로자 특성 메모 대상", () => {
 
     await typeAndDecompose(user);
     await waitFor(() => expect(createTask).toHaveBeenCalledTimes(1));
+    expect(splitPreview.mock.calls[0][1]).toMatchObject({ worker_id: undefined });
     expect(createTask.mock.calls[0][1]).toMatchObject({ worker_id: undefined });
 
     await user.selectOptions(select, "w1");
     await user.type(screen.getByLabelText("근로자 특성"), "그림 선호");
     await user.click(screen.getByRole("button", { name: "단계로 나누기" }));
+    await waitFor(() => expect(splitPreview).toHaveBeenCalledTimes(2));
+    expect(splitPreview.mock.calls[1][1]).toMatchObject({ worker_id: "w1", worker_note: "그림 선호" });
+    await user.click(await screen.findByRole("button", { name: "이대로 그림 고르기 ›" }));
     await waitFor(() => expect(createTask).toHaveBeenCalledTimes(2));
     expect(createTask.mock.calls[1][1]).toMatchObject({ worker_id: "w1", worker_note: "그림 선호" });
   });

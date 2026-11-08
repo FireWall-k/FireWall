@@ -5,6 +5,8 @@ import { ActionChip } from "../actions";
 import { accessCodeText } from "../workerCodes";
 import { mergeStepMedia, useMediaRefresh } from "../media";
 import { cn } from "../cn";
+import SplitPreviewList from "../components/SplitPreviewList";
+import { rowsFromPreview, toConfirmed, type SplitRow } from "../splitRows";
 
 const SAMPLE =
   "예: 택배 상자를 크기별로 분류하고, 큰 상자는 A구역으로 옮겨주세요. 그리고 5개씩 쌓아주세요. 마지막에 수량을 확인하세요.";
@@ -41,6 +43,15 @@ export default function ManagerPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // 입력 화면 나누기 결과(직무를 만들기 전). 한 줄 = 한 동작 = 그림 1장. [이대로 그림 고르기]를 눌러야
+  // 이 목록으로 초안을 만든다. input은 이 목록을 만든 원문 — 원문을 고치면 다시 나누라고 알려 준다.
+  const [preview, setPreview] = useState<{ title: string; job: string; input: string; rows: SplitRow[] } | null>(null);
+  const [splitting, setSplitting] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  // 편집기에서 문장을 고쳐 저장하며 두 단계로 나눈 경우 [되돌리기]용(새 단계 id들 + 사업주가 적은 문장).
+  const [splitUndo, setSplitUndo] = useState<{ stepIds: string[]; sentence: string } | null>(null);
+  const editorHeading = useRef<HTMLHeadingElement | null>(null);
 
   // 1:N — 사업주의 근로자 목록 + 배정 대상(여러 명) 선택 + 인라인 추가
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -110,22 +121,60 @@ export default function ManagerPage() {
     && s.symbol_source === "LOCAL_AAC" && !confirmedSteps.has(s.id);
   const unconfirmedCount = task ? task.steps.filter(needsConfirm).length : 0;
 
+  const taskContext = () => ({
+    business_type: businessType.trim() || undefined,
+    work_environment: workEnvironment.trim() || undefined,
+    worker_note: workerNote.trim() || undefined,
+    worker_id: noteWorkerId || undefined,
+  });
+
+  // [단계로 나누기] — 직무는 아직 만들지 않는다. 나눈 결과를 입력칸 바로 아래에 보여 주고 사업주가 그 자리에서 고친다.
   async function handleDecompose() {
-    setBusy(true);
+    setSplitting(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const input = rawInput;
+      const result = await api.splitPreview(input, taskContext());
+      if (!result.steps.length) {
+        setPreview(null);
+        setError("나눌 문장을 찾지 못했어요. 할 일을 조금 더 자세히 적어 주세요.");
+        return;
+      }
+      // 새로 나누면 앞서 열어 둔 편집기는 닫는다(그 초안은 서버에 그대로 남는다).
+      setTask(null);
+      setSplitUndo(null);
+      setPreview({ title: result.task_title, job: result.job, input, rows: rowsFromPreview(result.steps) });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "문장을 나누지 못했어요. 잠시 뒤 다시 눌러 주세요.");
+    } finally {
+      setSplitting(false);
+    }
+  }
+
+  // [이대로 그림 고르기] — 사업주가 확인한 줄로 초안을 만들고(그림·음성은 서버가 붙인다) 편집기를 연다.
+  async function handleConfirmSplit() {
+    if (!preview) return;
+    setConfirming(true);
     setError(null);
     setNotice(null);
     try {
       setConfirmedSteps(new Set());
-      setTask(await api.createTask(rawInput, {
-        business_type: businessType.trim() || undefined,
-        work_environment: workEnvironment.trim() || undefined,
-        worker_note: workerNote.trim() || undefined,
-        worker_id: noteWorkerId || undefined,
-      }));
+      setStepCandidates({});
+      const created = await api.createTask(preview.input, {
+        ...taskContext(),
+        title: preview.title,
+        job: preview.job || undefined,
+        steps: toConfirmed(preview.rows),
+      });
+      setTask(created);
+      setPreview(null);
+      // 편집기 제목으로 초점을 옮겨 화면 읽기 프로그램·키보드 사용자가 다음 할 일로 바로 간다.
+      setTimeout(() => editorHeading.current?.focus(), 0);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "분해에 실패했습니다.");
+      setError(e instanceof Error ? e.message : "초안을 만들지 못했어요. 잠시 뒤 다시 눌러 주세요.");
     } finally {
-      setBusy(false);
+      setConfirming(false);
     }
   }
 
@@ -166,13 +215,25 @@ export default function ManagerPage() {
     };
   }, [task, stepCandidates]);
 
+  // 편집기에서 문장을 고쳐 저장. 고친 문장에 동작이 둘이면 서버가 경고 없이 두 단계로 나누고, 여기서 [되돌리기]를 띄운다.
   async function handleEditSentence(stepId: string, sentence: string) {
     if (!task) return;
-    const updated = await api.updateStep(task.id, stepId, { sentence });
-    setTask({
-      ...task,
-      steps: task.steps.map((s) => (s.id === stepId ? updated : s)),
-    });
+    const text = sentence.trim();
+    if (!text) {
+      setError("문장이 비어 있어요. 할 일을 적어 주세요.");
+      return;
+    }
+    setError(null);
+    try {
+      const result = await api.rewriteStep(task.id, stepId, text);
+      setTask(result.task);
+      setSplitUndo(result.split_step_ids.length >= 2
+        ? { stepIds: result.split_step_ids, sentence: result.sentence }
+        : null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "문장을 저장하지 못했어요. 잠시 뒤 다시 해 주세요.");
+      return;
+    }
     // 문장이 바뀌면 그림이 여전히 맞는지 다시 봐야 한다.
     unconfirmStep(stepId);
     // 문장이 바뀌면 후보도 달라진다. 캐시를 버려 다시 받아오게 한다.
@@ -181,6 +242,18 @@ export default function ManagerPage() {
       delete next[stepId];
       return next;
     });
+  }
+
+  // 저장하며 나눈 단계를 사업주가 적은 문장 한 단계로 되돌린다.
+  async function handleUndoSplit() {
+    if (!task || !splitUndo) return;
+    setError(null);
+    try {
+      setTask(await api.mergeSteps(task.id, splitUndo.stepIds, splitUndo.sentence));
+      setSplitUndo(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "되돌리지 못했어요. 잠시 뒤 다시 해 주세요.");
+    }
   }
 
   async function handlePickCandidate(stepId: string, match: AacMatch) {
@@ -446,11 +519,25 @@ export default function ManagerPage() {
         </p>
         <button
           onClick={handleDecompose}
-          disabled={busy || !rawInput.trim()}
-          className="mt-3 rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white disabled:opacity-50"
+          disabled={busy || splitting || confirming || !rawInput.trim()}
+          className="mt-3 min-h-11 rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:opacity-50"
         >
-          {busy ? "처리 중…" : "단계로 나누기"}
+          단계로 나누기
         </button>
+        {splitting && (
+          <p role="status" className="mt-3 break-keep text-sm font-semibold text-slate-700">
+            문장을 나누고 있어요…
+          </p>
+        )}
+        {preview && !splitting && (
+          <SplitPreviewList
+            rows={preview.rows}
+            onChange={(rows) => setPreview((cur) => (cur ? { ...cur, rows } : cur))}
+            onConfirm={handleConfirmSplit}
+            confirming={confirming}
+            stale={rawInput !== preview.input}
+          />
+        )}
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4">
@@ -520,12 +607,24 @@ export default function ManagerPage() {
 
       {task && (
         <section>
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 ref={editorHeading} tabIndex={-1} className="text-lg font-bold text-slate-900 focus:outline-none">
             검토 · 수정 <span className="text-sm font-normal text-slate-500">({task.steps.length}단계)</span>
           </h2>
           <p className="mt-1 text-sm text-slate-600">
             근로자가 보게 될 화면과 같은 순서입니다. 손잡이를 끌어 순서를 바꾸고, 문장을 다듬거나 단계를 추가할 수 있습니다.
           </p>
+          {splitUndo && (
+            <div role="status" className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-sm text-slate-700">
+              <span className="break-keep">동작이 둘이라 두 단계로 나눴어요.</span>
+              <button
+                type="button"
+                onClick={handleUndoSplit}
+                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 font-semibold text-slate-800 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+              >
+                되돌리기
+              </button>
+            </div>
+          )}
           <ol className="mt-3 space-y-3">
             {task.steps.map((s, idx) => (
               <li
