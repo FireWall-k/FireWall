@@ -310,7 +310,7 @@ describe("ManagerPage — 자동으로 고른 그림은 확인해야 보낼 수 
     await typeAndDecompose(user);
     await screen.findByRole("checkbox", { name: /김근로/ });
 
-    await user.click(screen.getByRole("button", { name: "1단계 그림 확인" }));
+    await user.click(screen.getByRole("button", { name: /1단계 그림 확인$/ }));
     expect(screen.getByText("✓ 확인함")).toBeInTheDocument();
     const send = screen.getByRole("button", { name: /게시하고 보내기/ });
     expect(send).toBeEnabled();
@@ -397,7 +397,7 @@ describe("ManagerPage — 그림 확인을 서버에 적는다(2a-0)", () => {
     await screen.findByRole("checkbox", { name: /김근로/ });
     expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeDisabled();
 
-    await user.click(screen.getByRole("button", { name: "1단계 그림 확인" }));
+    await user.click(screen.getByRole("button", { name: /1단계 그림 확인$/ }));
 
     expect(reqMock).toHaveBeenCalledWith("/api/tasks/task-1/steps/s1/picture/confirm", { method: "POST" });
     expect(await screen.findByText("✓ 확인함")).toBeInTheDocument();
@@ -412,10 +412,10 @@ describe("ManagerPage — 그림 확인을 서버에 적는다(2a-0)", () => {
     await typeAndDecompose(user);
     await screen.findByRole("checkbox", { name: /김근로/ });
 
-    await user.click(screen.getByRole("button", { name: "1단계 그림 확인" }));
+    await user.click(screen.getByRole("button", { name: /1단계 그림 확인$/ }));
 
     expect(await screen.findByText(/먼저 그림을 골라 주세요/)).toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: "1단계 그림 확인" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /1단계 그림 확인$/ })).toBeInTheDocument();
     expect(screen.queryByText("✓ 확인함")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeDisabled();
   });
@@ -430,7 +430,7 @@ describe("ManagerPage — 그림 확인을 서버에 적는다(2a-0)", () => {
     await typeAndDecompose(user);
     await screen.findByRole("checkbox", { name: /김근로/ });
 
-    expect(screen.queryByRole("button", { name: "1단계 그림 확인" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /1단계 그림 확인$/ })).not.toBeInTheDocument();
     expect(screen.getByText("✓ 확인함")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeEnabled();
     expect(reqMock).not.toHaveBeenCalled();
@@ -447,7 +447,7 @@ describe("ManagerPage — 그림 확인을 서버에 적는다(2a-0)", () => {
     await screen.findByRole("checkbox", { name: /김근로/ });
 
     expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "1단계 그림 확인" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /1단계 그림 확인$/ })).toBeInTheDocument();
   });
 });
 
@@ -467,7 +467,7 @@ describe("ManagerPage — [그림 확인] 요청 중에는 보내지 않는다(2
     await typeAndDecompose(user);
     await screen.findByRole("checkbox", { name: /김근로/ });
 
-    await user.click(screen.getByRole("button", { name: "1단계 그림 확인" }));
+    await user.click(screen.getByRole("button", { name: /1단계 그림 확인$/ }));
     const send = screen.getByRole("button", { name: /게시하고 보내기/ });
     expect(send).toBeDisabled();
     fireEvent.click(send);
@@ -534,9 +534,9 @@ describe("ManagerPage — 보내기가 서버 검사(422)에 막히면 그 단�
     expect(assign).not.toHaveBeenCalled();
     // 막힌 단계는 다시 확인하게 하고, 그동안 보내기는 막힌다.
     expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeDisabled();
-    expect(screen.queryByRole("button", { name: "1단계 그림 확인" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /1단계 그림 확인$/ })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "2단계 그림 확인" }));
+    await user.click(screen.getByRole("button", { name: /2단계 그림 확인$/ }));
 
     expect(reqMock).toHaveBeenCalledWith("/api/tasks/task-1/steps/s2/picture/confirm", { method: "POST" });
     await waitFor(() => expect(stepItem("s2")).not.toHaveAttribute("data-send-blocked"));
@@ -577,7 +577,7 @@ describe("ManagerPage — 보내기가 서버 검사(422)에 막히면 그 단�
     await waitFor(() => expect(stepItem("s1")).toHaveAttribute("data-send-blocked", "true"));
     expect(getTask).toHaveBeenCalledWith("task-1");
     expect(screen.getByText(/이 단계 때문에 보내지 못했어요\. 그림을 고르거나 사진을 올려 주세요\./)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "1단계 그림 확인" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /1단계 그림 확인$/ })).not.toBeInTheDocument();
   });
 
   it("422가 아닌 실패(네트워크 등)는 점검표를 읽지 않고 강조도 하지 않는다", async () => {

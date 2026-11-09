@@ -153,6 +153,27 @@ export async function mockEmployer(page: Page, opts: { tasks?: MockTask[]; help?
     if (path === "/api/workers" && method === "GET") return json([]);
     if (path === "/api/workplace") return json({ workplace_code: "AB12CD", org_name: "테스트 사업장" });
     if (path === "/api/tasks" && method === "GET") return json([]);
+    // 새 직무 화면: 나누기 미리보기 → 초안 만들기(1단계는 확인할 자동 그림, 2단계는 그림 없음).
+    if (path === "/api/tasks/split-preview" && method === "POST") {
+      return json({
+        task_title: "컵 씻기", job: "cafe",
+        steps: [
+          { order: 1, sentence: "손을 씻어요.", action_type: "clean", symbol_query: [], split_group: null, split_check: false, source_text: null },
+          { order: 2, sentence: "컵을 씻어요.", action_type: "clean", symbol_query: [], split_group: null, split_check: false, source_text: null },
+        ],
+      });
+    }
+    if (path === "/api/tasks" && method === "POST") {
+      const body = req.postDataJSON() as { steps: { sentence: string }[] };
+      return json({
+        id: "task-new", title: "컵 씻기", status: "draft",
+        steps: body.steps.map((s, i) => ({
+          id: `s${i + 1}`, order: i + 1, sentence: s.sentence, action_type: "clean",
+          symbol_url: i === 0 ? `${API}/media/symbols/s1.png` : null, symbol_source: i === 0 ? "LOCAL_AAC" : "fallback",
+          needs_fallback: i !== 0, tts_audio_url: null,
+        })),
+      }, 201);
+    }
     return route.fulfill({ status: 599, headers: CORS, body: `unmocked ${method} ${path}` });
   });
   return m;

@@ -59,15 +59,36 @@ for (const width of [1440, 390] as const) {
       expect(await page.locator("main").innerText()).not.toMatch(/\bAI\b/);
     });
 
+    // 1회차 검증: 나누기 → [이대로 그림 고르기] 뒤 편집 상태(드래그 손잡이·'(N단계)'·'✦ 자동' 확인 단추)도 본다.
+    test("새 직무 편집 상태: axe 심각 0·button-name 0, 'AI' 글자 0", async ({ page }) => {
+      await mockEmployer(page);
+      await loginEmployer(page, "/m/tasks/new");
+      await page.getByLabel("직무 내용").fill("손을 씻어요. 컵을 씻어요.");
+      await page.getByRole("button", { name: "단계로 나누기" }).click();
+      await page.getByRole("button", { name: "이대로 그림 고르기 ›" }).click();
+      await expect(page.getByRole("heading", { name: /검토 · 수정/ })).toBeVisible();
+      await expect(page.getByRole("button", { name: /1단계 그림 확인$/ })).toBeVisible();
+      await page.waitForTimeout(500); // 등장 애니메이션이 끝난 뒤 대비를 잰다
+      const r = await axe(page);
+      expect(r.serious).toEqual([]);
+      expect(r.buttonName).toEqual([]);
+      expect(await page.locator("main").innerText()).not.toMatch(/\bAI\b/);
+    });
+
     test("직무 목록 빈 상태: axe 심각 0", async ({ page }) => {
       await mockEmployer(page, { tasks: [] });
       await loginEmployer(page, "/m/tasks");
       await expect(page.getByText("아직 만든 직무가 없어요")).toBeVisible();
       expect((await axe(page)).serious).toEqual([]);
       // [예시로 만들어 보기] → 예시로 채운 새 직무 화면
-      await page.getByRole("link", { name: "예시로 만들어 보기" }).click();
+      // 키보드로 누르면 링크가 사라지므로 초점이 body로 빠지지 않고 본문(main)으로 간다(1회차 검증).
+      await page.getByRole("link", { name: "예시로 만들어 보기" }).focus();
+      await page.keyboard.press("Enter");
       await expect(page).toHaveURL(/\/m\/tasks\/new\?example=1$/);
       await expect(page.getByLabel("업종")).toHaveValue("카페");
+      await expect.poll(() => page.evaluate(() => document.activeElement?.id ?? "")).toBe("main");
+      await page.keyboard.press("Tab");
+      expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe("BODY");
     });
   });
 }

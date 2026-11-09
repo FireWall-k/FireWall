@@ -314,6 +314,8 @@ export interface TaskSummary {
   title: string;
   status: string;
   created_at: string;
+  /** 2a-1: 보관함에 있는지(옛 서버는 보내지 않으니 없으면 false로 본다). */
+  archived?: boolean;
 }
 
 export interface Worker {

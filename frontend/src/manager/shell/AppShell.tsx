@@ -5,7 +5,7 @@
 // - 본문 위: 상단 바 56 + 도움 요청 띠(모든 /m 화면, contract §2.2). 본문은 paper-50, 좌우 32(휴대폰 16).
 //   목록·홈은 최대 1200, 편집기(/m/tasks/:id)는 꽉 채운다.
 // 토스트와 도움 요청 폴링도 여기서 한 번만 연다.
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Ellipsis, LogOut, Settings } from "lucide-react";
 import HelpAlertStrip from "../../components/HelpAlertStrip";
@@ -23,9 +23,28 @@ export interface AppShellProps {
 }
 
 export default function AppShell({ displayName, onLogout, children }: AppShellProps) {
-  const { pathname } = useLocation();
+  const { pathname, key: locationKey } = useLocation();
   const navigate = useNavigate();
   const full = isFullWidth(pathname);
+  const mainRef = useRef<HTMLElement>(null);
+  const firstRender = useRef(true);
+
+  // 화면 안 링크(빈 상태 [예시로 만들어 보기] 등)를 눌러 주소가 바뀌면 그 링크가 사라져 초점이 body로 빠진다.
+  // 주소가 바뀐 뒤에도 초점이 body에 있을 때만 본문(main)으로 옮긴다. 사이드바 링크처럼 그대로 남는 곳이나
+  // 화면이 스스로 초점을 옮긴 경우는 건드리지 않는다. 처음 열 때는 옮기지 않는다.
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    const id = requestAnimationFrame(() => {
+      const active = document.activeElement;
+      if (!active || active === document.body || !active.isConnected) {
+        mainRef.current?.focus({ preventScroll: true });
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [locationKey]);
 
   function logout() {
     onLogout();
@@ -51,6 +70,7 @@ export default function AppShell({ displayName, onLogout, children }: AppShellPr
             <HelpAlertStrip />
             <main
               id="main"
+              ref={mainRef}
               tabIndex={-1}
               className="min-w-0 flex-1 px-4 pb-24 pt-6 focus:outline-none md:px-8 md:pb-8"
             >

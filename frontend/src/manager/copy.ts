@@ -245,4 +245,7 @@ export const dashboardArchive = {
   confirm: (title: string) =>
     `'${title}'${eulReul(title)} 보관함으로 옮길까요?\n보관해도 수행 기록은 남아요. 직무 목록의 '보관'에서 꺼낼 수 있어요.`,
   failed: "보관하지 못했어요 · 다시 시도해 주세요",
+  /** 이미 보관한 직무를 고르면 [보관하기] 대신 보이는 표시. 기록은 계속 볼 수 있다. */
+  already: "보관함에 있는 직무예요",
+  optionSuffix: "(보관함)",
 } as const;

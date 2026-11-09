@@ -116,7 +116,7 @@ describe("DashboardPage", () => {
     expect(await screen.findByText(/AI 처리 동의가 기록되지 않은 근로자가 있어/)).toBeInTheDocument();
   });
 
-  it("2a-1: [삭제] 대신 [보관하기] — 확인하면 archive를 부르고(DELETE 아님) 목록에서 뺀다", async () => {
+  it("2a-1: [삭제] 대신 [보관하기] — 확인하면 archive를 부르고(DELETE 아님) '보관함'으로 표시한다", async () => {
     listWorkers.mockResolvedValue([worker]);
     workerTasks.mockResolvedValue([task]);
     dashboard.mockResolvedValue(dashboardData);
@@ -130,7 +130,23 @@ describe("DashboardPage", () => {
     expect(confirm.mock.calls[0][0]).toContain("'분류 작업'을 보관함으로 옮길까요?");
     expect(archiveTask).toHaveBeenCalledWith("task-1");
     await waitFor(() => expect(screen.queryByRole("button", { name: "선택한 직무 보관하기" })).not.toBeInTheDocument());
+    expect(screen.getByText("보관함에 있는 직무예요")).toBeInTheDocument();
+    await waitFor(() => expect(document.activeElement?.id).toBe("dashboard-archived-note"));
+    expect(screen.getByRole("option", { name: /분류 작업 \(보관함\)/ })).toBeInTheDocument();
     confirm.mockRestore();
+  });
+
+  it("1회차 검증: 서버가 보관한 직무라고 주면 [보관하기]를 띄우지 않는다(다시 열어도 또 보관하지 않음)", async () => {
+    listWorkers.mockResolvedValue([worker]);
+    workerTasks.mockResolvedValue([{ ...task, archived: true }]);
+    dashboard.mockResolvedValue(dashboardData);
+    coaching.mockResolvedValue({ summary: "", suggestions: [] });
+    archiveTask.mockReset();
+    render(<DashboardPage />);
+    await screen.findByText("50%");
+    expect(screen.queryByRole("button", { name: "선택한 직무 보관하기" })).not.toBeInTheDocument();
+    expect(screen.getByText("보관함에 있는 직무예요")).toBeInTheDocument();
+    expect(archiveTask).not.toHaveBeenCalled();
   });
 
   it("보관 확인을 취소하면 아무것도 부르지 않는다", async () => {

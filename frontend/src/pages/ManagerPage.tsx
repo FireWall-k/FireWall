@@ -698,7 +698,7 @@ export default function ManagerPage() {
         {/* 'AI'라고 쓰지 않는다(창업자 결정 2: 자동 결과는 '✦ 자동'). 글자색은 흰 바탕 4.5:1 이상인 slate-600. */}
         <p className="mt-1 text-xs text-slate-600">
           업종·환경·근로자 특성을 적으면 ✦ 자동 나누기가 더 맞춤형으로 단계를 나눠요(선택).
-          근로자 특성은 맞춤 대상 근로자가 메모 사용을 허용하고 처리 동의가 기록된 경우에만 자동 나누기에 쓰여요.
+          근로자 특성은 근로자 화면에서 그 근로자의 메모 사용 설정을 켜고 처리 동의를 기록한 경우에만 자동 나누기에 쓰여요.
           근로자 이름은 보내기 전에 '근로자 A'처럼 바꿔 보내요.
         </p>
         <button
@@ -794,7 +794,7 @@ export default function ManagerPage() {
       {task && (
         <section>
           <h2 ref={editorHeading} tabIndex={-1} className="text-lg font-bold text-slate-900 focus:outline-none">
-            검토 · 수정 <span className="text-sm font-normal text-slate-500">({task.steps.length}단계)</span>
+            검토 · 수정 <span className="text-sm font-normal text-slate-600">({task.steps.length}단계)</span>
           </h2>
           <p className="mt-1 text-sm text-slate-600">
             근로자가 보게 될 화면과 같은 순서입니다. 손잡이를 끌어 순서를 바꾸고, 문장을 다듬거나 단계를 추가할 수 있습니다.
@@ -839,7 +839,9 @@ export default function ManagerPage() {
                     setDragOverIndex(null);
                   }}
                   className="mt-1 cursor-grab text-slate-500 hover:text-slate-700 active:cursor-grabbing"
-                  aria-label={`${s.order}단계 순서 이동 손잡이`}
+                  // 마우스 끌기 전용 손잡이(장식). 이름은 title로만 보인다
+                  // (role 없는 span의 aria-label은 axe aria-prohibited-attr).
+                  aria-hidden="true"
                   title="드래그해서 순서 변경"
                 >
                   <GripVertical size={18} />
@@ -933,7 +935,8 @@ export default function ManagerPage() {
                     )}
                     {needsConfirm(s) && (
                       <button type="button" onClick={() => handleConfirmPicture(s.id)}
-                              aria-label={`${s.order}단계 그림 확인`}
+                              // 접근 이름은 보이는 글자로 시작한다(axe label-content-name-mismatch).
+                              aria-label={`✦ 자동 · 그림이 맞으면 누르세요, ${s.order}단계 그림 확인`}
                               className="rounded border border-auto-700/40 bg-auto-50 px-2 py-0.5 text-xs font-semibold text-auto-700 hover:bg-white">
                         {/* 자동 결과 표기는 '✦ 자동'(창업자 결정 2, 'AI'라고 쓰지 않는다). */}
                         ✦ 자동 · 그림이 맞으면 누르세요
