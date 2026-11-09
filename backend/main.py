@@ -1934,7 +1934,9 @@ def worker_history(db: Session = Depends(get_db),
     assignments = db.scalars(
         select(Assignment)
         .where(Assignment.worker_id == user["sub"], Assignment.scheduled_day <= clock.local_today())
-        .order_by(Assignment.assigned_date.desc())
+        # 날짜 칸이 scheduled_day이므로 그 날짜로 먼저 묶고(최신 날 먼저), 같은 날 안에서는 늦게 보낸 순서.
+        # assigned_date(보낸 시각)로만 정렬하면 미리 보낸 일과 그날 보낸 일이 섞여 날짜 묶음이 갈렸다(2회차 검증).
+        .order_by(Assignment.scheduled_day.desc(), Assignment.assigned_date.desc(), Assignment.id.desc())
     ).all()
     out: list[HistoryCardOut] = []
     for a in assignments:
@@ -2405,7 +2407,17 @@ def _task_assignments(task_id: str, worker_id: str | None, db: Session) -> list[
     return list(db.scalars(query.order_by(Assignment.assigned_date, Assignment.id)).all())
 
 
-def _shown_assignments(assignments: list[Assignment], worker_id: str | None) -> list[Assignment]:
+def _parse_view_day(date: str | None):
+    """대시보드·코칭의 ?date=YYYY-MM-DD(달력에서 고른 날). 없으면 None."""
+    if not date:
+        return None
+    try:
+        return datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=422, detail="날짜를 다시 골라 주세요.") from None
+
+
+def _shown_assignments(assignments: list[Assignment], worker_id: str | None, day=None) -> list[Assignment]:
     """대시보드·코칭이 셀 배정(contract §1.6). 근로자를 고르지 않았으면 모두(직무 전체 집계).
 
     근로자를 고르면 배정 하나만 센다 — 그 배정의 기록만, 그 배정의 고정 버전 단계에 맞춰서. 예전처럼 그 근로자의
@@ -2413,11 +2425,16 @@ def _shown_assignments(assignments: list[Assignment], worker_id: str | None) -> 
     (2) 어제 못 끝낸 배정의 기록이 오늘 새로 받은 배정에 겹쳐 '이미 한 단계'로 셌다(1회차 검증).
     고르는 배정: 오늘까지의 날(scheduled_day <= 오늘) 중 가장 늦은 날의, 가장 늦게 보낸 배정(오늘 하는 중인 일은
     다시 보내도 같은 배정에 남으므로 이것이 된다). 오늘까지 배정이 없고 앞날 배정만 있으면 가장 가까운 앞날 배정.
+    day(달력에서 고른 날)를 주면 그날(scheduled_day == day) 배정 중 가장 늦게 보낸 배정, 없으면 빈 목록. 어제 못
+    끝낸 일을 오늘 다시 보내 새 배정이 생겨도, 어제를 고르면 어제 배정의 기록이 보여야 한다(2회차 검증).
     """
     if not worker_id or not assignments:
         return assignments
     today = clock.local_today()
     order = lambda a: (a.scheduled_day or today, a.assigned_date, a.id)  # noqa: E731
+    if day is not None:
+        on_day = [a for a in assignments if (a.scheduled_day or today) == day]
+        return [max(on_day, key=order)] if on_day else []
     due = [a for a in assignments if (a.scheduled_day or today) <= today]
     if due:
         return [max(due, key=order)]
@@ -2501,13 +2518,15 @@ def dashboard_workers(task_id: str, request: Request, db: Session = Depends(get_
 
 @app.get("/api/dashboard/tasks/{task_id}", response_model=DashboardOut)
 def dashboard(task_id: str, request: Request, worker_id: str | None = None,
+              date: str | None = None,
               db: Session = Depends(get_db),
               user: dict = Depends(require_employer)) -> DashboardOut:
     task = _owned_task(task_id, user["sub"], db)
     if worker_id:
         # 다른 사업장 근로자 id로 감사 행이 남지 않게, 기록 전에 소유를 확인한다(404 규칙 통일).
         _owned_worker(worker_id, user["sub"], db)
-    assignments = _shown_assignments(_task_assignments(task_id, worker_id, db), worker_id)
+    assignments = _shown_assignments(_task_assignments(task_id, worker_id, db), worker_id,
+                                     _parse_view_day(date))
     logs_by_step = _logs_by_step(assignments, db)
     # 근로자별 수행 기록 열람. 3초 폴링은 privacy.record_access가 짧은 창 안에서 한 줄로 합친다.
     if worker_id:
@@ -2550,6 +2569,7 @@ def dashboard(task_id: str, request: Request, worker_id: str | None = None,
 
 @app.get("/api/dashboard/tasks/{task_id}/coaching", response_model=CoachingOut)
 def task_coaching(task_id: str, request: Request, worker_id: str | None = None,
+              date: str | None = None,
                   db: Session = Depends(get_db),
                   user: dict = Depends(require_employer)) -> CoachingOut:
     """근로자 수행 데이터를 바탕으로 사업주용 AI 개선 제안을 돌려준다(기능 2).
@@ -2564,7 +2584,8 @@ def task_coaching(task_id: str, request: Request, worker_id: str | None = None,
     task = _owned_task(task_id, user["sub"], db)
     # 다른 사업장 근로자 id면 404. 감사 기록(coaching.view)은 이 확인 뒤에만 남는다.
     target = _owned_worker(worker_id, user["sub"], db) if worker_id else None
-    assignments = _shown_assignments(_task_assignments(task_id, worker_id, db), worker_id)
+    assignments = _shown_assignments(_task_assignments(task_id, worker_id, db), worker_id,
+                                     _parse_view_day(date))
     logs_by_step = _logs_by_step(assignments, db)
 
     included_query = select(Assignment.worker_id).where(Assignment.task_id == task_id)

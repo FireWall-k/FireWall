@@ -149,6 +149,9 @@ function DashboardPage() {
   const [allWorkers, setAllWorkers] = useState<Worker[]>([]);
   const [workerId, setWorkerId] = useState<string>("");
   const [workerTasks, setWorkerTasks] = useState<TaskSummary[]>([]);
+  // 지금 직무 목록(taskId)이 어느 날짜의 목록인지. 대시보드·코칭은 이 날짜의 배정을 센다 — 달력을 바꾼 직후
+  // 새 목록이 오기 전에 옛 직무를 새 날짜로 묻지 않도록 selectedDate가 아니라 이 값을 쓴다.
+  const [tasksDate, setTasksDate] = useState<string>("");
   const [taskId, setTaskId] = useState<string>("");
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [coaching, setCoaching] = useState<Coaching | null>(null);
@@ -202,6 +205,7 @@ function DashboardPage() {
         if (!alive) return;
         setWorkerTasks(ts);
         setTaskId(ts[0]?.id ?? "");
+        setTasksDate(selectedDate);
       })
       .catch((e) => {
         if (!alive) return;
@@ -217,7 +221,7 @@ function DashboardPage() {
   const viewKey = useRef("");
   const inFlightKey = useRef("");
   // 근로자·직무를 바꾸면 이전 화면의 갱신 상태가 남지 않도록 화면 키(viewKeyNow)로 태깅해 둔다.
-  const viewKeyNow = taskId && workerId ? `${taskId}|${workerId}` : "";
+  const viewKeyNow = taskId && workerId ? `${taskId}|${workerId}|${tasksDate}` : "";
   const [sync, setSync] = useState<{ key: string; at: Date | null; failed: boolean; busy: boolean }>(
     { key: "", at: null, failed: false, busy: false }
   );
@@ -229,12 +233,12 @@ function DashboardPage() {
   const loadDashboard = useCallback(
     (opts: { coaching: boolean; initial: boolean }) => {
       if (!taskId || !workerId) return;
-      const key = `${taskId}|${workerId}`;
+      const key = `${taskId}|${workerId}|${tasksDate}`;
       if (inFlightKey.current === key) return; // 같은 화면의 요청이 이미 진행 중이면 겹치지 않는다.
       inFlightKey.current = key;
       Promise.all([
-        api.dashboard(taskId, workerId),
-        opts.coaching ? api.coaching(taskId, workerId).catch(() => null) : Promise.resolve(undefined),
+        api.dashboard(taskId, workerId, tasksDate || undefined),
+        opts.coaching ? api.coaching(taskId, workerId, tasksDate || undefined).catch(() => null) : Promise.resolve(undefined),
       ])
         .then(([d, c]) => {
           if (viewKey.current !== key) return; // 그 사이 근로자·직무를 바꿨다면 늦게 온 응답은 버린다.
@@ -259,7 +263,7 @@ function DashboardPage() {
           if (viewKey.current === key) setSync((p) => (p.key === key ? { ...p, busy: false } : p));
         });
     },
-    [taskId, workerId]
+    [taskId, workerId, tasksDate]
   );
 
   // 스피너는 사용자가 누른 새로고침에만 보여 준다(자동 갱신이 깜빡이지 않게).
@@ -271,10 +275,10 @@ function DashboardPage() {
 
   // 선택된 (근로자, 직무)의 수행 데이터와 코칭을 처음 불러온다.
   useEffect(() => {
-    viewKey.current = taskId && workerId ? `${taskId}|${workerId}` : "";
+    viewKey.current = taskId && workerId ? `${taskId}|${workerId}|${tasksDate}` : "";
     if (!taskId || !workerId) return;
     loadDashboard({ coaching: true, initial: true });
-  }, [taskId, workerId, loadDashboard]);
+  }, [taskId, workerId, tasksDate, loadDashboard]);
 
   // DASHBOARD_POLL_MS 간격으로, 그리고 탭으로 돌아왔을 때 다시 불러온다. 숨겨진 탭에서는 요청하지
   // 않는다. 코칭(coaching:false)은 LLM 호출이라 폴링에 안 넣는다 — 3초마다 다시 물으면 비용이

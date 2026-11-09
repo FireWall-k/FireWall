@@ -472,3 +472,88 @@ def test_assign_endpoint_shape_unchanged(client, employer_token, workers):
     assert set(first[0]) == {"id", "task_id", "worker_id", "status"}
     again = client.post(f"/api/tasks/{task['id']}/assignments", headers=emp, json={"worker_id": workers[0]["id"]})
     assert again.json() == first
+
+
+# --- 2회차 검증: 날짜 기준 보기 ---------------------------------------------------------------
+
+def _shift_assignment(aid, days, hours=0):
+    with SessionLocal() as db:
+        a = db.get(Assignment, aid)
+        a.scheduled_day = a.scheduled_day + timedelta(days=days)
+        a.assigned_date = a.assigned_date + timedelta(days=days, hours=hours)
+        db.commit()
+
+
+def test_dashboard_date_shows_that_days_assignment(client, employer_token, workers):
+    """대시보드·코칭은 달력에서 고른 날(?date=)의 배정을 센다. 어제 1/2 → 오늘 다시 보냄(created)이면
+    date=어제는 1/2, date=오늘은 0/2. 날짜가 없으면 지금처럼 오늘까지 중 가장 늦은 배정(0/2)."""
+    task = _task(client, employer_token)
+    w = workers[0]
+    _send(client, employer_token, task["id"], [w["id"]])
+    old = _task_cards(client, w["token"], task["id"])[0]
+    total = len(old["steps"])
+    assert total >= 2
+    assert _log(client, w["token"], old["assignment_id"], old["steps"][0]["id"]).status_code == 201
+    _shift_assignment(old["assignment_id"], -1)
+    assert _outcome(_send(client, employer_token, task["id"], [w["id"]])) == "created"
+    today = clock.local_today()
+    yesterday = today - timedelta(days=1)
+    base = f"/api/dashboard/tasks/{task['id']}"
+
+    def dash(q):
+        r = client.get(f"{base}?worker_id={w['id']}{q}", headers=auth(employer_token))
+        assert r.status_code == 200, r.text
+        return r.json()
+
+    assert dash(f"&date={yesterday.isoformat()}")["completed_steps"] == 1
+    assert dash(f"&date={today.isoformat()}")["completed_steps"] == 0
+    assert dash("")["completed_steps"] == 0
+    # 배정이 없는 날은 기록 없음(0)
+    empty = dash(f"&date={(today - timedelta(days=5)).isoformat()}")
+    assert empty["completed_steps"] == 0 and empty["total_steps"] == total
+    # 코칭도 같은 날의 배정
+    seen = {}
+    import ai_client
+
+    def fake(title, steps, ctx, allow_llm=True):
+        seen["steps"] = steps
+        return {"summary": "", "suggestions": []}
+    orig = ai_client.coaching
+    ai_client.coaching = fake
+    try:
+        r = client.get(f"{base}/coaching?worker_id={w['id']}&date={yesterday.isoformat()}",
+                       headers=auth(employer_token))
+        assert r.status_code == 200, r.text
+        assert sum(1 for s in seen["steps"] if s["completed"]) == 1
+        r = client.get(f"{base}/coaching?worker_id={w['id']}&date={today.isoformat()}",
+                       headers=auth(employer_token))
+        assert sum(1 for s in seen["steps"] if s["completed"]) == 0
+    finally:
+        ai_client.coaching = orig
+    bad = client.get(f"{base}?worker_id={w['id']}&date=2026-13-40", headers=auth(employer_token))
+    assert bad.status_code == 422
+
+
+def test_history_ordered_by_scheduled_day(client, employer_token, workers):
+    """'했던 일' 날짜 칸은 scheduled_day다. 정렬도 그 날짜 내림차순이어야 화면이 같은 날을 한 묶음으로 만든다
+    (이틀 전 아침에 '어제'로 미리 보낸 일 + 이틀 전 오후에 그날 보낸 일 + 오늘 보낸 일)."""
+    w = workers[0]
+    t1, t2, t3 = (_task(client, employer_token)["id"] for _ in range(3))
+    _send(client, employer_token, t1, [w["id"]])
+    a1 = _task_cards(client, w["token"], t1)[0]["assignment_id"]
+    with SessionLocal() as db:
+        a = db.get(Assignment, a1)
+        a.assigned_date = a.assigned_date - timedelta(days=2, hours=5)
+        a.scheduled_day = a.scheduled_day - timedelta(days=1)
+        db.commit()
+    _send(client, employer_token, t2, [w["id"]])
+    a2 = _task_cards(client, w["token"], t2)[0]["assignment_id"]
+    _shift_assignment(a2, -2)
+    _send(client, employer_token, t3, [w["id"]])
+    hist = client.get("/api/worker/me/history", headers=auth(w["token"])).json()
+    days = [h["assigned_date"] for h in hist]
+    assert days == sorted(days, reverse=True), days
+    today = clock.local_today()
+    assert [h["task_id"] for h in hist] == [t3, t1, t2]
+    assert days == [today.isoformat(), (today - timedelta(days=1)).isoformat(),
+                    (today - timedelta(days=2)).isoformat()]
