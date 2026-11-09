@@ -435,6 +435,15 @@ export interface Coaching {
   ai_excluded?: boolean;
 }
 
+/** 대시보드·코칭 조회 쿼리(?worker_id=…&date=…). */
+function dashQuery(workerId?: string, date?: string): string {
+  const q = new URLSearchParams();
+  if (workerId) q.set("worker_id", workerId);
+  if (date) q.set("date", date);
+  const s = q.toString();
+  return s ? `?${s}` : "";
+}
+
 export const api = {
   listTasks: () => req<TaskSummary[]>("/api/tasks"),
   createTask: (raw_input: string, context: CreateTaskOptions = {}) =>
@@ -460,8 +469,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ step_ids: stepIds, sentence, action_type: actionType }),
     }),
-  coaching: (taskId: string, workerId?: string) =>
-    req<Coaching>(`/api/dashboard/tasks/${taskId}/coaching${workerId ? `?worker_id=${workerId}` : ""}`),
+  // date(YYYY-MM-DD): 달력에서 고른 날. 주면 그날 배정의 기록을 센다(없으면 오늘까지 중 가장 늦은 배정).
+  coaching: (taskId: string, workerId?: string, date?: string) =>
+    req<Coaching>(`/api/dashboard/tasks/${taskId}/coaching${dashQuery(workerId, date)}`),
   getTask: (id: string) => req<Task>(`/api/tasks/${id}`),
   deleteTask: (id: string) => req<{ ok: boolean }>(`/api/tasks/${id}`, { method: "DELETE" }),
   updateStep: (
@@ -555,8 +565,8 @@ export const api = {
   ackHelp: (id: string) => req<HelpOut>(`/api/employer/help/${id}/acknowledge`, { method: "POST" }),
   /** 사업주 [도와줬어요]: 요청을 닫는다. */
   resolveHelp: (id: string) => req<HelpOut>(`/api/employer/help/${id}/resolve`, { method: "POST" }),
-  dashboard: (id: string, workerId?: string) =>
-    req<Dashboard>(`/api/dashboard/tasks/${id}${workerId ? `?worker_id=${workerId}` : ""}`),
+  dashboard: (id: string, workerId?: string, date?: string) =>
+    req<Dashboard>(`/api/dashboard/tasks/${id}${dashQuery(workerId, date)}`),
   dashboardWorkers: (id: string) => req<DashboardWorker[]>(`/api/dashboard/tasks/${id}/workers`),
   searchAac: (query: string, job?: string, limit = 5) =>
   req<AacSearchResult>("/api/aac/search", {

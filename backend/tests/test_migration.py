@@ -18,6 +18,7 @@ import pytest  # noqa: E402
 from alembic.autogenerate import compare_metadata  # noqa: E402
 from alembic.migration import MigrationContext  # noqa: E402
 from sqlalchemy import create_engine, inspect, text  # noqa: E402
+from sqlalchemy.exc import IntegrityError  # noqa: E402
 
 import db_migrate  # noqa: E402
 from auth import hash_access_code  # noqa: E402
@@ -764,3 +765,351 @@ def test_0006_resumes_when_some_columns_already_added():
     db_migrate.upgrade_to_head(engine)
     assert db_migrate.is_at_head(engine)
     assert _diff_against_models(engine) == []
+
+
+# --- 0007 버전 고정 (2a-0) --------------------------------------------------------------
+
+_V7 = "0007_task_versions"
+_V6 = "0006_worker_phase1"
+
+
+def _at_0006(name: str):
+    engine = _new_engine(name)
+    db_migrate.upgrade_to_head(engine)
+    db_migrate.downgrade(engine, _V6)
+    return engine
+
+
+def _seed_0006_rows(engine, assigned_date="2026-01-10 15:32:00"):
+    """0006 모양 DB: 보낸 직무(tp, 단계 sp1·sp2, 배정 a7, sp1 완료 로그, sp2 도움), 초안(td, 배정 없음)."""
+    with engine.begin() as conn:
+        conn.execute(text(
+            "INSERT INTO employers (id, name, org_name, login_id, password_hash, workplace_code, created_at) "
+            "VALUES ('e7', 'n', 'o', 'l7', 'h', 'WP0007', '2026-01-01 00:00:00')"))
+        conn.execute(text(
+            "INSERT INTO workers (id, employer_id, display_name, access_code_hash, access_code_hint, "
+            "access_code_length, note, ai_note_allowed, a11y_prefs, created_at) "
+            "VALUES ('w7', 'e7', '근로자', 'hash', '34', 4, '', 0, '{}', '2026-01-01 00:00:00')"))
+        for tid, status in (("tp", "published"), ("td", "draft")):
+            conn.execute(text(
+                "INSERT INTO tasks (id, employer_id, title, raw_input, business_type, work_environment, job, "
+                "status, created_at) VALUES (:id, 'e7', :title, '', '', '', '', :st, '2026-01-02 03:04:05')"),
+                {"id": tid, "st": status, "title": f"직무 {tid}"})
+        for i, (sid, tid) in enumerate((("sp1", "tp"), ("sp2", "tp"), ("sd1", "td")), start=1):
+            conn.execute(text(
+                "INSERT INTO steps (id, task_id, order_index, sentence, action_type, symbol_query, symbol_url, "
+                "symbol_source, needs_fallback, picture_confirmed) "
+                "VALUES (:id, :t, :o, :s, 'other', '', '/api/aac/images/cafe/CAFE_007.webp', 'LOCAL_AAC', 0, 1)"),
+                {"id": sid, "t": tid, "o": i, "s": f"문장 {sid}"})
+        conn.execute(text(
+            "INSERT INTO assignments (id, task_id, worker_id, assigned_date, status) "
+            "VALUES ('a7', 'tp', 'w7', :d, 'assigned')"), {"d": assigned_date})
+        conn.execute(text(
+            "INSERT INTO performance_logs (id, assignment_id, step_id, completed_at, duration_sec, replay_count, "
+            "stuck, completed) VALUES ('l7', 'a7', 'sp1', :d, 1.0, 0, 0, 1)"), {"d": assigned_date})
+        conn.execute(text(
+            "INSERT INTO help_requests (id, employer_id, worker_id, assignment_id, step_id, state, created_at) "
+            "VALUES ('h7', 'e7', 'w7', 'a7', 'sp2', 'open', :d)"), {"d": assigned_date})
+
+
+def _step_fk_target(engine, table):
+    for fk in inspect(engine).get_foreign_keys(table):
+        if fk["constrained_columns"] == ["step_id"]:
+            return fk["referred_table"]
+    return None
+
+
+def test_0007_upgrade_backfills_versions():
+    engine = _at_0006("v7_backfill")
+    _seed_0006_rows(engine)
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []
+    with engine.connect() as conn:
+        versions = conn.execute(text("SELECT id, task_id, version_no, title, created_by FROM task_versions")).all()
+        assert [(v[1], v[2], v[3], v[4]) for v in versions] == [("tp", 1, "직무 tp", "e7")]  # 초안은 버전 없음
+        vid = versions[0][0]
+        vsteps = conn.execute(text(
+            "SELECT id, source_step_id, order_index, sentence, symbol_url FROM task_version_steps "
+            "WHERE version_id = :v ORDER BY order_index"), {"v": vid}).all()
+        # 백필 버전 1 단계 id = 원래 step.id (근로자 기기의 옛 대기열이 그대로 맞는다)
+        assert [tuple(r) for r in vsteps] == [
+            ("sp1", "sp1", 1, "문장 sp1", "/api/aac/images/cafe/CAFE_007.webp"),
+            ("sp2", "sp2", 2, "문장 sp2", "/api/aac/images/cafe/CAFE_007.webp")]
+        task = conn.execute(text("SELECT current_version_id, updated_at, created_at FROM tasks WHERE id='tp'")).one()
+        assert task[0] == vid and task[1] == task[2]
+        draft = conn.execute(text("SELECT current_version_id, updated_at FROM tasks WHERE id='td'")).one()
+        assert draft[0] is None and draft[1] is not None
+        a = conn.execute(text(
+            "SELECT task_version_id, pinned_at, first_seen_at, assigned_date, scheduled_day, send_batch_id "
+            "FROM assignments WHERE id='a7'")).one()
+        assert a[0] == vid and a[1] == a[3] and a[2] == a[3]
+        assert a[4] == "2026-01-11"  # UTC 1/10 15:32 = 한국 1/11
+        assert a[5] is None
+        assert conn.execute(text("SELECT COUNT(*) FROM assignments WHERE task_version_id IS NULL")).scalar() == 0
+        # 로그·도움은 그대로(같은 id를 가리킨다)
+        assert conn.execute(text("SELECT step_id FROM performance_logs WHERE id='l7'")).scalar() == "sp1"
+        assert conn.execute(text("SELECT step_id FROM help_requests WHERE id='h7'")).scalar() == "sp2"
+    assert _step_fk_target(engine, "performance_logs") == "task_version_steps"
+    assert _step_fk_target(engine, "help_requests") == "task_version_steps"
+    names = {i["name"] for i in inspect(engine).get_indexes("help_requests")}
+    assert {"uq_help_requests_one_active", "uq_help_requests_assignment_client",
+            "ix_help_requests_assignment_state", "ix_help_requests_step_id"} <= names
+    log_idx = {i["name"] for i in inspect(engine).get_indexes("performance_logs")}
+    assert {"ix_performance_logs_assignment_id", "ix_performance_logs_step_id"} <= log_idx
+
+
+def test_0007_upgrade_downgrade_upgrade_again():
+    engine = _at_0006("v7_roundtrip")
+    _seed_0006_rows(engine)
+    db_migrate.upgrade_to_head(engine)
+    db_migrate.downgrade(engine, _V6)
+    tables = set(inspect(engine).get_table_names())
+    assert "task_versions" not in tables and "task_version_steps" not in tables
+    assert "scheduled_day" not in {c["name"] for c in inspect(engine).get_columns("assignments")}
+    assert "updated_at" not in {c["name"] for c in inspect(engine).get_columns("tasks")}
+    assert _step_fk_target(engine, "performance_logs") == "steps"
+    assert _step_fk_target(engine, "help_requests") == "steps"
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT step_id FROM performance_logs")).scalars().all() == ["sp1"]
+        assert conn.execute(text("SELECT step_id FROM help_requests")).scalars().all() == ["sp2"]
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT COUNT(*) FROM task_versions")).scalar() == 1
+        assert conn.execute(text("SELECT COUNT(*) FROM assignments WHERE task_version_id IS NULL")).scalar() == 0
+
+
+def _two_open_helps(engine):
+    with engine.begin() as conn:
+        conn.execute(text(
+            "INSERT INTO help_requests (id, employer_id, worker_id, assignment_id, step_id, state, created_at) "
+            "VALUES ('hx1', 'e7', 'w7', 'a7', NULL, 'open', '2026-01-10 16:00:00')"))
+    with pytest.raises(IntegrityError):
+        with engine.begin() as conn:
+            conn.execute(text(
+                "INSERT INTO help_requests (id, employer_id, worker_id, assignment_id, step_id, state, created_at) "
+                "VALUES ('hx2', 'e7', 'w7', 'a7', NULL, 'acknowledged', '2026-01-10 16:01:00')"))
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM help_requests WHERE id='hx1'"))
+
+
+def test_one_active_help_unique_after_upgrade():
+    engine = _at_0006("v7_help_unique_up")
+    _seed_0006_rows(engine)
+    with engine.begin() as conn:  # 시드의 열린 도움(h7)을 닫아 두고 새로 둘을 넣어 본다
+        conn.execute(text("UPDATE help_requests SET state='resolved' WHERE id='h7'"))
+    db_migrate.upgrade_to_head(engine)
+    _two_open_helps(engine)
+
+
+def test_one_active_help_unique_after_downgrade():
+    engine = _at_0006("v7_help_unique_down")
+    _seed_0006_rows(engine)
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE help_requests SET state='resolved' WHERE id='h7'"))
+    db_migrate.upgrade_to_head(engine)
+    db_migrate.downgrade(engine, _V6)
+    _two_open_helps(engine)
+
+
+def test_downgrade_moves_or_drops_v2_logs():
+    """버전 2 단계를 가리키는 로그·도움: 원래 단계(source_step_id)가 있으면 그 id로 옮기고, 없으면 로그는 지우고
+    도움은 step_id=NULL(손실 있음, contract §1.1). 끝나면 남은 로그는 모두 steps를 가리킨다."""
+    engine = _at_0006("v7_downgrade_v2")
+    _seed_0006_rows(engine)
+    db_migrate.upgrade_to_head(engine)
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO task_versions (id, task_id, version_no, title, created_at, created_by) "
+                          "VALUES ('v2', 'tp', 2, '직무 tp', '2026-01-12 00:00:00', 'e7')"))
+        for vsid, src, order in (("vs2a", "sp1", 1), ("vs2b", "gone-step", 2)):
+            conn.execute(text(
+                "INSERT INTO task_version_steps (id, version_id, source_step_id, order_index, sentence, action_type, "
+                "symbol_query, symbol_url, symbol_source) VALUES (:id, 'v2', :src, :o, '문장', 'other', '', NULL, 'x')"),
+                {"id": vsid, "src": src, "o": order})
+        conn.execute(text(
+            "INSERT INTO assignments (id, task_id, worker_id, assigned_date, status, task_version_id, scheduled_day) "
+            "VALUES ('a8', 'tp', 'w7', '2026-01-12 00:00:00', 'assigned', 'v2', '2026-01-12')"))
+        for lid, sid in (("l8a", "vs2a"), ("l8b", "vs2b")):
+            conn.execute(text(
+                "INSERT INTO performance_logs (id, assignment_id, step_id, completed_at, duration_sec, replay_count, "
+                "stuck, completed) VALUES (:id, 'a8', :s, '2026-01-12 00:01:00', 1.0, 0, 0, 1)"),
+                {"id": lid, "s": sid})
+        conn.execute(text(
+            "INSERT INTO help_requests (id, employer_id, worker_id, assignment_id, step_id, state, created_at) "
+            "VALUES ('h8a', 'e7', 'w7', 'a8', 'vs2a', 'resolved', '2026-01-12 00:02:00'), "
+            "('h8b', 'e7', 'w7', 'a8', 'vs2b', 'cancelled', '2026-01-12 00:03:00')"))
+    db_migrate.downgrade(engine, _V6)
+    with engine.connect() as conn:
+        logs = dict(conn.execute(text("SELECT id, step_id FROM performance_logs")).all())
+        helps = dict(conn.execute(text("SELECT id, step_id FROM help_requests")).all())
+        steps = set(conn.execute(text("SELECT id FROM steps")).scalars().all())
+    assert logs == {"l7": "sp1", "l8a": "sp1"}  # l8b(원래 단계 없음)는 지웠다
+    assert set(logs.values()) <= steps
+    assert helps == {"h7": "sp2", "h8a": "sp1", "h8b": None}
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+
+
+def test_downgrade_drops_v1_logs_of_deleted_steps_and_recomputes_day():
+    """문서에 적은 downgrade 손실(1회차 검증): upgrade 뒤 원래 단계를 지우면(2a-0부터 로그는 남는다) 그 단계를 가리키는
+    버전 1 로그도 지워지고 도움은 step_id=NULL이다. '내일로 보낸' 배정의 scheduled_day는 다시 올리면 보낸 날로 바뀐다."""
+    engine = _at_0006("v7_downgrade_v1")
+    _seed_0006_rows(engine)
+    db_migrate.upgrade_to_head(engine)
+    with engine.begin() as conn:
+        sent_day = conn.execute(text("SELECT scheduled_day FROM assignments WHERE id='a7'")).scalar()
+        conn.execute(text("UPDATE assignments SET scheduled_day = date(scheduled_day, '+1 day') WHERE id='a7'"))
+        conn.execute(text("DELETE FROM steps WHERE id IN ('sp1', 'sp2')"))
+        assert conn.execute(text("SELECT COUNT(*) FROM performance_logs WHERE step_id='sp1'")).scalar() == 1
+    db_migrate.downgrade(engine, _V6)
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT COUNT(*) FROM performance_logs WHERE id='l7'")).scalar() == 0
+        assert conn.execute(text("SELECT step_id FROM help_requests WHERE id='h7'")).scalar() is None
+    db_migrate.upgrade_to_head(engine)
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT scheduled_day FROM assignments WHERE id='a7'")).scalar() == sent_day
+
+
+def test_0007_resumes_when_partly_applied():
+    """SQLite ALTER는 롤백되지 않는다: 버전 표·일부 칸·임시 표가 남은 채 멈춘 뒤 다시 돌려도 head에 도달한다."""
+    engine = _at_0006("v7_resume")
+    _seed_0006_rows(engine)
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE tasks ADD COLUMN archived_at DATETIME"))
+        conn.execute(text("ALTER TABLE assignments ADD COLUMN pinned_at DATETIME"))
+        conn.execute(text("CREATE TABLE _performance_logs_0007 (id VARCHAR PRIMARY KEY)"))
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT COUNT(*) FROM performance_logs")).scalar() == 1
+    assert "_performance_logs_0007" not in inspect(engine).get_table_names()
+
+
+def test_0007_upgrade_time_10k_rows(capsys):
+    """1만 행(수행 로그) DB에서 upgrade 시간을 재서 기록한다(표 두 개를 다시 만든다)."""
+    import time
+
+    engine = _at_0006("v7_10k")
+    _seed_0006_rows(engine)
+    with engine.begin() as conn:
+        tasks = [{"id": f"t{i}", "e": "e7"} for i in range(200)]
+        conn.execute(text(
+            "INSERT INTO tasks (id, employer_id, title, raw_input, business_type, work_environment, job, status, "
+            "created_at) VALUES (:id, :e, 't', '', '', '', '', 'published', '2026-01-01 00:00:00')"), tasks)
+        steps = [{"id": f"t{i}s{j}", "t": f"t{i}", "o": j} for i in range(200) for j in range(1, 6)]
+        conn.execute(text(
+            "INSERT INTO steps (id, task_id, order_index, sentence, action_type, symbol_query, symbol_url, "
+            "symbol_source, needs_fallback, picture_confirmed) "
+            "VALUES (:id, :t, :o, '문장', 'other', '', NULL, 'x', 0, 1)"), steps)
+        assigns = [{"id": f"ax{i}", "t": f"t{i % 200}"} for i in range(2000)]
+        conn.execute(text(
+            "INSERT INTO assignments (id, task_id, worker_id, assigned_date, status) "
+            "VALUES (:id, :t, 'w7', '2026-01-05 01:00:00', 'assigned')"), assigns)
+        logs = [{"id": f"l{i}-{j}", "a": f"ax{i}", "s": f"t{i % 200}s{j}"} for i in range(2000) for j in range(1, 6)]
+        conn.execute(text(
+            "INSERT INTO performance_logs (id, assignment_id, step_id, completed_at, duration_sec, replay_count, "
+            "stuck, completed) VALUES (:id, :a, :s, '2026-01-05 01:10:00', 1.0, 0, 0, 1)"), logs)
+    started = time.perf_counter()
+    db_migrate.upgrade_to_head(engine)
+    elapsed = time.perf_counter() - started
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT COUNT(*) FROM performance_logs")).scalar() == 10001
+        assert conn.execute(text("SELECT COUNT(*) FROM task_version_steps")).scalar() == 1002
+        assert conn.execute(text("SELECT COUNT(*) FROM assignments WHERE task_version_id IS NULL")).scalar() == 0
+    with capsys.disabled():
+        print(f"\n[0007] 수행 로그 10001행·배정 2001행 upgrade: {elapsed:.2f}초")
+    assert elapsed < 60
+
+
+def test_old_outbox_step_id_after_migration_200(monkeypatch):
+    """0007 이전 기기의 오프라인 대기열에 남은 기록(옛 step.id)이 업그레이드 뒤에도 받아들여진다(버전 1 id = step id)."""
+    from datetime import datetime, timezone
+
+    from fastapi.testclient import TestClient
+    from sqlalchemy.orm import sessionmaker
+
+    import main
+    from auth import make_token
+    from database import get_db
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    engine = _at_0006("v7_outbox")
+    _seed_0006_rows(engine, assigned_date=now.strftime("%Y-%m-%d %H:%M:%S"))
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM performance_logs"))  # 1단계 기록은 아직 기기 대기열에 있다
+    db_migrate.upgrade_to_head(engine)
+    factory = sessionmaker(bind=engine, autoflush=False)
+
+    def _db():
+        db = factory()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    main.app.dependency_overrides[get_db] = _db
+    try:
+        with TestClient(main.app) as c:
+            token = {"Authorization": f"Bearer {make_token('w7', 'worker')}"}
+            body = {"assignment_id": "a7", "duration_sec": 2.0, "replay_count": 0, "stuck": False,
+                    "client_event_id": "old-outbox-1"}
+            r = c.post("/api/performance-logs", headers=token, json={**body, "step_id": "sp1"})
+            assert r.status_code == 201, r.text
+            again = c.post("/api/performance-logs", headers=token, json={**body, "step_id": "sp1"})
+            assert again.status_code == 200 and again.json()["duplicate"] is True
+            cards = c.get("/api/worker/me/today", headers=token).json()
+            assert [s["id"] for s in cards[0]["steps"]] == ["sp1", "sp2"] and cards[0]["task_version_no"] == 1
+            assert cards[0]["done_step_ids"] == ["sp1"]
+            # 사업주가 2단계를 지워도 옛 기기의 2단계 기록이 들어가고 일이 끝난다.
+            emp = {"Authorization": f"Bearer {make_token('e7', 'employer')}"}
+            assert c.delete("/api/tasks/tp/steps/sp2", headers=emp).status_code == 200
+            done = c.post("/api/performance-logs", headers=token,
+                          json={**body, "step_id": "sp2", "client_event_id": "old-outbox-2"})
+            assert done.status_code == 201 and done.json()["assignment_status"] == "done"
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+# --- 마이그레이션 전 백업(manage.py migrate) -------------------------------------------------
+
+def test_manage_migrate_backs_up_before_upgrade(monkeypatch, capsys, tmp_path):
+    import manage
+
+    engine = _at_0006("v7_backup")
+    _seed_0006_rows(engine)
+    monkeypatch.setattr(db_migrate, "default_engine", lambda: engine)
+    monkeypatch.setenv("JOBCARD_BACKUP_DIR", str(tmp_path / "bk"))
+    manage.main(["migrate"])
+    assert db_migrate.is_at_head(engine)
+    files = list((tmp_path / "bk").glob("jobcard-*-0006_worker_phase1.db"))
+    assert len(files) == 1
+    assert "마이그레이션 전 백업" in capsys.readouterr().out
+    # 백업은 업그레이드 전 모양(0006)이고 데이터가 들어 있다.
+    backup = create_engine(f"sqlite:///{files[0]}")
+    assert _current_revision(backup) == _V6
+    with backup.connect() as conn:
+        assert conn.execute(text("SELECT COUNT(*) FROM performance_logs")).scalar() == 1
+    backup.dispose()
+    # 이미 head면 백업하지 않는다.
+    manage.main(["migrate"])
+    assert len(list((tmp_path / "bk").glob("jobcard-*.db"))) == 1
+
+
+def test_manage_migrate_stops_when_backup_fails(monkeypatch, tmp_path):
+    import manage
+
+    engine = _at_0006("v7_backup_fail")
+    monkeypatch.setattr(db_migrate, "default_engine", lambda: engine)
+    monkeypatch.setenv("JOBCARD_BACKUP_DIR", str(tmp_path / "bk"))
+
+    def broken_copy(*_a, **_k):
+        raise OSError("디스크가 가득 찼어요")
+
+    monkeypatch.setattr(db_migrate.shutil, "copy2", broken_copy)
+    with pytest.raises(SystemExit) as exc:
+        manage.main(["migrate"])
+    assert "백업" in str(exc.value)
+    assert _current_revision(engine) == _V6  # upgrade를 하지 않았다

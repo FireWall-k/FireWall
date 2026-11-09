@@ -37,6 +37,7 @@ from models import (  # noqa: E402
     PerformanceLog,
     Step,
     Task,
+    TaskVersion,
     Worker,
 )
 
@@ -80,13 +81,24 @@ def _task(client, token, raw="상자를 옮기고 수량을 확인하세요"):
 
 
 def _assigned(client, employer_token, worker_id):
-    """그림을 붙여 보낸 2단계 직무를 근로자에게 배정한다. (task, assignment_id, step_ids)."""
+    """그림을 붙여 보낸 2단계 직무를 근로자에게 배정한다. (task, assignment_id, step_ids).
+
+    (2a-0) step_ids는 배정에 고정된 버전 단계 id다(근로자 화면이 받는 id, 로그·도움이 가리키는 id). 보낼 때 만든
+    버전 단계는 새 uuid라 편집 단계(task["steps"]) id와 다르다. 편집 API를 부를 때는 task["steps"]를 쓴다.
+    """
     task = _task(client, employer_token)
     assert publish(client, employer_token, task["id"]).status_code == 200
     r = client.post(f"/api/tasks/{task['id']}/assignments", json={"worker_id": worker_id},
                     headers=auth(employer_token))
     assert r.status_code == 200, r.text
-    return task, r.json()[0]["id"], [s["id"] for s in task["steps"]]
+    aid = r.json()[0]["id"]
+    return task, aid, _version_step_ids(aid)
+
+
+def _version_step_ids(assignment_id):
+    with SessionLocal() as db:
+        a = db.get(Assignment, assignment_id)
+        return [vs.id for vs in db.get(TaskVersion, a.task_version_id).steps]
 
 
 def _log(client, token, assignment_id, step_id, **extra):
@@ -200,16 +212,15 @@ def test_step_completion_resolves_acknowledged_help_too(client, employer_token, 
     assert _assignment_status(aid) == "assigned"
 
 
-def test_done_is_judged_against_current_steps(client, employer_token, worker):
-    """진행 중에 단계가 지워져도 지금 단계를 모두 끝냈으면 done이다(옛 단계 기록에 기대지 않는다)."""
+def test_done_is_judged_against_pinned_version(client, employer_token, worker):
+    """(2a-0, 결정 5) 완료 판정은 배정에 고정된 버전 단계로 한다. 하는 중에 사업주가 단계를 더해도 그 단계는
+    다음 배정부터라, 보낸 2단계를 다 끝내면 done이다. 예전(0006)에는 지금 단계 기준이라 더한 3단계가 남았다."""
     task, aid, (s1, s2) = _assigned(client, employer_token, worker["id"])
     added = client.post(f"/api/tasks/{task['id']}/steps", json={"sentence": "정리하세요."},
-                        headers=auth(employer_token)).json()
-    s3 = added["steps"][-1]["id"]
+                        headers=auth(employer_token))
+    assert added.status_code == 201
     _log(client, worker["token"], aid, s1)
-    _log(client, worker["token"], aid, s2)
-    assert _assignment_status(aid) == "assigned"  # 새로 더한 3단계가 남았다
-    client.delete(f"/api/tasks/{task['id']}/steps/{s3}", headers=auth(employer_token))
+    assert _assignment_status(aid) == "assigned"
     assert _log(client, worker["token"], aid, s2).json()["assignment_status"] == "done"
 
 
@@ -468,14 +479,15 @@ def test_publish_blocked_when_step_has_no_picture(client, employer_token):
     assert [s["picture_state"] for s in task["steps"]] == ["none", "none"]
     r = client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token))
     assert r.status_code == 422
-    assert r.json()["detail"] == ("그림이 없는 단계가 있어요(1, 2단계). "
-                                  "그림을 고르거나 사진을 올린 뒤 보내 주세요.")
+    # (2a-0) 보내기 검사와 같은 문구·code·step_ids(contract §1.4).
+    assert r.json() == {"detail": "1단계와 2단계에 그림이 없어요. 그림을 고르거나 사진을 올려 주세요.",
+                        "code": "send_blocked", "step_ids": [s["id"] for s in task["steps"]]}
     assert client.get(f"/api/tasks/{task['id']}", headers=auth(employer_token)).json()["status"] == "draft"
 
     client.patch(f"/api/tasks/{task['id']}/steps/{task['steps'][0]['id']}", headers=auth(employer_token),
                  json={"symbol_url": TEST_AAC_IMAGE, "symbol_source": "LOCAL_AAC"})
     r = client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token))
-    assert r.status_code == 422 and "(2단계)" in r.json()["detail"]
+    assert r.status_code == 422 and r.json()["detail"].startswith("2단계에 그림이 없어요.")
     # 그림 없는 직무는 배정도 안 된다(게시된 직무만 배정).
     assert client.post(f"/api/tasks/{task['id']}/assignments",
                        headers=auth(employer_token)).status_code == 400
@@ -494,7 +506,8 @@ def test_republish_checks_again(client, employer_token):
         step.symbol_url = None
         db.commit()
     r = client.post(f"/api/tasks/{task['id']}/publish", headers=auth(employer_token))
-    assert r.status_code == 422 and "(2단계)" in r.json()["detail"]
+    assert r.status_code == 422 and r.json()["detail"].startswith("2단계에 그림이 없어요.")
+    assert r.json()["step_ids"] == [task["steps"][1]["id"]]
 
 
 def test_publish_blocked_when_task_has_no_steps(client, employer_token):
@@ -504,7 +517,8 @@ def test_publish_blocked_when_task_has_no_steps(client, employer_token):
         db.commit()
         tid = t.id
     r = client.post(f"/api/tasks/{tid}/publish", headers=auth(employer_token))
-    assert r.status_code == 422 and r.json()["detail"] == "단계가 없는 직무는 보낼 수 없어요."
+    assert r.status_code == 422
+    assert r.json() == {"detail": "단계가 하나도 없어요. 단계를 넣어 주세요.", "code": "no_steps", "step_ids": []}
     client.delete(f"/api/tasks/{tid}", headers=auth(employer_token))
 
 
@@ -736,16 +750,19 @@ def test_delete_task_removes_help_requests(client, employer_token, worker):
         assert db.scalars(select(HelpRequest).where(HelpRequest.assignment_id == aid)).all() == []
 
 
-def test_delete_step_keeps_help_but_unlinks_step(client, employer_token, worker):
+def test_delete_step_keeps_help_and_its_step(client, employer_token, worker):
+    """(2a-0) 도움은 버전 단계를 가리킨다. 사업주가 편집 단계를 지워도 도움의 단계(순서·문장·그림)는 그대로다.
+    예전(0006)에는 step_id를 NULL로 끊었다."""
     task, aid, (s1, s2) = _assigned(client, employer_token, worker["id"])
     h = _help(client, worker["token"], aid, s2).json()
-    r = client.delete(f"/api/tasks/{task['id']}/steps/{s2}", headers=auth(employer_token))
+    r = client.delete(f"/api/tasks/{task['id']}/steps/{task['steps'][1]['id']}", headers=auth(employer_token))
     assert r.status_code == 200
     got = client.get(f"/api/worker/help/{h['id']}", headers=auth(worker["token"])).json()
-    assert got["step_id"] is None and got["step_order"] is None and got["state"] == "open"
+    assert got["step_id"] == s2 and got["step_order"] == 2 and got["state"] == "open"
     row = next(x for x in client.get("/api/employer/help", headers=auth(employer_token)).json()
                if x["id"] == h["id"])
-    assert row["step_id"] is None and row["step_sentence"] is None and row["step_symbol_url"] is None
+    assert row["step_id"] == s2 and row["step_sentence"] == task["steps"][1]["sentence"]
+    assert row["step_symbol_url"]
 
 
 def test_purge_removes_expired_help_requests(client, employer_token, worker, monkeypatch, tmp_path):
@@ -784,8 +801,8 @@ def test_assign_blocked_when_published_task_gains_pictureless_step(client, emplo
     r = client.post(f"/api/tasks/{task['id']}/assignments", json={"worker_id": worker["id"]},
                     headers=auth(employer_token))
     assert r.status_code == 422
-    assert r.json()["detail"] == ("그림이 없는 단계가 있어요(3단계). "
-                                  "그림을 고르거나 사진을 올린 뒤 보내 주세요.")
+    assert r.json()["detail"] == "3단계에 그림이 없어요. 그림을 고르거나 사진을 올려 주세요."
+    assert r.json()["step_ids"] == [new_step["id"]]
     assert _today(client, worker["token"]) == []
 
 
@@ -979,6 +996,8 @@ def test_help_on_yesterdays_assignment_is_refused(client, employer_token, worker
     with SessionLocal() as db:
         a = db.get(Assignment, aid)
         a.assigned_date = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=2)
+        # (2a-0) 그 일을 하는 날은 scheduled_day다(보낸 시각만 바꾸면 날은 그대로 오늘).
+        a.scheduled_day = a.scheduled_day - timedelta(days=2)
         db.commit()
     assert _help(client, worker["token"], aid, s1).status_code == 409
     assert client.get("/api/employer/help", headers=auth(employer_token)).json() == []

@@ -1,0 +1,337 @@
+{
+ "HistoryCardOut": {
+  "$defs": {
+   "HistoryStepOut": {
+    "properties": {
+     "action_type": {
+      "title": "Action Type",
+      "type": "string"
+     },
+     "completed": {
+      "title": "Completed",
+      "type": "boolean"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "needs_fallback": {
+      "title": "Needs Fallback",
+      "type": "boolean"
+     },
+     "order": {
+      "title": "Order",
+      "type": "integer"
+     },
+     "picture_state": {
+      "default": "none",
+      "enum": [
+       "confirmed",
+       "auto_high",
+       "choose",
+       "none"
+      ],
+      "title": "Picture State",
+      "type": "string"
+     },
+     "sentence": {
+      "title": "Sentence",
+      "type": "string"
+     },
+     "symbol_source": {
+      "title": "Symbol Source",
+      "type": "string"
+     },
+     "symbol_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Symbol Url"
+     },
+     "tts_audio_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tts Audio Url"
+     }
+    },
+    "required": [
+     "id",
+     "order",
+     "sentence",
+     "action_type",
+     "symbol_url",
+     "symbol_source",
+     "needs_fallback",
+     "tts_audio_url",
+     "completed"
+    ],
+    "title": "HistoryStepOut",
+    "type": "object"
+   }
+  },
+  "description": "근로자 본인이 지난번에 받았던 일 — 완료 후에도 다시 열어 볼 수 있게 한다.",
+  "properties": {
+   "assigned_date": {
+    "title": "Assigned Date",
+    "type": "string"
+   },
+   "assignment_id": {
+    "title": "Assignment Id",
+    "type": "string"
+   },
+   "status": {
+    "title": "Status",
+    "type": "string"
+   },
+   "steps": {
+    "items": {
+     "$ref": "#/$defs/HistoryStepOut"
+    },
+    "title": "Steps",
+    "type": "array"
+   },
+   "task_id": {
+    "title": "Task Id",
+    "type": "string"
+   },
+   "task_title": {
+    "title": "Task Title",
+    "type": "string"
+   }
+  },
+  "required": [
+   "assignment_id",
+   "task_id",
+   "task_title",
+   "assigned_date",
+   "status",
+   "steps"
+  ],
+  "title": "HistoryCardOut",
+  "type": "object"
+ },
+ "TodayCardOut": {
+  "$defs": {
+   "ActiveHelpOut": {
+    "properties": {
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "state": {
+      "enum": [
+       "open",
+       "cancelled",
+       "acknowledged",
+       "resolved"
+      ],
+      "title": "State",
+      "type": "string"
+     },
+     "step_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Step Id"
+     }
+    },
+    "required": [
+     "id",
+     "state",
+     "step_id",
+     "created_at"
+    ],
+    "title": "ActiveHelpOut",
+    "type": "object"
+   },
+   "StepOut": {
+    "properties": {
+     "action_type": {
+      "title": "Action Type",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "needs_fallback": {
+      "title": "Needs Fallback",
+      "type": "boolean"
+     },
+     "order": {
+      "title": "Order",
+      "type": "integer"
+     },
+     "picture_state": {
+      "default": "none",
+      "enum": [
+       "confirmed",
+       "auto_high",
+       "choose",
+       "none"
+      ],
+      "title": "Picture State",
+      "type": "string"
+     },
+     "sentence": {
+      "title": "Sentence",
+      "type": "string"
+     },
+     "symbol_source": {
+      "title": "Symbol Source",
+      "type": "string"
+     },
+     "symbol_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Symbol Url"
+     },
+     "tts_audio_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tts Audio Url"
+     }
+    },
+    "required": [
+     "id",
+     "order",
+     "sentence",
+     "action_type",
+     "symbol_url",
+     "symbol_source",
+     "needs_fallback",
+     "tts_audio_url"
+    ],
+    "title": "StepOut",
+    "type": "object"
+   }
+  },
+  "properties": {
+   "active_help": {
+    "anyOf": [
+     {
+      "$ref": "#/$defs/ActiveHelpOut"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null
+   },
+   "assigned_at": {
+    "anyOf": [
+     {
+      "format": "date-time",
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Assigned At"
+   },
+   "assignment_id": {
+    "title": "Assignment Id",
+    "type": "string"
+   },
+   "completed_at": {
+    "anyOf": [
+     {
+      "format": "date-time",
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ],
+    "default": null,
+    "title": "Completed At"
+   },
+   "done_step_ids": {
+    "default": [],
+    "items": {
+     "type": "string"
+    },
+    "title": "Done Step Ids",
+    "type": "array"
+   },
+   "is_next": {
+    "default": false,
+    "title": "Is Next",
+    "type": "boolean"
+   },
+   "resume_step_index": {
+    "default": 0,
+    "title": "Resume Step Index",
+    "type": "integer"
+   },
+   "status": {
+    "default": "new",
+    "enum": [
+     "new",
+     "in_progress",
+     "done"
+    ],
+    "title": "Status",
+    "type": "string"
+   },
+   "steps": {
+    "items": {
+     "$ref": "#/$defs/StepOut"
+    },
+    "title": "Steps",
+    "type": "array"
+   },
+   "task_id": {
+    "title": "Task Id",
+    "type": "string"
+   },
+   "task_title": {
+    "title": "Task Title",
+    "type": "string"
+   }
+  },
+  "required": [
+   "assignment_id",
+   "task_id",
+   "task_title",
+   "steps"
+  ],
+  "title": "TodayCardOut",
+  "type": "object"
+ }
+}

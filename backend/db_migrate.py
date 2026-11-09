@@ -16,6 +16,9 @@ from __future__ import annotations
 
 import logging
 import os
+import shutil
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Callable
 
 import sqlalchemy as sa
@@ -199,6 +202,49 @@ def migrate(engine: Engine | None = None) -> dict:
         "repaired_columns": repaired,
         "tightened_columns": tightened,
     }
+
+
+def sqlite_file(engine: Engine) -> Path | None:
+    """엔진이 가리키는 SQLite 파일 경로(메모리 DB·다른 DB면 None)."""
+    url = engine.url
+    if url.get_backend_name() != "sqlite" or not url.database or url.database == ":memory:":
+        return None
+    return Path(url.database).resolve()
+
+
+def backup_dir_for(db_file: Path) -> Path:
+    """백업 폴더. 기본은 DB 파일 옆 backups/(같은 볼륨), JOBCARD_BACKUP_DIR로 바꿀 수 있다."""
+    configured = (os.getenv("JOBCARD_BACKUP_DIR") or "").strip()
+    return Path(configured) if configured else db_file.parent / "backups"
+
+
+def backup_before_upgrade(engine: Engine | None = None) -> Path | None:
+    """(2a-0) upgrade 전에 DB 파일을 backups/jobcard-<시각>-<리비전>.db로 복사한다. 만든 파일 경로를 돌려준다.
+
+    - 먼저 PRAGMA wal_checkpoint(TRUNCATE)로 WAL의 내용을 본 파일에 옮긴다. WAL에 남은 최근 쓰기를 빼고 본 파일만
+      복사하면 백업이 조용히 옛 상태가 된다. 다른 연결이 읽는 중이라 체크포인트를 끝내지 못하면 예외를 낸다.
+    - 이미 head이거나(바꿀 것이 없음), 파일·앱 테이블이 없는 새 DB면 복사하지 않고 None.
+    - 복사에 실패하면 예외가 그대로 올라간다 — 부르는 쪽(manage.py migrate)은 upgrade를 하지 않는다.
+    """
+    engine = engine or default_engine()
+    db_file = sqlite_file(engine)
+    if db_file is None or not db_file.is_file():
+        return None
+    if not sa.inspect(engine).get_table_names() or is_at_head(engine):
+        return None
+    rev = current_revision(engine) or "none"
+    with engine.connect() as conn:
+        busy = conn.exec_driver_sql("PRAGMA wal_checkpoint(TRUNCATE)").first()
+    if busy is not None and busy[0]:
+        raise RuntimeError("다른 연결이 DB를 쓰는 중이라 WAL 체크포인트를 끝내지 못했습니다")
+    folder = backup_dir_for(db_file)
+    folder.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    target = folder / f"jobcard-{stamp}-{rev}.db"
+    shutil.copy2(db_file, target)
+    if target.stat().st_size != db_file.stat().st_size:
+        raise RuntimeError(f"백업 파일 크기가 원본과 다릅니다: {target}")
+    return target
 
 
 def ensure_schema_ready(engine: Engine | None = None, production: bool | None = None) -> None:

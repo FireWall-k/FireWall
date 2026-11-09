@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ManagerPage from "../src/pages/ManagerPage";
+import { ApiError } from "../src/apiErrors";
 
 const createTask = vi.fn();
 const splitPreview = vi.fn();
@@ -13,8 +14,11 @@ const listWorkers = vi.fn();
 const createWorker = vi.fn();
 const publish = vi.fn();
 const assign = vi.fn();
+const getTask = vi.fn();
 // 자동 채택 못 한(needs_fallback=true) 단계는 마운트 시 후보를 조회한다 — 목이 없으면 깨진다.
 const stepSymbolCandidates = vi.fn().mockResolvedValue({ step_id: "s1", reason: "no_candidate", candidates: [] });
+// (2a-0) 새 호출(src/manager/api/send.ts)은 공용 req를 쓴다 — 경로·메서드를 그대로 확인한다.
+const reqMock = vi.fn();
 
 vi.mock("../src/api", () => ({
   api: {
@@ -30,7 +34,9 @@ vi.mock("../src/api", () => ({
     publish: (id: string) => publish(id),
     assign: (id: string, workerIds: string[]) => assign(id, workerIds),
     updateStep: vi.fn(),
+    getTask: (id: string) => getTask(id),
   },
+  req: (path: string, init?: RequestInit) => reqMock(path, init),
 }));
 
 // 단계로 나누기 버튼은 직무 내용이 비어 있으면 비활성 상태다 — 모든 테스트가 이걸 거친다.
@@ -68,8 +74,21 @@ beforeEach(() => {
   listWorkers.mockReset();
   publish.mockReset();
   assign.mockReset();
+  getTask.mockReset();
   createTask.mockResolvedValue({ id: "task-1", title: "직무", status: "draft", steps: [baseStep] });
   listWorkers.mockResolvedValue([]);
+  reqMock.mockReset();
+  // 그림 확인은 서버가 확인함으로 둔 단계를 돌려준다.
+  reqMock.mockImplementation(async (path: string) => {
+    const m = /\/steps\/([^/]+)\/picture\/confirm$/.exec(path);
+    if (m) {
+      return {
+        ...baseStep, id: m[1], symbol_url: "http://localhost:8000/api/aac/images/cafe/CAFE_012.webp",
+        symbol_source: "LOCAL_AAC", needs_fallback: false, picture_state: "confirmed",
+      };
+    }
+    throw new Error(`목 없음: ${path}`);
+  });
 });
 
 describe("ManagerPage 사진 업로드 (기능 5)", () => {
@@ -352,5 +371,225 @@ describe("ManagerPage — 근로자 특성 메모 대상", () => {
     await user.click(await screen.findByRole("button", { name: "이대로 그림 고르기 ›" }));
     await waitFor(() => expect(createTask).toHaveBeenCalledTimes(2));
     expect(createTask.mock.calls[1][1]).toMatchObject({ worker_id: "w1", worker_note: "그림 선호" });
+  });
+});
+
+// ---------- 2a-0: 서버 보내기 검사에 맞춘 최소 연결(tasks.md §2.3) ----------
+
+describe("ManagerPage — 그림 확인을 서버에 적는다(2a-0)", () => {
+  const autoHigh = {
+    ...baseStep, symbol_url: "http://localhost:8000/api/aac/images/cafe/CAFE_012.webp",
+    symbol_source: "LOCAL_AAC", needs_fallback: false, picture_state: "auto_high",
+  };
+
+  beforeEach(() => {
+    listWorkers.mockResolvedValue(workers);
+    publish.mockResolvedValue({ id: "task-1", title: "직무", status: "published", steps: [] });
+    assign.mockResolvedValue([{ id: "a1", task_id: "task-1", worker_id: "w1", status: "assigned" }]);
+  });
+
+  it("[그림 확인]을 누르면 확인 API를 부르고, 서버가 확인함으로 돌려주면 보낼 수 있다", async () => {
+    const user = userEvent.setup();
+    createTask.mockResolvedValue({ id: "task-1", title: "직무", status: "draft", steps: [autoHigh] });
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+    expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "1단계 그림 확인" }));
+
+    expect(reqMock).toHaveBeenCalledWith("/api/tasks/task-1/steps/s1/picture/confirm", { method: "POST" });
+    expect(await screen.findByText("✓ 확인함")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeEnabled();
+  });
+
+  it("확인 API가 실패하면 확인하지 않은 채로 두고 오류를 보인다", async () => {
+    const user = userEvent.setup();
+    createTask.mockResolvedValue({ id: "task-1", title: "직무", status: "draft", steps: [autoHigh] });
+    reqMock.mockRejectedValue(new ApiError(422, "그림이 없는 단계는 확인할 수 없어요. 먼저 그림을 골라 주세요."));
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    await user.click(screen.getByRole("button", { name: "1단계 그림 확인" }));
+
+    expect(await screen.findByText(/먼저 그림을 골라 주세요/)).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "1단계 그림 확인" })).toBeInTheDocument();
+    expect(screen.queryByText("✓ 확인함")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeDisabled();
+  });
+
+  it("서버가 이미 확인함(picture_state=confirmed)으로 준 자동 그림은 처음부터 확인함이다", async () => {
+    const user = userEvent.setup();
+    createTask.mockResolvedValue({
+      id: "task-1", title: "직무", status: "draft",
+      steps: [{ ...autoHigh, picture_state: "confirmed" }],
+    });
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    expect(screen.queryByRole("button", { name: "1단계 그림 확인" })).not.toBeInTheDocument();
+    expect(screen.getByText("✓ 확인함")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeEnabled();
+    expect(reqMock).not.toHaveBeenCalled();
+  });
+
+  it("고르기 상태(choose)의 그림도 확인해야 보낼 수 있다(서버 unconfirmed_auto와 같은 규칙)", async () => {
+    const user = userEvent.setup();
+    createTask.mockResolvedValue({
+      id: "task-1", title: "직무", status: "draft",
+      steps: [{ ...autoHigh, needs_fallback: true, picture_state: "choose" }],
+    });
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "1단계 그림 확인" })).toBeInTheDocument();
+  });
+});
+
+describe("ManagerPage — [그림 확인] 요청 중에는 보내지 않는다(2a-0 1회차 검증)", () => {
+  const autoHigh = {
+    ...baseStep, symbol_url: "http://localhost:8000/api/aac/images/cafe/CAFE_012.webp",
+    symbol_source: "LOCAL_AAC", needs_fallback: false, picture_state: "auto_high",
+  };
+
+  it("확인 응답이 오기 전에는 보내기 버튼이 꺼져 있고, 응답이 오면 켜진다", async () => {
+    const user = userEvent.setup();
+    listWorkers.mockResolvedValue(workers);
+    createTask.mockResolvedValue({ id: "task-1", title: "직무", status: "draft", steps: [autoHigh] });
+    let finish: (v: unknown) => void = () => {};
+    reqMock.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    await user.click(screen.getByRole("button", { name: "1단계 그림 확인" }));
+    const send = screen.getByRole("button", { name: /게시하고 보내기/ });
+    expect(send).toBeDisabled();
+    fireEvent.click(send);
+    expect(publish).not.toHaveBeenCalled();
+
+    await act(async () => finish({ ...autoHigh, picture_state: "confirmed" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeEnabled());
+  });
+});
+
+describe("ManagerPage — 보내기가 서버 검사(422)에 막히면 그 단계를 강조한다(2a-0)", () => {
+  const confirmedAuto = {
+    ...baseStep, symbol_url: "http://localhost:8000/api/aac/images/cafe/CAFE_012.webp",
+    symbol_source: "LOCAL_AAC", needs_fallback: false, picture_state: "confirmed",
+  };
+  const detail = "2단계의 그림을 아직 확인하지 않았어요. 확인한 뒤 다시 보내 주세요.";
+
+  beforeEach(() => {
+    listWorkers.mockResolvedValue(workers);
+    createTask.mockResolvedValue({
+      id: "task-1", title: "직무", status: "draft",
+      steps: [
+        { ...confirmedAuto, id: "s1", order: 1 },
+        { ...confirmedAuto, id: "s2", order: 2, sentence: "의자를 넣으세요" },
+      ],
+    });
+    // 다른 창에서 2단계 그림을 바꿔 서버는 확인 전 상태다 — 이 화면은 아직 모른다.
+    publish.mockRejectedValue(new ApiError(422, detail));
+    reqMock.mockImplementation(async (path: string) => {
+      if (path === "/api/tasks/task-1/send-check") {
+        return {
+          ok: false,
+          blocking: [
+            { code: "no_picture", done: 2, total: 2, step_ids: [] },
+            { code: "unconfirmed_auto", done: 1, total: 2, step_ids: ["s2"] },
+            { code: "unreviewed_split", done: 0, total: 0, step_ids: [] },
+          ],
+          warnings: [],
+        };
+      }
+      if (path.endsWith("/steps/s2/picture/confirm")) {
+        return { ...confirmedAuto, id: "s2", order: 2, sentence: "의자를 넣으세요" };
+      }
+      throw new Error(`목 없음: ${path}`);
+    });
+  });
+
+  const stepItem = (id: string) => document.querySelector(`li[data-step-id="${id}"]`) as HTMLElement;
+
+  it("서버 문장(detail)을 그대로 보이고, 점검표의 step_ids 단계만 강조한다", async () => {
+    const user = userEvent.setup();
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    await user.click(screen.getByRole("button", { name: /게시하고 보내기/ }));
+
+    expect((await screen.findAllByText(detail)).length).toBeGreaterThanOrEqual(1);
+    await waitFor(() => expect(stepItem("s2")).toHaveAttribute("data-send-blocked", "true"));
+    expect(stepItem("s1")).not.toHaveAttribute("data-send-blocked");
+    expect(stepItem("s2").className).toContain("border-danger-700");
+    expect(screen.getByText(/이 단계 때문에 보내지 못했어요\. 그림이 맞는지 확인해 주세요\./)).toBeInTheDocument();
+    expect(reqMock).toHaveBeenCalledWith("/api/tasks/task-1/send-check", undefined);
+    expect(assign).not.toHaveBeenCalled();
+    // 막힌 단계는 다시 확인하게 하고, 그동안 보내기는 막힌다.
+    expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "1단계 그림 확인" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "2단계 그림 확인" }));
+
+    expect(reqMock).toHaveBeenCalledWith("/api/tasks/task-1/steps/s2/picture/confirm", { method: "POST" });
+    await waitFor(() => expect(stepItem("s2")).not.toHaveAttribute("data-send-blocked"));
+    expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeEnabled();
+  });
+
+  it("막히면 단계를 새로 읽는다 — 다른 곳에서 그림을 지웠으면 [그림 확인] 대신 '그림을 고르거나 사진을 올려 주세요'", async () => {
+    const user = userEvent.setup();
+    const noPicture = "1단계에 그림이 없어요. 그림을 고르거나 사진을 올려 주세요.";
+    publish.mockRejectedValue(new ApiError(422, noPicture));
+    reqMock.mockImplementation(async (path: string) => {
+      if (path === "/api/tasks/task-1/send-check") {
+        return {
+          ok: false,
+          blocking: [
+            { code: "no_picture", done: 1, total: 2, step_ids: ["s1"] },
+            { code: "unconfirmed_auto", done: 2, total: 2, step_ids: [] },
+          ],
+          warnings: [],
+        };
+      }
+      throw new Error(`목 없음: ${path}`);
+    });
+    getTask.mockResolvedValue({
+      id: "task-1", title: "직무", status: "draft",
+      steps: [
+        { ...confirmedAuto, id: "s1", order: 1, symbol_url: null, symbol_source: "fallback", needs_fallback: true,
+          picture_state: "none" },
+        { ...confirmedAuto, id: "s2", order: 2, sentence: "의자를 넣으세요" },
+      ],
+    });
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    await user.click(screen.getByRole("button", { name: /게시하고 보내기/ }));
+
+    await waitFor(() => expect(stepItem("s1")).toHaveAttribute("data-send-blocked", "true"));
+    expect(getTask).toHaveBeenCalledWith("task-1");
+    expect(screen.getByText(/이 단계 때문에 보내지 못했어요\. 그림을 고르거나 사진을 올려 주세요\./)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "1단계 그림 확인" })).not.toBeInTheDocument();
+  });
+
+  it("422가 아닌 실패(네트워크 등)는 점검표를 읽지 않고 강조도 하지 않는다", async () => {
+    const user = userEvent.setup();
+    publish.mockRejectedValue(new Error("인터넷 연결을 확인해 주세요."));
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    await user.click(screen.getByRole("button", { name: /게시하고 보내기/ }));
+
+    expect((await screen.findAllByText("인터넷 연결을 확인해 주세요.")).length).toBeGreaterThanOrEqual(1);
+    expect(reqMock).not.toHaveBeenCalled();
+    expect(document.querySelector("[data-send-blocked]")).toBeNull();
   });
 });

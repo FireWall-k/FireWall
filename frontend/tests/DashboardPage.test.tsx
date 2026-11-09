@@ -24,11 +24,16 @@ vi.mock("../src/api", async (importOriginal) => {
       listWorkers: () => listWorkers(),
       workerActiveDates: (id: string) => workerActiveDates(id),
       workerTasks: (id: string, date: string) => workerTasks(id, date),
-      dashboard: (taskId: string, workerId: string) => dashboard(taskId, workerId),
-      coaching: (taskId: string, workerId: string) => coaching(taskId, workerId),
+      dashboard: (taskId: string, workerId: string, date?: string) => dashboard(taskId, workerId, date),
+      coaching: (taskId: string, workerId: string, date?: string) => coaching(taskId, workerId, date),
     },
   };
 });
+
+function ymd(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+const todayYmd = ymd(new Date());
 
 const worker = { id: "w1", display_name: "김근로", access_code_hint: "11", access_code_length: 4 };
 const task = { id: "task-1", title: "분류 작업", status: "published", created_at: "2026-09-20T00:00:00Z" };
@@ -63,7 +68,7 @@ describe("DashboardPage", () => {
 
     await screen.findByText("50%");
     expect(screen.getByText(/2단계 확인 필요/)).toBeInTheDocument();
-    expect(dashboard).toHaveBeenCalledWith("task-1", "w1");
+    expect(dashboard).toHaveBeenCalledWith("task-1", "w1", todayYmd);
     expect(screen.getByText("상자를 옮기세요")).toBeInTheDocument();
     expect(screen.getByText("막힘 기록")).toBeInTheDocument();
   });
@@ -95,7 +100,7 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
 
     await screen.findByText(/사진으로 교체하세요/);
-    expect(coaching).toHaveBeenCalledWith("task-1", "w1");
+    expect(coaching).toHaveBeenCalledWith("task-1", "w1", todayYmd);
     expect(screen.getByText(/2단계 · photo/)).toBeInTheDocument();
     expect(screen.queryByText(/AI 처리 동의가 기록되지 않은/)).not.toBeInTheDocument();
   });
@@ -140,5 +145,31 @@ describe("DashboardPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "선택한 직무 보관하기" }));
     expect(archiveTask).not.toHaveBeenCalled();
     confirm.mockRestore();
+  });
+
+  // 2회차 검증: 달력에서 지난 날을 고르면 같은 직무라도 그날 배정의 숫자를 묻는다(오늘 배정의 숫자가 아님).
+  it("달력에서 다른 날을 고르면 대시보드·코칭을 그 날짜로 다시 부른다", async () => {
+    listWorkers.mockResolvedValue([worker]);
+    workerTasks.mockResolvedValue([task]);
+    dashboard.mockResolvedValue(dashboardData);
+    coaching.mockResolvedValue({ summary: "", suggestions: [] });
+    const user = userEvent.setup();
+
+    render(<DashboardPage />);
+    await screen.findByText("50%");
+    expect(dashboard).toHaveBeenLastCalledWith("task-1", "w1", todayYmd);
+
+    const now = new Date();
+    const pickDay = now.getDate() === 1 ? 2 : 1;
+    const picked = ymd(new Date(now.getFullYear(), now.getMonth(), pickDay));
+    await user.click(screen.getByRole("button", { name: "날짜 선택 달력 열기" }));
+    await user.click(screen.getByRole("button", { name: String(pickDay) }));
+
+    await vi.waitFor(() => expect(dashboard).toHaveBeenCalledWith("task-1", "w1", picked));
+    expect(workerTasks).toHaveBeenCalledWith("w1", picked);
+    expect(coaching).toHaveBeenCalledWith("task-1", "w1", picked);
+    // 새 날짜의 직무 목록이 오기 전에 옛 목록의 직무를 새 날짜로 묻지 않는다(목록이 온 뒤에만).
+    const pickedCall = dashboard.mock.calls.findIndex((c) => c[2] === picked);
+    expect(workerTasks.mock.invocationCallOrder[1]).toBeLessThan(dashboard.mock.invocationCallOrder[pickedCall]);
   });
 });
