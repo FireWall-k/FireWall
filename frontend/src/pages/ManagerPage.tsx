@@ -157,6 +157,11 @@ export default function ManagerPage() {
       setTask((cur) => (cur && cur.id === taskId
         ? { ...cur, steps: cur.steps.map((s) => (s.id === stepId ? { ...s, ...updated } : s)) }
         : cur));
+      // 서버가 확인함으로 적었다. 그사이 보내기가 막혀(422) 이 단계를 강조했어도 이제 내린다(1회차 검증 — 확인 요청보다
+      // 보내기가 먼저 도착하면 이미 확인한 그림을 다시 확인하라고 했다).
+      if (updated.picture_state === undefined || updated.picture_state === "confirmed") {
+        setBlockedStepIds((prev) => withoutId(prev, stepId));
+      }
     } catch (e) {
       if (wasRecheck) setRecheckSteps((prev) => withId(prev, stepId));
       if (wasBlocked) setBlockedStepIds((prev) => withId(prev, stepId));
@@ -232,11 +237,12 @@ export default function ManagerPage() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // [되돌리기]는 나눈 단계가 그대로 붙어 있을 때만 뜻이 있다. 보냈거나, 순서를 바꿨거나, 그중 하나를 지웠으면 내린다
-  // (남겨 두면 눌렀을 때 404·409가 나거나 보낸 직무를 바꾸려 든다).
+  // [되돌리기]는 나눈 단계가 그대로 붙어 있을 때만 뜻이 있다. 순서를 바꿨거나 그중 하나를 지웠으면 내린다(남겨 두면
+  // 눌렀을 때 404가 난다). (2a-0) 보낸 직무도 서버가 문장을 나누고 합치므로(고친 내용은 다음 배정부터) 게시 상태와
+  // 상관없이 띄운다 — 예전에는 보낸 직무에서 나뉘어도 [되돌리기]가 숨어 되돌릴 방법이 없었다(1회차 검증).
   const undoIds = task?.steps.map((s) => s.id) ?? [];
   const undoAt = splitUndo ? undoIds.indexOf(splitUndo.stepIds[0]) : -1;
-  const activeUndo = splitUndo && task && task.status !== "published" && undoAt >= 0
+  const activeUndo = splitUndo && task && undoAt >= 0
     && splitUndo.stepIds.every((id, k) => undoIds[undoAt + k] === id)
     ? splitUndo : null;
 
@@ -530,6 +536,8 @@ export default function ManagerPage() {
 
   async function handlePublishAndAssign() {
     if (!task) return;
+    // [그림 확인] 요청이 아직 서버에 닿지 않았으면 보내기가 먼저 도착해 422로 막힌다(1회차 검증). 끝날 때까지 기다리게 한다.
+    if (pendingConfirm.size > 0) return;
     if (unconfirmedCount > 0) {
       flashAssignFeedback(false, `자동으로 고른 그림 ${unconfirmedCount}장이 문장과 맞는지 먼저 확인해 주세요.`);
       return;
@@ -543,7 +551,7 @@ export default function ManagerPage() {
     setNotice(null);
     setAssignFeedback(null);
     setBlockedStepIds(new Set());
-    // 보내면 단계를 합칠 수 없다(서버도 409) — [되돌리기]를 내린다.
+    // 보내면 나눈 단계가 그대로 근로자에게 간다 — 보낸 뒤에 [되돌리기]가 남아 있으면 무엇을 되돌리는지 헷갈리므로 내린다.
     setSplitUndo(null);
     try {
       if (task.status !== "published") {
@@ -563,6 +571,16 @@ export default function ManagerPage() {
       // 서버 검사에 막혔으면(422·409) 어느 단계 때문인지 표시한다. 문장(detail)은 위에서 그대로 보였다.
       const ids = await blockedStepIdsAfterSendError(task.id, e);
       if (ids.length) {
+        // 다른 기기·탭에서 고쳐 이 화면의 단계(그림 상태·사진)가 낡았을 수 있다. 새로 읽어 맞춰야 '그림 없음'으로 막힌
+        // 단계에 [그림 확인]이 아니라 '그림을 고르거나 사진을 올려 주세요'가 뜬다(1회차 검증).
+        try {
+          const fresh = await api.getTask(task.id);
+          if (fresh && fresh.id === task.id) {
+            setTask((cur) => (cur && cur.id === fresh.id ? fresh : cur));
+          }
+        } catch {
+          // 다시 읽지 못해도 강조와 서버 문장은 그대로 보인다.
+        }
         setBlockedStepIds(new Set(ids));
         Array.from(document.querySelectorAll<HTMLElement>("[data-step-id]"))
           .find((el) => el.dataset.stepId === ids[0])?.scrollIntoView?.({ block: "nearest" });
@@ -1040,7 +1058,8 @@ export default function ManagerPage() {
                 </div>
                 <button
                   onClick={handlePublishAndAssign}
-                  disabled={busy || selectedWorkerIds.size === 0 || unconfirmedCount > 0 || missingPictureOrders(task).length > 0}
+                  disabled={busy || pendingConfirm.size > 0 || selectedWorkerIds.size === 0 || unconfirmedCount > 0
+                    || missingPictureOrders(task).length > 0}
                   className="mt-2 rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
                   {busy ? "처리 중…" : selectedWorkerIds.size > 1

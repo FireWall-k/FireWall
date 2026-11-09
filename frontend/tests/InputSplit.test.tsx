@@ -286,6 +286,30 @@ describe("편집기 — 저장하는 순간 나누기와 되돌리기", () => {
     expect(screen.queryByText("동작이 둘이라 두 단계로 나눴어요.")).not.toBeInTheDocument();
   });
 
+  it("보낸 직무에서 문장을 고쳐 나뉘어도 [되돌리기]가 뜬다(2a-0 — 서버가 보낸 직무도 나누고 합친다)", async () => {
+    const user = userEvent.setup();
+    await openEditor(user);
+    const typed = "쓰레기통을 비우고 봉투를 갈아요";
+    rewriteStep.mockResolvedValue({
+      task: { id: "task-1", title: "출근 준비", status: "published", steps: [
+        taskStep("s1", 1, "앞치마를 입어요."), taskStep("n1", 2, "쓰레기통을 비워요."), taskStep("n2", 3, "봉투를 갈아요."),
+      ] },
+      split_step_ids: ["n1", "n2"],
+      sentence: typed,
+    });
+    mergeSteps.mockResolvedValue({ id: "task-1", title: "출근 준비", status: "published", steps: [
+      taskStep("s1", 1, "앞치마를 입어요."), taskStep("m1", 2, typed),
+    ] });
+
+    const input = screen.getByLabelText("2단계 문장");
+    await user.clear(input);
+    await user.type(input, typed);
+    await user.tab();
+    await user.click(await screen.findByRole("button", { name: "되돌리기" }));
+    await waitFor(() => expect(mergeSteps).toHaveBeenCalledWith("task-1", ["n1", "n2"], typed, "other"));
+    expect((await screen.findByLabelText("2단계 문장") as HTMLInputElement).value).toBe(typed);
+  });
+
   it("한 동작이면 그대로 저장하고 되돌리기를 띄우지 않는다", async () => {
     const user = userEvent.setup();
     await openEditor(user);

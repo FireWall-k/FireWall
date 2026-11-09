@@ -14,6 +14,7 @@ const listWorkers = vi.fn();
 const createWorker = vi.fn();
 const publish = vi.fn();
 const assign = vi.fn();
+const getTask = vi.fn();
 // 자동 채택 못 한(needs_fallback=true) 단계는 마운트 시 후보를 조회한다 — 목이 없으면 깨진다.
 const stepSymbolCandidates = vi.fn().mockResolvedValue({ step_id: "s1", reason: "no_candidate", candidates: [] });
 // (2a-0) 새 호출(src/manager/api/send.ts)은 공용 req를 쓴다 — 경로·메서드를 그대로 확인한다.
@@ -33,6 +34,7 @@ vi.mock("../src/api", () => ({
     publish: (id: string) => publish(id),
     assign: (id: string, workerIds: string[]) => assign(id, workerIds),
     updateStep: vi.fn(),
+    getTask: (id: string) => getTask(id),
   },
   req: (path: string, init?: RequestInit) => reqMock(path, init),
 }));
@@ -72,6 +74,7 @@ beforeEach(() => {
   listWorkers.mockReset();
   publish.mockReset();
   assign.mockReset();
+  getTask.mockReset();
   createTask.mockResolvedValue({ id: "task-1", title: "직무", status: "draft", steps: [baseStep] });
   listWorkers.mockResolvedValue([]);
   reqMock.mockReset();
@@ -447,6 +450,33 @@ describe("ManagerPage — 그림 확인을 서버에 적는다(2a-0)", () => {
   });
 });
 
+describe("ManagerPage — [그림 확인] 요청 중에는 보내지 않는다(2a-0 1회차 검증)", () => {
+  const autoHigh = {
+    ...baseStep, symbol_url: "http://localhost:8000/api/aac/images/cafe/CAFE_012.webp",
+    symbol_source: "LOCAL_AAC", needs_fallback: false, picture_state: "auto_high",
+  };
+
+  it("확인 응답이 오기 전에는 보내기 버튼이 꺼져 있고, 응답이 오면 켜진다", async () => {
+    const user = userEvent.setup();
+    listWorkers.mockResolvedValue(workers);
+    createTask.mockResolvedValue({ id: "task-1", title: "직무", status: "draft", steps: [autoHigh] });
+    let finish: (v: unknown) => void = () => {};
+    reqMock.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    await user.click(screen.getByRole("button", { name: "1단계 그림 확인" }));
+    const send = screen.getByRole("button", { name: /게시하고 보내기/ });
+    expect(send).toBeDisabled();
+    fireEvent.click(send);
+    expect(publish).not.toHaveBeenCalled();
+
+    await act(async () => finish({ ...autoHigh, picture_state: "confirmed" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeEnabled());
+  });
+});
+
 describe("ManagerPage — 보내기가 서버 검사(422)에 막히면 그 단계를 강조한다(2a-0)", () => {
   const confirmedAuto = {
     ...baseStep, symbol_url: "http://localhost:8000/api/aac/images/cafe/CAFE_012.webp",
@@ -510,6 +540,43 @@ describe("ManagerPage — 보내기가 서버 검사(422)에 막히면 그 단�
     expect(reqMock).toHaveBeenCalledWith("/api/tasks/task-1/steps/s2/picture/confirm", { method: "POST" });
     await waitFor(() => expect(stepItem("s2")).not.toHaveAttribute("data-send-blocked"));
     expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeEnabled();
+  });
+
+  it("막히면 단계를 새로 읽는다 — 다른 곳에서 그림을 지웠으면 [그림 확인] 대신 '그림을 고르거나 사진을 올려 주세요'", async () => {
+    const user = userEvent.setup();
+    const noPicture = "1단계에 그림이 없어요. 그림을 고르거나 사진을 올려 주세요.";
+    publish.mockRejectedValue(new ApiError(422, noPicture));
+    reqMock.mockImplementation(async (path: string) => {
+      if (path === "/api/tasks/task-1/send-check") {
+        return {
+          ok: false,
+          blocking: [
+            { code: "no_picture", done: 1, total: 2, step_ids: ["s1"] },
+            { code: "unconfirmed_auto", done: 2, total: 2, step_ids: [] },
+          ],
+          warnings: [],
+        };
+      }
+      throw new Error(`목 없음: ${path}`);
+    });
+    getTask.mockResolvedValue({
+      id: "task-1", title: "직무", status: "draft",
+      steps: [
+        { ...confirmedAuto, id: "s1", order: 1, symbol_url: null, symbol_source: "fallback", needs_fallback: true,
+          picture_state: "none" },
+        { ...confirmedAuto, id: "s2", order: 2, sentence: "의자를 넣으세요" },
+      ],
+    });
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    await user.click(screen.getByRole("button", { name: /게시하고 보내기/ }));
+
+    await waitFor(() => expect(stepItem("s1")).toHaveAttribute("data-send-blocked", "true"));
+    expect(getTask).toHaveBeenCalledWith("task-1");
+    expect(screen.getByText(/이 단계 때문에 보내지 못했어요\. 그림을 고르거나 사진을 올려 주세요\./)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "1단계 그림 확인" })).not.toBeInTheDocument();
   });
 
   it("422가 아닌 실패(네트워크 등)는 점검표를 읽지 않고 강조도 하지 않는다", async () => {
