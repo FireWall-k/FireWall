@@ -1331,6 +1331,9 @@ def _insert_step(db: Session, task: Task, employer_id: str, prepared: dict, orde
         symbol_media_id=sym.get("photo_media_id"),
         symbol_source=sym.get("source", "fallback"),
         needs_fallback=sym.get("needs_fallback", True),
+        # 사업주가 올린 사진을 합치기·나누기로 새 단계에 옮기면 그대로 '확인함'이다(명세 §5.5). 빠뜨리면
+        # 확인 안 한 자동 그림(auto_high)이 되어 보낸 직무를 고친 뒤 다시 보내기가 422로 막혔다(1회차 검증).
+        picture_confirmed=bool(sym.get("photo_media_id")),
         tts_media_id=_tts_media_id(db, employer_id, prepared["tts"]),
     )
     db.add(step)
@@ -2402,9 +2405,28 @@ def _task_assignments(task_id: str, worker_id: str | None, db: Session) -> list[
     return list(db.scalars(query.order_by(Assignment.assigned_date, Assignment.id)).all())
 
 
+def _shown_assignments(assignments: list[Assignment], worker_id: str | None) -> list[Assignment]:
+    """대시보드·코칭이 셀 배정(contract §1.6). 근로자를 고르지 않았으면 모두(직무 전체 집계).
+
+    근로자를 고르면 배정 하나만 센다 — 그 배정의 기록만, 그 배정의 고정 버전 단계에 맞춰서. 예전처럼 그 근로자의
+    모든 배정 기록을 단계 키로 합치면 (1) 내일로 보낸 배정(아직 시작 전)의 단계가 오늘 하는 중인 배정 대신 보이고
+    (2) 어제 못 끝낸 배정의 기록이 오늘 새로 받은 배정에 겹쳐 '이미 한 단계'로 셌다(1회차 검증).
+    고르는 배정: 오늘까지의 날(scheduled_day <= 오늘) 중 가장 늦은 날의, 가장 늦게 보낸 배정(오늘 하는 중인 일은
+    다시 보내도 같은 배정에 남으므로 이것이 된다). 오늘까지 배정이 없고 앞날 배정만 있으면 가장 가까운 앞날 배정.
+    """
+    if not worker_id or not assignments:
+        return assignments
+    today = clock.local_today()
+    order = lambda a: (a.scheduled_day or today, a.assigned_date, a.id)  # noqa: E731
+    due = [a for a in assignments if (a.scheduled_day or today) <= today]
+    if due:
+        return [max(due, key=order)]
+    return [min(assignments, key=order)]
+
+
 def _dashboard_steps(task: Task, assignments: list[Assignment], worker_id: str | None, db: Session) -> list:
-    """대시보드·코칭의 단계 목록(contract §1.6). 근로자를 고르면 그 근로자 마지막 배정의 고정 버전 단계(하는 중에 지운
-    단계의 기록도 보인다), 아니면 마지막으로 보낸 버전, 보낸 적이 없으면 편집 단계."""
+    """대시보드·코칭의 단계 목록(contract §1.6). 근로자를 고르면 _shown_assignments가 고른 배정의 고정 버전 단계(하는
+    중에 지운 단계의 기록도 보인다), 아니면 마지막으로 보낸 버전, 보낸 적이 없으면 편집 단계."""
     if worker_id and assignments:
         return versions.assignment_steps(db, assignments[-1], task)
     v = versions.latest_version(db, task)
@@ -2485,7 +2507,7 @@ def dashboard(task_id: str, request: Request, worker_id: str | None = None,
     if worker_id:
         # 다른 사업장 근로자 id로 감사 행이 남지 않게, 기록 전에 소유를 확인한다(404 규칙 통일).
         _owned_worker(worker_id, user["sub"], db)
-    assignments = _task_assignments(task_id, worker_id, db)
+    assignments = _shown_assignments(_task_assignments(task_id, worker_id, db), worker_id)
     logs_by_step = _logs_by_step(assignments, db)
     # 근로자별 수행 기록 열람. 3초 폴링은 privacy.record_access가 짧은 창 안에서 한 줄로 합친다.
     if worker_id:
@@ -2542,7 +2564,7 @@ def task_coaching(task_id: str, request: Request, worker_id: str | None = None,
     task = _owned_task(task_id, user["sub"], db)
     # 다른 사업장 근로자 id면 404. 감사 기록(coaching.view)은 이 확인 뒤에만 남는다.
     target = _owned_worker(worker_id, user["sub"], db) if worker_id else None
-    assignments = _task_assignments(task_id, worker_id, db)
+    assignments = _shown_assignments(_task_assignments(task_id, worker_id, db), worker_id)
     logs_by_step = _logs_by_step(assignments, db)
 
     included_query = select(Assignment.worker_id).where(Assignment.task_id == task_id)

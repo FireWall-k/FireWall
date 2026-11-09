@@ -12,6 +12,7 @@
 import json
 import os
 import sys
+from datetime import timedelta
 from io import BytesIO
 from urllib.parse import urlparse
 
@@ -254,6 +255,66 @@ def test_dashboard_aggregate_groups_versions_by_source_step(client, employer_tok
     assert [s["sentence"] for s in dash["steps"]] == [s["sentence"] for s in card["steps"]]
 
 
+def test_worker_dashboard_keeps_today_when_edited_job_sent_for_tomorrow(client, employer_token, worker):
+    """근로자를 고른 대시보드는 오늘 하는 중인 배정 하나만 센다(§1.6, 1회차 검증). 사업주가 단계를 지우고 내일로
+    다시 보내도(created) 아직 시작 전인 내일 배정 대신 오늘 배정의 고정 버전 단계·기록을 그대로 보인다."""
+    task = _task(client, employer_token)
+    r = client.post(f"/api/tasks/{task['id']}/steps", headers=auth(employer_token), json={"sentence": "바닥을 쓸어요."})
+    assert r.status_code == 201, r.text
+    give_pictures(client, employer_token, task["id"])
+    assert _send(client, employer_token, task["id"], [worker["id"]]).status_code == 200
+    card = next(c for c in _cards(client, worker["token"]) if c["task_id"] == task["id"])
+    vids = [s["id"] for s in card["steps"]]
+    assert len(vids) == 3
+    for sid in vids[:2]:
+        assert _log(client, worker["token"], card["assignment_id"], sid).status_code == 201
+    url = f"/api/dashboard/tasks/{task['id']}?worker_id={worker['id']}"
+    before = client.get(url, headers=auth(employer_token)).json()
+    assert before["total_steps"] == 3 and before["completed_steps"] == 2
+
+    steps = _edit_steps(client, employer_token, task["id"])
+    assert client.delete(f"/api/tasks/{task['id']}/steps/{steps[1]['id']}",
+                         headers=auth(employer_token)).status_code == 200
+    res = _send(client, employer_token, task["id"], [worker["id"]], day="tomorrow")
+    assert res.status_code == 200 and res.json()["results"][0]["outcome"] == "created"
+    after = client.get(url, headers=auth(employer_token)).json()
+    assert after["total_steps"] == 3 and after["completed_steps"] == 2
+    assert [s["sentence"] for s in after["steps"]] == [s["sentence"] for s in card["steps"]]
+    coach = client.get(f"/api/dashboard/tasks/{task['id']}/coaching?worker_id={worker['id']}",
+                       headers=auth(employer_token))
+    assert coach.status_code == 200, coach.text
+
+
+def test_worker_dashboard_does_not_count_yesterday_logs_on_new_assignment(client, employer_token, worker):
+    """어제 1단계만 하고 못 끝낸 일을 오늘 다시 보내면 새 배정이다. 근로자 화면처럼 대시보드도 0단계 완료다
+    (어제 기록이 단계 키로 합쳐져 오늘 배정에 새던 것, 1회차 검증)."""
+    task = _task(client, employer_token)
+    assert _send(client, employer_token, task["id"], [worker["id"]]).status_code == 200
+    c0 = next(c for c in _cards(client, worker["token"]) if c["task_id"] == task["id"])
+    assert _log(client, worker["token"], c0["assignment_id"], c0["steps"][0]["id"]).status_code == 201
+    with SessionLocal() as db:
+        a = db.get(Assignment, c0["assignment_id"])
+        a.scheduled_day -= timedelta(days=1)
+        a.assigned_date -= timedelta(days=1)
+        db.commit()
+    res = _send(client, employer_token, task["id"], [worker["id"]])
+    assert res.status_code == 200 and res.json()["results"][0]["outcome"] == "created"
+    new = next(c for c in _cards(client, worker["token"]) if c["task_id"] == task["id"])
+    assert new["done_step_ids"] == [] and new["status"] == "new"
+    dash = client.get(f"/api/dashboard/tasks/{task['id']}?worker_id={worker['id']}",
+                      headers=auth(employer_token)).json()
+    assert dash["completed_steps"] == 0 and dash["stuck_steps"] == []
+
+
+def test_worker_dashboard_with_only_future_assignment_shows_it(client, employer_token, worker):
+    """내일로 보낸 배정만 있으면 그 배정의 단계를 0단계 완료로 보인다."""
+    task = _task(client, employer_token)
+    assert _send(client, employer_token, task["id"], [worker["id"]], day="tomorrow").status_code == 200
+    dash = client.get(f"/api/dashboard/tasks/{task['id']}?worker_id={worker['id']}",
+                      headers=auth(employer_token)).json()
+    assert dash["total_steps"] == 2 and dash["completed_steps"] == 0
+
+
 def test_log_for_step_of_other_version_is_rejected(client, employer_token, worker):
     """버전 단계 소속 검사: 같은 직무라도 배정이 묶이지 않은 버전의 단계 id는 400."""
     task, card = _sent_v2(client, employer_token, worker)
@@ -331,6 +392,45 @@ def test_media_kept_for_version(client, employer_token, worker):
     assert media.media_path(media.KIND_PHOTO, key).is_file()
     again = next(c for c in _cards(client, worker["token"]) if c["task_id"] == task["id"])
     assert client.get(_path_of(again["steps"][0]["symbol_url"])).status_code == 200
+
+
+def test_photo_moved_by_merge_or_split_stays_confirmed(client, employer_token, worker, monkeypatch):
+    """사업주가 올린 사진을 합치기·나누기로 새 단계에 옮겨도 '확인함'이다(명세 §5.5). 예전에는 확인 안 한 자동
+    그림(auto_high)이 되어 보낸 직무를 고친 뒤 다시 보내기가 422로 막혔다(1회차 검증)."""
+    import ai_client
+    task = _task(client, employer_token)
+    tid = task["id"]
+    s1, s2 = (s["id"] for s in task["steps"])
+    up = client.post(f"/api/tasks/{tid}/steps/{s1}/photo", headers=auth(employer_token),
+                     files={"file": ("p.jpg", _jpeg(), "image/jpeg")})
+    assert up.status_code == 200, up.text
+    assert _send(client, employer_token, tid, [worker["id"]]).status_code == 200
+
+    r = client.post(f"/api/tasks/{tid}/steps/merge", headers=auth(employer_token),
+                    json={"step_ids": [s1, s2], "sentence": "상자를 옮기고 수량을 확인해요"})
+    assert r.status_code == 200, r.text
+    merged = r.json()["steps"][0]
+    assert merged["symbol_source"] == "photo" and merged["picture_state"] == "confirmed"
+    sent = _send(client, employer_token, tid, [worker["id"]])
+    assert sent.status_code == 200, sent.text
+
+    def two(raw_input, context=None, **kw):
+        return {"task_title": "t", "steps": [
+            {"order": 1, "sentence": "상자를 옮겨요.", "action_type": "move", "symbol_query": ["상자"],
+             "split_group": 1, "split_check": False, "source_text": raw_input},
+            {"order": 2, "sentence": "수량을 세어요.", "action_type": "check", "symbol_query": ["수량"],
+             "split_group": 1, "split_check": False, "source_text": raw_input},
+        ]}
+    monkeypatch.setattr(ai_client, "decompose", two)
+    r = client.post(f"/api/tasks/{tid}/steps/{merged['id']}/rewrite", headers=auth(employer_token),
+                    json={"sentence": "상자 옮기고 수량 세요"})
+    assert r.status_code == 200, r.text
+    first = r.json()["task"]["steps"][0]
+    assert len(r.json()["split_step_ids"]) == 2
+    assert first["symbol_source"] == "photo" and first["picture_state"] == "confirmed"
+    check = client.get(f"/api/tasks/{tid}/send-check", headers=auth(employer_token)).json()
+    unconfirmed = next(b for b in check["blocking"] if b["code"] == "unconfirmed_auto")
+    assert first["id"] not in unconfirmed["step_ids"]
 
 
 def test_media_released_after_task_delete(client, employer_token, worker):
