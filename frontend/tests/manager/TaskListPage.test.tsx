@@ -364,6 +364,25 @@ describe("행이 사라진 뒤 키보드 초점(WCAG 2.4.3)", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "앞치마 입기 메뉴" })).toHaveFocus());
   });
 
+  it("[실행 취소]가 서버 오류로 실패해도 초점이 body로 빠지지 않고 행의 … 단추로 간다", async () => {
+    renderPage();
+    archiveTask.mockImplementation(async () => {
+      listEmployerTasks.mockImplementation(async (f) => ({ items: byFilter(f).filter((r) => r.id !== "t2"), counts: COUNTS }));
+      return row({ ...DRAFT, state: "archived" });
+    });
+    unarchiveTask.mockRejectedValue(new ApiError(500, "잠시 뒤에 다시 해 주세요"));
+    const { user, menu } = await openMenu("앞치마 입기");
+    await user.click(within(menu).getByRole("menuitem", { name: "보관하기" }));
+    const undo = await screen.findByRole("button", { name: "실행 취소" });
+    undo.focus();
+    const callsBefore = listEmployerTasks.mock.calls.length;
+    await user.keyboard("{Enter}");
+    expect(unarchiveTask).toHaveBeenCalledWith("t2");
+    await waitFor(() => expect(listEmployerTasks.mock.calls.length).toBeGreaterThan(callsBefore));
+    await waitFor(() => expect(document.activeElement).toHaveAttribute("data-task-menu"));
+    expect(document.activeElement).not.toBe(document.body);
+  });
+
   it("완전히 지워 목록이 비면 목록 칸(tabpanel)으로 초점이 간다", async () => {
     renderPage("/m/tasks?filter=archived");
     const { user, menu } = await openMenu("옛 청소");
@@ -439,6 +458,25 @@ describe("결과 알림(WCAG 4.1.3)과 휴대폰 행 둘째 줄", () => {
     await waitFor(() => expect(live).toHaveTextContent("직무가 2개 있어요"));
     await user.type(screen.getByLabelText("제목으로 찾기"), "없는직무");
     await waitFor(() => expect(live).toHaveTextContent("맞는 직무가 없어요"));
+  });
+
+  it("탭을 바꾼 뒤 보관하면 결과 수 알림은 그대로다(같은 걸러보기 안의 다시 받기는 알리지 않음 — 토스트와 두 번 읽히지 않게)", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("컵 씻기");
+    const live = screen.getByTestId("task-result-status");
+    await user.click(screen.getByRole("tab", { name: /초안/ }));
+    await waitFor(() => expect(live).toHaveTextContent("직무가 2개 있어요"));
+    await user.click(screen.getByRole("tab", { name: /전체/ }));
+    await waitFor(() => expect(live).toHaveTextContent("직무가 3개 있어요"));
+    archiveTask.mockImplementation(async () => {
+      listEmployerTasks.mockImplementation(async (f) => ({ items: byFilter(f).filter((r) => r.id !== "t2"), counts: COUNTS }));
+      return row({ ...DRAFT, state: "archived" });
+    });
+    const { menu } = await openMenu("앞치마 입기");
+    await user.click(within(menu).getByRole("menuitem", { name: "보관하기" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "앞치마 입기 메뉴" })).not.toBeInTheDocument());
+    expect(live).toHaveTextContent("직무가 3개 있어요");
   });
 
   it("행마다 '4단계 · 고친 날 · 받은 사람 n명'(없으면 '아직 안 보냄') 줄이 있고 md 이상에서는 숨는다", async () => {

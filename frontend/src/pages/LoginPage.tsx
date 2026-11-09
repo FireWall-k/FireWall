@@ -230,7 +230,10 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
           {/* 근로자는 번호 키패드 화면(/w)으로. Router 밖에서도 렌더되도록(테스트) 일반 링크를 쓴다. */}
           <p className="mt-6 text-center text-ui-base text-ink-700">
             {copy.workerQuestion}{" "}
-            <a href="/w" className="font-semibold text-info-700 underline underline-offset-2">
+            <a
+              href="/w"
+              className="inline-flex min-h-control items-center font-semibold text-info-700 underline underline-offset-2 coarse:min-h-control-coarse"
+            >
               {copy.workerLink}
             </a>
           </p>

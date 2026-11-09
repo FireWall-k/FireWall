@@ -166,6 +166,20 @@ test.describe("손가락 기기(휴대폰)", () => {
     await expect(page.getByTestId("help-alert-strip").getByRole("button", { name: "도와줬어요" })).toBeVisible();
   });
 
+  test("로그인 화면의 단추·링크('근로자 화면으로 ›' 포함)도 44 이상", async ({ page }) => {
+    await mockEmployer(page);
+    await page.goto("/m/login");
+    await expect(page.getByRole("link", { name: /근로자 화면으로/ })).toBeVisible();
+    expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true);
+    const small = await page.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLElement>("a[href], button"))
+        .filter((el) => el.offsetParent !== null)
+        .map((el) => ({ name: el.getAttribute("aria-label") ?? el.textContent?.trim(), h: el.getBoundingClientRect().height }))
+        .filter((b) => b.h < 44),
+    );
+    expect(small).toEqual([]);
+  });
+
   test("390: 걸러보기 탭 5개가 한 줄에 다 보이고, 도움 띠 글이 좁은 칸에 꺾이지 않는다", async ({ page }) => {
     await mockEmployer(page);
     await loginEmployer(page, "/m/tasks");

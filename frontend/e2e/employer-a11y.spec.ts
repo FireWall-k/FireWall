@@ -87,6 +87,19 @@ test("토스트 [닫기](X)를 키보드로 누르면 초점이 body로 사라�
   expect(await activeTag(page)).not.toBe("BODY");
 });
 
+test("키보드로 누른 [실행 취소]가 서버 오류로 실패해도 초점이 body로 빠지지 않는다", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const m = await mockEmployer(page);
+  await loginEmployer(page, "/m/tasks");
+  await archiveRow(page, "컵 씻기");
+  m.failPaths.add("/api/tasks/t1/unarchive");
+  await page.getByRole("button", { name: "실행 취소" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("처리하지 못했어요. 잠시 뒤 다시 시도해 주세요.")).toBeVisible();
+  await expect.poll(() => activeTag(page)).not.toBe("BODY");
+  expect(await page.evaluate(() => document.activeElement?.getAttribute("data-task-menu"))).toBeTruthy();
+});
+
 test("완전히 지우기를 처리하는 동안에도 초점이 창 안에 있고 Tab도 창 안에서 돈다", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockEmployer(page);

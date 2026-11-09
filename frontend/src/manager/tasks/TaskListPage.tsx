@@ -111,6 +111,9 @@ export default function TaskListPage() {
   const [firstKey] = useState(key);
   const [keyChanged, setKeyChanged] = useState(false);
   if (!keyChanged && key !== firstKey) setKeyChanged(true);
+  // 마지막으로 알린 걸러보기·검색어와 그 글. 같은 key 안에서 행동 뒤 다시 받기로 개수가 바뀌어도 새로 알리지 않는다
+  // (보관 같은 행동은 토스트가 이미 알리므로 두 번 읽히지 않게).
+  const [announced, setAnnounced] = useState<{ key: string; text: string } | null>(null);
 
   // 검색: 적기를 멈추면 주소의 q를 바꾼다(replace — 글자마다 뒤로 가기 기록을 남기지 않음).
   useEffect(() => {
@@ -180,6 +183,13 @@ export default function TaskListPage() {
     (near ?? panelRef.current)?.focus();
   }, [data]);
 
+  // [실행 취소]가 실패해도 다시 받는다. 눌린 [실행 취소]는 토스트와 함께 사라지므로, 다시 받기가 끝나야
+  // 위의 초점 자리 effect가 돌아 초점을 행의 … 단추로 옮긴다(안 그러면 body에 남음, WCAG 2.4.3).
+  function undoFailed(e: unknown) {
+    toast.show({ tone: "error", message: errorMessage(e) });
+    reload();
+  }
+
   async function run(row: TaskSummaryOut, action: () => Promise<unknown>, done: () => void) {
     if (busyIds.has(row.id)) return;
     keepFocusNear(row);
@@ -206,7 +216,7 @@ export default function TaskListPage() {
         message: taskToast.archived(row.title),
         onUndo: () => {
           keepFocusNear(row);
-          unarchiveTask(row.id).then(reload, (e: unknown) => toast.show({ tone: "error", message: errorMessage(e) }));
+          unarchiveTask(row.id).then(reload, undoFailed);
         },
       }),
     );
@@ -219,7 +229,7 @@ export default function TaskListPage() {
         message: taskToast.unarchived(row.title),
         onUndo: () => {
           keepFocusNear(row);
-          archiveTask(row.id).then(reload, (e: unknown) => toast.show({ tone: "error", message: errorMessage(e) }));
+          archiveTask(row.id).then(reload, undoFailed);
         },
       }),
     );
@@ -361,9 +371,10 @@ export default function TaskListPage() {
     },
   ];
 
-  let announce = "";
   // 빈 상태 제목과 같은 글을 두 번 두지 않으려고 따로 짧은 문구를 쓴다(빈 상태 제목은 표 안에 보인다).
-  if (keyChanged && data) announce = taskList.resultCount(data.items.length);
+  // 걸러보기·검색어가 바뀌어 처음 받은 결과만 알린다(렌더 중 맞추기). 받는 중에는 비워 둔다.
+  if (keyChanged && data && announced?.key !== key) setAnnounced({ key, text: taskList.resultCount(data.items.length) });
+  const announce = data && announced?.key === key ? announced.text : "";
 
   const tabs: TabItem<TaskFilter>[] = TASK_FILTERS.map((f) => ({ id: f, label: taskFilter[f], count: counts?.[f] }));
   const nothingAtAll = !!data && data.counts.all === 0 && data.counts.archived === 0 && !q;
