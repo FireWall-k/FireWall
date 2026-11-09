@@ -119,7 +119,7 @@ for (const [sizeName, vp] of SIZES) {
       test("지난 기록", async ({ page }) => {
         // 날짜 이름('오늘'·'어제')이 실행하는 날에 따라 바뀌지 않게 목 데이터 날짜로 고정한다.
         await page.clock.setFixedTime(new Date("2026-11-09T10:00:00"));
-        await mockWorkerBackend(page, newState());
+        await mockWorkerBackend(page, { ...newState(), historyDate: "2026-11-09" });
         await loginAsWorker(page);
         await page.goto("/w/history");
         await page.getByTestId("history-screen").waitFor();

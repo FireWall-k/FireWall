@@ -4,6 +4,12 @@ import type { Page, Route } from "@playwright/test";
 // 상태(MockState)를 테스트가 바꿔 '인터넷 끊김'·'선생님 확인' 같은 상황을 만든다.
 // 목 데이터 글자는 근로자 화면 금지어 검사(FORBIDDEN_PATTERNS)에 걸리지 않게 한국어 '~해요' 체만 쓴다.
 
+// 했던 일 목록의 날짜는 '오늘' 묶음으로 보여야 한다 — 날짜를 박아 두면 다음 날부터 '어제'가 되어 시험이 깨진다.
+function localToday(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export const PNG_1X1 = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
   "base64",
@@ -54,6 +60,8 @@ export interface MockState {
   helpCreates: number;
   loginAttempts: string[];
   prefs: Record<string, unknown>;
+  /** 했던 일 목록의 날짜("YYYY-MM-DD"). 없으면 실행하는 날(현지). 브라우저 시계를 고정하는 시험은 같은 날로 맞춘다. */
+  historyDate?: string;
 }
 
 export function newState(): MockState {
@@ -102,7 +110,7 @@ export async function mockWorkerBackend(page: Page, state: MockState) {
     if (p === "/api/worker/me/history") {
       return json(state.jobs.map((j) => ({
         assignment_id: j.assignment_id, task_id: j.task_id, task_title: j.task_title,
-        assigned_date: "2026-11-09", status: j.status === "done" ? "done" : "assigned",
+        assigned_date: state.historyDate ?? localToday(), status: j.status === "done" ? "done" : "assigned",
         steps: j.steps.map((s) => ({ ...s, completed: j.done_step_ids.includes(s.id) })),
       })));
     }
