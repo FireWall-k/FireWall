@@ -860,7 +860,8 @@ def worker_tasks(worker_id: str, request: Request, date: str | None = None,
         select(Task).where(Task.id.in_(task_ids)).order_by(Task.created_at.desc())
     ).all()
     return [
-        TaskSummaryOut(id=t.id, title=t.title, status=t.status, created_at=t.created_at)
+        TaskSummaryOut(id=t.id, title=t.title, status=t.status, created_at=t.created_at,
+                       archived=send._is_archived(t))
         for t in tasks
     ]
 
@@ -1233,7 +1234,8 @@ def list_tasks(db: Session = Depends(get_db),
         select(Task).where(Task.employer_id == user["sub"]).order_by(Task.created_at.desc())
     ).all()
     return [
-        TaskSummaryOut(id=t.id, title=t.title, status=t.status, created_at=t.created_at)
+        TaskSummaryOut(id=t.id, title=t.title, status=t.status, created_at=t.created_at,
+                       archived=send._is_archived(t))
         for t in tasks
     ]
 
@@ -1250,7 +1252,8 @@ def delete_task(task_id: str, db: Session = Depends(get_db),
     """직무를 삭제한다. 단계는 cascade로 함께 지워지고, 배정/수행 로그/도움 요청/버전은 명시적으로 정리한다
     (contract §1.7: 버전, 버전 단계, 배정, 로그, 도움, 미디어 참조).
 
-    (2a-1) 보관함으로 옮긴 직무만 지운다(409). 기록까지 사라지는 일이라, 먼저 보관해 근로자에게서 거둔 뒤에만 한다.
+    (2a-1) 보관함으로 옮긴 직무만 지운다(409). 기록까지 사라지는 일이라 한 번 더 거치게 한다.
+    보관은 새로 보내기만 막고 이미 받은 배정은 남긴다(근로자 오늘 할 일에도 그대로). 완전히 지우면 배정·기록도 지운다.
     응답 모양({ok: true})은 그대로다."""
     task = _owned_task(task_id, user["sub"], db)
     if not send._is_archived(task):

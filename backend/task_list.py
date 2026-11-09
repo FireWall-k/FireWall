@@ -13,6 +13,8 @@
 """
 from __future__ import annotations
 
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
@@ -183,11 +185,19 @@ def list_employer_tasks(request: Request, filter: TaskFilter = "all", q: str = "
     return EmployerTaskListOut(items=items, counts=counts)
 
 
+# 줄바꿈·탭 같은 제어 문자(연달아 있으면 한 덩어리)를 찾는다.
+_CONTROL_RUN = re.compile(r"[\x00-\x1f\x7f\u2028\u2029]+")
+
+
 @router.patch("/api/tasks/{task_id}", response_model=TaskOut)
 def rename_task(task_id: str, payload: TaskTitleUpdate, db: Session = Depends(get_db),
                 user: dict = Depends(require_employer)) -> TaskOut:
     task = _owned_task(task_id, user["sub"], db)
-    title = (payload.title or "").strip()
+    raw = payload.title
+    if not isinstance(raw, str):
+        raise HTTPException(status_code=422, detail=MSG_TITLE)
+    # 제어 문자는 공백 하나로 바꾼다(목록·근로자 화면 제목은 한 줄이다).
+    title = _CONTROL_RUN.sub(" ", raw).strip()
     if not 1 <= len(title) <= TITLE_MAX:
         raise HTTPException(status_code=422, detail=MSG_TITLE)
     task.title = title  # updated_at은 models._touch_task_updated_at이 갱신한다

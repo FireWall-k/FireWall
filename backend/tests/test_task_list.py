@@ -188,6 +188,23 @@ def test_rename_title_rules(client):
     assert set(r.json()) >= {"id", "title", "status", "steps", "version", "updated_at"}
 
 
+def test_rename_title_control_chars_and_non_text(client):
+    emp = _employer(client)
+    tid = _task(client, emp)
+    msg = {"detail": "제목을 1~40자로 적어 주세요."}
+    # 글자가 아닌 값도 공용 문구가 아니라 제목 문구로 막는다.
+    for bad in (123, True, ["가"], {"a": 1}):
+        r = client.patch(f"/api/tasks/{tid}", json={"title": bad}, headers=emp)
+        assert r.status_code == 422 and r.json() == msg, bad
+    # 줄바꿈·탭 같은 제어 문자는 공백 하나로 바뀐다(목록·근로자 화면 제목은 한 줄).
+    r = client.patch(f"/api/tasks/{tid}", json={"title": " a\r\n\n b\tc\u2028d "}, headers=emp)
+    assert r.status_code == 200 and r.json()["title"] == "a  b c d"
+    # 제어 문자만 있으면 빈 제목이다.
+    r = client.patch(f"/api/tasks/{tid}", json={"title": "\n\t\r"}, headers=emp)
+    assert r.status_code == 422 and r.json() == msg
+    assert _row(client, emp, tid)["title"] == "a  b c d"
+
+
 # --- 보관 ----------------------------------------------------------------------
 
 def test_archive_blocks_send(client):
@@ -203,6 +220,10 @@ def test_archive_blocks_send(client):
     assert client.post(f"/api/tasks/{tid}/archive", headers=emp).status_code == 200
     with SessionLocal() as db:
         assert db.get(Task, tid).archived_at == at
+    # 옛 대시보드가 쓰는 근로자별 직무와 옛 목록에도 보관 여부가 실린다(보관한 직무에 [보관하기]를 다시 띄우지 않게).
+    rows = client.get(f"/api/workers/{w['id']}/tasks", headers=emp).json()
+    assert [(r["id"], r["archived"]) for r in rows] == [(tid, True)]
+    assert {r["id"]: r["archived"] for r in client.get("/api/tasks", headers=emp).json()}[tid] is True
 
     blocked = {"detail": "보관한 직무는 보낼 수 없어요. 보관함에서 꺼낸 뒤 보내 주세요.",
                "code": "archived", "step_ids": []}
@@ -212,6 +233,11 @@ def test_archive_blocks_send(client):
     assert r.status_code == 409 and r.json() == blocked
     r = client.post(f"/api/tasks/{tid}/assignments", headers=emp, json={"worker_ids": [w["id"]]})
     assert r.status_code == 409 and r.json() == blocked
+    # 받는 사람·날짜가 잘못돼도 보관 409가 먼저다(옛 배정 경로와 같은 답).
+    for body in ({"worker_ids": []}, {"worker_ids": [str(uuid.uuid4())]},
+                 {"worker_ids": [w["id"]], "day": "2000-01-01"}):
+        r = client.post(f"/api/tasks/{tid}/send", headers=emp, json=body)
+        assert r.status_code == 409 and r.json() == blocked, body
     check = client.get(f"/api/tasks/{tid}/send-check", headers=emp).json()
     assert check["ok"] is False and any(b["code"] == "archived" for b in check["blocking"])
     with SessionLocal() as db:
@@ -219,6 +245,7 @@ def test_archive_blocks_send(client):
 
     r = client.post(f"/api/tasks/{tid}/unarchive", headers=emp)
     assert r.status_code == 200 and r.json()["state"] == "published"
+    assert client.get(f"/api/workers/{w['id']}/tasks", headers=emp).json()[0]["archived"] is False
     assert _send(client, emp, tid, [w["id"]]).status_code == 200
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
@@ -458,6 +458,8 @@ class TaskSummaryOut(BaseModel):
     title: str
     status: str
     created_at: datetime
+    # (2a-1) 보관함에 있는지. 옛 대시보드(/m)가 보관한 직무에 [보관하기]를 다시 띄우지 않으려고 더한다(필드 추가만).
+    archived: bool = False
 
 
 class AssignmentOut(BaseModel):
@@ -720,5 +722,6 @@ class EmployerTaskListOut(BaseModel):
 
 
 class TaskTitleUpdate(BaseModel):
-    # 길이 검사는 task_list.py가 한국어 422로 한다(검증 오류 기본 문구보다 다음 할 일을 알려 주려고).
-    title: str | None = None
+    # 길이·글자 종류 검사는 task_list.py가 한국어 422로 한다(검증 오류 기본 문구보다 다음 할 일을 알려 주려고).
+    # 글자가 아닌 값(숫자 등)도 같은 문구로 막으려고 Any로 받는다.
+    title: Any = None
