@@ -112,7 +112,7 @@ test("오류 토스트는 10초 뒤에도 남고, 성공 토스트는 저절로 
   await loginEmployer(page, "/m/tasks");
   await page.getByRole("button", { name: "앞치마 입기 메뉴" }).click();
   await page.getByRole("menuitem", { name: "보관하기" }).click();
-  const ok = page.getByText("'앞치마 입기'을(를) 보관함으로 옮겼어요");
+  const ok = page.getByText("'앞치마 입기'를 보관함으로 옮겼어요");
   await expect(ok).toBeVisible();
   await page.clock.fastForward(6_000);
   await expect(ok).toBeHidden();
@@ -152,12 +152,45 @@ test.describe("손가락 기기(휴대폰)", () => {
     await expect(page.getByText("컵 씻기")).toBeVisible();
     expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true);
     const small = await page.evaluate(() =>
-      Array.from(document.querySelectorAll<HTMLElement>("header button, header a, nav a, nav button, main button, [role=tab]"))
+      Array.from(
+        document.querySelectorAll<HTMLElement>(
+          "header button, header a, nav a, nav button, main button, [role=tab], [data-testid=help-alert-strip] button",
+        ),
+      )
         .filter((el) => el.offsetParent !== null)
         .map((el) => ({ name: el.getAttribute("aria-label") ?? el.textContent?.trim(), h: el.getBoundingClientRect().height }))
         .filter((b) => b.h < 44),
     );
     expect(small).toEqual([]);
+    // 도움 띠 단추도 검사에 들어갔는지(띠는 header·main 밖에 있다)
+    await expect(page.getByTestId("help-alert-strip").getByRole("button", { name: "도와줬어요" })).toBeVisible();
+  });
+
+  test("390: 걸러보기 탭 5개가 한 줄에 다 보이고, 도움 띠 글이 좁은 칸에 꺾이지 않는다", async ({ page }) => {
+    await mockEmployer(page);
+    await loginEmployer(page, "/m/tasks");
+    const tablist = page.getByRole("tablist", { name: "직무 걸러보기" });
+    await expect(page.getByRole("tab", { name: /보관/ })).toBeVisible();
+    const fit = await tablist.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      return {
+        overflow: el.scrollWidth - el.clientWidth,
+        lastRight: el.querySelector<HTMLElement>("[role=tab]:last-child")!.getBoundingClientRect().right,
+        boxRight: box.right,
+      };
+    });
+    expect(fit.overflow).toBeLessThanOrEqual(0);
+    expect(fit.lastRight).toBeLessThanOrEqual(fit.boxRight);
+
+    // 버튼 줄은 글 아래로 내려가고, '1분 전'은 한 줄로 묶인다
+    const strip = page.getByTestId("help-alert-strip");
+    const text = strip.locator("li p").first();
+    const button = strip.getByRole("button", { name: "도와줬어요" });
+    const tb = (await text.boundingBox())!;
+    const bb = (await button.boundingBox())!;
+    expect(bb.y).toBeGreaterThanOrEqual(tb.y + tb.height - 1);
+    const timeLines = await strip.locator("li p .tabular-nums").first().evaluate((el) => el.getClientRects().length);
+    expect(timeLines).toBe(1);
   });
 });
 
@@ -183,7 +216,7 @@ test.describe("직무 목록 시연 대본", () => {
     await page.getByRole("button", { name: "컵 씻기 메뉴" }).focus();
     await page.keyboard.press("ArrowDown");
     await page.getByRole("menuitem", { name: "보관하기" }).click();
-    await expect(page.getByText("'컵 씻기'을(를) 보관함으로 옮겼어요")).toBeVisible();
+    await expect(page.getByText("'컵 씻기'를 보관함으로 옮겼어요")).toBeVisible();
     await expect(table.getByText("컵 씻기")).toBeHidden();
     await expect(page.getByRole("tab", { name: /보관/ })).toContainText("2");
 
@@ -214,7 +247,56 @@ test.describe("직무 목록 시연 대본", () => {
     await page.getByRole("button", { name: "옛 창고 정리 메뉴" }).click();
     await page.getByRole("menuitem", { name: "완전히 지우기" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "완전히 지우기" }).click();
-    await expect(page.getByText("'옛 창고 정리'을(를) 완전히 지웠어요")).toBeVisible();
+    await expect(page.getByText("'옛 창고 정리'를 완전히 지웠어요")).toBeVisible();
     expect(m.calls).toContain("DELETE /api/tasks/t9");
+  });
+});
+
+test.describe("행동 뒤 키보드 초점(WCAG 2.4.3)", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+  const activeTag = (page: import("@playwright/test").Page) => page.evaluate(() => document.activeElement?.tagName ?? "NONE");
+
+  test("키보드로 보관하기 → 초점이 다음 행 … 단추로, [실행 취소] → 그 직무로 돌아옴", async ({ page }) => {
+    await mockEmployer(page);
+    await loginEmployer(page, "/m/tasks");
+    const table = page.getByRole("table", { name: "직무 목록" });
+    await expect(table.getByText("컵 씻기")).toBeVisible();
+    await page.getByRole("button", { name: "컵 씻기 메뉴" }).focus();
+    await page.keyboard.press("Enter");
+    // 꺼 둔 '고치기'도 초점을 받는다(이유를 들을 수 있게)
+    await expect(page.getByRole("menuitem", { name: /^고치기/ })).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown");
+    await expect(page.getByRole("menuitem", { name: "보관하기" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(table.getByText("컵 씻기")).toBeHidden();
+    await expect.poll(() => activeTag(page)).not.toBe("BODY");
+    await expect(page.locator(":focus")).toHaveAttribute("data-task-menu", /.+/);
+
+    await page.getByRole("button", { name: "실행 취소" }).click();
+    await expect(table.getByText("컵 씻기")).toBeVisible();
+    await expect(page.getByRole("button", { name: "컵 씻기 메뉴" })).toBeFocused();
+  });
+
+  test("완전히 지우기 → 마지막 행이 사라지면 목록 칸으로, 검색 [X] → 검색칸으로", async ({ page }) => {
+    await mockEmployer(page);
+    await loginEmployer(page, "/m/tasks?filter=archived");
+    await page.getByRole("button", { name: "옛 창고 정리 메뉴" }).focus();
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("End");
+    await expect(page.getByRole("menuitem", { name: "완전히 지우기" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await page.getByRole("alertdialog").getByRole("button", { name: "완전히 지우기" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("button", { name: "옛 창고 정리 메뉴" })).toHaveCount(0);
+    await expect.poll(() => activeTag(page)).not.toBe("BODY");
+    await expect(page.getByRole("tabpanel")).toBeFocused();
+
+    const search = page.getByLabel("제목으로 찾기");
+    await search.fill("컵");
+    await page.getByRole("button", { name: "검색 지우기" }).first().focus();
+    await page.keyboard.press("Enter");
+    await expect(search).toBeFocused();
+    await expect(search).toHaveValue("");
   });
 });

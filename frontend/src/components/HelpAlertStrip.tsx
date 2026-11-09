@@ -7,7 +7,7 @@
 //   notify_help_opened()에서 보낸다(2c). 그때도 이 띠는 그대로 둔다(화면을 보고 있을 때의 알림).
 import { useState } from "react";
 import { api, type EmployerHelp } from "../api";
-import { cn } from "../cn";
+import { buttonClasses } from "./ui/styles";
 import { HELP_FEED_POLL_MS, useHelpFeed } from "../manager/shell/useHelpFeed";
 import { IconHelp } from "../ui/icons";
 import { relativeTime } from "./helpTime";
@@ -51,7 +51,8 @@ export default function HelpAlertStrip() {
       <div className="mx-auto max-w-6xl px-4 py-2 md:px-8">
         <ul className="divide-y divide-warn-line/20">
           {shown.map((h) => (
-            <li key={h.id} className="flex flex-wrap items-center gap-3 border-l-4 border-warn-line py-2 pl-3">
+            // 휴대폰(768 미만): 버튼 줄을 글 아래로 내려 글이 좁은 칸에 여러 줄로 꺾이지 않게 한다(명세 8.2).
+            <li key={h.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 border-l-4 border-warn-line py-2 pl-3">
               <IconHelp size={20} strokeWidth={2} className="text-warn-700" />
               <p className="min-w-0 flex-1 text-sm text-ink-900">
                 <strong className="font-bold">{h.worker_name}</strong> 님이 도움을 요청했어요
@@ -60,19 +61,20 @@ export default function HelpAlertStrip() {
                   {h.task_title}
                   {h.step_order != null && ` ${h.step_order}단계`}
                   {" · "}
-                  <span className="tabular-nums">{relativeTime(h.created_at)}</span>
+                  <span className="whitespace-nowrap tabular-nums">{relativeTime(h.created_at)}</span>
                 </span>
                 {h.state === "acknowledged" && (
                   <span className="ml-2 inline-block rounded-full bg-white px-2 text-xs font-semibold text-warn-700">확인함</span>
                 )}
               </p>
-              <div className="flex shrink-0 gap-2">
+              {/* 버튼은 공통 부품 크기(32, 손가락 기기 44 — 사업주 휴대폰에서도 도움 응대, 명세 6.3·8.2). */}
+              <div className="flex w-full shrink-0 gap-2 pl-8 md:w-auto md:pl-0">
                 {h.state === "open" && (
                   <button
                     type="button"
                     onClick={() => act(h, "ack")}
                     disabled={busyId === h.id}
-                    className="rounded-md border border-line-strong bg-white px-3 py-1.5 text-sm font-semibold text-ink-900 hover:bg-paper-100 disabled:opacity-50"
+                    className={buttonClasses("secondary", "sm")}
                   >
                     확인했어요
                   </button>
@@ -81,9 +83,7 @@ export default function HelpAlertStrip() {
                   type="button"
                   onClick={() => act(h, "resolve")}
                   disabled={busyId === h.id}
-                  className={cn(
-                    "rounded-md bg-moss-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-moss-700 disabled:opacity-50",
-                  )}
+                  className={buttonClasses("primary", "sm")}
                 >
                   도와줬어요
                 </button>

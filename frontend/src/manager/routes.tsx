@@ -26,8 +26,14 @@ function ShellLayout({ displayName, onLogout }: ManagerRoutesProps) {
   );
 }
 
+// 준비 중 화면에도 화면 이름(h1)을 둔다(다른 /m 화면과 같게, axe page-has-heading-one).
 function SettingsPlaceholder() {
-  return <EmptyState kind="empty" title={placeholder.settingsTitle} description={placeholder.settingsBody} />;
+  return (
+    <div className="flex flex-col gap-5">
+      <h1 className="text-ui-xl text-ink-900">{placeholder.settingsHeading}</h1>
+      <EmptyState kind="empty" title={placeholder.settingsTitle} description={placeholder.settingsBody} />
+    </div>
+  );
 }
 
 export default function ManagerRoutes(props: ManagerRoutesProps) {

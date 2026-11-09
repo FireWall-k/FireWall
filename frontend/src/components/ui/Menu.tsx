@@ -1,6 +1,7 @@
 // … 메뉴(명세 5.3, 7.3). 단추를 누르면 아래(또는 위)에 항목이 열린다.
 // 키보드(WAI-ARIA menu button): ↓/↑로 옮기고 Home/End, Enter·Space로 고르고, Esc면 닫혀 단추로 돌아가고
 // Tab이면 닫힌다. 지금 쓸 수 없는 항목은 aria-disabled + 이유(hint, 예: '새 편집기에서 열려요')를 함께 보이고 이름에도 넣는다.
+// 쓸 수 없는 항목도 ↓/↑로 초점을 받는다(WAI-ARIA APG 메뉴 기본) — 그래야 화면 읽기 사용자가 이유를 듣는다. 고르기만 막는다.
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "../../cn";
 import { popoverClasses } from "./styles";
@@ -47,8 +48,6 @@ export default function Menu({ trigger, items, align = "right", placement = "dow
   const menuId = baseId + "-menu";
   const triggerId = baseId + "-trigger";
 
-  const enabled = items.map((it, i) => (it.disabled ? -1 : i)).filter((i) => i >= 0);
-
   function openAt(index: number) {
     setOpen(true);
     setActive(index);
@@ -75,11 +74,11 @@ export default function Menu({ trigger, items, align = "right", placement = "dow
   }, [open]);
 
   function move(dir: 1 | -1 | "first" | "last") {
-    if (enabled.length === 0) return;
-    if (dir === "first") return setActive(enabled[0]);
-    if (dir === "last") return setActive(enabled[enabled.length - 1]);
-    const pos = enabled.indexOf(active);
-    setActive(enabled[(pos + dir + enabled.length) % enabled.length]);
+    const n = items.length;
+    if (n === 0) return;
+    if (dir === "first") return setActive(0);
+    if (dir === "last") return setActive(n - 1);
+    setActive((active + dir + n) % n);
   }
 
   function onMenuKeyDown(e: KeyboardEvent) {
@@ -115,14 +114,14 @@ export default function Menu({ trigger, items, align = "right", placement = "dow
     "aria-haspopup": "menu",
     "aria-expanded": open,
     "aria-controls": open ? menuId : undefined,
-    onClick: () => (open ? close(false) : openAt(enabled[0] ?? 0)),
+    onClick: () => (open ? close(false) : openAt(0)),
     onKeyDown: (e) => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        openAt(enabled[0] ?? 0);
+        openAt(0);
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        openAt(enabled[enabled.length - 1] ?? 0);
+        openAt(Math.max(0, items.length - 1));
       }
     },
   };
@@ -157,11 +156,11 @@ export default function Menu({ trigger, items, align = "right", placement = "dow
               // 음성 입력으로 부를 수 있다(axe label-content-name-mismatch, WCAG 2.5.3).
               aria-labelledby={it.hint ? `${baseId}-label-${i} ${baseId}-hint-${i}` : undefined}
               onClick={() => select(it)}
-              onMouseEnter={() => !it.disabled && setActive(i)}
+              onMouseEnter={() => setActive(i)}
               className={cn(
                 "flex min-h-control w-full items-start gap-2 px-3 py-2 text-left text-ui-base coarse:min-h-control-coarse",
                 it.disabled
-                  ? "cursor-not-allowed text-ink-500"
+                  ? "cursor-not-allowed text-ink-500 focus-visible:bg-paper-100"
                   : it.danger
                     ? "text-danger-700 hover:bg-danger-50 focus-visible:bg-danger-50"
                     : "text-ink-900 hover:bg-paper-100 focus-visible:bg-paper-100",

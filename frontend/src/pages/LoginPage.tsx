@@ -4,7 +4,7 @@
 // - form이라 Enter로 제출되고, 라벨은 눈에 보인다(KWCAG 7.3.2). [로그인]은 44 moss-600.
 // - 사업주/근로자 탭: 근로자 탭은 /w 키패드로 못 넣는 예전 긴 번호용 우회로다(/login?tab=worker).
 import { useEffect, useState, type FormEvent } from "react";
-import { Droplets, Shirt, CupSoda, type LucideIcon } from "lucide-react";
+import { GlassWater, Shirt, SoapDispenserDroplet, type LucideIcon } from "lucide-react";
 import { auth, type AuthState } from "../api";
 import { getSavedWorkplaceCode, normalizeWorkplaceCode, saveWorkplaceCode } from "../workerCodes";
 import { Button, Field, Input, Tabs } from "../components/ui";
@@ -21,7 +21,9 @@ function initialTab(): LoginTab {
   }
 }
 
-const EXAMPLE_ICONS: LucideIcon[] = [Droplets, Shirt, CupSoda];
+// 예시 문장과 뜻이 맞는 그림(손 씻기 → 비누, 앞치마 → 옷, 컵 → 물컵). AAC 그림 파일은 서버 그림 사전에만 있어
+// 로그인 전 화면에서 부를 수 없으므로 선 아이콘으로 대신한다(실제 그림 카드는 3차 그림 사전 화면에서).
+const EXAMPLE_ICONS: LucideIcon[] = [SoapDispenserDroplet, Shirt, GlassWater];
 
 export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void }) {
   const [tab, setTab] = useState<LoginTab>(initialTab);

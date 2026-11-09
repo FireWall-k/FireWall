@@ -84,7 +84,7 @@ describe("Dialog(window.confirm 대신)", () => {
     await user.click(screen.getByRole("button", { name: "열기" }));
     const del = screen.getByRole("button", { name: "지우기" });
     expect(del).toBeDisabled();
-    const input = screen.getByLabelText("지우려면 '김민지'을(를) 똑같이 적어 주세요");
+    const input = screen.getByLabelText("지우려면 '김민지'를 똑같이 적어 주세요");
     await user.type(input, "김민");
     expect(del).toBeDisabled();
     await user.type(input, "지");

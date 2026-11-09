@@ -4,9 +4,11 @@
 // - 열: 대표 그림 32 + 제목, 단계 수, 상태 배지('확인 필요 n'·'고친 내용 안 보냄'), 받은 사람(아바타 3 + '+n'), 고친 날.
 // - … 메뉴: 고치기(2b-1 새 편집기 전까지 꺼 둠), 복제해서 고치기, 보관하기 / 보관함에서 꺼내기, 완전히 지우기(보관한 것만).
 // - 직무 삭제는 먼저 보관(명세 5.0). 완전히 지우기는 지워지는 것 목록을 보이는 위험 창으로 확인받는다.
+// - 행이 사라지는 일(보관·꺼내기·완전히 지우기·실행 취소) 뒤에는 키보드 초점을 그 자리 행의 … 단추로 옮긴다
+//   (다음 행, 없으면 이전 행, 없으면 목록 칸). 초점이 문서 처음으로 사라지지 않게(WCAG 2.4.3).
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Archive, ArchiveRestore, Copy, Ellipsis, ImageOff, PencilLine, Plus, Search, Sparkles, Trash2, X } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Archive, ArchiveRestore, Copy, Ellipsis, ImageOff, PencilLine, Plus, Search, Trash2, X } from "lucide-react";
 import {
   AvatarGroup,
   Badge,
@@ -46,9 +48,13 @@ function asFilter(v: string | null): TaskFilter {
 
 type Loaded = { key: string; data: TaskListOut } | { key: string; error: string };
 
+/** 행 행동 뒤 초점을 둘 자리: 그 직무(남아 있으면) 또는 같은 순번의 행. */
+type FocusTarget = { id: string; index: number };
+
+const MENU_SELECTOR = "button[data-task-menu]";
+
 export default function TaskListPage() {
   const [params, setParams] = useSearchParams();
-  const navigate = useNavigate();
   const toast = useToast();
   const filter = asFilter(params.get("filter"));
   const q = (params.get("q") ?? "").trim();
@@ -56,10 +62,20 @@ export default function TaskListPage() {
 
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [typed, setTyped] = useState(q);
+  // 주소의 q가 이 화면 밖에서 바뀌면(사이드바 '직무' 링크, 뒤로 가기) 검색칸 글도 따라간다.
+  // 이 화면이 적어 넣은 q는 typed와 같으므로 건드리지 않는다(렌더 중 맞추기, React 문서 'props가 바뀔 때 state 맞추기').
+  const [seenQ, setSeenQ] = useState(q);
+  if (seenQ !== q) {
+    setSeenQ(q);
+    if (typed.trim() !== q) setTyped(q);
+  }
   const [busyIds, setBusyIds] = useState<ReadonlySet<string>>(new Set());
   const [toDelete, setToDelete] = useState<TaskSummaryOut | null>(null);
   const [deleting, setDeleting] = useState(false);
   const seq = useRef(0);
+  const panelRef = useRef<HTMLElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const focusAfter = useRef<FocusTarget | null>(null);
 
   // 늦게 온 옛 응답이 새 걸러보기 결과를 덮지 않게 마지막 요청만 받는다.
   const fetchList = useCallback((f: TaskFilter, query: string, k: string) => {
@@ -108,6 +124,8 @@ export default function TaskListPage() {
 
   function clearSearch() {
     setTyped("");
+    // [X]·[검색 지우기] 단추는 지우면 사라지므로 초점을 검색칸으로 옮긴다.
+    searchRef.current?.focus();
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev);
@@ -124,8 +142,31 @@ export default function TaskListPage() {
   // 걸러보기를 바꾸는 동안에도 탭 개수는 직전 값을 보인다(숫자가 깜빡이지 않게).
   const counts = data?.counts ?? (loaded && "data" in loaded ? loaded.data.counts : undefined);
 
+  /** 이 직무 행이 지금 목록에서 몇 번째인지(보이는 순서). */
+  function rowIndex(id: string): number {
+    const buttons = Array.from(panelRef.current?.querySelectorAll<HTMLElement>(MENU_SELECTOR) ?? []);
+    return Math.max(0, buttons.findIndex((b) => b.dataset.taskMenu === id));
+  }
+  function keepFocusNear(row: TaskSummaryOut) {
+    focusAfter.current = { id: row.id, index: rowIndex(row.id) };
+  }
+
+  // 목록을 다시 받은 뒤: 초점이 사라졌으면(body) 정해 둔 자리로 옮긴다. 사용자가 그새 다른 곳으로 옮겼으면 두고 본다.
+  useEffect(() => {
+    const target = focusAfter.current;
+    if (!target || !data) return;
+    focusAfter.current = null;
+    const active = document.activeElement;
+    if (active && active !== document.body && active.isConnected) return;
+    const buttons = Array.from(panelRef.current?.querySelectorAll<HTMLElement>(MENU_SELECTOR) ?? []);
+    const same = buttons.find((b) => b.dataset.taskMenu === target.id);
+    const near = same ?? buttons[Math.min(target.index, buttons.length - 1)];
+    (near ?? panelRef.current)?.focus();
+  }, [data]);
+
   async function run(row: TaskSummaryOut, action: () => Promise<unknown>, done: () => void) {
     if (busyIds.has(row.id)) return;
+    keepFocusNear(row);
     setBusyIds((s) => new Set(s).add(row.id));
     try {
       await action();
@@ -148,6 +189,7 @@ export default function TaskListPage() {
         tone: "success",
         message: taskToast.archived(row.title),
         onUndo: () => {
+          keepFocusNear(row);
           unarchiveTask(row.id).then(reload, (e: unknown) => toast.show({ tone: "error", message: errorMessage(e) }));
         },
       }),
@@ -160,6 +202,7 @@ export default function TaskListPage() {
         tone: "success",
         message: taskToast.unarchived(row.title),
         onUndo: () => {
+          keepFocusNear(row);
           archiveTask(row.id).then(reload, (e: unknown) => toast.show({ tone: "error", message: errorMessage(e) }));
         },
       }),
@@ -181,6 +224,7 @@ export default function TaskListPage() {
   async function confirmDelete() {
     const row = toDelete;
     if (!row) return;
+    keepFocusNear(row);
     setDeleting(true);
     try {
       await deleteTask(row.id);
@@ -286,6 +330,7 @@ export default function TaskListPage() {
             <button
               {...p}
               type="button"
+              data-task-menu={r.id}
               aria-label={taskRow.rowMenu(r.title)}
               aria-busy={busyIds.has(r.id) || undefined}
               disabled={busyIds.has(r.id)}
@@ -315,9 +360,9 @@ export default function TaskListPage() {
               <Plus size={16} strokeWidth={2} aria-hidden="true" />
               {taskList.emptyCreate}
             </Link>
-            <Button icon={<Sparkles size={16} strokeWidth={2} aria-hidden="true" />} onClick={() => navigate("/m/tasks/new?example=1")}>
-              {taskList.emptyExample}
-            </Button>
+            {/* [예시로 만들어 보기]는 새 직무 화면이 예시 지시문을 받아 채울 수 있을 때 연다(?example=1 처리는 옛 ManagerPage에
+                없음 — 2a-0 병합 뒤 또는 2b-1 NewTaskPage). 그전까지는 눌러도 빈 화면만 열리므로 보이지 않는다.
+                다시 열 때 아이콘은 '✦ 자동'과 헷갈리는 반짝이(Sparkles) 말고 Lightbulb 같은 것으로. */}
           </>
         }
       />
@@ -374,6 +419,7 @@ export default function TaskListPage() {
           <div className="relative">
             <Search size={16} strokeWidth={2} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
             <input
+              ref={searchRef}
               id="task-search"
               type="search"
               value={typed}
@@ -394,7 +440,7 @@ export default function TaskListPage() {
         </form>
       </div>
 
-      <section id="task-list-panel" role="tabpanel" aria-label={taskFilter[filter]}>
+      <section ref={panelRef} id="task-list-panel" role="tabpanel" aria-label={taskFilter[filter]} tabIndex={-1}>
         {loadError ? (
           <EmptyState kind="error" title={errors.load} description={loadError === errors.load ? undefined : loadError} onRetry={reload} className="rounded-card border border-paper-200 bg-white" />
         ) : (

@@ -3,6 +3,8 @@
 // 영어 enum·'AI'·공급자 이름은 보이지 않음, 자동 결과는 '✦ 자동', 근로자는 '김민지 님'.
 // tests/managerCopy.test.ts가 이 파일 전체를 훑어 금지어를 막고, §3.7 문구는 글자 그대로 비교한다.
 
+import { eulReul, euroRo } from "./josa";
+
 /** 사람을 부를 때: '김민지 님'. */
 export const person = (name: string) => `${name} 님`;
 
@@ -61,7 +63,7 @@ export const ui = {
   empty: "아직 아무것도 없어요",
   loadFailed: "불러오지 못했어요",
   deletedItemsTitle: "함께 지워지는 것",
-  confirmNameLabel: (name: string) => `지우려면 '${name}'을(를) 똑같이 적어 주세요`,
+  confirmNameLabel: (name: string) => `지우려면 '${name}'${eulReul(name)} 똑같이 적어 주세요`,
 } as const;
 
 /** 오류 문장: 무엇이 안 됐는지 · 다음 할 일. */
@@ -177,6 +179,7 @@ export const login = {
 
 /** 아직 열지 않은 화면(contract §2.2). */
 export const placeholder = {
+  settingsHeading: "설정",
   settingsTitle: "설정은 준비 중이에요",
   settingsBody: "사업장·기기 연결·화면 기본값 설정은 다음 업데이트에서 열려요.",
 } as const;
@@ -201,22 +204,22 @@ export const taskList = {
   emptyCreate: "새 직무 만들기",
   emptyExample: "예시로 만들어 보기",
   filteredEmpty: (label: string) => `'${label}'에 해당하는 직무가 없어요`,
-  searchEmpty: (q: string) => `'${q}'(으)로 찾은 직무가 없어요`,
+  searchEmpty: (q: string) => `'${q}'${euroRo(q)} 찾은 직무가 없어요`,
   archivedEmptyBody: "보관한 직무는 여기에 모여요. 보관해도 수행 기록은 남아요.",
   clearSearch: "검색 지우기",
 } as const;
 
 /** 직무 목록에서 한 일의 결과(토스트). 제목은 따옴표로 감싼다. */
 export const taskToast = {
-  archived: (title: string) => `'${title}'을(를) 보관함으로 옮겼어요`,
-  unarchived: (title: string) => `'${title}'을(를) 보관함에서 꺼냈어요`,
-  duplicated: (title: string) => `'${title}'을(를) 새 초안으로 만들었어요`,
-  deleted: (title: string) => `'${title}'을(를) 완전히 지웠어요`,
+  archived: (title: string) => `'${title}'${eulReul(title)} 보관함으로 옮겼어요`,
+  unarchived: (title: string) => `'${title}'${eulReul(title)} 보관함에서 꺼냈어요`,
+  duplicated: (title: string) => `'${title}'${eulReul(title)} 새 초안으로 만들었어요`,
+  deleted: (title: string) => `'${title}'${eulReul(title)} 완전히 지웠어요`,
 } as const;
 
 /** 완전히 지우기 위험 창(명세 5.0: 지워지는 것을 목록으로, contract §1.7). */
 export const taskDelete = {
-  title: (title: string) => `'${title}'을(를) 완전히 지울까요?`,
+  title: (title: string) => `'${title}'${eulReul(title)} 완전히 지울까요?`,
   description: "지우면 되돌릴 수 없어요. 기록을 남기려면 보관한 채로 두면 돼요.",
   items: ["직무의 모든 단계와 보낸 버전", "근로자에게 보낸 배정", "수행 기록과 도움 요청 기록", "단계에 붙인 사진·음성 연결"],
   confirm: "완전히 지우기",
@@ -238,6 +241,6 @@ export const dashboardArchive = {
   button: "보관하기",
   buttonLabel: "선택한 직무 보관하기",
   confirm: (title: string) =>
-    `'${title}'을(를) 보관함으로 옮길까요?\n보관해도 수행 기록은 남아요. 직무 목록의 '보관'에서 꺼낼 수 있어요.`,
+    `'${title}'${eulReul(title)} 보관함으로 옮길까요?\n보관해도 수행 기록은 남아요. 직무 목록의 '보관'에서 꺼낼 수 있어요.`,
   failed: "보관하지 못했어요 · 다시 시도해 주세요",
 } as const;

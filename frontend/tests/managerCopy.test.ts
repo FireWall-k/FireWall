@@ -78,3 +78,31 @@ describe("contract §3.7 문구(글자 그대로)", () => {
     expect(copy.taskMenu.editLater).toBe("새 편집기에서 열려요");
   });
 });
+
+describe("조사 고르기(명세 6.7: '을(를)' 같은 기계식 표기 대신 자연스러운 말)", () => {
+  it("받침을 보고 을/를을 고른다", () => {
+    expect(copy.taskToast.archived("컵 씻기")).toBe("'컵 씻기'를 보관함으로 옮겼어요");
+    expect(copy.taskDelete.title("옛 창고 정리")).toBe("'옛 창고 정리'를 완전히 지울까요?");
+    expect(copy.taskToast.deleted("상자 옮김")).toBe("'상자 옮김'을 완전히 지웠어요");
+    expect(copy.dashboardArchive.confirm("분류 작업")).toMatch(/^'분류 작업'을 보관함으로/);
+    expect(copy.ui.confirmNameLabel("김민지")).toBe("지우려면 '김민지'를 똑같이 적어 주세요");
+  });
+
+  it("끝의 괄호는 건너뛰고, 숫자는 읽는 소리로 본다", () => {
+    expect(copy.taskToast.duplicated("앞치마 입기 (복사본)")).toBe("'앞치마 입기 (복사본)'을 새 초안으로 만들었어요");
+    expect(copy.taskToast.archived("포장 3")).toBe("'포장 3'을 보관함으로 옮겼어요");
+    expect(copy.taskToast.archived("포장 2")).toBe("'포장 2'를 보관함으로 옮겼어요");
+  });
+
+  it("(으)로: ㄹ 받침과 받침 없음은 '로', 그 밖의 받침은 '으로'", () => {
+    expect(copy.taskList.searchEmpty("컵")).toBe("'컵'으로 찾은 직무가 없어요");
+    expect(copy.taskList.searchEmpty("상자")).toBe("'상자'로 찾은 직무가 없어요");
+    expect(copy.taskList.searchEmpty("물")).toBe("'물'로 찾은 직무가 없어요");
+    expect(copy.taskList.searchEmpty("7")).toBe("'7'로 찾은 직무가 없어요");
+  });
+
+  it("한글·숫자로 끝나지 않으면(영어 등) 받침을 모르므로 괄호 표기를 쓴다", () => {
+    expect(copy.taskToast.archived("Box")).toBe("'Box'을(를) 보관함으로 옮겼어요");
+    expect(copy.taskList.searchEmpty("abc")).toBe("'abc'(으)로 찾은 직무가 없어요");
+  });
+});

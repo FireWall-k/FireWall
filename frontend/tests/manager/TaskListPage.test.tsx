@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { ApiError, NetworkError } from "../../src/apiErrors";
 import type { TaskCounts, TaskFilter, TaskListOut, TaskSummaryOut } from "../../src/manager/api/types";
 
@@ -64,7 +64,17 @@ function serve(counts: TaskCounts = COUNTS) {
 
 function Where() {
   const l = useLocation();
-  return <output data-testid="where">{l.pathname + l.search}</output>;
+  const navigate = useNavigate();
+  return (
+    <>
+      <output data-testid="where">{l.pathname + l.search}</output>
+      {/* 사이드바 '직무' 링크와 브라우저 뒤로 가기 흉내 */}
+      <Link to="/m/tasks">사이드바 직무</Link>
+      <button type="button" onClick={() => navigate(-1)}>
+        뒤로 가기
+      </button>
+    </>
+  );
 }
 
 function renderPage(path = "/m/tasks") {
@@ -189,7 +199,7 @@ describe("보관·되살리기·복제·완전히 지우기", () => {
     const callsBefore = listEmployerTasks.mock.calls.length;
     await user.click(within(menu).getByRole("menuitem", { name: "보관하기" }));
     expect(archiveTask).toHaveBeenCalledWith("t2");
-    expect(await screen.findByText("'앞치마 입기'을(를) 보관함으로 옮겼어요")).toBeInTheDocument();
+    expect(await screen.findByText("'앞치마 입기'를 보관함으로 옮겼어요")).toBeInTheDocument();
     await waitFor(() => expect(listEmployerTasks.mock.calls.length).toBeGreaterThan(callsBefore));
     await user.click(screen.getByRole("button", { name: "실행 취소" }));
     expect(unarchiveTask).toHaveBeenCalledWith("t2");
@@ -200,7 +210,7 @@ describe("보관·되살리기·복제·완전히 지우기", () => {
     const { user, menu } = await openMenu("옛 청소");
     await user.click(within(menu).getByRole("menuitem", { name: "보관함에서 꺼내기" }));
     expect(unarchiveTask).toHaveBeenCalledWith("t9");
-    expect(await screen.findByText("'옛 청소'을(를) 보관함에서 꺼냈어요")).toBeInTheDocument();
+    expect(await screen.findByText("'옛 청소'를 보관함에서 꺼냈어요")).toBeInTheDocument();
   });
 
   it("복제해서 고치기 → duplicate 호출, 새 제목으로 알림, 목록을 다시 받는다", async () => {
@@ -209,7 +219,7 @@ describe("보관·되살리기·복제·완전히 지우기", () => {
     const callsBefore = listEmployerTasks.mock.calls.length;
     await user.click(within(menu).getByRole("menuitem", { name: "복제해서 고치기" }));
     expect(duplicateTask).toHaveBeenCalledWith("t2");
-    expect(await screen.findByText("'앞치마 입기 (복사본)'을(를) 새 초안으로 만들었어요")).toBeInTheDocument();
+    expect(await screen.findByText("'앞치마 입기 (복사본)'을 새 초안으로 만들었어요")).toBeInTheDocument();
     await waitFor(() => expect(listEmployerTasks.mock.calls.length).toBeGreaterThan(callsBefore));
   });
 
@@ -217,14 +227,14 @@ describe("보관·되살리기·복제·완전히 지우기", () => {
     renderPage("/m/tasks?filter=archived");
     const { user, menu } = await openMenu("옛 청소");
     await user.click(within(menu).getByRole("menuitem", { name: "완전히 지우기" }));
-    const dialog = screen.getByRole("alertdialog", { name: "'옛 청소'을(를) 완전히 지울까요?" });
+    const dialog = screen.getByRole("alertdialog", { name: "'옛 청소'를 완전히 지울까요?" });
     expect(within(dialog).getByText("수행 기록과 도움 요청 기록")).toBeInTheDocument();
     // 처음 초점은 [취소](Enter를 잘못 눌러 지우지 않게)
     expect(within(dialog).getByRole("button", { name: "취소" })).toHaveFocus();
     expect(deleteTask).not.toHaveBeenCalled();
     await user.click(within(dialog).getByRole("button", { name: "완전히 지우기" }));
     expect(deleteTask).toHaveBeenCalledWith("t9");
-    expect(await screen.findByText("'옛 청소'을(를) 완전히 지웠어요")).toBeInTheDocument();
+    expect(await screen.findByText("'옛 청소'를 완전히 지웠어요")).toBeInTheDocument();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
@@ -259,19 +269,18 @@ describe("검색·빈 상태·오류", () => {
 
     await user.clear(screen.getByLabelText("제목으로 찾기"));
     await user.type(screen.getByLabelText("제목으로 찾기"), "없는말");
-    expect(await screen.findByText("'없는말'(으)로 찾은 직무가 없어요")).toBeInTheDocument();
+    expect(await screen.findByText("'없는말'로 찾은 직무가 없어요")).toBeInTheDocument();
     await user.click(screen.getAllByRole("button", { name: "검색 지우기" })[0]);
     await waitFor(() => expect(listEmployerTasks).toHaveBeenLastCalledWith("all", ""));
   });
 
-  it("직무가 하나도 없으면 [새 직무 만들기]·[예시로 만들어 보기]", async () => {
+  it("직무가 하나도 없으면 [새 직무 만들기] — [예시로 만들어 보기]는 새 직무 화면이 예시를 받을 수 있을 때까지 숨김", async () => {
     listEmployerTasks.mockResolvedValue({ items: [], counts: { all: 0, draft: 0, needs_check: 0, published: 0, archived: 0 } });
-    const user = userEvent.setup();
     renderPage();
     expect(await screen.findByText("아직 만든 직무가 없어요")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "새 직무 만들기" })).toHaveAttribute("href", "/m/tasks/new");
-    await user.click(screen.getByRole("button", { name: "예시로 만들어 보기" }));
-    expect(await screen.findByText("새 직무 화면")).toBeInTheDocument();
+    // 옛 ManagerPage는 ?example=1을 읽지 않아 빈 입력칸만 열린다 → 눌러도 하는 일이 없는 단추는 보이지 않는다.
+    expect(screen.queryByRole("button", { name: "예시로 만들어 보기" })).not.toBeInTheDocument();
   });
 
   it("걸러보기에 맞는 직무가 없으면 그 걸러보기 이름으로 알린다", async () => {
@@ -287,5 +296,98 @@ describe("검색·빈 상태·오류", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("불러오지 못했어요");
     await user.click(screen.getByRole("button", { name: "다시 시도" }));
     expect(await screen.findByText("컵 씻기")).toBeInTheDocument();
+  });
+});
+
+describe("검색칸과 주소의 q가 함께 간다", () => {
+  it("사이드바 '직무'(/m/tasks)로 가면 검색이 풀리고 검색어가 되살아나지 않는다", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("컵 씻기");
+    await user.type(screen.getByLabelText("제목으로 찾기"), "컵");
+    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("q="));
+    await user.click(screen.getByRole("link", { name: "사이드바 직무" }));
+    expect(screen.getByLabelText("제목으로 찾기")).toHaveValue("");
+    // 잠깐 멈춘 뒤에도 옛 검색어가 주소에 다시 쓰이지 않는다
+    await new Promise((r) => setTimeout(r, 600));
+    expect(screen.getByTestId("where")).toHaveTextContent(/^\/m\/tasks$/);
+    await waitFor(() => expect(listEmployerTasks).toHaveBeenLastCalledWith("all", ""));
+  });
+
+  it("뒤로 가기를 하면 주소의 q와 검색칸이 함께 돌아온다", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("컵 씻기");
+    await user.type(screen.getByLabelText("제목으로 찾기"), "컵");
+    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("q="));
+    await user.click(screen.getByRole("tab", { name: /초안/ })); // 기록 하나 쌓기(?q=컵&filter=draft)
+    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("filter=draft"));
+    await user.click(screen.getAllByRole("button", { name: "검색 지우기" })[0]);
+    expect(screen.getByLabelText("제목으로 찾기")).toHaveValue("");
+    await user.click(screen.getByRole("button", { name: "뒤로 가기" }));
+    expect(screen.getByTestId("where")).toHaveTextContent("q=");
+    expect(screen.getByLabelText("제목으로 찾기")).toHaveValue("컵");
+    await new Promise((r) => setTimeout(r, 600));
+    expect(screen.getByTestId("where")).toHaveTextContent("q=");
+    expect(screen.getByLabelText("제목으로 찾기")).toHaveValue("컵");
+  });
+});
+
+describe("행이 사라진 뒤 키보드 초점(WCAG 2.4.3)", () => {
+  it("보관하기로 행이 사라지면 그 자리 다음 행의 … 단추로 초점이 간다", async () => {
+    renderPage();
+    const { user, menu } = await openMenu("앞치마 입기");
+    // 보관한 뒤의 목록에서는 t2가 빠진다
+    archiveTask.mockImplementation(async () => {
+      listEmployerTasks.mockImplementation(async (f) => ({
+        items: byFilter(f).filter((r) => r.id !== "t2"),
+        counts: COUNTS,
+      }));
+      return row({ ...DRAFT, state: "archived" });
+    });
+    await user.keyboard("{ArrowDown}{ArrowDown}");
+    expect(within(menu).getByRole("menuitem", { name: "보관하기" })).toHaveFocus();
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(screen.queryByRole("button", { name: "앞치마 입기 메뉴" })).not.toBeInTheDocument());
+    await waitFor(() => expect(document.activeElement).toHaveAttribute("data-task-menu"));
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement).toHaveAccessibleName("상자 옮기기 메뉴");
+  });
+
+  it("[실행 취소]로 되살리면 그 직무의 … 단추로 초점이 돌아간다", async () => {
+    renderPage();
+    const { user, menu } = await openMenu("앞치마 입기");
+    await user.click(within(menu).getByRole("menuitem", { name: "보관하기" }));
+    await user.click(await screen.findByRole("button", { name: "실행 취소" }));
+    expect(unarchiveTask).toHaveBeenCalledWith("t2");
+    await waitFor(() => expect(screen.getByRole("button", { name: "앞치마 입기 메뉴" })).toHaveFocus());
+  });
+
+  it("완전히 지워 목록이 비면 목록 칸(tabpanel)으로 초점이 간다", async () => {
+    renderPage("/m/tasks?filter=archived");
+    const { user, menu } = await openMenu("옛 청소");
+    deleteTask.mockImplementation(async () => {
+      listEmployerTasks.mockResolvedValue({ items: [], counts: { ...COUNTS, archived: 0 } });
+      return { ok: true };
+    });
+    await user.click(within(menu).getByRole("menuitem", { name: "완전히 지우기" }));
+    await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "완전히 지우기" }));
+    await waitFor(() => expect(screen.getByRole("tabpanel")).toHaveFocus());
+  });
+
+  it("검색칸의 [X]·빈 상태의 [검색 지우기]를 누르면 초점이 검색칸으로 간다", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("컵 씻기");
+    const input = screen.getByLabelText("제목으로 찾기");
+    await user.type(input, "없는말");
+    expect(await screen.findByText("'없는말'로 찾은 직무가 없어요")).toBeInTheDocument();
+    const clearButtons = screen.getAllByRole("button", { name: "검색 지우기" });
+    await user.click(clearButtons[clearButtons.length - 1]); // 빈 상태의 단추
+    expect(input).toHaveFocus();
+    await user.type(input, "컵");
+    await user.click(screen.getByRole("button", { name: "검색 지우기" })); // 검색칸 옆 [X]
+    expect(input).toHaveFocus();
+    expect(input).toHaveValue("");
   });
 });

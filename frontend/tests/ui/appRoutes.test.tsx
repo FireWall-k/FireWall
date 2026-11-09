@@ -71,6 +71,8 @@ describe("사업주 주소(2a-1)", () => {
     loginAsEmployer();
     go("/m/settings");
     expect(await screen.findByText("설정은 준비 중이에요")).toBeInTheDocument();
+    // 준비 중 화면에도 화면 이름 h1(axe page-has-heading-one)
+    expect(screen.getByRole("heading", { level: 1, name: "설정" })).toBeInTheDocument();
   });
 
   it("/m/tasks/:id → /m/tasks", async () => {

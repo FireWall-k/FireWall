@@ -122,7 +122,7 @@ describe("DashboardPage", () => {
     await screen.findByText("50%");
     expect(screen.queryByRole("button", { name: /삭제/ })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "선택한 직무 보관하기" }));
-    expect(confirm.mock.calls[0][0]).toContain("'분류 작업'을(를) 보관함으로 옮길까요?");
+    expect(confirm.mock.calls[0][0]).toContain("'분류 작업'을 보관함으로 옮길까요?");
     expect(archiveTask).toHaveBeenCalledWith("task-1");
     await waitFor(() => expect(screen.queryByRole("button", { name: "선택한 직무 보관하기" })).not.toBeInTheDocument());
     confirm.mockRestore();

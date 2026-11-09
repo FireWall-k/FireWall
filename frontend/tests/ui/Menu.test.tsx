@@ -18,7 +18,7 @@ function RowMenu({ onArchive = vi.fn(), onDuplicate = vi.fn() }) {
 }
 
 describe("Menu(… 메뉴)", () => {
-  it("열면 첫 쓸 수 있는 항목에 초점, ↓/↑로 옮기고 Enter로 고른다", async () => {
+  it("열면 첫 항목에 초점, ↓/↑로 옮기고(맨 끝에서 처음으로) Enter로 고른다", async () => {
     const user = userEvent.setup();
     const onArchive = vi.fn();
     render(<RowMenu onArchive={onArchive} />);
@@ -27,15 +27,39 @@ describe("Menu(… 메뉴)", () => {
     await user.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("menu", { name: "컵 씻기 메뉴" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /^고치기/ })).toHaveFocus();
+    await user.keyboard("{ArrowDown}");
     expect(screen.getByRole("menuitem", { name: /복제해서 고치기/ })).toHaveFocus();
     await user.keyboard("{ArrowDown}");
     expect(screen.getByRole("menuitem", { name: /보관하기/ })).toHaveFocus();
-    await user.keyboard("{ArrowDown}"); // 쓸 수 없는 '고치기'는 건너뛰고 처음으로
-    expect(screen.getByRole("menuitem", { name: /복제해서 고치기/ })).toHaveFocus();
+    await user.keyboard("{ArrowDown}"); // 끝에서 처음으로
+    expect(screen.getByRole("menuitem", { name: /^고치기/ })).toHaveFocus();
     await user.keyboard("{ArrowUp}{Enter}");
     expect(onArchive).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
+  });
+
+  it("꺼 둔 항목도 키보드 초점을 받아 이유를 읽을 수 있고, Enter·Space로는 아무 일도 없다(WAI-ARIA APG)", async () => {
+    const user = userEvent.setup();
+    const onArchive = vi.fn();
+    const onDuplicate = vi.fn();
+    render(<RowMenu onArchive={onArchive} onDuplicate={onDuplicate} />);
+    const trigger = screen.getByRole("button", { name: "컵 씻기 메뉴" });
+    trigger.focus();
+    await user.keyboard("{ArrowUp}"); // 위로 열면 마지막 항목
+    expect(screen.getByRole("menuitem", { name: /보관하기/ })).toHaveFocus();
+    await user.keyboard("{Home}");
+    const edit = screen.getByRole("menuitem", { name: "고치기 새 편집기에서 열려요" });
+    expect(edit).toHaveFocus();
+    await user.keyboard("{Enter}");
+    await user.keyboard(" ");
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(edit).toHaveFocus();
+    expect(onArchive).not.toHaveBeenCalled();
+    expect(onDuplicate).not.toHaveBeenCalled();
+    await user.keyboard("{End}");
+    expect(screen.getByRole("menuitem", { name: /보관하기/ })).toHaveFocus();
   });
 
   it("쓸 수 없는 항목은 aria-disabled와 이유를 보이고, 눌러도 아무 일도 없다", async () => {
