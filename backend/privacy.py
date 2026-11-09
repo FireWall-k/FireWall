@@ -317,6 +317,8 @@ DEDUPED_ACTIONS = frozenset({
     "coaching.view",
     # 사업주 화면 도움 알림 띠가 5초마다 부른다(근로자 이름이 실린다).
     "help.list",
+    # (2a-0) 보내기 시트의 받는 사람 고르기(근로자별 오늘 진행 상태가 실린다).
+    "task.recipients",
 })
 
 

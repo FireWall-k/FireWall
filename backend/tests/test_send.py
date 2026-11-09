@@ -440,6 +440,27 @@ def test_recipients_last_batch_and_today_status(client, employer_token, workers)
     assert client.get(f"/api/tasks/{task['id']}", headers=auth(employer_token)).json()["recipients_count"] == 2
 
 
+def test_recipients_records_access_per_worker_with_today_status(client, employer_token, workers):
+    """받는 사람 시트의 오늘 상태는 근로자별 수행 정보다 — 오늘 배정이 있는 근로자마다 열람 기록을 남기고(1회차 검증),
+    시트를 다시 열어도 짧은 창 안에서는 한 줄로 묶는다. 오늘 배정이 없는 근로자(none)는 남기지 않는다."""
+    import privacy
+    assert "task.recipients" in privacy.DEDUPED_ACTIONS
+    task = _task(client, employer_token)
+    a, b = workers
+    _send(client, employer_token, task["id"], [a["id"]])
+    before = clock.utcnow() - timedelta(seconds=1)
+
+    def rows():
+        with SessionLocal() as db:
+            return db.scalars(select(AccessAuditLog.worker_id).where(
+                AccessAuditLog.action == "task.recipients", AccessAuditLog.at >= before,
+                AccessAuditLog.worker_id.in_([a["id"], b["id"]]))).all()
+    assert client.get(f"/api/tasks/{task['id']}/recipients", headers=auth(employer_token)).status_code == 200
+    assert rows() == [a["id"]]
+    assert client.get(f"/api/tasks/{task['id']}/recipients", headers=auth(employer_token)).status_code == 200
+    assert rows() == [a["id"]]
+
+
 def test_assign_endpoint_shape_unchanged(client, employer_token, workers):
     """옛 화면의 POST …/assignments: 응답 모양 그대로, 같은 날 다시 부르면 같은 배정을 돌려준다."""
     task = _task(client, employer_token)

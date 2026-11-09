@@ -21,7 +21,7 @@ import versions
 from auth import require_employer
 from database import get_db
 from models import Assignment, HelpRequest, PerformanceLog, Task, Worker
-from privacy import record_access
+from privacy import record_access, record_access_for_workers
 from schemas import (
     RecipientsOut,
     SendBlockOut,
@@ -267,9 +267,12 @@ def send_task(task_id: str, payload: SendRequest, request: Request, db: Session 
 
 
 @router.get("/api/tasks/{task_id}/recipients", response_model=RecipientsOut)
-def task_recipients(task_id: str, db: Session = Depends(get_db),
+def task_recipients(task_id: str, request: Request, db: Session = Depends(get_db),
                     user: dict = Depends(require_employer)) -> RecipientsOut:
-    """보내기 시트의 받는 사람 고르기 도움: 지난번 받은 사람, 받은 적 있는 사람, 사업장의 마지막 보내기, 오늘 상태."""
+    """보내기 시트의 받는 사람 고르기 도움: 지난번 받은 사람, 받은 적 있는 사람, 사업장의 마지막 보내기, 오늘 상태.
+
+    오늘 상태(not_started·in_progress·done)는 수행 기록에서 나온 근로자별 정보라, 대시보드처럼 오늘 배정이 있는
+    근로자마다 열람 기록(task.recipients)을 남긴다. 시트를 여러 번 열어도 짧은 창 안에서는 한 줄로 묶인다."""
     task = _owned_task(task_id, user["sub"], db)
     rows = db.scalars(select(Assignment).where(Assignment.task_id == task.id)
                       .order_by(Assignment.assigned_date, Assignment.id)).all()
@@ -309,5 +312,8 @@ def task_recipients(task_id: str, db: Session = Depends(get_db),
             status[wid] = "in_progress"
         else:
             status[wid] = "not_started"
+    seen = [wid for wid, st in status.items() if st != "none"]
+    if seen:
+        record_access_for_workers(db, request, user, "task.recipients", seen)
     return RecipientsOut(last_batch_worker_ids=last_batch, all_ever_worker_ids=all_ever,
                          workplace_last_batch_worker_ids=wp_batch, today_status=status)
