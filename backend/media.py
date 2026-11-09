@@ -9,6 +9,8 @@
 - 만료된 URL은 403이다. 화면은 응답을 다시 조회해 새 URL을 받는다(frontend/src/media.ts).
 
 DB에는 URL이 아니라 media id(Step.symbol_media_id/tts_media_id)와 상대 키(MediaFile.storage_key)만 둔다.
+(2a-0) 보낸 버전 단계(TaskVersionStep)도 같은 레코드를 가리킨다. 정리(release·gc)는 두 표의 참조를 모두 센다 —
+편집기에서 사진을 바꾸거나 문장을 고쳐(음성) 편집 단계가 레코드를 놓아도, 지금 일하는 근로자의 버전이 쓰면 남긴다.
 """
 from __future__ import annotations
 
@@ -24,7 +26,7 @@ from sqlalchemy import delete, exists, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from auth import media_signature
-from models import MediaFile, Step
+from models import MediaFile, Step, TaskVersionStep
 from photos import get_photo_dir
 from tts import get_tts_cache_dir
 
@@ -166,8 +168,10 @@ def exists_(db: Session, media_id: str) -> bool:
 
 
 def _unreferenced():
-    """어느 단계도 가리키지 않는 레코드 조건."""
-    return ~exists().where(or_(Step.symbol_media_id == MediaFile.id, Step.tts_media_id == MediaFile.id))
+    """어느 단계(편집 단계와 보낸 버전 단계)도 가리키지 않는 레코드 조건."""
+    return (~exists().where(or_(Step.symbol_media_id == MediaFile.id, Step.tts_media_id == MediaFile.id))
+            & ~exists().where(or_(TaskVersionStep.symbol_media_id == MediaFile.id,
+                                  TaskVersionStep.tts_media_id == MediaFile.id)))
 
 
 def _key_in_use(db: Session, kind: str, storage_key: str) -> bool:

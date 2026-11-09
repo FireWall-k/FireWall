@@ -1033,7 +1033,10 @@ def test_log_upload_racing_worker_deletion_leaves_no_orphan(client, employer_tok
     task = r.json()
     publish(client, employer_token, task["id"])
     assignment = client.post(f"/api/tasks/{task['id']}/assignments", headers=auth(employer_token)).json()[0]
-    steps = [s["id"] for s in task["steps"]]
+    # (2a-0) 로그는 배정에 고정된 버전 단계 id로 보낸다(근로자 화면이 받는 id). 편집 단계 id와 다르다.
+    card = next(c for c in client.get("/api/worker/me/today", headers=auth(worker_token)).json()
+                if c["assignment_id"] == assignment["id"])
+    steps = [s["id"] for s in card["steps"]]
     body = {"assignment_id": assignment["id"], "duration_sec": 3.0, "replay_count": 0, "stuck": False}
     if last_step:
         # 마지막 단계면 배정 상태도 갱신한다 — 지워진 배정의 UPDATE가 StaleDataError를 내던 경로.

@@ -225,7 +225,9 @@ def test_rewrite_does_not_split_uncertain_or_on_ai_failure(client, employer_toke
     assert r.json()["task"]["steps"][0]["sentence"] == "컵 씻고 말려요"
 
 
-def test_rewrite_does_not_split_published_task(client, employer_token, monkeypatch):
+def test_rewrite_splits_published_task_too(client, employer_token, monkeypatch):
+    """(2a-0) 보낸 직무도 저장하며 나눈다(예전에는 단계 id가 바뀌면 받은 근로자의 기록이 끊겨서 막았다).
+    근로자는 보낸 버전 단계를 보고 로그·도움은 버전 단계를 가리키므로, 편집 단계가 바뀌어도 진행 기록은 그대로다."""
     task = _make_task(client, employer_token, ["컵을 씻어요."])
     # 그림 없는 단계는 보낼 수 없다(0차) — 그림을 붙이고 보낸다.
     assert publish(client, employer_token, task["id"]).status_code == 200
@@ -234,8 +236,8 @@ def test_rewrite_does_not_split_published_task(client, employer_token, monkeypat
     r = client.post(f"/api/tasks/{task['id']}/steps/{sid}/rewrite", headers=auth(employer_token),
                     json={"sentence": "컵 씻어서 건조대에 올려요"})
     assert r.status_code == 200
-    assert r.json()["split_step_ids"] == []
-    assert [s["id"] for s in r.json()["task"]["steps"]] == [sid]
+    assert len(r.json()["split_step_ids"]) == 2
+    assert [s["id"] for s in r.json()["task"]["steps"]] == r.json()["split_step_ids"]
 
 
 def test_rewrite_and_merge_reject_other_employers_and_bad_input(client, employer_token, monkeypatch):
@@ -278,8 +280,9 @@ def _jpeg() -> bytes:
     return b.getvalue()
 
 
-def test_merge_is_refused_after_publish(client, employer_token, monkeypatch):
-    # 보낸 뒤 [되돌리기]가 남아 있어도 서버가 막는다 — 진행 기록 삭제·그림 확인 우회를 막는다.
+def test_merge_is_allowed_after_publish(client, employer_token, monkeypatch):
+    """(2a-0) 보낸 뒤에도 [되돌리기](합치기)가 된다(예전 409 해제). 진행 기록은 버전 단계에 있어 지워지지 않고,
+    합친 단계의 그림은 새로 붙어 확인 전 상태라 다음 보내기 검사가 다시 확인을 요구한다."""
     task = _make_task(client, employer_token, ["컵을 씻어요."])
     monkeypatch.setattr(ai_client, "decompose", _two_actions)
     sid = task["steps"][0]["id"]
@@ -289,9 +292,10 @@ def test_merge_is_refused_after_publish(client, employer_token, monkeypatch):
     assert publish(client, employer_token, task["id"]).status_code == 200
     r = client.post(f"/api/tasks/{task['id']}/steps/merge", headers=auth(employer_token),
                     json={"step_ids": split["split_step_ids"], "sentence": split["sentence"]})
-    assert r.status_code == 409
-    steps = client.get(f"/api/tasks/{task['id']}", headers=auth(employer_token)).json()["steps"]
-    assert [s["id"] for s in steps] == split["split_step_ids"]
+    assert r.status_code == 200
+    steps = r.json()["steps"]
+    assert len(steps) == 1 and steps[0]["sentence"] == split["sentence"]
+    assert steps[0]["picture_state"] != "confirmed"
 
 
 def test_split_on_save_keeps_uploaded_photo_and_undo_brings_it_back(client, employer_token, monkeypatch):

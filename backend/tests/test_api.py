@@ -638,24 +638,23 @@ def test_local_day_start_follows_local_midnight():
         2026, 9, 19, 15, 0, tzinfo=timezone.utc)
 
 
-def test_worker_tasks_and_active_dates_use_local_date(client, employer_token):
+def test_worker_tasks_and_active_dates_use_local_date(client, employer_token, monkeypatch):
     """한국 시간 0~9시에 배정한 직무가 UTC 날짜가 아니라 한국 날짜로 조회돼야 한다.
 
     UTC 1/10 15:32는 한국 시간 1/11 00:32다. 예전에는 1/10으로 저장·필터돼서
     브라우저의 "오늘"에 안 보였다. DB를 다른 테스트와 공유하므로 내 직무만 검사하고,
     다른 테스트의 배정(오늘 날짜)과 겹치지 않게 과거 날짜를 쓴다.
+    (2a-0) 배정의 날은 보낼 때 정한 scheduled_day(현지 날짜)다. 예전처럼 저장 뒤 assigned_date만 바꾸면 날이
+    바뀌지 않으므로, 서버 시계(clock.utcnow)를 그 시각으로 옮겨 보낸다.
     """
     from datetime import datetime
 
-    from database import SessionLocal
-    from models import Assignment
+    import clock
 
+    monkeypatch.setattr(clock, "utcnow", lambda: datetime(2026, 1, 10, 15, 32))  # naive = UTC 저장 형식
     task, assignment = _make_published_task(client, employer_token)
-    with SessionLocal() as db:
-        a = db.get(Assignment, assignment["id"])
-        a.assigned_date = datetime(2026, 1, 10, 15, 32)  # naive = UTC 저장 형식
-        worker_id = a.worker_id
-        db.commit()
+    monkeypatch.undo()
+    worker_id = assignment["worker_id"]
 
     def task_ids_on(day: str) -> list[str]:
         r = client.get(f"/api/workers/{worker_id}/tasks?date={day}",

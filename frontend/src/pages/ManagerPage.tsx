@@ -9,6 +9,7 @@ import { mergeStepMedia, useMediaRefresh } from "../media";
 import { cn } from "../cn";
 import SplitPreviewList from "../components/SplitPreviewList";
 import { rowsFromPreview, toConfirmed, type SplitRow } from "../splitRows";
+import { blockedStepIdsAfterSendError, sendApi } from "../manager/api/send";
 
 // 문장 칸 높이를 내용에 맞춘다(SplitPreviewList와 같은 방식).
 function fitHeight(el: HTMLTextAreaElement) {
@@ -108,15 +109,68 @@ export default function ManagerPage() {
   const [stepCandidates, setStepCandidates] = useState<Record<string, StepSymbolCandidates>>({});
   // 사업주가 "맞다"고 확인한 단계. 자동으로 고른 그림은 최종 평가에서 약 10%가 틀렸다 —
   // 확인 없이 게시하면 틀린 그림이 그대로 근로자에게 간다. 직접 고른 후보·사진은 이미 본 것이라 확인으로 친다.
+  // (2a-0) 확인 여부는 서버의 그림 상태(picture_state='confirmed')를 따른다 — 처음 값도 서버 값이다. 서버가 확인 안 한
+  // 자동 그림을 보내기에서 막으므로(422), 화면만 확인함으로 알고 있으면 보내기가 서버에서 막혔다. 서버가 그림 상태를
+  // 주지 않는 단계(예전 서버·목)만 이 화면에서 누른 기록(confirmedSteps)을 쓴다.
   const [confirmedSteps, setConfirmedSteps] = useState<Set<string>>(new Set());
-  const confirmStep = (stepId: string) =>
-    setConfirmedSteps((prev) => new Set(prev).add(stepId));
-  const unconfirmStep = (stepId: string) =>
-    setConfirmedSteps((prev) => {
-      const next = new Set(prev);
-      next.delete(stepId);
-      return next;
-    });
+  // 확인 API를 기다리는 단계(누르자마자 확인함으로 보인다).
+  const [pendingConfirm, setPendingConfirm] = useState<Set<string>>(new Set());
+  // 이 화면에서 문장을 고친 단계 — 서버는 그림이 그대로면 확인함을 유지하지만, 문장이 바뀌었으니 그림이 여전히
+  // 맞는지 사업주가 다시 보게 한다(예전 동작 유지). [그림 확인]을 다시 누르면 빠진다.
+  const [recheckSteps, setRecheckSteps] = useState<Set<string>>(new Set());
+  // (2a-0) 보내기가 서버 검사(422·409)에 막혔을 때 그 이유가 된 단계. 서버가 막았으니 이 화면이 확인함으로 알고 있어도
+  // 확인하지 않은 것으로 보고 다시 확인하게 한다. 그 단계를 고치면(그림 확인·후보 고르기·사진) 강조를 내린다.
+  const [blockedStepIds, setBlockedStepIds] = useState<Set<string>>(new Set());
+  const isConfirmed = (s: Step) => !recheckSteps.has(s.id) && !blockedStepIds.has(s.id) && (s.picture_state
+    ? s.picture_state === "confirmed" || pendingConfirm.has(s.id)
+    : confirmedSteps.has(s.id));
+  const withId = (prev: Set<string>, id: string) => (prev.has(id) ? prev : new Set(prev).add(id));
+  const withoutId = (prev: Set<string>, id: string) => {
+    if (!prev.has(id)) return prev;
+    const next = new Set(prev);
+    next.delete(id);
+    return next;
+  };
+  // 후보를 고르거나 사진을 올린 단계: 서버도 확인함으로 적었다.
+  const confirmStep = (stepId: string) => {
+    setBlockedStepIds((prev) => withoutId(prev, stepId));
+    setRecheckSteps((prev) => withoutId(prev, stepId));
+    setConfirmedSteps((prev) => withId(prev, stepId));
+  };
+  // 문장을 고친 단계: 그림을 다시 확인하게 한다.
+  const unconfirmStep = (stepId: string) => {
+    setRecheckSteps((prev) => withId(prev, stepId));
+    setConfirmedSteps((prev) => withoutId(prev, stepId));
+  };
+  // [그림 확인]: 서버에 확인을 적고(POST …/picture/confirm), 돌려받은 단계로 바꾼다. 실패하면 확인하지 않은 채로 두고
+  // 오류를 보인다(화면만 확인함이 되면 보내기가 서버에서 막힌다).
+  async function handleConfirmPicture(stepId: string) {
+    if (!task) return;
+    const taskId = task.id;
+    const wasRecheck = recheckSteps.has(stepId);
+    const wasBlocked = blockedStepIds.has(stepId);
+    setError(null);
+    setPendingConfirm((prev) => withId(prev, stepId));
+    confirmStep(stepId);
+    try {
+      const updated = await sendApi.confirmPicture(taskId, stepId);
+      setTask((cur) => (cur && cur.id === taskId
+        ? { ...cur, steps: cur.steps.map((s) => (s.id === stepId ? { ...s, ...updated } : s)) }
+        : cur));
+      // 서버가 확인함으로 적었다. 그사이 보내기가 막혀(422) 이 단계를 강조했어도 이제 내린다(1회차 검증 — 확인 요청보다
+      // 보내기가 먼저 도착하면 이미 확인한 그림을 다시 확인하라고 했다).
+      if (updated.picture_state === undefined || updated.picture_state === "confirmed") {
+        setBlockedStepIds((prev) => withoutId(prev, stepId));
+      }
+    } catch (e) {
+      if (wasRecheck) setRecheckSteps((prev) => withId(prev, stepId));
+      if (wasBlocked) setBlockedStepIds((prev) => withId(prev, stepId));
+      setConfirmedSteps((prev) => withoutId(prev, stepId));
+      setError(e instanceof Error ? e.message : "그림을 확인하지 못했어요. 잠시 뒤 다시 눌러 주세요.");
+    } finally {
+      setPendingConfirm((prev) => withoutId(prev, stepId));
+    }
+  }
 
   // 단계 드래그 정렬 + 단계 직접 추가
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -134,10 +188,18 @@ export default function ManagerPage() {
       });
   }, []);
 
-  // 자동으로 고른 그림 중 아직 확인하지 않은 단계. 이미 게시한 직무는 다시 막지 않는다.
-  const needsConfirm = (s: Step) =>
-    !!task && task.status !== "published" && !!s.symbol_url
-    && s.symbol_source === "LOCAL_AAC" && !confirmedSteps.has(s.id);
+  // 자동으로 고른 그림 중 아직 확인하지 않은 단계. (2a-0) 서버 그림 상태가 있으면 그대로 따른다 — 서버는 다시 보낼
+  // 때도(게시한 직무) 확인 안 한 자동 그림(auto_high·choose)을 막는다. 상태가 없는 예전 응답만 옛 규칙을 쓴다.
+  const needsConfirm = (s: Step) => {
+    if (!task || isConfirmed(s)) return false;
+    if (s.picture_state) {
+      if (s.picture_state === "none" || !s.symbol_url) return false;
+      return s.picture_state !== "confirmed" || blockedStepIds.has(s.id)
+        || (recheckSteps.has(s.id) && s.symbol_source === "LOCAL_AAC");
+    }
+    return task.status !== "published" && !!s.symbol_url && s.symbol_source === "LOCAL_AAC";
+  };
+  const isBlocked = (s: Step) => blockedStepIds.has(s.id);
   const unconfirmedCount = task ? task.steps.filter(needsConfirm).length : 0;
 
   const taskContext = () => ({
@@ -175,11 +237,12 @@ export default function ManagerPage() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // [되돌리기]는 나눈 단계가 그대로 붙어 있을 때만 뜻이 있다. 보냈거나, 순서를 바꿨거나, 그중 하나를 지웠으면 내린다
-  // (남겨 두면 눌렀을 때 404·409가 나거나 보낸 직무를 바꾸려 든다).
+  // [되돌리기]는 나눈 단계가 그대로 붙어 있을 때만 뜻이 있다. 순서를 바꿨거나 그중 하나를 지웠으면 내린다(남겨 두면
+  // 눌렀을 때 404가 난다). (2a-0) 보낸 직무도 서버가 문장을 나누고 합치므로(고친 내용은 다음 배정부터) 게시 상태와
+  // 상관없이 띄운다 — 예전에는 보낸 직무에서 나뉘어도 [되돌리기]가 숨어 되돌릴 방법이 없었다(1회차 검증).
   const undoIds = task?.steps.map((s) => s.id) ?? [];
   const undoAt = splitUndo ? undoIds.indexOf(splitUndo.stepIds[0]) : -1;
-  const activeUndo = splitUndo && task && task.status !== "published" && undoAt >= 0
+  const activeUndo = splitUndo && task && undoAt >= 0
     && splitUndo.stepIds.every((id, k) => undoIds[undoAt + k] === id)
     ? splitUndo : null;
 
@@ -473,6 +536,8 @@ export default function ManagerPage() {
 
   async function handlePublishAndAssign() {
     if (!task) return;
+    // [그림 확인] 요청이 아직 서버에 닿지 않았으면 보내기가 먼저 도착해 422로 막힌다(1회차 검증). 끝날 때까지 기다리게 한다.
+    if (pendingConfirm.size > 0) return;
     if (unconfirmedCount > 0) {
       flashAssignFeedback(false, `자동으로 고른 그림 ${unconfirmedCount}장이 문장과 맞는지 먼저 확인해 주세요.`);
       return;
@@ -485,7 +550,8 @@ export default function ManagerPage() {
     setError(null);
     setNotice(null);
     setAssignFeedback(null);
-    // 보내면 단계를 합칠 수 없다(서버도 409) — [되돌리기]를 내린다.
+    setBlockedStepIds(new Set());
+    // 보내면 나눈 단계가 그대로 근로자에게 간다 — 보낸 뒤에 [되돌리기]가 남아 있으면 무엇을 되돌리는지 헷갈리므로 내린다.
     setSplitUndo(null);
     try {
       if (task.status !== "published") {
@@ -502,6 +568,23 @@ export default function ManagerPage() {
       const text = e instanceof Error ? e.message : "게시/배정에 실패했습니다.";
       setError(text);
       flashAssignFeedback(false, text);
+      // 서버 검사에 막혔으면(422·409) 어느 단계 때문인지 표시한다. 문장(detail)은 위에서 그대로 보였다.
+      const ids = await blockedStepIdsAfterSendError(task.id, e);
+      if (ids.length) {
+        // 다른 기기·탭에서 고쳐 이 화면의 단계(그림 상태·사진)가 낡았을 수 있다. 새로 읽어 맞춰야 '그림 없음'으로 막힌
+        // 단계에 [그림 확인]이 아니라 '그림을 고르거나 사진을 올려 주세요'가 뜬다(1회차 검증).
+        try {
+          const fresh = await api.getTask(task.id);
+          if (fresh && fresh.id === task.id) {
+            setTask((cur) => (cur && cur.id === fresh.id ? fresh : cur));
+          }
+        } catch {
+          // 다시 읽지 못해도 강조와 서버 문장은 그대로 보인다.
+        }
+        setBlockedStepIds(new Set(ids));
+        Array.from(document.querySelectorAll<HTMLElement>("[data-step-id]"))
+          .find((el) => el.dataset.stepId === ids[0])?.scrollIntoView?.({ block: "nearest" });
+      }
     } finally {
       setBusy(false);
     }
@@ -715,6 +798,8 @@ export default function ManagerPage() {
             {task.steps.map((s, idx) => (
               <li
                 key={s.id}
+                data-step-id={s.id}
+                data-send-blocked={isBlocked(s) || undefined}
                 onDragOver={(e) => {
                   e.preventDefault();
                   if (dragOverIndex !== idx) setDragOverIndex(idx);
@@ -725,7 +810,7 @@ export default function ManagerPage() {
                   "flex flex-wrap items-start gap-2 rounded-lg border bg-white p-3 transition-colors sm:flex-nowrap",
                   dragOverIndex === idx && dragIndex !== null && dragIndex !== idx
                     ? "border-blue-400 ring-2 ring-blue-200"
-                    : "border-slate-200",
+                    : isBlocked(s) ? "border-danger-700 bg-danger-50 ring-2 ring-danger-700" : "border-slate-200",
                   dragIndex === idx && "opacity-50",
                 )}
               >
@@ -809,6 +894,12 @@ export default function ManagerPage() {
                       if (rewritingId === null && text !== s.sentence) handleEditSentence(s.id, text);
                     }}
                   />
+                  {isBlocked(s) && (
+                    <p className="mt-1 break-keep text-sm font-semibold text-danger-700">
+                      이 단계 때문에 보내지 못했어요. {s.picture_state === "none" || !s.symbol_url
+                        ? "그림을 고르거나 사진을 올려 주세요." : "그림이 맞는지 확인해 주세요."}
+                    </p>
+                  )}
                   {rewritingId === s.id && (
                     <p role="status" className="mt-1 break-keep text-sm font-semibold text-slate-700">
                       저장하는 중… 동작이 둘이면 두 단계로 나눠요.
@@ -824,7 +915,7 @@ export default function ManagerPage() {
                       </span>
                     )}
                     {needsConfirm(s) && (
-                      <button type="button" onClick={() => confirmStep(s.id)}
+                      <button type="button" onClick={() => handleConfirmPicture(s.id)}
                               aria-label={`${s.order}단계 그림 확인`}
                               className="rounded border border-auto-700/40 bg-auto-50 px-2 py-0.5 text-xs font-semibold text-auto-700 hover:bg-white">
                         {/* 자동 결과 표기는 '✦ 자동'(창업자 결정 2, 'AI'라고 쓰지 않는다). */}
@@ -832,7 +923,7 @@ export default function ManagerPage() {
                       </button>
                     )}
                     {task.status !== "published" && s.symbol_url && s.symbol_source === "LOCAL_AAC"
-                      && confirmedSteps.has(s.id) && (
+                      && isConfirmed(s) && (
                       <span className="text-xs font-semibold text-emerald-700">✓ 확인함</span>
                     )}
                   </div>
@@ -967,7 +1058,8 @@ export default function ManagerPage() {
                 </div>
                 <button
                   onClick={handlePublishAndAssign}
-                  disabled={busy || selectedWorkerIds.size === 0 || unconfirmedCount > 0 || missingPictureOrders(task).length > 0}
+                  disabled={busy || pendingConfirm.size > 0 || selectedWorkerIds.size === 0 || unconfirmedCount > 0
+                    || missingPictureOrders(task).length > 0}
                   className="mt-2 rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
                   {busy ? "처리 중…" : selectedWorkerIds.size > 1
