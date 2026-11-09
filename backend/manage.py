@@ -82,7 +82,18 @@ def set_password(login: str, password: str) -> None:
 
 
 def migrate() -> None:
-    """스키마를 head로 올린다. Alembic 도입 전 DB(alembic_version 없음)는 보정 후 baseline으로 stamp한다."""
+    """스키마를 head로 올린다. Alembic 도입 전 DB(alembic_version 없음)는 보정 후 baseline으로 stamp한다.
+
+    (2a-0) upgrade 전에 DB 파일을 backups/jobcard-<시각>-<리비전>.db로 복사한다(WAL 체크포인트 뒤). 0007처럼 표를
+    다시 만드는 리비전이 중간에 깨져도 되돌릴 수 있게 한다. 복사가 실패하면 upgrade를 하지 않고 멈춘다.
+    """
+    try:
+        backup = db_migrate.backup_before_upgrade()
+    except Exception as exc:  # noqa: BLE001 — 무엇이든 백업이 없으면 스키마를 바꾸지 않는다
+        raise SystemExit(f"마이그레이션 전 백업을 만들지 못해 멈췄습니다({exc}). "
+                         "디스크 공간·폴더 권한을 확인한 뒤 다시 실행해 주세요. DB는 바꾸지 않았습니다.") from exc
+    if backup is not None:
+        print(f"마이그레이션 전 백업: {backup}")
     report = db_migrate.migrate()
     if report["adopted_legacy"]:
         added = ", ".join(report["repaired_columns"]) or "없음"
