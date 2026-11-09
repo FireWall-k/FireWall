@@ -1,57 +1,24 @@
 // 사업주 화면 도움 요청 띠(명세 5.2-2를 1차 크기로, 창업자 결정 6). 근로자가 [도와주세요]를 누르면
-// 사업주 화면 맨 위(머리글 아래)에 5초 안에 뜬다. 요청이 없으면 아무것도 그리지 않는다.
-// - 5초마다 GET /api/employer/help?state=active. 숨은 탭에서는 멈추고, 다시 보이면 바로 한 번 부른다.
-// - 늦게 온 응답(앞서 보낸 요청의 응답이 뒤에 도착)은 버린다 — 이미 닫은 요청이 다시 나타나지 않게.
-// - 불러오기에 실패하면(서버가 아직 이 API를 모름·잠깐 끊김) 띠를 조용히 두고 다음 차례에 다시 부른다.
+// 사업주 화면 맨 위(상단 바 아래)에 5초 안에 뜬다. 요청이 없으면 아무것도 그리지 않는다.
+// 목록은 useHelpFeed(manager/shell)가 준다: AppShell 안에서는 상단 바 종과 같은 폴링 하나를 나눠 쓰고
+// (같은 주소를 두 번 부르지 않음, contract §2.2), 밖에서 혼자 쓰면 스스로 5초마다 부른다.
+// 폴링 규칙(숨은 탭 정지·늦은 응답 버림·실패 시 그대로 둠)은 useHelpFeed.ts에 있다.
 // TODO(결정 6): 웹 푸시 — 사업주가 이 화면을 안 보고 있을 때도 알리려면 서비스 워커 구독 + 서버
-//   notify_help_opened()에서 보낸다(2차). 그때도 이 띠는 그대로 둔다(화면을 보고 있을 때의 알림).
-import { useCallback, useEffect, useRef, useState } from "react";
+//   notify_help_opened()에서 보낸다(2c). 그때도 이 띠는 그대로 둔다(화면을 보고 있을 때의 알림).
+import { useState } from "react";
 import { api, type EmployerHelp } from "../api";
 import { cn } from "../cn";
+import { HELP_FEED_POLL_MS, useHelpFeed } from "../manager/shell/useHelpFeed";
 import { IconHelp } from "../ui/icons";
 import { relativeTime } from "./helpTime";
 
-export const HELP_POLL_MS = 5_000;
+export const HELP_POLL_MS = HELP_FEED_POLL_MS;
 const MAX_SHOWN = 3;
 
 export default function HelpAlertStrip() {
-  const [items, setItems] = useState<EmployerHelp[]>([]);
+  const { items, setItems, reload: load } = useHelpFeed();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const seq = useRef(0);
-
-  const load = useCallback(async () => {
-    const mine = ++seq.current;
-    try {
-      const list = await api.employerHelp("active");
-      if (mine !== seq.current) return; // 더 나중에 보낸 요청이 있다: 이 응답은 낡았다.
-      setItems(Array.isArray(list) ? list : []);
-    } catch {
-      /* 다음 차례에 다시 부른다(위 주석) */
-    }
-  }, []);
-
-  useEffect(() => {
-    let timer: number | undefined;
-    const start = () => {
-      if (timer !== undefined) return;
-      void load();
-      timer = window.setInterval(() => void load(), HELP_POLL_MS);
-    };
-    const stop = () => {
-      if (timer !== undefined) window.clearInterval(timer);
-      timer = undefined;
-    };
-    const onVisibility = () => (document.visibilityState === "hidden" ? stop() : start());
-    const seqRef = seq; // 정리 함수에서 쓸 ref(같은 객체)
-    if (document.visibilityState !== "hidden") start();
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      stop();
-      document.removeEventListener("visibilitychange", onVisibility);
-      seqRef.current++; // 화면을 떠난 뒤 도착한 응답은 버린다.
-    };
-  }, [load]);
 
   async function act(h: EmployerHelp, kind: "ack" | "resolve") {
     setBusyId(h.id);
