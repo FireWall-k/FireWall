@@ -952,6 +952,26 @@ def test_downgrade_moves_or_drops_v2_logs():
     assert db_migrate.is_at_head(engine)
 
 
+def test_downgrade_drops_v1_logs_of_deleted_steps_and_recomputes_day():
+    """문서에 적은 downgrade 손실(1회차 검증): upgrade 뒤 원래 단계를 지우면(2a-0부터 로그는 남는다) 그 단계를 가리키는
+    버전 1 로그도 지워지고 도움은 step_id=NULL이다. '내일로 보낸' 배정의 scheduled_day는 다시 올리면 보낸 날로 바뀐다."""
+    engine = _at_0006("v7_downgrade_v1")
+    _seed_0006_rows(engine)
+    db_migrate.upgrade_to_head(engine)
+    with engine.begin() as conn:
+        sent_day = conn.execute(text("SELECT scheduled_day FROM assignments WHERE id='a7'")).scalar()
+        conn.execute(text("UPDATE assignments SET scheduled_day = date(scheduled_day, '+1 day') WHERE id='a7'"))
+        conn.execute(text("DELETE FROM steps WHERE id IN ('sp1', 'sp2')"))
+        assert conn.execute(text("SELECT COUNT(*) FROM performance_logs WHERE step_id='sp1'")).scalar() == 1
+    db_migrate.downgrade(engine, _V6)
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT COUNT(*) FROM performance_logs WHERE id='l7'")).scalar() == 0
+        assert conn.execute(text("SELECT step_id FROM help_requests WHERE id='h7'")).scalar() is None
+    db_migrate.upgrade_to_head(engine)
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT scheduled_day FROM assignments WHERE id='a7'")).scalar() == sent_day
+
+
 def test_0007_resumes_when_partly_applied():
     """SQLite ALTER는 롤백되지 않는다: 버전 표·일부 칸·임시 표가 남은 채 멈춘 뒤 다시 돌려도 head에 도달한다."""
     engine = _at_0006("v7_resume")

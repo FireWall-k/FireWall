@@ -24,6 +24,11 @@ FK 대상 바꾸기: performance_logs·help_requests의 step_id FK를 task_versi
 
 downgrade(데이터 손실 있음, 명시): 버전 2 이상 단계를 가리키는 로그·도움은 source_step_id가 지금 steps에 있으면 그
 id로 옮긴다. 옮길 수 없는 로그는 지우고 도움은 step_id=NULL로 둔다(지운 수를 로그로 남긴다).
+- 버전 1 단계도 같다: upgrade 뒤 사업주가 원래 단계를 지웠으면(2a-0부터 단계를 지워도 로그는 남는다) 그 단계를
+  가리키는 버전 1 로그도 옮길 곳이 없어 지워진다. 도움은 step_id=NULL.
+- assignments의 scheduled_day·send_batch_id·pinned_at·first_seen_at·task_version_id 칸은 사라진다. 다시 upgrade하면
+  백필 규칙으로 assigned_date에서 다시 계산하므로, '내일로 보낸' 배정의 scheduled_day는 보낸 날(assigned_date의
+  현지 날짜)로 바뀌고 send_batch_id는 비며, 버전은 그때의 steps로 다시 만든 버전 1이 된다.
 
 0003·0006처럼 "이미 있으면 건너뜀"으로 써서 중간에 멈춘 뒤 다시 돌려도 head에 도달한다. 앱 모듈을 import하지 않는다.
 """

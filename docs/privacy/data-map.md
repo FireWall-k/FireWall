@@ -82,6 +82,7 @@
 | 직무·단계·사진 | 사업주가 직무를 삭제할 때까지 | `DELETE /api/tasks/{id}` — 단계 행과 그 사진(다른 직무가 쓰지 않으면)·TTS 레코드를 함께 지운다 |
 | 배정(`assignments`) | 근로자·직무 삭제 때까지 | 보존기간 자동 삭제 없음 — 후속 과제 |
 | 백업 | 운영자가 정함 | 백업 사본에는 삭제가 반영되지 않는다 — 백업 보존기간을 별도로 정해야 한다 |
+| 마이그레이션 자동 백업(`<DB 폴더>/backups/jobcard-<시각>-<리비전>.db`, compose는 `/app/data/backups`, `JOBCARD_BACKUP_DIR`) | 마이그레이션이 성공하고 서비스가 정상인 것을 확인한 뒤 **30일 안** | `manage.py migrate`가 upgrade 전에 DB 전체(근로자 이름·메모·접속 코드 암호문·수행 기록)를 복사한다. 근로자 삭제·`purge`가 이 사본을 지우지 않으므로 운영자가 손으로 지운다. `purge`가 지난 사본을 지우는 일은 후속 과제 |
 
 ### WAL 체크포인트
 
@@ -136,8 +137,9 @@ compose 기본 프로필의 `scheduler` 서비스(backend와 같은 이미지, `
 | `dashboard.workers` / `dashboard.view` | 대시보드 근로자 목록·근로자별 수행 기록 |
 | `coaching.view` | AI 코칭 조회 |
 | `help.list` | 사업주 화면 도움 알림 띠 조회(띠에 실린 근로자마다 한 줄, 5초 폴링은 묶는다) |
+| `task.recipients` | 보내기 시트의 받는 사람 고르기(오늘 이 직무 배정이 있어 진행 상태가 실린 근로자마다 한 줄) |
 
-- 화면이 저절로 되풀이하는 조회(`dashboard.view`, `dashboard.workers`, `worker.list`, `worker.history`, `worker.consents`, `coaching.view`, `help.list`)만 같은 사업주·행위·근로자·IP가 `ACCESS_AUDIT_DEDUPE_SECONDS`(기본 60초) 안에 반복되면 한 줄로 합친다(대시보드 3초 폴링). 내보내기·삭제·동의 기록·수정은 매번 남긴다.
+- 화면이 저절로 되풀이하는 조회(`dashboard.view`, `dashboard.workers`, `worker.list`, `worker.history`, `worker.consents`, `coaching.view`, `help.list`, `task.recipients`)만 같은 사업주·행위·근로자·IP가 `ACCESS_AUDIT_DEDUPE_SECONDS`(기본 60초) 안에 반복되면 한 줄로 합친다(대시보드 3초 폴링). 내보내기·삭제·동의 기록·수정은 매번 남긴다.
 - 근로자 목록(`worker.list`)과 근로자를 고르지 않은 집계 화면(`dashboard.workers`, 근로자 미지정 `dashboard.view`·`coaching.view`)은 화면에 실린 근로자마다 한 줄씩 남긴다(`worker_id=None` 한 줄로는 누구의 기록이 보였는지 알 수 없다). 실린 근로자가 없으면 `worker_id=None` 한 줄만 남긴다.
 - 다른 사업장 근로자 id로 대시보드·코칭을 열면 404이고 감사 행을 남기지 않는다.
 - ORM으로 수정·삭제하면 예외가 난다(`models.py` 매퍼 이벤트). 지우는 코드는 `retention.py`뿐이다(테스트가 확인).
