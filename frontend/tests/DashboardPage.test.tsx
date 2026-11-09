@@ -71,7 +71,7 @@ describe("DashboardPage", () => {
   it("등록된 근로자가 없으면 안내 문구를 보여준다", async () => {
     listWorkers.mockResolvedValue([]);
     render(<DashboardPage />);
-    await screen.findByText(/아직 등록된 근로자가 없습니다/);
+    await screen.findByText(/아직 등록된 근로자가 없어요. ‘근로자’ 메뉴에서/);
     expect(workerTasks).not.toHaveBeenCalled();
   });
 

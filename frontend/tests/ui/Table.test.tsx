@@ -96,3 +96,15 @@ describe("Table", () => {
     expect(onRowClick).toHaveBeenCalledWith(rows[1]);
   });
 });
+
+describe("Table 빈 상태 머리 줄(2회차 검증)", () => {
+  it("행이 없으면 머리 줄을 숨기고, 불러오는 중이거나 행이 있으면 보인다", () => {
+    const cols = [{ key: "a", header: "제목", cell: (r: { id: string }) => r.id, sortValue: (r: { id: string }) => r.id }];
+    const { container, rerender } = render(<Table caption="빈 표" columns={cols} rows={[]} rowKey={(r) => r.id} />);
+    expect(container.querySelector("thead")).toHaveClass("hidden");
+    rerender(<Table caption="빈 표" columns={cols} rows={[]} rowKey={(r) => r.id} loading />);
+    expect(container.querySelector("thead")).not.toHaveClass("hidden");
+    rerender(<Table caption="빈 표" columns={cols} rows={[{ id: "x" }]} rowKey={(r) => r.id} />);
+    expect(container.querySelector("thead")).not.toHaveClass("hidden");
+  });
+});

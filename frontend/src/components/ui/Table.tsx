@@ -91,7 +91,9 @@ export default function Table<T>({
     <div className={cn("overflow-x-clip rounded-card border border-paper-200 bg-white", className)}>
       <table className="w-full border-collapse text-ui-base text-ink-900" aria-busy={loading || undefined}>
         <caption className="sr-only">{caption}</caption>
-        <thead>
+        {/* 행이 없을 때(불러오는 중이 아님)는 머리 줄을 숨긴다 — 빈 칸 위에 열 머리가 고르지 않게 퍼지고
+            누를 것 없는 정렬 단추가 남지 않게(명세 5.3 빈 상태). */}
+        <thead className={cn(!loading && sorted.length === 0 && "hidden")}>
           <tr>
             {columns.map((c) => {
               const active = sort?.key === c.key;

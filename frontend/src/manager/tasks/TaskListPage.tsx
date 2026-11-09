@@ -6,6 +6,8 @@
 // - 직무 삭제는 먼저 보관(명세 5.0). 완전히 지우기는 지워지는 것 목록을 보이는 위험 창으로 확인받는다.
 // - 행이 사라지는 일(보관·꺼내기·완전히 지우기·실행 취소) 뒤에는 키보드 초점을 그 자리 행의 … 단추로 옮긴다
 //   (다음 행, 없으면 이전 행, 없으면 목록 칸). 초점이 문서 처음으로 사라지지 않게(WCAG 2.4.3).
+// - 행동 뒤 다시 받기(reload)는 늘 '지금' 걸러보기·검색어로 부른다(그사이 탭을 바꿔도 옛 탭 목록을 부르지 않게).
+// - 걸러보기·검색어를 바꾼 뒤에는 결과 개수(또는 '없어요')를 화면 읽기 프로그램에 알린다(WCAG 4.1.3).
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Archive, ArchiveRestore, Copy, Ellipsis, ImageOff, PencilLine, Plus, Search, Trash2, X } from "lucide-react";
@@ -94,7 +96,21 @@ export default function TaskListPage() {
     fetchList(filter, q, key);
   }, [fetchList, filter, q, key]);
 
-  const reload = useCallback(() => fetchList(filter, q, key), [fetchList, filter, q, key]);
+  // 행동(보관·실행 취소 등)이 끝난 뒤에 부르는 다시 받기는, 행동을 시작한 렌더의 값이 아니라 지금 주소의 값을 쓴다.
+  // 옛 값으로 부르면 seq가 올라가 지금 탭의 응답이 버려지고, 옛 탭 응답은 key가 달라 쓰이지 않아 스켈레톤에 멈춘다.
+  const latest = useRef({ filter, q, key });
+  useEffect(() => {
+    latest.current = { filter, q, key };
+  }, [filter, q, key]);
+  const reload = useCallback(() => {
+    const cur = latest.current;
+    fetchList(cur.filter, cur.q, cur.key);
+  }, [fetchList]);
+
+  // 첫 진입 뒤 걸러보기·검색어가 한 번이라도 바뀌었는지(처음 열 때는 결과 수를 읽지 않는다 — 말이 너무 많아지지 않게).
+  const [firstKey] = useState(key);
+  const [keyChanged, setKeyChanged] = useState(false);
+  if (!keyChanged && key !== firstKey) setKeyChanged(true);
 
   // 검색: 적기를 멈추면 주소의 q를 바꾼다(replace — 글자마다 뒤로 가기 기록을 남기지 않음).
   useEffect(() => {
@@ -269,8 +285,9 @@ export default function TaskListPage() {
             <span className="truncate font-semibold text-ink-900" title={r.title}>
               {r.title}
             </span>
-            {/* 휴대폰(768 미만): 상태 열을 숨기고 제목 아래에 보인다(제목이 잘리지 않게). */}
+            {/* 휴대폰(768 미만): 상태·단계 수·받은 사람·고친 날 열을 숨기고 제목 아래 두 줄로 보인다(제목이 잘리지 않게). */}
             <StatusBadges row={r} className="md:hidden" />
+            <MobileMeta row={r} />
           </div>
         </div>
       ),
@@ -343,6 +360,10 @@ export default function TaskListPage() {
       ),
     },
   ];
+
+  let announce = "";
+  // 빈 상태 제목과 같은 글을 두 번 두지 않으려고 따로 짧은 문구를 쓴다(빈 상태 제목은 표 안에 보인다).
+  if (keyChanged && data) announce = taskList.resultCount(data.items.length);
 
   const tabs: TabItem<TaskFilter>[] = TASK_FILTERS.map((f) => ({ id: f, label: taskFilter[f], count: counts?.[f] }));
   const nothingAtAll = !!data && data.counts.all === 0 && data.counts.archived === 0 && !q;
@@ -440,6 +461,11 @@ export default function TaskListPage() {
         </form>
       </div>
 
+      {/* 걸러보기·검색 결과 알림(화면에는 숨김). 표의 '불러오는 중이에요'와 따로 둔다. */}
+      <p role="status" className="sr-only" data-testid="task-result-status">
+        {announce}
+      </p>
+
       <section ref={panelRef} id="task-list-panel" role="tabpanel" aria-label={taskFilter[filter]} tabIndex={-1}>
         {loadError ? (
           <EmptyState kind="error" title={errors.load} description={loadError === errors.load ? undefined : loadError} onRetry={reload} className="rounded-card border border-paper-200 bg-white" />
@@ -482,6 +508,20 @@ function Cover({ url }: { url: string | null }) {
       ) : (
         <ImageOff size={16} strokeWidth={2} aria-hidden="true" className="text-ink-500" />
       )}
+    </span>
+  );
+}
+
+/** 휴대폰 행 둘째 줄: '4단계 · 3분 전 · 받은 사람 5명'(또는 '아직 안 보냄'). md 이상에서는 열로 보인다. */
+function MobileMeta({ row }: { row: TaskSummaryOut }) {
+  const total = row.recipients.length + row.recipients_more;
+  return (
+    <span className="truncate text-ui-sm text-ink-700 md:hidden" data-testid="task-row-meta">
+      {taskRow.stepCount(row.step_count)}
+      {" · "}
+      <time dateTime={row.updated_at}>{relativeDate(row.updated_at)}</time>
+      {" · "}
+      {total === 0 ? taskRow.noRecipients : taskRow.recipientsLabel(total)}
     </span>
   );
 }

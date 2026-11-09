@@ -207,6 +207,8 @@ export const taskList = {
   searchEmpty: (q: string) => `'${q}'${euroRo(q)} 찾은 직무가 없어요`,
   archivedEmptyBody: "보관한 직무는 여기에 모여요. 보관해도 수행 기록은 남아요.",
   clearSearch: "검색 지우기",
+  /** 걸러보기·검색을 바꾼 뒤 화면 읽기 프로그램에 알리는 결과 수. */
+  resultCount: (n: number) => (n > 0 ? `직무가 ${n}개 있어요` : "맞는 직무가 없어요"),
 } as const;
 
 /** 직무 목록에서 한 일의 결과(토스트). 제목은 따옴표로 감싼다. */

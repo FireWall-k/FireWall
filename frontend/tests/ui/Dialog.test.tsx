@@ -99,6 +99,46 @@ describe("Dialog(window.confirm 대신)", () => {
     render(<Dialog open onClose={onClose} title="보내는 중" onConfirm={() => {}} busy />);
     await user.keyboard("{Escape}");
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "취소" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "취소" })).toHaveAttribute("aria-disabled", "true");
+    await user.click(screen.getByRole("button", { name: "취소" }));
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("확인을 누른 뒤 처리 중(busy)이 되어도 초점이 창 안에 남고 Tab도 창 안에서 돈다", async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    function Busy() {
+      const [busy, setBusy] = useState(false);
+      return (
+        <Dialog
+          open
+          onClose={() => {}}
+          tone="danger"
+          title="지울까요?"
+          confirmLabel="완전히 지우기"
+          onConfirm={() => {
+            onConfirm();
+            setBusy(true);
+          }}
+          busy={busy}
+        />
+      );
+    }
+    render(<Busy />);
+    const dialog = screen.getByRole("alertdialog");
+    const del = screen.getByRole("button", { name: "완전히 지우기" });
+    del.focus();
+    await user.keyboard("{Enter}");
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(del).toHaveAttribute("aria-busy", "true");
+    expect(del).toHaveAttribute("aria-disabled", "true");
+    expect(document.activeElement).toBe(del);
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    // 처리 중에 다시 눌러도 두 번 부르지 않는다.
+    await user.keyboard("{Enter}");
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    await user.tab();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).not.toBe(document.body);
   });
 });

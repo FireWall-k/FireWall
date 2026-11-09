@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { ui as copy } from "../../manager/copy";
 import IconButton from "./IconButton";
 import { useFocusTrap } from "./focus";
+import { useModalOpen } from "./modalLayer";
 
 export interface SheetProps {
   open: boolean;
@@ -27,6 +28,7 @@ function SheetPanel({ onClose, title, description, footer, children }: SheetProp
   const titleId = useId();
   const descId = useId();
   useFocusTrap(ref, true, { onEscape: onClose });
+  useModalOpen();
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div aria-hidden="true" className="absolute inset-0 bg-ink-900/30" onClick={onClose} />

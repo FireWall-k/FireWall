@@ -12,6 +12,7 @@ import Button from "./Button";
 import IconButton from "./IconButton";
 import { Field, Input } from "./Field";
 import { useFocusTrap } from "./focus";
+import { useModalOpen } from "./modalLayer";
 
 export interface DialogProps {
   open: boolean;
@@ -60,6 +61,7 @@ function DialogPanel({
     if (!busy) onClose();
   };
   useFocusTrap(ref, true, { onEscape: close, initialFocus: danger ? cancelRef : undefined });
+  useModalOpen();
 
   const nameOk = !confirmName || typed.trim() === confirmName.trim();
 
@@ -103,7 +105,8 @@ function DialogPanel({
           </Field>
         )}
         <div className="mt-6 flex flex-wrap justify-end gap-2">
-          <Button ref={cancelRef} variant="secondary" onClick={close} disabled={busy}>
+          {/* 처리 중에는 [취소]도 aria-disabled로만 막는다(disabled면 초점이 창 밖 body로 빠짐). */}
+          <Button ref={cancelRef} variant="secondary" onClick={close} aria-disabled={busy || undefined}>
             {onConfirm ? (cancelLabel ?? copy.cancel) : copy.close}
           </Button>
           {onConfirm && (

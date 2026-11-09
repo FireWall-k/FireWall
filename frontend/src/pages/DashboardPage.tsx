@@ -457,7 +457,7 @@ function DashboardPage() {
       </header>
 
       {error && <div role="alert" className="mb-5 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</div>}
-      {!allWorkers.length && <EmptyState message="아직 등록된 근로자가 없습니다. ‘직무 입력·검토’ 화면에서 근로자를 추가하고 직무를 보내 주세요." />}
+      {!allWorkers.length && <EmptyState message="아직 등록된 근로자가 없어요. ‘근로자’ 메뉴에서 근로자를 추가하고 ‘직무’에서 직무를 보내 주세요." />}
       {allWorkers.length > 0 && workerId && !workerTasks.length && !error && (
         <EmptyState
           message={

@@ -169,7 +169,8 @@ describe("직무 목록 행", () => {
     expect(cells.getAllByText("확인 필요 1").length).toBeGreaterThan(0);
     expect(cells.getAllByText("고친 내용 안 보냄").length).toBeGreaterThan(0);
     expect(cells.getByRole("group", { name: "받은 사람 5명" })).toHaveTextContent("+2");
-    expect(cells.getByText("방금")).toBeInTheDocument();
+    // 고친 날은 넓은 화면의 열과 휴대폰 둘째 줄에 같은 것을 그린다(CSS로 하나만 보임)
+    expect(cells.getAllByText("방금").length).toBeGreaterThan(0);
     // 확인할 것이 없는 초안에는 배지가 없다
     const plain = within(screen.getByText("앞치마 입기").closest("tr")!);
     expect(plain.queryByText(/확인 필요/)).not.toBeInTheDocument();
@@ -389,5 +390,73 @@ describe("행이 사라진 뒤 키보드 초점(WCAG 2.4.3)", () => {
     await user.click(screen.getByRole("button", { name: "검색 지우기" })); // 검색칸 옆 [X]
     expect(input).toHaveFocus();
     expect(input).toHaveValue("");
+  });
+});
+
+describe("행동 뒤 다시 받기는 지금 걸러보기·검색어로(2회차 검증)", () => {
+  it("보관 → '보관' 탭으로 옮김 → [실행 취소]: 보관 탭 목록이 보이고 스켈레톤에 멈추지 않는다", async () => {
+    renderPage();
+    const { user, menu } = await openMenu("앞치마 입기");
+    await user.click(within(menu).getByRole("menuitem", { name: "보관하기" }));
+    await screen.findByText("'앞치마 입기'를 보관함으로 옮겼어요");
+    await user.click(screen.getByRole("tab", { name: /보관/ }));
+    expect(await screen.findByText("옛 청소")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "실행 취소" }));
+    expect(unarchiveTask).toHaveBeenCalledWith("t2");
+    await waitFor(() => expect(listEmployerTasks).toHaveBeenLastCalledWith("archived", ""));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByText("옛 청소")).toBeInTheDocument();
+    expect(screen.getByRole("table")).not.toHaveAttribute("aria-busy");
+    expect(screen.getByTestId("where")).toHaveTextContent("/m/tasks?filter=archived");
+  });
+
+  it("보관 요청이 끝나기 전에 '초안' 탭을 누르면, 끝난 뒤에도 초안 목록이 보인다", async () => {
+    let finish: (v: TaskSummaryOut) => void = () => {};
+    archiveTask.mockImplementation(() => new Promise((r) => (finish = r)));
+    renderPage();
+    const { user, menu } = await openMenu("앞치마 입기");
+    await user.click(within(menu).getByRole("menuitem", { name: "보관하기" }));
+    await user.click(screen.getByRole("tab", { name: /초안/ }));
+    await waitFor(() => expect(listEmployerTasks).toHaveBeenLastCalledWith("draft", ""));
+    finish(row({ ...DRAFT, state: "archived" }));
+    await screen.findByText("'앞치마 입기'를 보관함으로 옮겼어요");
+    await waitFor(() => expect(listEmployerTasks).toHaveBeenLastCalledWith("draft", ""));
+    expect(await screen.findByText("컵 씻기")).toBeInTheDocument();
+    expect(screen.queryByText("상자 옮기기")).not.toBeInTheDocument();
+    expect(screen.getByRole("table")).not.toHaveAttribute("aria-busy");
+  });
+});
+
+describe("결과 알림(WCAG 4.1.3)과 휴대폰 행 둘째 줄", () => {
+  it("처음 열 때는 조용하고, 걸러보기·검색을 바꾸면 결과 수나 '맞는 직무가 없어요'를 알린다", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("컵 씻기");
+    const live = screen.getByTestId("task-result-status");
+    expect(live).toHaveAttribute("role", "status");
+    expect(live).toHaveTextContent("");
+    await user.click(screen.getByRole("tab", { name: /확인 필요/ }));
+    await waitFor(() => expect(live).toHaveTextContent("직무가 2개 있어요"));
+    await user.type(screen.getByLabelText("제목으로 찾기"), "없는직무");
+    await waitFor(() => expect(live).toHaveTextContent("맞는 직무가 없어요"));
+  });
+
+  it("행마다 '4단계 · 고친 날 · 받은 사람 n명'(없으면 '아직 안 보냄') 줄이 있고 md 이상에서는 숨는다", async () => {
+    renderPage();
+    await screen.findByText("상자 옮기기");
+    const metas = screen.getAllByTestId("task-row-meta");
+    expect(metas).toHaveLength(3);
+    for (const m of metas) expect(m).toHaveClass("md:hidden");
+    const sent = metas.find((m) => m.textContent?.includes("받은 사람 5명"));
+    expect(sent).toBeDefined();
+    expect(sent).toHaveTextContent(/^4단계 · .+ · 받은 사람 5명$/);
+    expect(metas.some((m) => m.textContent?.endsWith("아직 안 보냄"))).toBe(true);
+  });
+
+  it("직무가 하나도 없으면 표 머리 줄(정렬 단추)을 숨긴다", async () => {
+    listEmployerTasks.mockResolvedValue({ items: [], counts: { all: 0, draft: 0, needs_check: 0, published: 0, archived: 0 } });
+    renderPage();
+    await screen.findByText("아직 만든 직무가 없어요");
+    expect(screen.getByRole("table").querySelector("thead")).toHaveClass("hidden");
   });
 });
