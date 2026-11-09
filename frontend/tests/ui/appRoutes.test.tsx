@@ -5,6 +5,7 @@ import { render, screen } from "@testing-library/react";
 vi.mock("../../src/pages/ManagerPage", () => ({ default: () => <p>옛 직무 만들기</p> }));
 vi.mock("../../src/pages/DashboardPage", () => ({ default: () => <p>옛 대시보드</p> }));
 vi.mock("../../src/pages/WorkersPage", () => ({ default: () => <p>옛 근로자 관리</p> }));
+vi.mock("../../src/manager/tasks/TaskListPage", () => ({ default: () => <p>직무 목록 화면</p> }));
 vi.mock("../../src/worker/WorkerApp", () => ({ default: () => <p>근로자 화면</p> }));
 vi.mock("../../src/api", async (orig) => {
   const real = await orig<typeof import("../../src/api")>();
@@ -75,7 +76,7 @@ describe("사업주 주소(2a-1)", () => {
   it("/m/tasks/:id → /m/tasks", async () => {
     loginAsEmployer();
     go("/m/tasks/abc");
-    await screen.findByRole("navigation", { name: "주 메뉴" });
+    expect(await screen.findByText("직무 목록 화면")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/m/tasks");
   });
 

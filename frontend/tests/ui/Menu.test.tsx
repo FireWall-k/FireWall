@@ -42,9 +42,9 @@ describe("Menu(… 메뉴)", () => {
     const user = userEvent.setup();
     render(<RowMenu />);
     await user.click(screen.getByRole("button", { name: "컵 씻기 메뉴" }));
-    const edit = screen.getByRole("menuitem", { name: "고치기" });
+    // 보이는 글이 모두 이름에 든다(라벨 + 이유, WCAG 2.5.3)
+    const edit = screen.getByRole("menuitem", { name: "고치기 새 편집기에서 열려요" });
     expect(edit).toHaveAttribute("aria-disabled", "true");
-    expect(edit).toHaveAccessibleDescription("새 편집기에서 열려요");
     await user.click(edit);
     expect(screen.getByRole("menu")).toBeInTheDocument();
   });

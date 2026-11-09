@@ -1,6 +1,6 @@
 // … 메뉴(명세 5.3, 7.3). 단추를 누르면 아래(또는 위)에 항목이 열린다.
 // 키보드(WAI-ARIA menu button): ↓/↑로 옮기고 Home/End, Enter·Space로 고르고, Esc면 닫혀 단추로 돌아가고
-// Tab이면 닫힌다. 지금 쓸 수 없는 항목은 aria-disabled + 이유(hint, 예: '새 편집기에서 열려요')를 함께 보인다.
+// Tab이면 닫힌다. 지금 쓸 수 없는 항목은 aria-disabled + 이유(hint, 예: '새 편집기에서 열려요')를 함께 보이고 이름에도 넣는다.
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "../../cn";
 import { popoverClasses } from "./styles";
@@ -153,8 +153,9 @@ export default function Menu({ trigger, items, align = "right", placement = "dow
               role="menuitem"
               tabIndex={i === active ? 0 : -1}
               aria-disabled={it.disabled || undefined}
-              aria-labelledby={it.hint ? baseId + "-label-" + i : undefined}
-              aria-describedby={it.hint ? baseId + "-hint-" + i : undefined}
+              // 이유(hint)도 이름에 넣는다: 보이는 글('고치기 새 편집기에서 열려요')이 모두 이름에 있어야
+              // 음성 입력으로 부를 수 있다(axe label-content-name-mismatch, WCAG 2.5.3).
+              aria-labelledby={it.hint ? `${baseId}-label-${i} ${baseId}-hint-${i}` : undefined}
               onClick={() => select(it)}
               onMouseEnter={() => !it.disabled && setActive(i)}
               className={cn(
@@ -171,6 +172,8 @@ export default function Menu({ trigger, items, align = "right", placement = "dow
                 <span id={baseId + "-label-" + i} className="whitespace-nowrap font-semibold">
                   {it.label}
                 </span>
+                {/* 라벨과 이유 사이 빈칸: 세로로 놓여 화면에는 안 보이지만, 글로 읽을 때 두 낱말이 붙지 않게 한다. */}
+                {it.hint && " "}
                 {it.hint && (
                   <span id={baseId + "-hint-" + i} className="text-ui-xs text-ink-500">
                     {it.hint}

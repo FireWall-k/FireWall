@@ -179,6 +179,65 @@ export const login = {
 export const placeholder = {
   settingsTitle: "설정은 준비 중이에요",
   settingsBody: "사업장·기기 연결·화면 기본값 설정은 다음 업데이트에서 열려요.",
-  tasksTitle: "직무 목록을 준비하고 있어요",
-  tasksBody: "지금은 [새 직무]로 직무를 만들 수 있어요.",
+} as const;
+
+/** 직무 목록 화면(명세 5.3, tasks §3.3). */
+export const taskList = {
+  title: "직무",
+  newTask: "새 직무",
+  filterLabel: "직무 걸러보기",
+  searchLabel: "제목으로 찾기",
+  searchPlaceholder: "예: 컵 씻기",
+  caption: "직무 목록",
+  colTitle: "직무",
+  colSteps: "단계",
+  colStatus: "상태",
+  colRecipients: "받은 사람",
+  colUpdated: "고친 날",
+  colMenu: "메뉴",
+  noCover: "그림 없음",
+  emptyTitle: "아직 만든 직무가 없어요",
+  emptyBody: "하는 일을 말로 적으면 그림 카드 단계로 나눠 드려요.",
+  emptyCreate: "새 직무 만들기",
+  emptyExample: "예시로 만들어 보기",
+  filteredEmpty: (label: string) => `'${label}'에 해당하는 직무가 없어요`,
+  searchEmpty: (q: string) => `'${q}'(으)로 찾은 직무가 없어요`,
+  archivedEmptyBody: "보관한 직무는 여기에 모여요. 보관해도 수행 기록은 남아요.",
+  clearSearch: "검색 지우기",
+} as const;
+
+/** 직무 목록에서 한 일의 결과(토스트). 제목은 따옴표로 감싼다. */
+export const taskToast = {
+  archived: (title: string) => `'${title}'을(를) 보관함으로 옮겼어요`,
+  unarchived: (title: string) => `'${title}'을(를) 보관함에서 꺼냈어요`,
+  duplicated: (title: string) => `'${title}'을(를) 새 초안으로 만들었어요`,
+  deleted: (title: string) => `'${title}'을(를) 완전히 지웠어요`,
+} as const;
+
+/** 완전히 지우기 위험 창(명세 5.0: 지워지는 것을 목록으로, contract §1.7). */
+export const taskDelete = {
+  title: (title: string) => `'${title}'을(를) 완전히 지울까요?`,
+  description: "지우면 되돌릴 수 없어요. 기록을 남기려면 보관한 채로 두면 돼요.",
+  items: ["직무의 모든 단계와 보낸 버전", "근로자에게 보낸 배정", "수행 기록과 도움 요청 기록", "단계에 붙인 사진·음성 연결"],
+  confirm: "완전히 지우기",
+} as const;
+
+/** 고친 날(상대 시간). 일주일이 넘으면 날짜로 쓴다. */
+export const relative = {
+  justNow: "방금",
+  minutes: (n: number) => `${n}분 전`,
+  hours: (n: number) => `${n}시간 전`,
+  yesterday: "어제",
+  days: (n: number) => `${n}일 전`,
+  date: (m: number, d: number) => `${m}월 ${d}일`,
+  dateWithYear: (y: number, m: number, d: number) => `${y}년 ${m}월 ${d}일`,
+} as const;
+
+/** 옛 대시보드의 [보관하기](contract §2.1: 삭제 버튼을 보관으로 바꿈, 화면째 지우는 것은 2d). */
+export const dashboardArchive = {
+  button: "보관하기",
+  buttonLabel: "선택한 직무 보관하기",
+  confirm: (title: string) =>
+    `'${title}'을(를) 보관함으로 옮길까요?\n보관해도 수행 기록은 남아요. 직무 목록의 '보관'에서 꺼낼 수 있어요.`,
+  failed: "보관하지 못했어요 · 다시 시도해 주세요",
 } as const;
