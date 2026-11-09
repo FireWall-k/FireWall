@@ -202,7 +202,20 @@ def test_rename_title_control_chars_and_non_text(client):
     # 제어 문자만 있으면 빈 제목이다.
     r = client.patch(f"/api/tasks/{tid}", json={"title": "\n\t\r"}, headers=emp)
     assert r.status_code == 422 and r.json() == msg
+    # C1 제어 문자(U+0080~U+009F)도 제어 문자다. 그것만 있으면 빈 제목이다.
+    r = client.patch(f"/api/tasks/{tid}", json={"title": "\x9f\x9f"}, headers=emp)
+    assert r.status_code == 422 and r.json() == msg
+    # 보이지 않는 글자(폭 없는 공백·BOM·방향 문자·폭 없는 이음·한글 채움)만 있는 제목도 막는다.
+    for bad in ("\u200b\u200b", "\ufeff", "\u202e \u2066", "\u200d\u200c", "\u3164\u3164", " \u200b\x85 "):
+        r = client.patch(f"/api/tasks/{tid}", json={"title": bad}, headers=emp)
+        assert r.status_code == 422 and r.json() == msg, repr(bad)
     assert _row(client, emp, tid)["title"] == "a  b c d"
+    # 글자 사이의 C1 제어 문자는 공백 하나로 바꾸고, 보이지 않는 글자는 지운다.
+    r = client.patch(f"/api/tasks/{tid}", json={"title": "a\x85b\u202ec\u200bd\ufeff"}, headers=emp)
+    assert r.status_code == 200 and r.json()["title"] == "a bcd"
+    # 이모지 안의 폭 없는 이음(ZWJ)은 남긴다.
+    r = client.patch(f"/api/tasks/{tid}", json={"title": "주방 \U0001F468\u200d\U0001F373"}, headers=emp)
+    assert r.status_code == 200 and r.json()["title"] == "주방 \U0001F468\u200d\U0001F373"
 
 
 # --- 보관 ----------------------------------------------------------------------

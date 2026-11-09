@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func, select
@@ -185,8 +186,19 @@ def list_employer_tasks(request: Request, filter: TaskFilter = "all", q: str = "
     return EmployerTaskListOut(items=items, counts=counts)
 
 
-# 줄바꿈·탭 같은 제어 문자(연달아 있으면 한 덩어리)를 찾는다.
-_CONTROL_RUN = re.compile(r"[\x00-\x1f\x7f\u2028\u2029]+")
+# 줄바꿈·탭 같은 제어 문자(유니코드 Cc 전부: C0·DEL·C1, 그리고 줄·문단 구분자. 연달아 있으면 한 덩어리)를 찾는다.
+_CONTROL_RUN = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]+")
+# 화면에 보이지 않는 글자(폭 없는 공백, 글자 방향 바꾸기, BOM, 한글 채움 문자 등)는 지운다.
+# 이모지 등에 필요한 폭 없는 이음(U+200C·U+200D)은 남기되, 그것만 남은 제목은 아래 _has_visible이 막는다.
+_INVISIBLE = re.compile(
+    r"[\u00ad\u034f\u061c\u115f\u1160\u17b4\u17b5\u180b-\u180f\u200b\u200e\u200f\u202a-\u202e"
+    r"\u2060-\u206f\u3164\ufe00-\ufe0f\ufeff\uffa0\ufff0-\ufff8]+"
+)
+
+
+def _has_visible(title: str) -> bool:
+    """공백·형식 문자(Cf, 폭 없는 이음 포함)만으로 된 제목이 아닌지 본다."""
+    return any(not ch.isspace() and unicodedata.category(ch) != "Cf" for ch in title)
 
 
 @router.patch("/api/tasks/{task_id}", response_model=TaskOut)
@@ -197,8 +209,9 @@ def rename_task(task_id: str, payload: TaskTitleUpdate, db: Session = Depends(ge
     if not isinstance(raw, str):
         raise HTTPException(status_code=422, detail=MSG_TITLE)
     # 제어 문자는 공백 하나로 바꾼다(목록·근로자 화면 제목은 한 줄이다).
-    title = _CONTROL_RUN.sub(" ", raw).strip()
-    if not 1 <= len(title) <= TITLE_MAX:
+    # 보이지 않는 글자는 지운다(보이지 않는 글자만 있으면 빈 제목이다).
+    title = _INVISIBLE.sub("", _CONTROL_RUN.sub(" ", raw)).strip()
+    if not 1 <= len(title) <= TITLE_MAX or not _has_visible(title):
         raise HTTPException(status_code=422, detail=MSG_TITLE)
     task.title = title  # updated_at은 models._touch_task_updated_at이 갱신한다
     db.commit()
