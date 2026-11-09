@@ -15,14 +15,18 @@
 - (0006) 근로자 화면 0·1차: Step.picture_confirmed(사업주가 그림을 확인함), PerformanceLog.completed·client_event_id
   (어려움 신호와 완료를 나누고 오프라인 재전송을 묶는다), Worker.a11y_prefs·last_seen_at, HelpRequest(도움 요청).
   예전에는 [도와주세요]가 stuck=true 수행 로그로 저장돼, 마지막 단계에서 도움만 눌러도 직무가 '다 함'이 됐다.
+- (0007) 버전 고정: TaskVersion·TaskVersionStep(보낼 때 steps를 복사한 스냅샷). 배정은 task_version_id로 버전을
+  가리키고, 근로자 화면·완료 판정·도움·대시보드·내보내기는 그 버전 단계를 읽는다. steps는 사업주 편집 작업면이다.
+  수행 로그·도움 요청의 step_id는 버전 단계 id다(편집으로 지워지지 않는다). 배정의 '그 날'은 scheduled_day(현지 날짜).
 """
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy import (
     Boolean,
+    Date,
     DateTime,
     Float,
     ForeignKey,
@@ -32,10 +36,12 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     event,
+    inspect as sa_inspect,
     text,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
+import clock
 from auth import encrypt_access_code, hash_access_code
 from codes import new_workplace_code
 from database import Base
@@ -128,6 +134,13 @@ class Task(Base):
     # draft -> published -> archived
     status: Mapped[str] = mapped_column(String, default="draft")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+    # (0007) 마지막으로 보낸 버전(TaskVersion.id). 보낸 적 없으면 NULL. tasks와 task_versions가 서로 FK를 걸면
+    # 표 만들기·지우기 순서가 꼬여서 FK 없이 둔다(직무를 지울 때 버전도 함께 지운다).
+    current_version_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    # (0007) 사업주가 마지막으로 고친 시각(단계 변경·제목 변경 때 아래 before_flush가 갱신). 백필 = created_at.
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+    # (0007) 보관한 시각(2a-1부터 씀).
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     employer: Mapped["Employer"] = relationship(back_populates="tasks")
     steps: Mapped[list["Step"]] = relationship(
@@ -169,6 +182,53 @@ class Step(Base):
     tts_media: Mapped["MediaFile | None"] = relationship(foreign_keys=[tts_media_id], lazy="selectin")
 
 
+class TaskVersion(Base):
+    """(0007) 보낼 때 만든 직무 스냅샷. 같은 내용을 다시 보내면 새로 만들지 않는다(versions.same_content)."""
+    __tablename__ = "task_versions"
+    __table_args__ = (UniqueConstraint("task_id", "version_no", name="uq_task_versions_task_no"),)
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id"), index=True)
+    version_no: Mapped[int] = mapped_column(Integer)
+    title: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+    # 보낸 사업주 id(백필은 직무의 사업주).
+    created_by: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    steps: Mapped[list["TaskVersionStep"]] = relationship(
+        back_populates="version", order_by="TaskVersionStep.order_index",
+        cascade="all, delete-orphan",
+    )
+
+
+class TaskVersionStep(Base):
+    """(0007) 버전에 고정된 단계. 수행 로그·도움 요청은 이 id를 가리킨다.
+
+    백필한 버전 1의 단계 id는 원래 steps.id와 같다(근로자 기기의 옛 대기열이 그대로 맞는다). 그 뒤 버전은 새 uuid다.
+    source_step_id: 복사해 온 steps.id(버전을 넘어 같은 단계로 묶는 키). FK 없음 — 원래 단계는 지워질 수 있다.
+    사진·음성은 편집 단계와 같은 MediaFile 레코드를 가리킨다. media._unreferenced가 이 표의 참조도 세므로
+    편집기에서 사진을 바꿔도 지금 일하는 근로자의 사진은 남는다.
+    """
+    __tablename__ = "task_version_steps"
+    __table_args__ = (UniqueConstraint("version_id", "order_index", name="uq_task_version_steps_order"),)
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    version_id: Mapped[str] = mapped_column(ForeignKey("task_versions.id"), index=True)
+    source_step_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    order_index: Mapped[int] = mapped_column(Integer)
+    sentence: Mapped[str] = mapped_column(Text)
+    action_type: Mapped[str] = mapped_column(String, default="other")
+    symbol_query: Mapped[str] = mapped_column(Text, default="")
+    symbol_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    symbol_source: Mapped[str] = mapped_column(String, default="fallback")
+    symbol_media_id: Mapped[str | None] = mapped_column(ForeignKey("media_files.id"), nullable=True,
+                                                        index=True)
+    tts_media_id: Mapped[str | None] = mapped_column(ForeignKey("media_files.id"), nullable=True,
+                                                     index=True)
+
+    version: Mapped["TaskVersion"] = relationship(back_populates="steps")
+    symbol_media: Mapped["MediaFile | None"] = relationship(foreign_keys=[symbol_media_id], lazy="selectin")
+    tts_media: Mapped["MediaFile | None"] = relationship(foreign_keys=[tts_media_id], lazy="selectin")
+
+
 class MediaFile(Base):
     """사업주 소유 파일(업로드 사진·서버 합성 TTS mp3)의 레코드 (Phase 0.3).
 
@@ -190,11 +250,27 @@ class MediaFile(Base):
 
 class Assignment(Base):
     __tablename__ = "assignments"
+    __table_args__ = (
+        # 근로자 '오늘 할 일'(worker_id + scheduled_day)과 배정 규칙(같은 근로자·직무·날)의 조회.
+        Index("ix_assignments_worker_day", "worker_id", "scheduled_day"),
+    )
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
     task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id"), index=True)
     worker_id: Mapped[str] = mapped_column(ForeignKey("workers.id"), index=True)
+    # 보낸 시각(UTC). 사업주가 보낸 순서(결정 7) 정렬·완료 시각 하한·assigned_at 표시에만 쓴다. 날짜는 scheduled_day.
     assigned_date: Mapped[datetime] = mapped_column(DateTime, default=_now, index=True)
     status: Mapped[str] = mapped_column(String, default="assigned")
+    # (0007) 고정된 버전. NULL이면(백필이 못 채움) versions.assignment_steps가 task.steps로 대신 읽고 경고를 남긴다.
+    task_version_id: Mapped[str | None] = mapped_column(ForeignKey("task_versions.id"), nullable=True,
+                                                        index=True)
+    # (0007) 한 번의 보내기 묶음. 시각 순으로 정렬되는 문자열(send.new_batch_id) — 가장 큰 값이 마지막 보내기.
+    send_batch_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    # (0007) 근로자가 이 일을 하는 현지 날짜(KST). today·history·대시보드의 '그 날'.
+    scheduled_day: Mapped[date] = mapped_column(Date, default=clock.local_today)
+    # (0007) 이 배정이 지금 버전에 묶인 시각(다시 보내기로 옮기면 갱신).
+    pinned_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # (0007) 근로자 기기가 이 배정을 처음 받은 시각(/me/today가 한 번 씀). 받은 뒤에는 다시 보내도 옮기지 않는다.
+    first_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class PerformanceLog(Base):
@@ -204,7 +280,8 @@ class PerformanceLog(Base):
     )
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
     assignment_id: Mapped[str] = mapped_column(ForeignKey("assignments.id"), index=True)
-    step_id: Mapped[str] = mapped_column(ForeignKey("steps.id"), index=True)
+    # (0007) 버전 단계 id. 편집으로 steps가 지워져도 기록은 남는다.
+    step_id: Mapped[str] = mapped_column(ForeignKey("task_version_steps.id"), index=True)
     completed_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
     duration_sec: Mapped[float] = mapped_column(Float, default=0.0)
     replay_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -237,8 +314,9 @@ class HelpRequest(Base):
     employer_id: Mapped[str] = mapped_column(ForeignKey("employers.id"), index=True)
     worker_id: Mapped[str] = mapped_column(ForeignKey("workers.id"), index=True)
     assignment_id: Mapped[str] = mapped_column(ForeignKey("assignments.id"), index=True)
-    # 단계가 지워지면 NULL로 바꾼다(요청 기록은 남긴다). 직무 시작·완료 화면에서 부르면 처음부터 NULL.
-    step_id: Mapped[str | None] = mapped_column(ForeignKey("steps.id"), nullable=True, index=True)
+    # (0007) 버전 단계 id. 직무 시작·완료 화면에서 부르면 처음부터 NULL. 편집으로 지워지지 않는다.
+    step_id: Mapped[str | None] = mapped_column(ForeignKey("task_version_steps.id"), nullable=True,
+                                                index=True)
     state: Mapped[str] = mapped_column(String, default="open")
     # employer(사업주 [도와줬어요]) | step_done(근로자가 [다 했어요])
     resolution: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -294,3 +372,30 @@ def _reject_audit_mutation(_mapper, _connection, _target) -> None:
 
 event.listen(AccessAuditLog, "before_update", _reject_audit_mutation)
 event.listen(AccessAuditLog, "before_delete", _reject_audit_mutation)
+
+
+def _touch_task_updated_at(session: Session, _flush_context, _instances) -> None:
+    """단계를 더하거나 고치거나 지우면, 또는 제목을 바꾸면 그 직무의 updated_at(목록의 '고친 날')을 갱신한다.
+
+    단계 편집 함수마다 적으면 빠뜨리기 쉬워 flush 한 곳에서 한다. 보내기(status·current_version_id)는 고친 것이 아니다.
+    """
+    task_ids: set[str] = set()
+    for obj in list(session.new) + list(session.dirty) + list(session.deleted):
+        if isinstance(obj, Step) and obj.task_id:
+            if obj in session.dirty and not session.is_modified(obj):
+                continue
+            task_ids.add(obj.task_id)
+        elif isinstance(obj, Task) and obj in session.dirty and obj not in session.new:
+            if sa_inspect(obj).attrs.title.history.has_changes():
+                task_ids.add(obj.id)
+    if not task_ids:
+        return
+    now = _now()
+    with session.no_autoflush:
+        for tid in task_ids:
+            task = session.get(Task, tid)
+            if task is not None and task not in session.deleted:
+                task.updated_at = now
+
+
+event.listen(Session, "before_flush", _touch_task_updated_at)

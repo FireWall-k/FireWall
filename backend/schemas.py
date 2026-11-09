@@ -398,11 +398,25 @@ class StepOut(BaseModel):
     picture_state: PictureState = "none"
 
 
+class TaskVersionInfoOut(BaseModel):
+    """(2a-0) 보낸 버전 정보. current_no: 마지막으로 보낸 버전 번호(보낸 적 없으면 None)."""
+    current_no: int | None = None
+    # 보낸 뒤 고친 내용이 있는지(versions.same_content로 지금 단계와 마지막 버전을 비교).
+    has_unsent_changes: bool = False
+
+
 class TaskOut(BaseModel):
     id: str
     title: str
     status: str
     steps: list[StepOut]
+    # (2a-0) 아래는 더한 칸이다(옛 화면은 무시해도 된다).
+    version: TaskVersionInfoOut | None = None
+    # 오늘 배정 중 하는 중(완료 단계 1개 이상, 다 하지 않음)인 수.
+    in_progress_count: int = 0
+    # 이 직무를 받은 적 있는 근로자 수.
+    recipients_count: int = 0
+    updated_at: datetime | None = None
 
 
 class SplitPreviewStep(BaseModel):
@@ -524,6 +538,8 @@ class TodayCardOut(BaseModel):
     completed_at: datetime | None = None
     # 열린(open/acknowledged) 도움 요청 중 최신 1건. 새로고침 뒤 도움 띠 복원용.
     active_help: ActiveHelpOut | None = None
+    # (2a-0) 이 배정이 고정된 버전 번호. 근로자 화면은 쓰지 않는다(사업주 쪽·디버깅용).
+    task_version_no: int | None = None
 
 
 class HistoryStepOut(StepOut):
@@ -535,9 +551,12 @@ class HistoryCardOut(BaseModel):
     assignment_id: str
     task_id: str
     task_title: str
-    assigned_date: str  # YYYY-MM-DD, 근로자 현지 기준(APP_UTC_OFFSET_HOURS)
+    # YYYY-MM-DD, 근로자 현지 기준(APP_UTC_OFFSET_HOURS). (2a-0) 배정의 scheduled_day(그 일을 하는 날)다.
+    assigned_date: str
     status: str
     steps: list[HistoryStepOut]
+    # (2a-0) 이 배정이 고정된 버전 번호. 근로자 화면은 쓰지 않는다.
+    task_version_no: int | None = None
 
 
 class StepStat(BaseModel):
@@ -600,3 +619,59 @@ class CoachingOut(BaseModel):
     # AI 처리 동의가 없는 근로자 기록이 섞여 LLM을 쓰지 않고 규칙 기반 제안만 만든 경우 true.
     # 화면에서 "동의를 기록하면 더 자세한 제안을 받을 수 있다"고 안내하는 데 쓴다.
     ai_excluded: bool = False
+
+
+# --- (2a-0) 보내기: 서버 검사·보내기·받는 사람 (contract §1.4) ---
+SendBlockCode = Literal["no_picture", "unconfirmed_auto", "unreviewed_split", "no_steps", "archived"]
+SendWarnCode = Literal["too_long", "command_tone", "auto_caution"]
+SendOutcome = Literal["created", "repinned", "unchanged", "kept", "kept_in_progress"]
+
+
+class SendBlockOut(BaseModel):
+    """막는 항목. 화면 문구는 사업주 화면 copy.ts가 code와 숫자로 만든다(서버는 label을 보내지 않는다).
+    done/total: 이 항목을 통과한 단계 수/살펴본 단계 수. total=0인 줄은 화면에 보이지 않는다."""
+    code: SendBlockCode
+    done: int
+    total: int
+    step_ids: list[str] = []
+
+
+class SendWarnOut(BaseModel):
+    """막지 않는 경고(2b-1부터 채운다)."""
+    code: SendWarnCode
+    count: int
+    step_ids: list[str] = []
+
+
+class SendCheckOut(BaseModel):
+    ok: bool
+    blocking: list[SendBlockOut]
+    warnings: list[SendWarnOut]
+
+
+class SendRequest(BaseModel):
+    # 빈 목록은 send.py가 한국어 422로 막는다(검증 오류 문구보다 다음 할 일을 알려 주려고 기본값을 둔다).
+    worker_ids: list[str] = Field(default_factory=list, max_length=200)
+    # "today" | "tomorrow" | "YYYY-MM-DD"(현지 날짜)
+    day: str = Field(default="today", max_length=20)
+
+
+class SendResultItemOut(BaseModel):
+    worker_id: str
+    display_name: str
+    outcome: SendOutcome
+
+
+class SendResultOut(BaseModel):
+    version_no: int
+    version_created: bool
+    day: str  # YYYY-MM-DD
+    results: list[SendResultItemOut]
+
+
+class RecipientsOut(BaseModel):
+    last_batch_worker_ids: list[str]
+    all_ever_worker_ids: list[str]
+    workplace_last_batch_worker_ids: list[str]
+    # 이 직무의 오늘 배정 상태: none | not_started | in_progress | done
+    today_status: dict[str, Literal["none", "not_started", "in_progress", "done"]]
