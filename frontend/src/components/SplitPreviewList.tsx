@@ -107,7 +107,7 @@ export default function SplitPreviewList({ rows, onChange, onConfirm, confirming
   return (
     <section aria-labelledby="split-preview-title" className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="split-preview-title" className="break-keep text-lg font-bold text-slate-900">
+        <h2 id="split-preview-title" tabIndex={-1} className="break-keep text-lg font-bold text-slate-900 focus:outline-none">
           이렇게 나눴어요 <span className="text-sm font-normal text-slate-600">({rows.length}단계)</span>
         </h2>
         <p className="break-keep text-sm text-slate-600">한 줄에 동작 하나, 그림 한 장</p>

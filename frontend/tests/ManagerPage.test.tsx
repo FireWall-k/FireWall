@@ -451,6 +451,52 @@ describe("ManagerPage — 그림 확인을 서버에 적는다(2a-0)", () => {
   });
 });
 
+describe("ManagerPage — [그림 확인]을 키보드로 눌러도 초점이 body로 빠지지 않는다(2a-1 2회차 검증)", () => {
+  const autoHigh = {
+    ...baseStep, symbol_url: "http://localhost:8000/api/aac/images/cafe/CAFE_012.webp",
+    symbol_source: "LOCAL_AAC", needs_fallback: false, picture_state: "auto_high",
+  };
+  const two = [autoHigh, { ...autoHigh, id: "s2", order: 2, sentence: "상자를 내려놓으세요" }];
+
+  beforeEach(() => {
+    listWorkers.mockResolvedValue(workers);
+  });
+
+  it("확인하면 단추가 사라지고 초점은 다음 단계의 확인 단추로, 마지막이면 그 단계 문장 칸으로 간다", async () => {
+    const user = userEvent.setup();
+    createTask.mockResolvedValue({ id: "task-1", title: "직무", status: "draft", steps: two });
+    reqMock.mockImplementation((path: string) => Promise.resolve(
+      path.includes("/s1/") ? { ...two[0], picture_state: "confirmed" } : { ...two[1], picture_state: "confirmed" }));
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    screen.getByRole("button", { name: /1단계 그림 확인$/ }).focus();
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: /2단계 그림 확인$/ })));
+
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(screen.queryByRole("button", { name: /단계 그림 확인$/ })).not.toBeInTheDocument());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText("2단계 문장")));
+  });
+
+  it("확인에 실패하면 다시 나타난 그 단계의 확인 단추로 돌아간다", async () => {
+    const user = userEvent.setup();
+    createTask.mockResolvedValue({ id: "task-1", title: "직무", status: "draft", steps: two });
+    let fail: (e: unknown) => void = () => {};
+    reqMock.mockImplementation(() => new Promise((_resolve, reject) => { fail = reject; }));
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    screen.getByRole("button", { name: /1단계 그림 확인$/ }).focus();
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: /2단계 그림 확인$/ })));
+    await act(async () => fail(new ApiError(422, "그림이 없는 단계는 확인할 수 없어요. 먼저 그림을 골라 주세요.")));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: /1단계 그림 확인$/ })));
+  });
+});
+
 describe("ManagerPage — [그림 확인] 요청 중에는 보내지 않는다(2a-0 1회차 검증)", () => {
   const autoHigh = {
     ...baseStep, symbol_url: "http://localhost:8000/api/aac/images/cafe/CAFE_012.webp",

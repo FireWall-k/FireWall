@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Bar,
   BarChart,
@@ -341,18 +341,35 @@ function DashboardPage() {
     }
     try {
       await archiveTask(taskId);
+      // 누른 단추가 사라지므로 초점을 '보관함에 있는 직무예요' 표시로 옮긴다(body로 빠지지 않게).
+      // 표시가 화면에 붙은 뒤에 옮겨야 하므로 아래 useLayoutEffect가 한다(rAF 한 번은 React 반영보다 빠를 수 있다).
+      focusArchivedFor.current = taskId;
       // 목록에서 빼지 않고 '보관함'으로 표시한다. 다시 불러와도 서버가 같은 직무를 주므로(기록 열람은 남긴다)
       // 화면과 서버가 같게 보이고, [보관하기]를 또 누를 수 없다.
       setWorkerTasks((list) => list.map((t) => (t.id === taskId ? { ...t, archived: true } : t)));
       setError(null);
-      // 누른 단추가 사라지므로 초점을 '보관함에 있는 직무예요' 표시로 옮긴다(body로 빠지지 않게).
-      requestAnimationFrame(() => document.getElementById("dashboard-archived-note")?.focus());
     } catch (e) {
       setError(e instanceof AuthError ? "다시 로그인해 주세요." : e instanceof ApiError && e.detail ? e.detail : dashboardArchive.failed);
     }
   }
 
   const currentArchived = workerTasks.find((t) => t.id === taskId)?.archived === true;
+
+  // 보관한 직무의 표시가 그려진 바로 뒤(같은 커밋)에 초점을 옮긴다. 그 사이 다른 직무로 바꿨으면 옮기지 않는다.
+  const focusArchivedFor = useRef("");
+  const archivedNoteRef = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const target = focusArchivedFor.current;
+    if (!target) return;
+    if (target !== taskId) {
+      focusArchivedFor.current = "";
+      return;
+    }
+    if (currentArchived && archivedNoteRef.current) {
+      focusArchivedFor.current = "";
+      archivedNoteRef.current.focus();
+    }
+  }, [taskId, currentArchived]);
 
   if (loading) return <EmptyState message="근로자 목록을 불러오는 중입니다…" />;
 
@@ -450,7 +467,7 @@ function DashboardPage() {
             </div>
           )}
           {taskId && currentArchived && (
-            <span id="dashboard-archived-note" tabIndex={-1}
+            <span id="dashboard-archived-note" ref={archivedNoteRef} tabIndex={-1}
                   className="inline-flex items-center gap-1.5 px-1 py-2 text-sm font-medium text-ink-700 focus:outline-none">
               <Archive size={15} aria-hidden="true" />
               {dashboardArchive.already}

@@ -446,6 +446,30 @@ describe("1차 검증 반영 — 편집기", () => {
   });
 });
 
+describe("2a-1 2회차 검증 — 키보드로 나누면 초점이 body로 빠지지 않는다", () => {
+  it("[단계로 나누기]를 Enter로 누르면 초점이 '이렇게 나눴어요' 제목으로 간다", async () => {
+    const user = userEvent.setup();
+    render(<ManagerPage />);
+    await user.type(screen.getByLabelText("직무 내용"), INPUT);
+    screen.getByRole("button", { name: "단계로 나누기" }).focus();
+    await user.keyboard("{Enter}");
+    const heading = await screen.findByRole("heading", { name: /이렇게 나눴어요/ });
+    await waitFor(() => expect(document.activeElement).toBe(heading));
+  });
+
+  it("나누기에 실패하면 초점이 다시 누를 수 있는 [단계로 나누기]로 돌아온다", async () => {
+    const user = userEvent.setup();
+    splitPreview.mockRejectedValue(new Error("직무를 단계로 나누지 못했습니다. 잠시 뒤 다시 시도해 주세요."));
+    render(<ManagerPage />);
+    await user.type(screen.getByLabelText("직무 내용"), INPUT);
+    const button = screen.getByRole("button", { name: "단계로 나누기" });
+    button.focus();
+    await user.keyboard("{Enter}");
+    await screen.findByRole("alert");
+    await waitFor(() => expect(document.activeElement).toBe(button));
+  });
+});
+
 describe("2차 검증 반영", () => {
   async function openEditor(user: ReturnType<typeof userEvent.setup>) {
     splitPreview.mockResolvedValue({ ...PREVIEW, steps: PREVIEW.steps.slice(0, 2) });

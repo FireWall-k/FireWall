@@ -161,6 +161,8 @@ export default function ManagerPage() {
     const wasRecheck = recheckSteps.has(stepId);
     const wasBlocked = blockedStepIds.has(stepId);
     setError(null);
+    // 누른 단추가 곧 사라진다 — 초점은 아래 useLayoutEffect가 다음 확인 단추(없으면 이 단계 문장 칸)로 옮긴다.
+    focusAfterConfirm.current = { stepId, back: false };
     setPendingConfirm((prev) => withId(prev, stepId));
     confirmStep(stepId);
     try {
@@ -177,6 +179,7 @@ export default function ManagerPage() {
       if (wasRecheck) setRecheckSteps((prev) => withId(prev, stepId));
       if (wasBlocked) setBlockedStepIds((prev) => withId(prev, stepId));
       setConfirmedSteps((prev) => withoutId(prev, stepId));
+      focusAfterConfirm.current = { stepId, back: true }; // 실패하면 다시 나타난 그 단추로 돌아간다.
       setError(e instanceof Error ? e.message : "그림을 확인하지 못했어요. 잠시 뒤 다시 눌러 주세요.");
     } finally {
       setPendingConfirm((prev) => withoutId(prev, stepId));
@@ -238,6 +241,44 @@ export default function ManagerPage() {
     if (el) el.focus();
     else editorHeading.current?.focus();
   }, [task]);
+
+  // 2a-1 2회차 검증: 키보드로 누른 단추가 사라지거나 꺼지면 초점이 body로 빠졌다(이 화면이 /manager일 때부터 있던 문제).
+  // 화면이 반영된 커밋 바로 뒤에, 초점을 잃었을 때만(다른 곳으로 옮겼으면 그대로) 다음 할 곳으로 옮긴다.
+  const focusAfterSplit = useRef(false);
+  const focusAfterConfirm = useRef<{ stepId: string; back: boolean } | null>(null);
+  const decomposeButton = useRef<HTMLButtonElement | null>(null);
+  useLayoutEffect(() => {
+    const active = document.activeElement as HTMLElement | null;
+    const lost = !active || active === document.body || !active.isConnected
+      || (active instanceof HTMLButtonElement && active.disabled);
+    if (focusAfterSplit.current && !splitting) {
+      focusAfterSplit.current = false;
+      if (lost) {
+        // 나눴으면 '이렇게 나눴어요' 제목으로, 못 나눴으면(오류) 다시 누를 수 있는 [단계로 나누기]로.
+        const heading = preview ? document.getElementById("split-preview-title") : null;
+        (heading ?? decomposeButton.current)?.focus();
+      }
+    }
+    const want = focusAfterConfirm.current;
+    if (want && task) {
+      const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-confirm-step]"));
+      const own = buttons.find((b) => b.dataset.confirmStep === want.stepId);
+      if (want.back) {
+        // 실패: 단추가 다시 나타나면 그리로(초점을 잃었거나 다음 확인 단추로 옮겨 둔 경우에만).
+        if (!own) return;
+        focusAfterConfirm.current = null;
+        if (lost || (active instanceof HTMLButtonElement && active.dataset.confirmStep)) own.focus();
+        return;
+      }
+      if (own) return; // 아직 단추가 그대로다 — 사라진 커밋에서 옮긴다.
+      focusAfterConfirm.current = null;
+      if (!lost) return;
+      const order = task.steps.findIndex((s) => s.id === want.stepId);
+      const after = buttons.find((b) => task.steps.findIndex((s) => s.id === b.dataset.confirmStep) > order);
+      const next = after ?? buttons[0] ?? stepInputs.current.get(want.stepId);
+      next?.focus();
+    }
+  });
   // 편집기 문장 칸은 내용만큼 높이를 늘린다(390px에서 한 줄 칸이 나눈 문장을 잘라 보여 줬다).
   useLayoutEffect(() => {
     stepInputs.current.forEach(fitHeight);
@@ -265,6 +306,7 @@ export default function ManagerPage() {
   // 목록을 고쳤으면 다시 나누기 전에 묻는다(새로 나누면 고친 줄이 사라지고 GPT를 다시 부른다).
   async function handleDecompose() {
     if (previewEdited && !window.confirm("고친 줄이 있어요. 새로 나눌까요? 고친 내용은 사라져요.")) return;
+    focusAfterSplit.current = true; // 나누는 동안 단추가 꺼진다 — 끝나면 위 useLayoutEffect가 초점을 옮긴다.
     setSplitting(true);
     setConfirmError(null);
     setError(null);
@@ -702,6 +744,7 @@ export default function ManagerPage() {
           근로자 이름은 보내기 전에 '근로자 A'처럼 바꿔 보내요.
         </p>
         <button
+          ref={decomposeButton}
           onClick={handleDecompose}
           // 목록이 지금 원문 그대로면(원문도 목록도 안 고침) 다시 나눌 것이 없다 — GPT를 다시 부르지 않는다.
           disabled={busy || splitting || confirming || !rawInput.trim() || (!!preview && !previewStale && !previewEdited)}
@@ -934,7 +977,7 @@ export default function ManagerPage() {
                       </span>
                     )}
                     {needsConfirm(s) && (
-                      <button type="button" onClick={() => handleConfirmPicture(s.id)}
+                      <button type="button" onClick={() => handleConfirmPicture(s.id)} data-confirm-step={s.id}
                               // 접근 이름은 보이는 글자로 시작한다(axe label-content-name-mismatch).
                               aria-label={`✦ 자동 · 그림이 맞으면 누르세요, ${s.order}단계 그림 확인`}
                               className="rounded border border-auto-700/40 bg-auto-50 px-2 py-0.5 text-xs font-semibold text-auto-700 hover:bg-white">
