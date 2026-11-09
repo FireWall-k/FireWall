@@ -27,7 +27,7 @@ import main  # noqa: E402
 import ratelimit  # noqa: E402
 import retention  # noqa: E402
 from auth import hash_password, make_token  # noqa: E402
-from conftest import TEST_AAC_IMAGE, auth, give_pictures, publish  # noqa: E402
+from conftest import TEST_AAC_IMAGE, auth, give_pictures, publish, delete_task  # noqa: E402
 from database import SessionLocal  # noqa: E402
 from models import (  # noqa: E402
     AccessAuditLog,
@@ -519,7 +519,7 @@ def test_publish_blocked_when_task_has_no_steps(client, employer_token):
     r = client.post(f"/api/tasks/{tid}/publish", headers=auth(employer_token))
     assert r.status_code == 422
     assert r.json() == {"detail": "단계가 하나도 없어요. 단계를 넣어 주세요.", "code": "no_steps", "step_ids": []}
-    client.delete(f"/api/tasks/{tid}", headers=auth(employer_token))
+    delete_task(client, tid, auth(employer_token))
 
 
 def _set_step(step_id, **values):
@@ -745,7 +745,7 @@ def test_delete_worker_removes_help_requests(client, employer_token):
 def test_delete_task_removes_help_requests(client, employer_token, worker):
     task, aid, (s1, _) = _assigned(client, employer_token, worker["id"])
     _help(client, worker["token"], aid, s1)
-    assert client.delete(f"/api/tasks/{task['id']}", headers=auth(employer_token)).status_code == 200
+    assert delete_task(client, task['id'], auth(employer_token)).status_code == 200
     with SessionLocal() as db:
         assert db.scalars(select(HelpRequest).where(HelpRequest.assignment_id == aid)).all() == []
 

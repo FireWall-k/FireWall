@@ -138,8 +138,9 @@ compose 기본 프로필의 `scheduler` 서비스(backend와 같은 이미지, `
 | `coaching.view` | AI 코칭 조회 |
 | `help.list` | 사업주 화면 도움 알림 띠 조회(띠에 실린 근로자마다 한 줄, 5초 폴링은 묶는다) |
 | `task.recipients` | 보내기 시트의 받는 사람 고르기(오늘 이 직무 배정이 있어 진행 상태가 실린 근로자마다 한 줄) |
+| `task.list` | 사업주 직무 목록(`GET /api/employer/tasks`)·보관·꺼내기 응답의 받은 사람 아바타(이름 앞 글자). 실린 근로자마다 한 줄, 실린 사람이 없으면 남기지 않음 |
 
-- 화면이 저절로 되풀이하는 조회(`dashboard.view`, `dashboard.workers`, `worker.list`, `worker.history`, `worker.consents`, `coaching.view`, `help.list`, `task.recipients`)만 같은 사업주·행위·근로자·IP가 `ACCESS_AUDIT_DEDUPE_SECONDS`(기본 60초) 안에 반복되면 한 줄로 합친다(대시보드 3초 폴링). 내보내기·삭제·동의 기록·수정은 매번 남긴다.
+- 화면이 저절로 되풀이하는 조회(`dashboard.view`, `dashboard.workers`, `worker.list`, `worker.history`, `worker.consents`, `coaching.view`, `help.list`, `task.recipients`, `task.list`)만 같은 사업주·행위·근로자·IP가 `ACCESS_AUDIT_DEDUPE_SECONDS`(기본 60초) 안에 반복되면 한 줄로 합친다(대시보드 3초 폴링). 내보내기·삭제·동의 기록·수정은 매번 남긴다.
 - 근로자 목록(`worker.list`)과 근로자를 고르지 않은 집계 화면(`dashboard.workers`, 근로자 미지정 `dashboard.view`·`coaching.view`)은 화면에 실린 근로자마다 한 줄씩 남긴다(`worker_id=None` 한 줄로는 누구의 기록이 보였는지 알 수 없다). 실린 근로자가 없으면 `worker_id=None` 한 줄만 남긴다.
 - 다른 사업장 근로자 id로 대시보드·코칭을 열면 404이고 감사 행을 남기지 않는다.
 - ORM으로 수정·삭제하면 예외가 난다(`models.py` 매퍼 이벤트). 지우는 코드는 `retention.py`뿐이다(테스트가 확인).

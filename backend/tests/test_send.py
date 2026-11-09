@@ -19,7 +19,7 @@ from sqlalchemy import func, select  # noqa: E402
 
 import clock  # noqa: E402
 from auth import hash_password, make_token  # noqa: E402
-from conftest import TEST_AAC_IMAGE, auth, give_pictures  # noqa: E402
+from conftest import TEST_AAC_IMAGE, auth, give_pictures, delete_task  # noqa: E402
 from database import SessionLocal  # noqa: E402
 from models import AccessAuditLog, Assignment, Employer, Step, Task, TaskVersion, Worker  # noqa: E402
 
@@ -343,7 +343,7 @@ def test_send_check_codes(client, employer_token, workers):
     assert r.status_code == 422 and r.json() == {"detail": "단계가 하나도 없어요. 단계를 넣어 주세요.",
                                                  "code": "no_steps", "step_ids": []}
     assert client.post(f"/api/tasks/{empty}/publish", headers=emp).json()["code"] == "no_steps"
-    client.delete(f"/api/tasks/{empty}", headers=emp)
+    delete_task(client, empty, emp)
 
 
 def test_send_check_has_no_label(client, employer_token):

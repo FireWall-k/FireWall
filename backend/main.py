@@ -64,6 +64,7 @@ from auth import (
 import clock
 import db_migrate
 import send
+import task_list
 import versions
 from codes import normalize_workplace_code
 from database import checkpoint_wal, get_db
@@ -1247,8 +1248,13 @@ def get_task(task_id: str, db: Session = Depends(get_db),
 def delete_task(task_id: str, db: Session = Depends(get_db),
                 user: dict = Depends(require_employer)) -> dict:
     """직무를 삭제한다. 단계는 cascade로 함께 지워지고, 배정/수행 로그/도움 요청/버전은 명시적으로 정리한다
-    (contract §1.7: 버전, 버전 단계, 배정, 로그, 도움, 미디어 참조)."""
+    (contract §1.7: 버전, 버전 단계, 배정, 로그, 도움, 미디어 참조).
+
+    (2a-1) 보관함으로 옮긴 직무만 지운다(409). 기록까지 사라지는 일이라, 먼저 보관해 근로자에게서 거둔 뒤에만 한다.
+    응답 모양({ok: true})은 그대로다."""
     task = _owned_task(task_id, user["sub"], db)
+    if not send._is_archived(task):
+        raise HTTPException(status_code=409, detail="보관함으로 옮긴 직무만 완전히 지울 수 있어요.")
     assignment_ids = [a.id for a in db.scalars(
         select(Assignment).where(Assignment.task_id == task_id)
     ).all()]
@@ -1790,6 +1796,9 @@ def assign_task(task_id: str, request: Request, payload: AssignRequest = AssignR
     """옛 사업주 화면의 배정. (2a-0) 안에서 보내기와 같은 함수(send.send_to_workers, day=today)를 쓴다 — 같은 검사,
     같은 버전 고정, 같은 배정 규칙. 응답 모양은 그대로(근로자마다 배정 하나)."""
     task = _owned_task(task_id, user["sub"], db)
+    if send._is_archived(task):
+        # (2a-1) 보관한 직무는 보내기와 같은 409(code archived). '게시된 직무만' 400보다 먼저 본다.
+        raise send.ApiError(409, send.MSG_ARCHIVED, code="archived", step_ids=[])
     if task.status != "published":
         raise HTTPException(status_code=400, detail="게시된 직무만 배정할 수 있습니다.")
     _ensure_sendable(task)
@@ -2729,3 +2738,4 @@ def remove_step_photo(task_id: str, step_id: str,
 
 # (2a-0) 보내기 검사·보내기·받는 사람(send.py). 새 라우트는 APIRouter 모듈에 두고 여기서는 include만 한다.
 app.include_router(send.router)
+app.include_router(task_list.router)

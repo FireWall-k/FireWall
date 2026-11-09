@@ -23,7 +23,7 @@ import manage
 import media
 import photos
 import tts
-from conftest import auth, publish
+from conftest import auth, publish, delete_task
 from database import SessionLocal
 from models import MediaFile, Step
 
@@ -270,7 +270,7 @@ def test_deleting_task_releases_its_photos(client, employer_token):
     url = _upload(client, employer_token, task)["symbol_url"]
     with SessionLocal() as db:
         path = photos.get_photo_dir() / db.get(MediaFile, _media_id(url)).storage_key
-    assert client.delete(f"/api/tasks/{task['id']}", headers=auth(employer_token)).status_code == 200
+    assert delete_task(client, task['id'], auth(employer_token)).status_code == 200
     assert not path.exists()
     assert client.get(_path_of(url)).status_code == 404
 

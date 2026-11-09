@@ -23,7 +23,7 @@ import manage
 import media
 import retention
 from auth import verify_token
-from conftest import auth, publish
+from conftest import auth, publish, delete_task
 from database import SessionLocal, engine
 from models import AccessAuditLog, Assignment, PerformanceLog, Step, Worker, WorkerConsent
 
@@ -384,7 +384,7 @@ def test_delete_worker_leaves_no_trace_in_db_or_disk(client, capture):
     _grant(client, token, wid)
     # 직무 문장에도 이름이 들어 있다. 직무는 사업주 데이터라 근로자 삭제로 지우지 않으므로
     # 여기서는 직무를 먼저 지워, 남은 흔적이 근로자 삭제 경로 때문인지만 본다.
-    client.delete(f"/api/tasks/{task['id']}", headers=auth(token))
+    delete_task(client, task['id'], auth(token))
     assert name.encode("utf-8") in _db_files_bytes()  # 전제: 지우기 전에는 디스크에 있다
 
     r = client.delete(f"/api/workers/{wid}", headers=auth(token))
@@ -702,7 +702,7 @@ def test_delete_with_open_reader_retries_and_purge_finishes_checkpoint(client, c
     token = _new_employer(client)
     name = "열린읽기중삭제대상"
     wid, task = _coaching_setup(client, token, capture, name=name)
-    client.delete(f"/api/tasks/{task['id']}", headers=auth(token))
+    delete_task(client, task['id'], auth(token))
 
     reader = sqlite3.connect(engine.url.database, isolation_level=None)
     try:

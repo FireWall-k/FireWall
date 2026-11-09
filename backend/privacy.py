@@ -319,6 +319,8 @@ DEDUPED_ACTIONS = frozenset({
     "help.list",
     # (2a-0) 보내기 시트의 받는 사람 고르기(근로자별 오늘 진행 상태가 실린다).
     "task.recipients",
+    # (2a-1) 직무 목록의 받은 사람 아바타(이름 앞 글자). 목록을 열 때마다·행동 뒤마다 다시 부른다.
+    "task.list",
 })
 
 
