@@ -21,6 +21,12 @@ interface Seed {
   taskId: string;
   title: string;
   sentences: string[];
+  /** 사업주 편집 단계 id(steps). 고치기·지우기 API에 쓴다. */
+  editStepIds: string[];
+  /**
+   * 근로자가 받은 버전의 단계 id. (2a-0) 보낼 때 버전 단계가 새 id로 고정되므로 편집 단계 id와 다르다.
+   * 근로자 토큰이 생긴 뒤(pairAndLogin) 오늘 할 일에서 채운다.
+   */
   stepIds: string[];
   assignmentId: string;
 }
@@ -41,11 +47,20 @@ async function employerToken(request: APIRequestContext): Promise<string> {
 
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 
-/** 그림 없는 단계에 그림을 붙인다(그림 검색 1순위, 없으면 다른 단계 그림). */
+/**
+ * 그림 없는 단계에 그림을 붙이고(그림 검색 1순위, 없으면 다른 단계 그림), 자동으로 붙은 그림은 사업주처럼
+ * 확인한다. (2a-0) 서버가 확인 안 한 자동 그림(auto_high·choose)을 보내기에서 422로 막는다.
+ */
 async function givePictures(request: APIRequestContext, token: string, taskId: string, steps: Step[]) {
   const fallback = steps.find((s) => s.symbol_url)?.symbol_url ?? null;
   for (const s of steps) {
-    if (s.symbol_url && s.picture_state !== "none") continue;
+    if (s.picture_state === "confirmed") continue;
+    if (s.symbol_url && s.picture_state && s.picture_state !== "none") {
+      await ok(
+        await request.post(`${API}/api/tasks/${taskId}/steps/${s.id}/picture/confirm`, { headers: auth(token) }),
+      );
+      continue;
+    }
     const found = await ok<{ matches: { image_url: string }[] }>(
       await request.post(`${API}/api/aac/search`, { headers: auth(token), data: { query: s.sentence, limit: 3 } }),
     );
@@ -87,7 +102,8 @@ async function seed(request: APIRequestContext, tag: string): Promise<Seed> {
     taskId: task.id,
     title: task.title,
     sentences: task.steps.map((s) => s.sentence),
-    stepIds: task.steps.map((s) => s.id),
+    editStepIds: task.steps.map((s) => s.id),
+    stepIds: [],
     assignmentId: asg[0].id,
   };
 }
@@ -103,7 +119,7 @@ async function shot(page: Page, name: string) {
 /** 근로자 토큰으로 오늘 할 일(다 한 일 포함)에서 이 배정 카드를 읽는다. */
 async function todayCard(page: Page, request: APIRequestContext, assignmentId: string) {
   const token = await page.evaluate(() => localStorage.getItem("jobcard_token"));
-  const list = await ok<{ assignment_id: string; status: string; done_step_ids: string[]; active_help: unknown }[]>(
+  const list = await ok<{ assignment_id: string; status: string; done_step_ids: string[]; active_help: unknown; steps: Step[] }[]>(
     await request.get(`${API}/api/worker/me/today?include_done=true`, { headers: auth(token ?? "") }),
   );
   const card = list.find((c) => c.assignment_id === assignmentId);
@@ -111,7 +127,7 @@ async function todayCard(page: Page, request: APIRequestContext, assignmentId: s
   return card;
 }
 
-async function pairAndLogin(page: Page, s: Seed) {
+async function pairAndLogin(page: Page, request: APIRequestContext, s: Seed) {
   await page.goto("/w/setup");
   await page.getByLabel("가게 코드").fill(s.workplaceCode);
   await page.getByRole("button", { name: "연결하기" }).click();
@@ -121,10 +137,22 @@ async function pairAndLogin(page: Page, s: Seed) {
   for (const d of s.code) await page.getByRole("button", { name: d, exact: true }).click();
   await expect(page).toHaveURL(/\/w\/today$/, { timeout: 15_000 });
   await page.getByTestId("job-card").first().waitFor();
+  // 근로자가 받은 버전의 단계 id(편집 단계 id와 다름).
+  const card = await todayCard(page, request, s.assignmentId);
+  expect(card.steps.map((x) => x.sentence)).toEqual(s.sentences);
+  s.stepIds = card.steps.map((x) => x.id);
 }
 
+// 근로자 버튼은 600ms 안의 두 번째 누름을 무시한다(WorkerButton TAP_DEBOUNCE_MS, 손 떨림 막기). 칭찬 0.4초 뒤 다음
+// 단계가 뜨자마자 누르면 그 간격 안이라 누름이 버려져 시험이 가끔 멈췄다 — 사람처럼 간격을 두고 누른다.
+const TAP_GAP_MS = 650;
+let lastDoneTap = 0;
+
 async function pressDone(page: Page, expectUrl: RegExp) {
+  const wait = lastDoneTap + TAP_GAP_MS - Date.now();
+  if (wait > 0) await page.waitForTimeout(wait);
   await page.getByRole("button", { name: "다 했어요" }).click();
+  lastDoneTap = Date.now();
   await expect(page).toHaveURL(expectUrl, { timeout: 10_000 });
 }
 
@@ -241,7 +269,7 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
   test("일하는 중 인터넷이 끊겼다가 돌아오면 기록을 잃지 않는다", async ({ page, request }) => {
     const s = await seed(request, `끊김${test.info().project.name}`);
     const n = s.sentences.length;
-    await pairAndLogin(page, s);
+    await pairAndLogin(page, request, s);
     await page.goto(`/w/job/${s.assignmentId}`);
     await page.getByRole("button", { name: "시작하기" }).click();
     await pressDone(page, stepUrl(s, 2));
@@ -299,7 +327,7 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
 
   test("일하는 중 새로고침하면 그 단계에서 이어 간다", async ({ page, request }) => {
     const s = await seed(request, `이어${test.info().project.name}`);
-    await pairAndLogin(page, s);
+    await pairAndLogin(page, request, s);
     await page.goto(`/w/job/${s.assignmentId}`);
     await page.getByRole("button", { name: "시작하기" }).click();
     await pressDone(page, stepUrl(s, 2));
@@ -335,6 +363,102 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
   });
 });
 
+// (2a-0) 결정 5: 보낸 직무를 고쳐도 하는 중인 근로자는 받은 버전 그대로 끝내고, 고친 내용은 다음 배정부터 간다.
+test.describe("실제 백엔드 — 하는 중에 고쳐도 그대로", () => {
+  test("1단계를 끝낸 뒤 사업주가 문장 고치기·지우기·더하기·순서 바꾸기·다시 보내기를 해도 진행·완료가 어긋나지 않는다", async ({ page, request }) => {
+    const s = await seed(request, `고침${test.info().project.name}`);
+    const n = s.sentences.length;
+    const h = auth(s.employer);
+    await pairAndLogin(page, request, s);
+    await page.goto(`/w/job/${s.assignmentId}`);
+    await page.getByRole("button", { name: "시작하기" }).click();
+    await expect(page.getByTestId("step-sentence")).toHaveText(s.sentences[0]);
+    await pressDone(page, stepUrl(s, 2));
+    await expect.poll(async () => (await todayCard(page, request, s.assignmentId)).done_step_ids).toEqual([s.stepIds[0]]);
+    const before = await todayCard(page, request, s.assignmentId);
+
+    // 사업주: 2단계 문장을 고치고, 마지막 단계를 지우고, 새 단계를 더하고(그림 붙임), 순서를 뒤집는다.
+    const edited = "행주를 물에 헹궈요.";
+    await ok(await request.patch(`${API}/api/tasks/${s.taskId}/steps/${s.editStepIds[1]}`, { headers: h, data: { sentence: edited } }));
+    await ok(await request.delete(`${API}/api/tasks/${s.taskId}/steps/${s.editStepIds[n - 1]}`, { headers: h }));
+    const added = await ok<{ steps: Step[] }>(
+      await request.post(`${API}/api/tasks/${s.taskId}/steps`, { headers: h, data: { sentence: "의자를 닦아요." } }),
+    );
+    await givePictures(request, s.employer, s.taskId, added.steps);
+    const reversed = [...added.steps].sort((a, b) => b.order - a.order).map((x) => x.id);
+    await ok(await request.patch(`${API}/api/tasks/${s.taskId}/steps/reorder`, { headers: h, data: { step_ids: reversed } }));
+    const draft = await ok<{ steps: Step[]; version: { current_no: number; has_unsent_changes: boolean }; in_progress_count: number }>(
+      await request.get(`${API}/api/tasks/${s.taskId}`, { headers: h }),
+    );
+    expect(draft.version).toEqual({ current_no: 1, has_unsent_changes: true });
+    expect(draft.in_progress_count).toBe(1);
+
+    // 근로자: 오늘 할 일은 받은 그대로(단계 id·문장·완료 기록).
+    let c = await todayCard(page, request, s.assignmentId);
+    expect(c.steps.map((x) => x.id)).toEqual(s.stepIds);
+    expect(c.steps.map((x) => x.sentence)).toEqual(s.sentences);
+    expect(c.done_step_ids).toEqual(before.done_step_ids);
+
+    // 다시 보내기: 새 버전을 만들지만, 하는 중인 이 근로자는 옛 버전을 그대로 한다(kept_in_progress).
+    const resend = await ok<{ version_no: number; version_created: boolean; results: { worker_id: string; outcome: string }[] }>(
+      await request.post(`${API}/api/tasks/${s.taskId}/send`, { headers: h, data: { worker_ids: [s.workerId], day: "today" } }),
+    );
+    expect(resend.version_created).toBe(true);
+    expect(resend.version_no).toBe(2);
+    expect(resend.results).toEqual([expect.objectContaining({ worker_id: s.workerId, outcome: "kept_in_progress" })]);
+
+    // 새로고침해도 2단계, 옛 문장 그대로.
+    await page.reload();
+    await expect(page).toHaveURL(stepUrl(s, 2));
+    await expect(page.getByTestId("step-sentence")).toHaveText(s.sentences[1]);
+    await shot(page, "30-edit-during-work-step2");
+
+    // 남은 단계를 모두 끝내면 완료(지운 마지막 단계까지 받은 버전대로).
+    for (let i = 2; i < n; i++) {
+      await pressDone(page, stepUrl(s, i + 1));
+      await expect(page.getByTestId("step-sentence")).toHaveText(s.sentences[i]);
+    }
+    await pressDone(page, new RegExp(`/w/job/${s.assignmentId}/done$`));
+    c = await todayCard(page, request, s.assignmentId);
+    expect(c.status).toBe("done");
+    expect(c.done_step_ids).toEqual(s.stepIds);
+    // 기록 수 그대로 — 편집이 기록을 지우지 않았다.
+    const exp = await ok<{ performance_logs: { assignment_id: string; step_id: string; completed: boolean }[] }>(
+      await request.get(`${API}/api/workers/${s.workerId}/export`, { headers: h }),
+    );
+    const logs = exp.performance_logs.filter((l) => l.assignment_id === s.assignmentId);
+    expect(logs.map((l) => l.step_id).sort()).toEqual([...s.stepIds].sort());
+
+    // 다 한 뒤 다시 보내면 새 배정(created)이 고친 내용(버전 2)으로 온다.
+    const again = await ok<{ version_no: number; version_created: boolean; results: { outcome: string }[] }>(
+      await request.post(`${API}/api/tasks/${s.taskId}/send`, { headers: h, data: { worker_ids: [s.workerId], day: "today" } }),
+    );
+    expect(again.version_created).toBe(false);
+    expect(again.version_no).toBe(2);
+    expect(again.results.map((r) => r.outcome)).toEqual(["created"]);
+    const token = await page.evaluate(() => localStorage.getItem("jobcard_token"));
+    const list = await ok<{ assignment_id: string; task_id: string; status: string; task_version_no: number; steps: Step[] }[]>(
+      await request.get(`${API}/api/worker/me/today?include_done=true`, { headers: auth(token ?? "") }),
+    );
+    const fresh = list.find((x) => x.task_id === s.taskId && x.assignment_id !== s.assignmentId);
+    expect(fresh).toBeTruthy();
+    expect(fresh!.task_version_no).toBe(2);
+    const current = await ok<{ steps: Step[] }>(await request.get(`${API}/api/tasks/${s.taskId}`, { headers: h }));
+    expect(fresh!.steps.map((x) => x.sentence)).toEqual(current.steps.map((x) => x.sentence));
+    expect(fresh!.steps.map((x) => x.sentence)).toContain(edited);
+    expect(fresh!.steps).toHaveLength(n);
+
+    // 근로자 화면: 새 카드로 들어가면 바뀐 순서의 첫 단계부터.
+    await page.goto("/w/today");
+    const card = page.locator(`[data-testid="job-card"]:not([data-done])`).filter({ hasText: s.title });
+    await card.first().click();
+    await expect(page).toHaveURL(new RegExp(`/w/job/${fresh!.assignment_id}$`));
+    await page.getByRole("button", { name: "시작하기" }).click();
+    await expect(page.getByTestId("step-sentence")).toHaveText(current.steps[0].sentence);
+    await shot(page, "31-edit-during-work-next-assignment");
+  });
+});
+
 test.describe("실제 백엔드 — 사업주", () => {
   test("그림 없는 단계는 보내지 못하고, 보내기 목록은 번호를 가린다", async ({ page, request }) => {
     test.skip(test.info().project.name !== "tablet", "사업주 화면은 한 번만 본다");
@@ -361,7 +485,11 @@ test.describe("실제 백엔드 — 사업주", () => {
     }
     const res = await request.post(`${API}/api/tasks/${task.id}/publish`, { headers: auth(employer) });
     expect(res.status()).toBe(422);
-    expect((await res.json()).detail).toMatch(/^그림이 없는 단계가 있어요\(\d+(, \d+)*단계\)/);
+    // (2a-0) 서버 보내기 검사 문구(contract §1.4)와 그 단계 id.
+    const blocked = (await res.json()) as { detail: string; code: string; step_ids: string[] };
+    expect(blocked.detail).toMatch(/^\d+단계(?:(?:, |와 )\d+단계)*에 그림이 없어요\. 그림을 고르거나 사진을 올려 주세요\.$/);
+    expect(blocked.code).toBe("send_blocked");
+    expect(blocked.step_ids.length).toBeGreaterThanOrEqual(1);
 
     // 화면: 직무를 입력해 나누면 보내기가 막히고 한국어 안내가 나온다.
     await page.setViewportSize({ width: 1280, height: 900 });
