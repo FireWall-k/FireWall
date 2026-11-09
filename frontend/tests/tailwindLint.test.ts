@@ -14,8 +14,8 @@ const probePath = path.join(root, "src", "__lint_probe__.tsx");
 
 let eslint: ESLint;
 
-async function ruleIds(code: string): Promise<string[]> {
-  const [result] = await eslint.lintText(code, { filePath: probePath });
+async function ruleIds(code: string, filePath = probePath): Promise<string[]> {
+  const [result] = await eslint.lintText(code, { filePath });
   return result.messages.map((m) => m.ruleId ?? `fatal:${m.message}`);
 }
 
@@ -52,5 +52,70 @@ describe("tailwind 미정의 클래스 린트", () => {
   it("className을 + 로 이어붙이면 실패한다(검사 구멍을 막는다)", async () => {
     const code = 'export const A = ({ on }: { on: boolean }) => <b className={"min-h-touch " + (on ? "a" : "b")} />;\n';
     expect(await ruleIds(code)).toContain("no-restricted-syntax");
+  });
+}, 60_000);
+
+// 2차 새 폴더(components/ui·manager·LoginPage)에만 거는 규칙(tasks §3.2): 기본 팔레트·10~11px 글자·window.confirm.
+// 옛 화면(src/pages/ManagerPage 등)에는 걸지 않는다 — 그 화면을 새로 쓸 때 함께 없앤다.
+const uiProbe = path.join(root, "src", "components", "ui", "__lint_probe__.tsx");
+const managerProbe = path.join(root, "src", "manager", "__lint_probe__.tsx");
+const loginProbe = path.join(root, "src", "pages", "LoginPage.tsx");
+const oldProbe = path.join(root, "src", "pages", "__old_probe__.tsx");
+const uiHeader = 'import { cn } from "../../cn";\n';
+const mHeader = 'import { cn } from "../cn";\n';
+
+describe("새 사업주 폴더 lint(팔레트·작은 글자·confirm)", () => {
+  beforeAll(() => {
+    eslint = new ESLint({ cwd: root });
+  });
+
+  it("대조군: 사업주 토큰만 쓴 부품은 통과한다", async () => {
+    const code =
+      uiHeader +
+      'export const A = ({ on }: { on: boolean }) => <b className={cn("bg-moss-600 text-ui-xs text-white", on && "bg-danger-50 text-danger-700")} />;\n';
+    expect(await ruleIds(code, uiProbe)).toEqual([]);
+  });
+
+  it.each([
+    ["bg-blue-700", uiProbe, uiHeader],
+    ["text-slate-500", managerProbe, mHeader],
+    ["hover:bg-green-700", managerProbe, mHeader],
+    ["border-amber-300", uiProbe, uiHeader],
+    ["ring-emerald-600", uiProbe, uiHeader],
+    ["text-sky-700", loginProbe, mHeader],
+    ["bg-violet-100", managerProbe, mHeader],
+  ])("기본 팔레트 %s는 실패한다", async (cls, file, header) => {
+    const code = header + `export const A = ({ on }: { on: boolean }) => <b className={cn("p-2", on && "${cls}")} />;\n`;
+    expect(await ruleIds(code, file)).toContain("no-restricted-syntax");
+  });
+
+  it("템플릿 리터럴 안의 기본 팔레트도 잡는다", async () => {
+    const code = "export const A = ({ x }: { x: string }) => <b className={`p-2 bg-slate-100 ${x}`} />;\n";
+    expect(await ruleIds(code, managerProbe)).toContain("no-restricted-syntax");
+  });
+
+  it("text-[10px]·text-[11px]은 실패한다", async () => {
+    for (const cls of ["text-[10px]", "text-[11px]"]) {
+      const code = mHeader + `export const A = () => <b className={cn("${cls}")} />;\n`;
+      expect(await ruleIds(code, managerProbe), cls).toContain("no-restricted-syntax");
+    }
+  });
+
+  it("confirm(·window.confirm(은 실패한다", async () => {
+    for (const call of ["confirm('지울까요?')", "window.confirm('지울까요?')"]) {
+      const code = `export function f() { return ${call}; }\n`;
+      expect(await ruleIds(code, managerProbe), call).toContain("no-restricted-syntax");
+    }
+  });
+
+  it("className + 이어붙이기 금지는 새 폴더에서도 그대로다", async () => {
+    const code = 'export const A = ({ on }: { on: boolean }) => <b className={"p-2 " + (on ? "a" : "b")} />;\n';
+    expect(await ruleIds(code, managerProbe)).toContain("no-restricted-syntax");
+  });
+
+  it("옛 화면 폴더에는 걸지 않는다(지울 때 함께 정리)", async () => {
+    const code =
+      mHeader + 'export const A = () => <b className={cn("bg-blue-700 text-slate-500")} onClick={() => window.confirm("x")} />;\n';
+    expect(await ruleIds(code, oldProbe)).toEqual([]);
   });
 }, 60_000);

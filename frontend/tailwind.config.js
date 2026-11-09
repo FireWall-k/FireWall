@@ -40,7 +40,8 @@ export default {
         // 사업주 상태색(명세 6.1). 50은 바탕, 700은 글씨.
         ok: { 50: "#EAF4EC", 700: "#2F6B3A" },
         warn: { 50: "#FFF4DB", 700: "#8A5300", line: "#B45309" },
-        danger: { 50: "#FDECEA", 700: "#B3261E" },
+        // 800: 위험 버튼 눌림·호버(흰 글씨 8.6:1).
+        danger: { 50: "#FDECEA", 700: "#B3261E", 800: "#8F1E18" },
         // '✦ 자동'(아직 확인하지 않은 자동 결과)에만 쓴다(창업자 결정 2).
         auto: { 50: "#F3F0FF", 700: "#5B4BB7" },
         info: { 700: "#1E5FA8" },
@@ -88,10 +89,37 @@ export default {
         "touch-lg": "88px",
         // 작은 기기 위 띠(버튼 없는 띠만 이 높이까지 줄어든다).
         "worker-top-sm": "72px",
+        // 사업주 화면 높이(명세 6.3, R4). 컨트롤 36(pointer:coarse에서 44), 표 행 56, 목록 행 88, 상단 바 56.
+        control: "36px",
+        "control-coarse": "44px",
+        "table-row": "56px",
+        "list-row": "88px",
+        topbar: "56px",
       },
       minWidth: {
         // 아이콘만 있는 정사각형 버튼도 같은 터치 영역을 갖도록 짝을 맞춰 둔다.
         touch: "80px",
+        control: "36px",
+        "control-coarse": "44px",
+      },
+      // 사업주 틀 폭(명세 3.3·5.0·5.6): 사이드바 240/72, 서랍(Sheet) 480, 목록·홈 본문 최대 1200, 로그인 폼 400.
+      width: {
+        sidebar: "240px",
+        rail: "72px",
+        sheet: "480px",
+      },
+      maxWidth: {
+        sheet: "480px",
+        page: "1200px",
+        form: "400px",
+      },
+      spacing: {
+        sidebar: "240px",
+        rail: "72px",
+        control: "36px",
+        "control-coarse": "44px",
+        topbar: "56px",
+        tabbar: "64px",
       },
       height: {
         // 근로자 화면 위 띠(휴대폰 80 / 작은 기기 72 / 태블릿 96)와 아래 막대(112 / 작은 기기 104, 안전영역은 따로).
@@ -100,6 +128,13 @@ export default {
         "worker-top-tab": "96px",
         "worker-bottom": "112px",
         "worker-bottom-sm": "104px",
+        "table-row": "56px",
+        // 사업주 상단 바·컨트롤·아래 탭바·로그인 390 위 띠(명세 5.1).
+        topbar: "56px",
+        control: "36px",
+        "control-coarse": "44px",
+        tabbar: "64px",
+        "login-band": "120px",
       },
       fontSize: {
         // 근로자 화면 가장 작은 글씨(상태 글, 보조 버튼 글자) 20px.
@@ -112,15 +147,41 @@ export default {
         "worker-lg": ["2rem", { lineHeight: "1.35" }],
         "worker-sentence": ["2.75rem", { lineHeight: "1.3", fontWeight: "700" }],
         "worker-button": ["1.5rem", { lineHeight: "1.4", fontWeight: "700" }],
+        // 사업주 글자(명세 6.2, R3). 기본 text-xs·sm·lg 같은 이름을 덮으면 옛 화면과 근로자 화면 글자 크기가
+        // 함께 바뀌므로 ui- 이름을 따로 둔다. 새 폴더(components/ui·manager·LoginPage)는 이 이름만 쓴다.
+        // 10~11px는 만들지 않는다(가장 작은 글씨 12px).
+        "ui-xs": ["0.75rem", { lineHeight: "1.5" }],
+        "ui-sm": ["0.8125rem", { lineHeight: "1.5" }],
+        "ui-base": ["0.875rem", { lineHeight: "1.55" }],
+        "ui-md": ["1rem", { lineHeight: "1.5" }],
+        "ui-lg": ["1.25rem", { lineHeight: "1.4" }],
+        "ui-xl": ["1.5rem", { lineHeight: "1.3", letterSpacing: "-0.01em", fontWeight: "700" }],
+        "ui-kpi": ["2rem", { lineHeight: "1.2" }],
+        // 로그인 왼쪽 패널 로고(Gmarket Sans 28, 명세 5.1).
+        "ui-logo": ["1.75rem", { lineHeight: "1.2" }],
       },
       borderRadius: {
         "worker-btn": "16px",
         "worker-card": "20px",
         "worker-pic": "24px",
+        // 사업주(명세 6.3): 입력·버튼 6, 카드 10, Dialog·Sheet 14. 배지는 rounded-full.
+        control: "6px",
+        card: "10px",
+        overlay: "14px",
       },
       boxShadow: {
         // 근로자 화면에서 그림자는 카드에만(명세 6.3).
         "worker-card": "0 2px 0 rgba(26,26,26,.06)",
+        // 사업주 그림자 3단계(명세 6.3).
+        "ui-sm": "0 1px 2px rgba(28,35,33,.06)",
+        "ui-md": "0 4px 12px rgba(28,35,33,.08)",
+        overlay: "0 12px 32px rgba(28,35,33,.16)",
+      },
+      // 사업주 움직임(명세 6.6, R6): 호버·토스트 150ms, Sheet 200ms. 움직임 줄이기는 index.css가 0ms로 덮는다.
+      transitionDuration: {
+        hover: "150ms",
+        toast: "150ms",
+        sheet: "200ms",
       },
       keyframes: {
         // 단계 넘김: 오른쪽 24px에서 들어오며 나타난다(명세 6.6).
@@ -134,8 +195,19 @@ export default {
           "60%": { transform: "scale(1.08)", opacity: "1" },
           "100%": { transform: "scale(1)", opacity: "1" },
         },
+        // 사업주: Sheet는 오른쪽에서 200ms, 토스트·Dialog·메뉴는 150ms로 나타난다(명세 6.6).
+        "sheet-in": {
+          from: { transform: "translateX(24px)", opacity: "0" },
+          to: { transform: "translateX(0)", opacity: "1" },
+        },
+        "pop-in": {
+          from: { transform: "translateY(4px)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
+        },
       },
       animation: {
+        "sheet-in": "sheet-in 200ms ease-out",
+        "pop-in": "pop-in 150ms ease-out",
         "step-in": "step-in 200ms ease-out",
         check: "check 400ms ease-out",
       },
@@ -169,6 +241,8 @@ export default {
       addVariant("hc", '[data-contrast="high"] &');
       addVariant("lefty", '[data-hand="left"] &');
       addVariant("large-text", '[data-font="large"] &');
+      // coarse: 손가락으로 누르는 기기(휴대폰·태블릿). 사업주 컨트롤을 36 → 44로 키운다(명세 6.3, R4).
+      addVariant("coarse", "@media (pointer: coarse)");
     },
   ],
 }
