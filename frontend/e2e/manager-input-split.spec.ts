@@ -49,6 +49,8 @@ async function mockBackend(page: Page, opts: { preview?: typeof PREVIEW; createF
       return route.fulfill({ status: 200, headers: { ...CORS, "content-type": "image/png" }, body: PNG_1X1 });
     }
     if (url.pathname === "/api/workers" && method === "GET") return json([]);
+    // 새 틀(AppShell)의 도움 요청 띠·종이 5초마다 부른다.
+    if (url.pathname === "/api/employer/help" && method === "GET") return json([]);
     if (url.pathname === "/api/tasks/split-preview" && method === "POST") {
       state.previewCalls += 1;
       return json(opts.preview ?? PREVIEW);
@@ -78,7 +80,8 @@ async function loginEmployer(page: Page) {
     localStorage.setItem("jobcard_role", "employer");
     localStorage.setItem("jobcard_name", "테스트사장");
   });
-  await page.goto("/manager");
+  // 2a-1: 새 직무 화면 주소는 /m/tasks/new(옛 /manager는 여기로 넘어간다, contract §2.2).
+  await page.goto("/m/tasks/new");
 }
 
 async function splitInput(page: Page) {
