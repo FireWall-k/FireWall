@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import DashboardPage from "../src/pages/DashboardPage";
 
 // 대시보드는 "근로자를 먼저 고르고 → 그 근로자의 날짜별 직무 → 집계"를 차례로 부른다
@@ -10,6 +11,9 @@ const workerActiveDates = vi.fn();
 const workerTasks = vi.fn();
 const dashboard = vi.fn();
 const coaching = vi.fn();
+const archiveTask = vi.fn();
+
+vi.mock("../src/manager/api/tasks", () => ({ archiveTask: (id: string) => archiveTask(id) }));
 
 vi.mock("../src/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/api")>();
@@ -105,5 +109,36 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
 
     expect(await screen.findByText(/AI 처리 동의가 기록되지 않은 근로자가 있어/)).toBeInTheDocument();
+  });
+
+  it("2a-1: [삭제] 대신 [보관하기] — 확인하면 archive를 부르고(DELETE 아님) 목록에서 뺀다", async () => {
+    listWorkers.mockResolvedValue([worker]);
+    workerTasks.mockResolvedValue([task]);
+    dashboard.mockResolvedValue(dashboardData);
+    coaching.mockResolvedValue({ summary: "", suggestions: [] });
+    archiveTask.mockReset().mockResolvedValue({});
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<DashboardPage />);
+    await screen.findByText("50%");
+    expect(screen.queryByRole("button", { name: /삭제/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "선택한 직무 보관하기" }));
+    expect(confirm.mock.calls[0][0]).toContain("'분류 작업'을(를) 보관함으로 옮길까요?");
+    expect(archiveTask).toHaveBeenCalledWith("task-1");
+    await waitFor(() => expect(screen.queryByRole("button", { name: "선택한 직무 보관하기" })).not.toBeInTheDocument());
+    confirm.mockRestore();
+  });
+
+  it("보관 확인을 취소하면 아무것도 부르지 않는다", async () => {
+    listWorkers.mockResolvedValue([worker]);
+    workerTasks.mockResolvedValue([task]);
+    dashboard.mockResolvedValue(dashboardData);
+    coaching.mockResolvedValue({ summary: "", suggestions: [] });
+    archiveTask.mockReset();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<DashboardPage />);
+    await screen.findByText("50%");
+    await userEvent.click(screen.getByRole("button", { name: "선택한 직무 보관하기" }));
+    expect(archiveTask).not.toHaveBeenCalled();
+    confirm.mockRestore();
   });
 });

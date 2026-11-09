@@ -9,11 +9,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertCircle, BarChart3, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, RefreshCw, RotateCcw, Sparkles, Trash2 } from "lucide-react";
-import { api, AuthError, type Coaching, type Dashboard, type TaskSummary, type Worker } from "../api";
+import { AlertCircle, Archive, BarChart3, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
+import { api, ApiError, AuthError, type Coaching, type Dashboard, type TaskSummary, type Worker } from "../api";
 import { BAR_COLOR, STUCK_BAR_COLOR, stuckIndices } from "../dashboardChart";
 import { accessCodeText } from "../workerCodes";
 import { cn } from "../cn";
+import { dashboardArchive } from "../manager/copy";
+import { archiveTask } from "../manager/api/tasks";
 
 const DASHBOARD_POLL_MS = 3_000;
 
@@ -325,14 +327,16 @@ function DashboardPage() {
     setError(null);
   }
 
-  async function deleteCurrentTask() {
+  // 2a-1: 삭제 대신 보관(contract §2.1). 완전히 지우기는 직무 목록의 '보관'에서만 한다. 확인은 옛 confirm 그대로
+  // (이 화면은 2d에서 통째로 지운다).
+  async function archiveCurrentTask() {
     if (!taskId) return;
     const current = workerTasks.find((t) => t.id === taskId);
-    if (!window.confirm(`'${current?.title ?? "이 직무"}'를 삭제할까요?\n수행 기록도 함께 삭제되며 되돌릴 수 없습니다.`)) {
+    if (!window.confirm(dashboardArchive.confirm(current?.title ?? "이 직무"))) {
       return;
     }
     try {
-      await api.deleteTask(taskId);
+      await archiveTask(taskId);
       const remaining = workerTasks.filter((t) => t.id !== taskId);
       setWorkerTasks(remaining);
       setTaskId(remaining[0]?.id ?? "");
@@ -340,7 +344,7 @@ function DashboardPage() {
       setCoaching(null);
       setError(null);
     } catch (e) {
-      setError(e instanceof AuthError ? "다시 로그인해 주세요." : e instanceof Error ? e.message : "직무 삭제에 실패했습니다.");
+      setError(e instanceof AuthError ? "다시 로그인해 주세요." : e instanceof ApiError && e.detail ? e.detail : dashboardArchive.failed);
     }
   }
 
@@ -348,7 +352,7 @@ function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <header className="sticky top-0 z-20 -mx-8 mb-6 flex flex-col gap-4 border-b border-paper-200 bg-paper-50/95 px-8 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
+      <header className="sticky top-topbar z-10 -mx-4 mb-6 flex flex-col gap-4 border-b border-paper-200 bg-paper-50/95 px-4 py-4 backdrop-blur md:-mx-8 md:flex-row md:items-center md:justify-between md:px-8">
         <div>
           <h1 className="font-display text-2xl font-semibold text-ink-900">수행 대시보드</h1>
           <p className="mt-1 text-sm text-ink-500">
@@ -441,12 +445,12 @@ function DashboardPage() {
           {taskId && (
             <button
               type="button"
-              onClick={deleteCurrentTask}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm font-medium text-signal-red hover:bg-signal-red/5"
-              aria-label="선택한 직무 삭제"
+              onClick={archiveCurrentTask}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm font-medium text-ink-700 hover:bg-paper-100"
+              aria-label={dashboardArchive.buttonLabel}
             >
-              <Trash2 size={15} />
-              삭제
+              <Archive size={15} />
+              {dashboardArchive.button}
             </button>
           )}
         </div>
