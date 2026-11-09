@@ -233,7 +233,7 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
       localStorage.setItem("jobcard_role", "employer");
       localStorage.setItem("jobcard_name", "통합 카페");
     }, s.employer);
-    await bossPage.goto("/manager");
+    await bossPage.goto("/m/tasks/new");
     const strip = bossPage.getByTestId("help-alert-strip").locator("li").filter({ hasText: s.workerName });
     await expect(strip).toContainText(`${n}단계`, { timeout: 15_000 });
     if (SHOTS) await bossPage.screenshot({ path: `${SHOTS}/${test.info().project.name}/07b-employer-help-strip.png` });
@@ -498,7 +498,7 @@ test.describe("실제 백엔드 — 사업주", () => {
       localStorage.setItem("jobcard_role", "employer");
       localStorage.setItem("jobcard_name", "통합 카페");
     }, employer);
-    await page.goto("/manager");
+    await page.goto("/m/tasks/new");
     await page.locator("textarea").first().fill("테이블을 행주로 닦아요. 의자를 테이블 안으로 넣어요.");
     await page.getByLabel("업종").fill("카페").catch(() => undefined);
     await page.getByRole("button", { name: "단계로 나누기" }).click();
@@ -542,11 +542,11 @@ test.describe("실제 백엔드 — 사업주", () => {
       expect(r.sw, `${label}: scrollWidth ${r.sw} > ${r.cw}, 화면 밖 버튼 ${JSON.stringify(r.off)}`).toBeLessThanOrEqual(r.cw);
       expect(r.off, label).toEqual([]);
     };
-    await page.goto("/workers");
+    await page.goto("/m/workers");
     await page.getByRole("button", { name: "삭제" }).first().waitFor();
     await noSideScroll("근로자 목록");
     await shot(page, "21-employer-workers-390");
-    await page.goto("/manager");
+    await page.goto("/m/tasks/new");
     await page.getByLabel("직무 내용").fill(RAW);
     await page.getByRole("button", { name: "단계로 나누기" }).click();
     await expect(page.getByLabel("1단계 문장")).toBeVisible({ timeout: 60_000 });

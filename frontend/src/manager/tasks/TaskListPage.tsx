@@ -10,7 +10,7 @@
 // - 걸러보기·검색어를 바꾼 뒤에는 결과 개수(또는 '없어요')를 화면 읽기 프로그램에 알린다(WCAG 4.1.3).
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Archive, ArchiveRestore, Copy, Ellipsis, ImageOff, PencilLine, Plus, Search, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, Copy, Ellipsis, ImageOff, Lightbulb, PencilLine, Plus, Search, Trash2, X } from "lucide-react";
 import {
   AvatarGroup,
   Badge,
@@ -392,9 +392,12 @@ export default function TaskListPage() {
               <Plus size={16} strokeWidth={2} aria-hidden="true" />
               {taskList.emptyCreate}
             </Link>
-            {/* [예시로 만들어 보기]는 새 직무 화면이 예시 지시문을 받아 채울 수 있을 때 연다(?example=1 처리는 옛 ManagerPage에
-                없음 — 2a-0 병합 뒤 또는 2b-1 NewTaskPage). 그전까지는 눌러도 빈 화면만 열리므로 보이지 않는다.
-                다시 열 때 아이콘은 '✦ 자동'과 헷갈리는 반짝이(Sparkles) 말고 Lightbulb 같은 것으로. */}
+            {/* [예시로 만들어 보기]: 새 직무 화면을 예시 지시문으로 채워 연다(옛 ManagerPage가 ?example=1을 읽음).
+                아이콘은 '✦ 자동'과 헷갈리는 반짝이(Sparkles) 말고 Lightbulb. */}
+            <Link to="/m/tasks/new?example=1" className={buttonClasses("secondary", "md")}>
+              <Lightbulb size={16} strokeWidth={2} aria-hidden="true" />
+              {taskList.emptyExample}
+            </Link>
           </>
         }
       />

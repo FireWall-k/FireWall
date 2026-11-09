@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ManagerPage from "../src/pages/ManagerPage";
+import { EXAMPLE_TASK } from "../src/manager/tasks/example";
 import { ApiError } from "../src/apiErrors";
 
 const createTask = vi.fn();
@@ -591,5 +592,30 @@ describe("ManagerPage — 보내기가 서버 검사(422)에 막히면 그 단�
     expect((await screen.findAllByText("인터넷 연결을 확인해 주세요.")).length).toBeGreaterThanOrEqual(1);
     expect(reqMock).not.toHaveBeenCalled();
     expect(document.querySelector("[data-send-blocked]")).toBeNull();
+  });
+});
+
+// 2a-1 병합: 직무 목록 빈 상태의 [예시로 만들어 보기]가 /m/tasks/new?example=1로 온다.
+describe("ManagerPage ?example=1 (예시로 만들어 보기)", () => {
+  it("주소에 example=1이 있으면 예시 지시문·업종을 채우고, 나누기는 사업주가 누를 때만 한다", async () => {
+    window.history.pushState({}, "", "/m/tasks/new?example=1");
+    try {
+      render(<ManagerPage />);
+      expect(screen.getByLabelText("직무 내용")).toHaveValue(EXAMPLE_TASK.rawInput);
+      expect(screen.getByLabelText("업종")).toHaveValue("카페");
+      expect(screen.getByTestId("example-note")).toHaveTextContent("예시를 채워 두었어요");
+      expect(splitPreview).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: "단계로 나누기" }));
+      await waitFor(() => expect(splitPreview).toHaveBeenCalledWith(EXAMPLE_TASK.rawInput, expect.anything()));
+    } finally {
+      window.history.pushState({}, "", "/");
+    }
+  });
+
+  it("example이 없으면 빈 입력칸이고 'AI'라는 글자가 화면에 없다", () => {
+    render(<ManagerPage />);
+    expect(screen.getByLabelText("직무 내용")).toHaveValue("");
+    expect(screen.queryByTestId("example-note")).toBeNull();
+    expect(document.body.textContent ?? "").not.toMatch(/\bAI\b/);
   });
 });

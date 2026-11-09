@@ -10,6 +10,7 @@ import { cn } from "../cn";
 import SplitPreviewList from "../components/SplitPreviewList";
 import { rowsFromPreview, toConfirmed, type SplitRow } from "../splitRows";
 import { blockedStepIdsAfterSendError, sendApi } from "../manager/api/send";
+import { EXAMPLE_TASK } from "../manager/tasks/example";
 
 // 문장 칸 높이를 내용에 맞춘다(SplitPreviewList와 같은 방식).
 function fitHeight(el: HTMLTextAreaElement) {
@@ -21,9 +22,19 @@ function fitHeight(el: HTMLTextAreaElement) {
 const SAMPLE =
   "예: 택배 상자를 크기별로 분류하고, 큰 상자는 A구역으로 옮겨주세요. 그리고 5개씩 쌓아주세요. 마지막에 수량을 확인하세요.";
 
+// 주소에 ?example=1이 있으면 예시로 채운다. 옛 화면 시험은 라우터 없이 그리므로 useSearchParams 대신 location을 읽는다.
+function wantsExample(): boolean {
+  try {
+    return new URLSearchParams(window.location.search).get("example") === "1";
+  } catch {
+    return false;
+  }
+}
+
 export default function ManagerPage() {
-  const [rawInput, setRawInput] = useState("");
-  const [businessType, setBusinessType] = useState("");
+  const [fromExample] = useState(wantsExample);
+  const [rawInput, setRawInput] = useState(() => (fromExample ? EXAMPLE_TASK.rawInput : ""));
+  const [businessType, setBusinessType] = useState(() => (fromExample ? EXAMPLE_TASK.businessType : ""));
   const [workEnvironment, setWorkEnvironment] = useState("");
   const [workerNote, setWorkerNote] = useState("");
   // 맞춤 대상 근로자. 근로자 특성 메모는 이 근로자가 "AI 코칭에 메모 사용"을 허용하고 AI 처리 동의가
@@ -641,6 +652,11 @@ export default function ManagerPage() {
         <p className="mt-1 text-sm text-slate-600">
           평소 말하듯 적어 주세요. 단계는 잡카드가 나눠요. 단계마다 그림과 음성을 붙여요.
         </p>
+        {fromExample && !preview && !task && (
+          <p data-testid="example-note" role="status" className="mt-2 rounded-lg bg-paper-100 px-3 py-2 text-sm text-ink-900">
+            예시를 채워 두었어요. 고쳐도 되고, 그대로 [단계로 나누기]를 눌러 봐도 돼요.
+          </p>
+        )}
         <textarea
           className="mt-3 w-full rounded-lg border border-slate-300 p-3 text-base"
           rows={4}
@@ -679,10 +695,11 @@ export default function ManagerPage() {
             ))}
           </select>
         )}
-        <p className="mt-1 text-xs text-slate-400">
-          업종·환경·근로자 특성을 적으면 AI가 더 맞춤형으로 단계를 나눕니다(선택).
-          근로자 특성은 맞춤 대상 근로자가 'AI 코칭에 메모 사용'을 허용하고 AI 처리 동의가 기록된 경우에만 AI에 전달돼요.
-          근로자 이름은 AI에 보내기 전에 '근로자 A'처럼 바꿔 보냅니다.
+        {/* 'AI'라고 쓰지 않는다(창업자 결정 2: 자동 결과는 '✦ 자동'). 글자색은 흰 바탕 4.5:1 이상인 slate-600. */}
+        <p className="mt-1 text-xs text-slate-600">
+          업종·환경·근로자 특성을 적으면 ✦ 자동 나누기가 더 맞춤형으로 단계를 나눠요(선택).
+          근로자 특성은 맞춤 대상 근로자가 메모 사용을 허용하고 처리 동의가 기록된 경우에만 자동 나누기에 쓰여요.
+          근로자 이름은 보내기 전에 '근로자 A'처럼 바꿔 보내요.
         </p>
         <button
           onClick={handleDecompose}
@@ -821,7 +838,7 @@ export default function ManagerPage() {
                     setDragIndex(null);
                     setDragOverIndex(null);
                   }}
-                  className="mt-1 cursor-grab text-slate-300 hover:text-slate-500 active:cursor-grabbing"
+                  className="mt-1 cursor-grab text-slate-500 hover:text-slate-700 active:cursor-grabbing"
                   aria-label={`${s.order}단계 순서 이동 손잡이`}
                   title="드래그해서 순서 변경"
                 >
@@ -841,7 +858,7 @@ export default function ManagerPage() {
                     <div className={cn(
                       "flex h-16 w-16 items-center justify-center rounded border border-dashed text-center text-xs",
                       stepCandidates[s.id]?.candidates.length
-                        ? "border-slate-300 bg-slate-50 text-slate-400"
+                        ? "border-slate-300 bg-slate-50 text-slate-600"
                         : "border-amber-400 bg-amber-50 text-amber-700",
                     )}>
                       {stepCandidates[s.id]?.candidates.length ? "그림 선택" : "사진 권장"}
@@ -861,7 +878,7 @@ export default function ManagerPage() {
                   </label>
                   {s.symbol_source === "photo" && (
                     <button onClick={() => handleRemovePhoto(s.id)}
-                            className="text-xs text-slate-400 hover:text-slate-600 hover:underline">
+                            className="text-xs text-slate-600 hover:text-slate-800 hover:underline">
                       되돌리기
                     </button>
                   )}
@@ -905,7 +922,7 @@ export default function ManagerPage() {
                       저장하는 중… 동작이 둘이면 두 단계로 나눠요.
                     </p>
                   )}
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-600">
                     <ActionChip action={s.action_type} className="whitespace-nowrap text-xs !px-2 !py-0.5" />
                     {/* 그림이 붙은 단계만 출처를 보여준다. 폴백 상태는 아래 후보 영역이
                         이미 설명하므로 "상징: fallback"은 중복 노이즈였다. */}
@@ -990,7 +1007,7 @@ export default function ManagerPage() {
                 <button
                   onClick={() => handleDeleteStep(s.id)}
                   disabled={task.steps.length <= 1}
-                  className="mt-1 shrink-0 rounded p-1.5 text-slate-300 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-300"
+                  className="mt-1 shrink-0 rounded p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-300"
                   aria-label={`${s.order}단계 삭제`}
                   title={task.steps.length <= 1 ? "마지막 단계는 삭제할 수 없습니다" : "이 단계 삭제"}
                 >
@@ -1136,7 +1153,7 @@ export default function ManagerPage() {
                       </span>
                       <button
                         onClick={() => handleDeleteWorker(w.id, w.display_name)}
-                        className="rounded-full p-0.5 text-slate-300 hover:bg-red-50 hover:text-red-600"
+                        className="rounded-full p-0.5 text-slate-500 hover:bg-red-50 hover:text-red-600"
                         aria-label={`근로자 ${w.display_name} 삭제`}
                         title="근로자 삭제"
                       >

@@ -1,7 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 
 // 사업주 화면(/m) e2e용 가짜 백엔드(page.route). 실제 백엔드·DB·GPT 없이 contract §2.1 모양을 흉내 낸다.
-// GET /api/employer/tasks는 아직 서버에 없다(tasks §3.1) — 이 목이 계약 그대로의 응답을 준다.
+// GET /api/employer/tasks(backend/task_list.py)와 같은 모양을 준다. 실제 서버 흐름은 e2e-real/task-list.spec.ts가 본다.
 // 목에 없는 요청은 599로 돌려 목 누락이 실패로 드러나게 한다(설정의 e2e-api.invalid와 같은 뜻).
 
 export const API = "http://e2e-api.invalid";

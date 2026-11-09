@@ -2,7 +2,7 @@ import { test, expect, devices, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { loginEmployer, mockEmployer } from "./employer-mock";
 
-// 사업주 접근성 자동 검사(명세 8.2·8.3, tasks §3.4): 로그인·직무 목록을 1440·390 폭에서 axe로 본다.
+// 사업주 접근성 자동 검사(명세 8.2·8.3, tasks §3.4): 로그인·직무 목록·새 직무를 1440·390 폭에서 axe로 본다.
 // 기준: 심각(serious·critical) 위반 0, 이름 없는 버튼(button-name) 0.
 const { defaultBrowserType: _ignored, ...DESKTOP } = devices["Desktop Chrome"];
 void _ignored;
@@ -46,11 +46,28 @@ for (const width of [1440, 390] as const) {
       expect(r.serious).toEqual([]);
     });
 
+    // 2a-1 병합: 새 직무 화면(옛 ManagerPage). 'AI' 글자와 slate-400 낮은 대비를 고친 뒤 넣었다.
+    test("새 직무(/m/tasks/new?example=1): axe 심각 0·button-name 0, 'AI' 글자 0", async ({ page }) => {
+      await mockEmployer(page);
+      await loginEmployer(page, "/m/tasks/new?example=1");
+      await expect(page.getByLabel("직무 내용")).toHaveValue(/손을 깨끗이 씻어요/);
+      await expect(page.getByTestId("example-note")).toBeVisible();
+      await expect(page.getByTestId("help-alert-strip")).toBeVisible();
+      const r = await axe(page);
+      expect(r.serious).toEqual([]);
+      expect(r.buttonName).toEqual([]);
+      expect(await page.locator("main").innerText()).not.toMatch(/\bAI\b/);
+    });
+
     test("직무 목록 빈 상태: axe 심각 0", async ({ page }) => {
       await mockEmployer(page, { tasks: [] });
       await loginEmployer(page, "/m/tasks");
       await expect(page.getByText("아직 만든 직무가 없어요")).toBeVisible();
       expect((await axe(page)).serious).toEqual([]);
+      // [예시로 만들어 보기] → 예시로 채운 새 직무 화면
+      await page.getByRole("link", { name: "예시로 만들어 보기" }).click();
+      await expect(page).toHaveURL(/\/m\/tasks\/new\?example=1$/);
+      await expect(page.getByLabel("업종")).toHaveValue("카페");
     });
   });
 }

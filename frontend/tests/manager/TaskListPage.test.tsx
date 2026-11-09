@@ -275,13 +275,13 @@ describe("검색·빈 상태·오류", () => {
     await waitFor(() => expect(listEmployerTasks).toHaveBeenLastCalledWith("all", ""));
   });
 
-  it("직무가 하나도 없으면 [새 직무 만들기] — [예시로 만들어 보기]는 새 직무 화면이 예시를 받을 수 있을 때까지 숨김", async () => {
+  it("직무가 하나도 없으면 [새 직무 만들기]·[예시로 만들어 보기](?example=1)", async () => {
     listEmployerTasks.mockResolvedValue({ items: [], counts: { all: 0, draft: 0, needs_check: 0, published: 0, archived: 0 } });
     renderPage();
     expect(await screen.findByText("아직 만든 직무가 없어요")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "새 직무 만들기" })).toHaveAttribute("href", "/m/tasks/new");
-    // 옛 ManagerPage는 ?example=1을 읽지 않아 빈 입력칸만 열린다 → 눌러도 하는 일이 없는 단추는 보이지 않는다.
-    expect(screen.queryByRole("button", { name: "예시로 만들어 보기" })).not.toBeInTheDocument();
+    // 새 직무 화면(옛 ManagerPage)이 ?example=1을 읽어 예시 지시문을 채운다.
+    expect(screen.getByRole("link", { name: "예시로 만들어 보기" })).toHaveAttribute("href", "/m/tasks/new?example=1");
   });
 
   it("걸러보기에 맞는 직무가 없으면 그 걸러보기 이름으로 알린다", async () => {
