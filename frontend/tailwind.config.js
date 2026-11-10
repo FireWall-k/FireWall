@@ -4,74 +4,85 @@ const FALLBACK_FONTS = ["'Apple SD Gothic Neo'", "'Noto Sans KR'", "'Malgun Goth
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
-    extend: {
-      colors: {
-        ink: {
-          900: "#1C2321",
-          700: "#3A4540",
-          // #647168 → #5B675F: paper-100 위에서 4.5:1을 못 넘던 값(명세 6.1). paper-50 위 5.57:1.
-          500: "#5B675F",
-        },
-        paper: {
-          50: "#FAF8F3",
-          100: "#F2EEE3",
-          200: "#E6E0D2",
-        },
-        moss: {
-          400: "#7A9471",
-          500: "#5C7A52",
-          600: "#48613F",
-          // 눌림·호버(흰 글씨 8.70:1).
-          700: "#3B5134",
-        },
-        clay: {
-          400: "#D98B5F",
-          500: "#C4703E",
-          600: "#A35A2E",
-        },
-        signal: {
-          amber: "#E0A030",
-          red: "#C24B3F",
-        },
-        // 입력칸 테두리(흰색 위 4.1:1).
-        line: {
-          strong: "#8C7B63",
-        },
-        // 사업주 상태색(명세 6.1). 50은 바탕, 700은 글씨.
-        ok: { 50: "#EAF4EC", 700: "#2F6B3A" },
-        warn: { 50: "#FFF4DB", 700: "#8A5300", line: "#B45309" },
-        // 800: 위험 버튼 눌림·호버(흰 글씨 8.6:1).
-        danger: { 50: "#FDECEA", 700: "#B3261E", 800: "#8F1E18" },
-        // '✦ 자동'(아직 확인하지 않은 자동 결과)에만 쓴다(창업자 결정 2).
-        auto: { 50: "#F3F0FF", 700: "#5B4BB7" },
-        info: { 700: "#1E5FA8" },
-        // 근로자 화면 토큰(명세 6.1). 목표: 글자 7:1 이상, 테두리·아이콘 3:1 이상.
-        // 뜻을 가진 색은 셋뿐: 초록(primary)=하기, 주황(help·caution)=도움·조심, 파랑(sound)=듣기. 빨강은 쓰지 않는다.
-        worker: {
-          bg: "#FFF8EC",
-          card: "#FFFFFF",
-          ink: "#1A1A1A",
-          "ink-soft": "#4A4036",
-          line: "#8C7B63",
-          "line-soft": "#E9DFCF",
-          primary: "#1F6340",
-          "primary-pressed": "#1E4D33",
-          "primary-tint": "#E6F2EA",
-          help: "#FFE3B8",
-          "help-ink": "#6B3300",
-          "help-line": "#B45309",
-          sound: "#E3EEFB",
-          "sound-ink": "#0B3D91",
-          caution: "#FFE9DC",
-          "caution-ink": "#7A2E0E",
-          night: "#33302B",
-          focus: "#C4703E",
-          // 임시 별칭: 옛 WorkerPage가 쓰는 동안만 둔다(통합 때 삭제). 예전 #2C6E49는 흰 글씨 6.12:1로
-          // 7:1에 못 미쳐 값부터 primary로 바꿨다.
-          accent: "#1F6340",
-          accentDark: "#1E4D33",
-        },
+    // (2d 팔레트 잠금, contract §6.3) theme.colors를 통째로 덮어써 Tailwind 기본 팔레트(slate·blue·green·amber…)를
+    // 만들지 않는다. 그래서 기본 팔레트 클래스는 eslint no-custom-classname에도 걸린다. white·black·transparent·current·
+    // inherit는 남긴다(근로자 hc:text-black·hc:bg-white, 사업주 text-white 등).
+    colors: {
+      white: "#FFFFFF",
+      black: "#000000",
+      transparent: "transparent",
+      current: "currentColor",
+      inherit: "inherit",
+      ink: {
+        900: "#1C2321",
+        700: "#3A4540",
+        // #647168 → #5B675F: paper-100 위에서 4.5:1을 못 넘던 값(명세 6.1). paper-50 위 5.57:1.
+        500: "#5B675F",
       },
+      paper: {
+        50: "#FAF8F3",
+        100: "#F2EEE3",
+        200: "#E6E0D2",
+      },
+      moss: {
+        400: "#7A9471",
+        500: "#5C7A52",
+        600: "#48613F",
+        // 눌림·호버(흰 글씨 8.70:1).
+        700: "#3B5134",
+      },
+      clay: {
+        400: "#D98B5F",
+        500: "#C4703E",
+        600: "#A35A2E",
+      },
+      signal: {
+        amber: "#E0A030",
+        red: "#C24B3F",
+      },
+      // 입력칸 테두리(흰색 위 4.1:1).
+      line: {
+        strong: "#8C7B63",
+      },
+      // 사업주 상태색(명세 6.1). 50은 바탕, 700은 글씨.
+      ok: { 50: "#EAF4EC", 700: "#2F6B3A" },
+      warn: { 50: "#FFF4DB", 700: "#8A5300", line: "#B45309" },
+      // 800: 위험 버튼 눌림·호버(흰 글씨 8.6:1).
+      danger: { 50: "#FDECEA", 700: "#B3261E", 800: "#8F1E18" },
+      // '✦ 자동'(아직 확인하지 않은 자동 결과)에만 쓴다(창업자 결정 2).
+      auto: { 50: "#F3F0FF", 700: "#5B4BB7" },
+      info: { 700: "#1E5FA8" },
+      // 근로자 화면 토큰(명세 6.1). 목표: 글자 7:1 이상, 테두리·아이콘 3:1 이상.
+      // 뜻을 가진 색은 셋뿐: 초록(primary)=하기, 주황(help·caution)=도움·조심, 파랑(sound)=듣기. 빨강은 쓰지 않는다.
+      worker: {
+        bg: "#FFF8EC",
+        card: "#FFFFFF",
+        ink: "#1A1A1A",
+        "ink-soft": "#4A4036",
+        line: "#8C7B63",
+        "line-soft": "#E9DFCF",
+        primary: "#1F6340",
+        "primary-pressed": "#1E4D33",
+        "primary-tint": "#E6F2EA",
+        help: "#FFE3B8",
+        "help-ink": "#6B3300",
+        "help-line": "#B45309",
+        sound: "#E3EEFB",
+        "sound-ink": "#0B3D91",
+        caution: "#FFE9DC",
+        "caution-ink": "#7A2E0E",
+        night: "#33302B",
+        focus: "#C4703E",
+        // 임시 별칭: 옛 WorkerPage가 쓰는 동안만 둔다(통합 때 삭제). 예전 #2C6E49는 흰 글씨 6.12:1로
+        // 7:1에 못 미쳐 값부터 primary로 바꿨다.
+        accent: "#1F6340",
+        accentDark: "#1E4D33",
+      },
+    },
+    extend: {
+      // 기본 팔레트를 뺐으므로 테두리 기본색(preflight·divide)은 예전 값(gray-200)을 직접 적는다. 빼면 currentColor로
+      // 바뀌어 색을 적지 않은 테두리가 진하게 나온다(근로자 기준 이미지가 달라짐).
+      borderColor: { DEFAULT: "#e5e7eb" },
       fontFamily: {
         display: ["'Gmarket Sans'", "'Pretendard'", ...FALLBACK_FONTS],
         body: ["'Pretendard'", ...FALLBACK_FONTS],

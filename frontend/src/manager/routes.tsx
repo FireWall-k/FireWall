@@ -1,15 +1,18 @@
 // 사업주 화면 주소(contract §2.2). App.tsx는 '/m/*'를 이 파일에 넘기기만 하고, 화면 주소는 여기에만 더한다.
 // 모든 /m 화면은 AppShell(사이드바·상단 바·도움 띠·토스트) 안에 그려지고, 틀은 화면을 옮겨도 다시 만들어지지 않는다
 // (도움 요청 폴링이 끊기지 않음).
-// 2a-1: /m = 옛 DashboardPage, /m/tasks = 직무 목록(TaskListPage), /m/tasks/new = 옛 ManagerPage(새 직무만, ?example=1은 예시로 채움),
-// /m/workers = 옛 WorkersPage, /m/settings = '준비 중', /m/pictures = 사이드바에서 숨김(3차, 지금은 홈으로).
+// 2a-1: /m/tasks = 직무 목록(TaskListPage), /m/tasks/new = 옛 ManagerPage(새 직무만, ?example=1은 예시로 채움),
+// /m/pictures = 사이드바에서 숨김(3차, 지금은 홈으로).
+// 2d: /m/workers = 근로자 목록, /m/workers/:id = 근로자 상세(탭 4개), /m/settings = 설정. 옛 DashboardPage·WorkersPage는 지웠다.
+// /m(홈 '오늘 현황')은 2c HomePage가 들어올 자리다. 그 전까지는 안내만 보인다.
 // /m/tasks/:id는 2b-1 편집기가 생길 때까지 열지 않는다(직무 목록으로 돌려보냄).
-import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
-import { EmptyState } from "../components/ui";
-import DashboardPage from "../pages/DashboardPage";
+import { Link, Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import { EmptyState, buttonClasses } from "../components/ui";
 import ManagerPage from "../pages/ManagerPage";
-import WorkersPage from "../pages/WorkersPage";
 import { placeholder } from "./copy";
+import SettingsPage from "./settings/SettingsPage";
+import WorkerDetailPage from "./workers/WorkerDetailPage";
+import WorkerListPage from "./workers/WorkerListPage";
 import AppShell from "./shell/AppShell";
 import TaskListPage from "./tasks/TaskListPage";
 
@@ -26,12 +29,21 @@ function ShellLayout({ displayName, onLogout }: ManagerRoutesProps) {
   );
 }
 
-// 준비 중 화면에도 화면 이름(h1)을 둔다(다른 /m 화면과 같게, axe page-has-heading-one).
-function SettingsPlaceholder() {
+// 준비 중 화면에도 화면 이름(h1)을 둔다(다른 /m 화면과 같게, axe page-has-heading-one). 2c에서 HomePage로 바뀐다.
+function HomePlaceholder() {
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-ui-xl text-ink-900">{placeholder.settingsHeading}</h1>
-      <EmptyState kind="empty" title={placeholder.settingsTitle} description={placeholder.settingsBody} />
+      <h1 className="text-ui-xl text-ink-900">{placeholder.homeHeading}</h1>
+      <EmptyState
+        kind="empty"
+        title={placeholder.homeTitle}
+        description={placeholder.homeBody}
+        actions={
+          <Link to="/m/workers" className={buttonClasses("primary", "md")}>
+            {placeholder.homeWorkers}
+          </Link>
+        }
+      />
     </div>
   );
 }
@@ -47,12 +59,13 @@ export default function ManagerRoutes(props: ManagerRoutesProps) {
   return (
     <Routes>
       <Route element={<ShellLayout {...props} />}>
-        <Route index element={<DashboardPage />} />
+        <Route index element={<HomePlaceholder />} />
         <Route path="tasks" element={<TaskListPage />} />
         <Route path="tasks/new" element={<NewTaskRoute />} />
         <Route path="tasks/:id" element={<Navigate to="/m/tasks" replace />} />
-        <Route path="workers" element={<WorkersPage />} />
-        <Route path="settings" element={<SettingsPlaceholder />} />
+        <Route path="workers" element={<WorkerListPage />} />
+        <Route path="workers/:id" element={<WorkerDetailPage />} />
+        <Route path="settings" element={<SettingsPage displayName={props.displayName} onLogout={props.onLogout} />} />
         <Route path="*" element={<Navigate to="/m" replace />} />
       </Route>
     </Routes>

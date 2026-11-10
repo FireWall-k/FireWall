@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import postcss from "postcss";
 import tailwindcss from "tailwindcss";
+import fs from "node:fs";
 import tailwindConfig from "../tailwind.config.js";
 
 // 근로자 화면의 80px 터치 영역·큰 글씨 클래스(min-h-touch, text-worker 등)는 예전에 tailwind.config.js에
@@ -90,5 +91,45 @@ describe("근로자 화면 접근성 Tailwind 클래스가 실제 CSS로 생성�
     expect(css).toContain("grid-template-rows:repeat(4,minmax(64px,1fr))");
     expect(css).toContain("@media(orientation:landscape)and(max-height:620px){");
     expect(css).toContain("justify-content:safecenter");
+  });
+
+  // (2d 팔레트 잠금, contract §6.3) theme.colors를 덮어써도 근로자 화면 색 클래스가 그대로 만들어지는지.
+  // 근로자 화면이 직접 쓰는 색(남겨 둔 white·black·transparent·current와 worker-* 토큰) 목록을 고정하고,
+  // src/worker·src/ui 파일에서 색 클래스를 모두 훑어 하나도 빠지지 않는지 본다.
+  const WORKER_COLOR_CLASSES = [
+    "bg-white", "text-white", "hc:text-black", "hc:bg-white", "hc:border-black", "border-transparent",
+    "bg-worker-bg", "bg-worker-card", "bg-worker-primary", "bg-worker-help", "bg-worker-sound", "bg-worker-caution",
+    "text-worker-ink", "text-worker-ink-soft", "text-worker-help-ink", "text-worker-sound-ink",
+    "border-worker-line", "border-worker-primary", "border-worker-help-line",
+  ];
+  const esc = (c: string) => "." + c.replace(/[:/[\].]/g, (m) => "\\" + m);
+
+  it.each(WORKER_COLOR_CLASSES)("근로자 색 클래스 %s가 만들어진다", (cls) => {
+    expect(css).toContain(esc(cls));
+  });
+
+  it("src/worker·src/ui가 쓰는 색 클래스는 모두 만들어진다(기본 팔레트를 빼도 빠지는 것 없음)", () => {
+    const COLOR =
+      /^([a-z0-9-]+:)*(bg|text|border(-[xytrbl])?|ring|ring-offset|outline|fill|stroke|divide|accent|caret|decoration|placeholder|from|via|to|shadow)-(white|black|transparent|current|inherit|worker-[a-z-]+)(\/\d+)?$/;
+    const found = new Set<string>();
+    const walk = (dir: string) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) walk(full);
+        else if (/\.(ts|tsx)$/.test(e.name)) {
+          for (const tok of fs.readFileSync(full, "utf8").split(/[\s"'`{}(),;]+/)) if (COLOR.test(tok)) found.add(tok);
+        }
+      }
+    };
+    walk(path.join(root, "src", "worker"));
+    walk(path.join(root, "src", "ui"));
+    expect(found.size).toBeGreaterThan(15);
+    const missing = [...found].filter((c) => !css.includes(esc(c)));
+    expect(missing).toEqual([]);
+  });
+
+  it("기본 팔레트 클래스는 만들어지지 않는다(팔레트 잠금)", () => {
+    expect(css).not.toMatch(/\.bg-blue-700\{/);
+    expect(css).not.toMatch(/\.text-slate-500\{/);
   });
 });

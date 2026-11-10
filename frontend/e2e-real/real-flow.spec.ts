@@ -516,9 +516,10 @@ test.describe("실제 백엔드 — 사업주", () => {
     await expect(page.locator("body")).not.toContainText(`(${w.access_code})`);
     await page.getByText("그림이 없는 단계가 있어요").first().scrollIntoViewIfNeeded();
     await shot(page, "20-employer-blocked");
+    // (2d) 근로자 목록 응답에 전체 번호가 없다(contract §6.2). 옛 새 직무 화면(2b-1이 지움)의 [번호 보기]는 끝 두 자리만 보인다.
     await page.getByRole("button", { name: `${w.display_name} 번호 보기` }).click();
-    await expect(code).toHaveText(`(${w.access_code})`);
-    await expect(code).toHaveText("(●●●●)", { timeout: 8_000 });
+    await expect(code).toHaveText(`(••${w.access_code.slice(-2)})`);
+    await expect(page.locator("body")).not.toContainText(`(${w.access_code})`);
   });
 
   // 1차 검증: 전역 버튼 nowrap 때문에 390px 휴대폰에서 직무 편집·근로자 목록이 옆으로 넘쳤다('삭제'·휴지통이 화면 밖).
@@ -543,7 +544,8 @@ test.describe("실제 백엔드 — 사업주", () => {
       expect(r.off, label).toEqual([]);
     };
     await page.goto("/m/workers");
-    await page.getByRole("button", { name: "삭제" }).first().waitFor();
+    // (2d) 새 근로자 목록: 행마다 [… 메뉴]가 있다(옛 [삭제] 단추는 이름 다시 적기 창으로 옮김).
+    await page.getByRole("button", { name: /님 메뉴$/ }).first().waitFor();
     await noSideScroll("근로자 목록");
     await shot(page, "21-employer-workers-390");
     await page.goto("/m/tasks/new");

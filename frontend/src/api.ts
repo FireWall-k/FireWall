@@ -144,15 +144,6 @@ export interface HistoryCard {
   steps: HistoryStep[];
 }
 
-export interface StepStat {
-  order: number;
-  sentence: string;
-  completed: boolean;
-  duration_sec: number;
-  replay_count: number;
-  stuck: boolean;
-}
-
 export interface AacMatch {
   asset_id: string;
   group_id: string;
@@ -175,25 +166,6 @@ export interface StepSymbolCandidates {
   step_id: string;
   reason: MatchReason;
   candidates: AacMatch[];
-}
-
-export interface Dashboard {
-  task_id: string;
-  task_title: string;
-  total_steps: number;
-  completed_steps: number;
-  completion_rate: number;
-  stuck_steps: number[];
-  steps: StepStat[];
-}
-
-export interface DashboardWorker {
-  worker_id: string;
-  display_name: string;
-  /** Worker.access_code와 같은 규칙(모르면 null → 뒤 2자리로 대신). */
-  access_code?: string | null;
-  access_code_hint: string;
-  status: string;
 }
 
 // 로그인 요청(/api/auth/*)의 401은 "로그인이 풀렸다"가 아니라 "아이디·번호가 틀렸다"다. 저장된 로그인을
@@ -322,8 +294,8 @@ export interface Worker {
   id: string;
   display_name: string;
   /**
-   * 전체 접속 코드(사업주가 근로자에게 알려 주는 용도). 서버가 암호문으로 들고 있다가 이 사업주에게만 준다.
-   * 예전에 만든 근로자는 서버도 모르는 상태라 null — 그 근로자가 한 번 로그인하거나 재발급하면 채워진다.
+   * (2d) 목록·수정 응답에는 전체 코드가 없다(눈 단추 → POST …/access-code/reveal). 만들기·새 번호 응답에만 있다.
+   * 옛 새 직무 화면(2b-1에서 지움)이 아직 읽어서 선택 칸으로 남긴다.
    */
   access_code?: string | null;
   /** 뒤 2자리(access_code가 null일 때 대신 보여 준다)와 길이(짧은 코드 경고용). */
@@ -351,28 +323,9 @@ export interface DeleteWorkerResult {
   name_mentions?: { task_id: string; title: string }[];
 }
 
-export type ConsentType = "personal_info" | "ai_processing";
-export type ConsentSubject = "self" | "guardian";
-
-/** 보호자·당사자에게서 받은 동의 기록. 철회해도 지우지 않고 revoked_at이 채워진다. */
-export interface Consent {
-  id: string;
-  consent_type: ConsentType;
-  subject: ConsentSubject;
-  policy_version: string;
-  granted_at: string;
-  revoked_at: string | null;
-  recorded_by: string;
-}
-
 /** 근로자 추가·코드 재발급 응답. 평문 코드를 볼 수 있는 유일한 순간이다. */
 export interface WorkerWithCode extends Worker {
   access_code: string;
-}
-
-export interface Workplace {
-  workplace_code: string;
-  org_name: string;
 }
 
 export interface TaskContext {
@@ -423,31 +376,7 @@ export interface StepRewriteResult {
   sentence: string;
 }
 
-export interface CoachingSuggestion {
-  order: number;
-  issue: string;
-  suggestion: string;
-  action: "rephrase" | "photo" | "split" | "ok" | string;
-}
-
-export interface Coaching {
-  summary: string;
-  suggestions: CoachingSuggestion[];
-  /** AI 처리 동의가 없는 근로자 기록이 있어 규칙 기반 제안만 만든 경우 true. */
-  ai_excluded?: boolean;
-}
-
-/** 대시보드·코칭 조회 쿼리(?worker_id=…&date=…). */
-function dashQuery(workerId?: string, date?: string): string {
-  const q = new URLSearchParams();
-  if (workerId) q.set("worker_id", workerId);
-  if (date) q.set("date", date);
-  const s = q.toString();
-  return s ? `?${s}` : "";
-}
-
 export const api = {
-  listTasks: () => req<TaskSummary[]>("/api/tasks"),
   createTask: (raw_input: string, context: CreateTaskOptions = {}) =>
     req<Task>("/api/tasks", {
       method: "POST",
@@ -471,9 +400,6 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ step_ids: stepIds, sentence, action_type: actionType }),
     }),
-  // date(YYYY-MM-DD): 달력에서 고른 날. 주면 그날 배정의 기록을 센다(없으면 오늘까지 중 가장 늦은 배정).
-  coaching: (taskId: string, workerId?: string, date?: string) =>
-    req<Coaching>(`/api/dashboard/tasks/${taskId}/coaching${dashQuery(workerId, date)}`),
   getTask: (id: string) => req<Task>(`/api/tasks/${id}`),
   deleteTask: (id: string) => req<{ ok: boolean }>(`/api/tasks/${id}`, { method: "DELETE" }),
   updateStep: (
@@ -519,9 +445,6 @@ export const api = {
       { method: "POST", body: JSON.stringify({ worker_ids: workerIds }) },
     ),
   listWorkers: () => req<Worker[]>("/api/workers"),
-  workerTasks: (workerId: string, date?: string) =>
-    req<TaskSummary[]>(`/api/workers/${workerId}/tasks${date ? `?date=${date}` : ""}`),
-  workerActiveDates: (workerId: string) => req<string[]>(`/api/workers/${workerId}/active-dates`),
   /** access_code를 비우면 서버가 사업장 안에서 겹치지 않는 4자리 무작위 코드를 만든다. */
   createWorker: (display_name: string, access_code?: string) =>
     req<WorkerWithCode>("/api/workers", {
@@ -531,25 +454,16 @@ export const api = {
   /** 접속 코드를 새 4자리 무작위 코드로 바꾼다(유출 시·예전 긴 코드 교체). */
   reissueAccessCode: (id: string) =>
     req<WorkerWithCode>(`/api/workers/${id}/access-code`, { method: "POST" }),
-  /** 내 사업장 코드(근로자 기기의 로그인 화면에 한 번 입력해 둔다). */
-  workplace: () => req<Workplace>("/api/workplace"),
-  deleteWorker: (id: string) => req<DeleteWorkerResult>(`/api/workers/${id}`, { method: "DELETE" }),
+  /** (옛 새 직무 화면 전용, 2b-1에서 지움) 근로자 지우기. 옛 DELETE는 없어졌고 이름을 다시 적어야 한다(contract §6.2).
+   *  새 화면은 manager/api/workers.ts의 deleteWorker를 쓴다. */
+  deleteWorker: (id: string, confirmName = "") =>
+    req<DeleteWorkerResult>(`/api/workers/${id}/delete`, { method: "POST", body: JSON.stringify({ confirm_name: confirmName }) }),
   /** 이름·메모·"AI 코칭에 메모 사용"·화면 설정을 바꾼다. 보낸 필드만 바뀐다(a11y_prefs도 보낸 키만 병합). */
   updateWorker: (
     id: string,
     patch: { display_name?: string; note?: string; ai_note_allowed?: boolean; a11y_prefs?: Partial<A11yPrefs> },
   ) =>
     req<Worker>(`/api/workers/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
-  listConsents: (id: string) => req<Consent[]>(`/api/workers/${id}/consents`),
-  grantConsent: (id: string, consent_type: ConsentType, subject: ConsentSubject) =>
-    req<Consent>(`/api/workers/${id}/consents`, {
-      method: "POST",
-      body: JSON.stringify({ consent_type, subject }),
-    }),
-  revokeConsent: (workerId: string, consentId: string) =>
-    req<Consent>(`/api/workers/${workerId}/consents/${consentId}/revoke`, { method: "POST" }),
-  /** 근로자 한 명의 데이터(프로필·동의·배정·수행 로그) JSON. 열람 요구에 응할 때 쓴다. */
-  exportWorker: (id: string) => req<Record<string, unknown>>(`/api/workers/${id}/export`),
   today: () => req<TodayCard[]>("/api/worker/me/today"),
   /** 근로자 본인이 받았던 일 전체(완료 포함, 최신순) — '오늘 할 일'은 완료되면 빠지므로 복습용. */
   history: () => req<HistoryCard[]>("/api/worker/me/history"),
@@ -567,9 +481,6 @@ export const api = {
   ackHelp: (id: string) => req<HelpOut>(`/api/employer/help/${id}/acknowledge`, { method: "POST" }),
   /** 사업주 [도와줬어요]: 요청을 닫는다. */
   resolveHelp: (id: string) => req<HelpOut>(`/api/employer/help/${id}/resolve`, { method: "POST" }),
-  dashboard: (id: string, workerId?: string, date?: string) =>
-    req<Dashboard>(`/api/dashboard/tasks/${id}${dashQuery(workerId, date)}`),
-  dashboardWorkers: (id: string) => req<DashboardWorker[]>(`/api/dashboard/tasks/${id}/workers`),
   searchAac: (query: string, job?: string, limit = 5) =>
   req<AacSearchResult>("/api/aac/search", {
     method: "POST",

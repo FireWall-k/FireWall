@@ -1,10 +1,12 @@
 // 근로자 화면 문구 사전(명세 4.14 + 4.5·4.9 표). 근로자 화면의 글자는 모두 여기서 꺼내 쓴다.
-// 규칙(명세 6.7): '~해요' 체, 한 문장에 동작 하나, 쉬운 말. 사업주는 근로자에게 '선생님'이다(창업자 결정 1).
+// 규칙(명세 6.7): '~해요' 체, 한 문장에 동작 하나, 쉬운 말. 사업주를 부르는 호칭은 사업장 설정이다(기본 '선생님',
+// 창업자 결정 1, 2d). 호칭이 들어간 문구는 teacherCopy(호칭)이 만들고, COPY의 같은 자리는 기기에 저장된 호칭으로 읽는다.
 // 금지: 영어, '사업주'·'사업장 코드'·'접속 코드'·'로그아웃', '오류'·'실패'·'에러', '1 / 4' 같은 분수,
 // '~합니다'·'~하세요'. tests/copy.test.ts가 아래 FORBIDDEN_PATTERNS로 모든 문구를 검사하고,
 // e2e도 같은 목록으로 실제 화면 글자를 검사한다.
 // api.ts가 아니라 apiErrors.ts에서 가져온다: 화면 테스트가 "../src/api"를 통째로 목으로 바꿔도 오류 판정은 살아 있게.
 import { ApiError, AuthError, NetworkError } from "../apiErrors";
+import { getSavedTeacherTitle } from "../workerCodes";
 
 type JosaPair = "을/를" | "이/가" | "은/는" | "과/와" | "으로/로";
 
@@ -41,6 +43,42 @@ export function josa(word: string, pair: JosaPair): string {
   return word + (fc === null ? withoutFinal : withFinal);
 }
 
+/** 호칭에 붙이는 조사(contract §6.2). '께'는 받침과 상관없이 그대로 붙는다. */
+export type TitleJosa = "이/가" | "을/를" | "은/는" | "께";
+
+export function withJosa(title: string, j: TitleJosa): string {
+  return j === "께" ? `${title}께` : josa(title, j);
+}
+
+/** 호칭이 들어간 근로자 문구 전부(contract §6.2 키 목록). 화면은 COPY의 같은 자리로 읽는다. */
+export function teacherCopy(t: string) {
+  return {
+    btn: {
+      teacherSetup: `${t}용: 기기 연결하기`,
+      teacherLongCode: `${t}용: 긴 번호로 들어가기`,
+    },
+    login: {
+      askTeacher: `${withJosa(t, "께")} 번호를 물어봐요.`,
+      tooMany: `잠깐 쉬었다가 다시 눌러 봐요. ${withJosa(t, "께")} 말해 주세요.`,
+    },
+    help: {
+      sending: `${withJosa(t, "을/를")} 부르는 중이에요`,
+      sent: `${withJosa(t, "을/를")} 불렀어요. 여기서 기다려요.`,
+      failed: `아직 못 불렀어요. 손을 들어 ${withJosa(t, "을/를")} 불러요.`,
+      acked: `${withJosa(t, "이/가")} 확인했어요`,
+    },
+    status: {
+      emptyBody: `${withJosa(t, "이/가")} 일을 보내면 여기에 나와요.`,
+      unpairedBody: `${withJosa(t, "께")} 말해 주세요.`,
+    },
+    allDone: { body: `${withJosa(t, "께")} 알려 주세요.` },
+    setup: { body: `${withJosa(t, "이/가")} 하는 곳이에요. 가게 코드를 넣어 주세요.` },
+  };
+}
+
+/** 지금 기기의 호칭 문구. 로그인 뒤에는 /me 값(WorkerApp이 저장), 로그인 전에는 저장값, 없으면 '선생님'. */
+const tc = () => teacherCopy(getSavedTeacherTitle());
+
 const WEEKDAYS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
 
 export const COPY = {
@@ -70,8 +108,8 @@ export const COPY = {
     restart: "처음부터 하기",
     replayJob: "방금 일 다시 보기",
     retryPicture: "다시 보기",
-    teacherSetup: "선생님용: 기기 연결하기",
-    teacherLongCode: "선생님용: 긴 번호로 들어가기",
+    get teacherSetup() { return tc().btn.teacherSetup; },
+    get teacherLongCode() { return tc().btn.teacherLongCode; },
   },
   key: {
     backspace: "지우기",
@@ -80,26 +118,26 @@ export const COPY = {
   login: {
     title: "내 번호를 눌러요",
     wrong: "번호가 맞지 않아요. 다시 눌러 봐요.",
-    askTeacher: "선생님께 번호를 물어봐요.",
+    get askTeacher() { return tc().login.askTeacher; },
     entering: "들어가는 중이에요",
     // 사전(4.14) 밖에서 더한 문구: 시도가 너무 많아 서버가 잠시 막았을 때(429).
-    tooMany: "잠깐 쉬었다가 다시 눌러 봐요. 선생님께 말해 주세요.",
+    get tooMany() { return tc().login.tooMany; },
   },
   help: {
-    sending: "선생님을 부르는 중이에요",
+    get sending() { return tc().help.sending; },
     btnSending: "부르는 중",
-    sent: "선생님을 불렀어요. 여기서 기다려요.",
+    get sent() { return tc().help.sent; },
     btnSent: "불렀어요",
-    failed: "아직 못 불렀어요. 손을 들어 선생님을 불러요.",
-    acked: "선생님이 확인했어요",
+    get failed() { return tc().help.failed; },
+    get acked() { return tc().help.acked; },
   },
   status: {
     loading: { title: "일을 가져오고 있어요", slow: "조금 오래 걸려요. 기다려 주세요." },
-    empty: { title: "아직 받은 일이 없어요", body: "선생님이 일을 보내면 여기에 나와요." },
+    empty: { title: "아직 받은 일이 없어요", get body() { return tc().status.emptyBody; } },
     offline: { title: "인터넷이 안 돼요", body: "와이파이를 확인해 주세요.", cached: "받아 둔 일은 할 수 있어요." },
     error: { title: "잠깐 문제가 생겼어요", body: "조금 뒤에 다시 해 봐요." },
     expired: { title: "다시 들어와 주세요" },
-    unpaired: { title: "이 기기를 아직 연결하지 않았어요", body: "선생님께 말해 주세요." },
+    unpaired: { title: "이 기기를 아직 연결하지 않았어요", get body() { return tc().status.unpairedBody; } },
   },
   band: {
     offline: "인터넷이 끊겼어요. 일은 계속해도 돼요.",
@@ -140,13 +178,22 @@ export const COPY = {
   },
   allDone: {
     title: "오늘 일을 다 했어요",
-    body: "선생님께 알려 주세요.",
+    get body() { return tc().allDone.body; },
   },
   confirm: {
     exit: { title: "일을 멈출까요?", body: "나중에 이어서 할 수 있어요.", stay: "계속할래요", leave: "멈출래요" },
     end: { title: "오늘 일을 끝낼까요?", stay: "아니요, 계속할래요", leave: "네, 끝낼래요" },
     // 끝내기 전에 못 보낸 기록이 남아 있고 인터넷이 끊겼을 때(2차 검증).
     unsent: "아직 못 보낸 기록이 있어요. 인터넷이 되면 다시 들어와요.",
+  },
+  // 기기 연결(/w/setup). 이 화면도 근로자 기기에 뜨므로 근로자 화면 말투를 지킨다.
+  setup: {
+    title: "기기 연결하기",
+    get body() { return tc().setup.body; },
+    label: "가게 코드",
+    save: "연결하기",
+    back: "돌아가기",
+    empty: "가게 코드를 넣어 주세요.",
   },
   history: {
     today: "오늘",

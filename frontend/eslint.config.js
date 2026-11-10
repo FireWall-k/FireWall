@@ -19,10 +19,10 @@ const NO_CLASSNAME_PLUS = {
   message: 'className은 + 로 이어붙이지 말고 cn(...)(src/cn.ts)을 쓰세요 — 이어붙인 클래스는 tailwind 린트가 검사하지 못합니다.',
 }
 
-// 새 사업주 폴더에서 막는 Tailwind 기본 팔레트(명세 6.1 R2: blue-700·green-700·emerald·sky·violet·slate·amber 등).
-// 색은 tailwind.config.js의 사업주 토큰(ink·paper·moss·ok·warn·danger·info·auto·line)만 쓴다.
-// 옛 화면(ManagerPage 등 197곳)은 그 화면을 새로 쓸 때 함께 없앤다(명세 9) — 그래서 팔레트 자체를 줄이지 않고
-// 새 폴더에만 이 규칙을 건다.
+// src/** 전체에서 막는 Tailwind 기본 팔레트(명세 6.1 R2: blue-700·green-700·emerald·sky·violet·slate·amber 등).
+// 색은 tailwind.config.js의 토큰(ink·paper·moss·ok·warn·danger·info·auto·line·worker)만 쓴다.
+// (2d 팔레트 잠금) tailwind.config.js가 theme.colors를 덮어써 기본 팔레트를 아예 만들지 않으므로, 기본 팔레트 클래스는
+// no-custom-classname에도 걸린다. 이 규칙은 cn(...) 밖 문자열(META 표 등)까지 잡는 두 번째 그물이다.
 const DEFAULT_PALETTE =
   'slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose'
 const COLOR_UTIL =
@@ -30,6 +30,10 @@ const COLOR_UTIL =
 const PALETTE_RE = `(^|[\\s:!])(${COLOR_UTIL})-(${DEFAULT_PALETTE})-[0-9]`
 // 10~11px 글자(명세 6.2 R3: 가장 작은 글씨 12px).
 const SMALL_TEXT_RE = 'text-\\[1[01]px\\]'
+
+// 2b-1(feat/p2b1-editor)이 지우거나 옮기는 파일(옛 ManagerPage와 그 나누기 미리보기). 병합하면 비운다.
+const LEGACY_UNTIL_2B1 = ['src/pages/ManagerPage.tsx', 'src/components/SplitPreviewList.tsx']
+const LEGACY_PALETTE_CLASS = `(.*:)?(${COLOR_UTIL})-(${DEFAULT_PALETTE})-[0-9]+(\/[0-9]+)?`
 
 const NEW_FOLDER_RULES = [
   NO_CLASSNAME_PLUS,
@@ -95,10 +99,20 @@ export default defineConfig([
     },
   },
   {
-    // 2차 새 폴더(사업주 기본 부품·새 사업주 화면·새 로그인)에만 거는 규칙(tasks §3.2). 옛 화면은 지울 때 함께 정리한다.
-    files: ['src/components/ui/**/*.{ts,tsx}', 'src/manager/**/*.{ts,tsx}', 'src/pages/LoginPage.tsx'],
+    // (2d) 팔레트·10~11px·window.confirm 금지를 src/** 전체로 넓혔다(tasks §7 FOUNDATION).
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: LEGACY_UNTIL_2B1,
     rules: {
       'no-restricted-syntax': ['error', ...NEW_FOLDER_RULES],
+    },
+  },
+  {
+    // 2b-1이 지우거나 옮기는 옛 새 직무 화면. 그 브랜치와 겹치지 않게 여기서는 고치지 않고, 병합하면 이 블록을 지운다.
+    // 팔레트가 잠겨 색은 빠지지만(글자는 기본 잉크색) 동작은 그대로다.
+    files: LEGACY_UNTIL_2B1,
+    rules: {
+      'tailwindcss/no-custom-classname': ['error', { whitelist: [LEGACY_PALETTE_CLASS] }],
+      'no-restricted-syntax': ['error', NO_CLASSNAME_PLUS],
     },
   },
 ])

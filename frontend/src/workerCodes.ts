@@ -36,6 +36,8 @@ export function clearSavedWorkplaceCode() {
     localStorage.removeItem(WORKPLACE_KEY);
     // 사업장 연결을 끊으면 그 사업장 이름도 지운다(다른 가게 이름이 남아 보이지 않게).
     localStorage.removeItem("jobcard_workplace_name");
+    // 호칭도 사업장 설정이라 함께 지운다(다른 가게의 호칭이 남지 않게, 2d).
+    localStorage.removeItem(TEACHER_TITLE_KEY);
     localStorage.removeItem(DEVICE_TOKEN_KEY);
   } catch {
     /* 무시 */
@@ -102,4 +104,47 @@ export function saveDeviceToken(token: string) {
   } catch {
     /* 저장 못 하면 다음에도 처음 쓰는 기기로 셀 뿐 */
   }
+}
+
+// (2d) 근로자 화면에서 사업주를 부르는 호칭(사업장 설정, 기본 '선생님'). 로그인하면 /me의 teacher_title을 받아 두고,
+// 로그인 전 화면(번호 넣기·기기 연결·연결 안 됨)도 이 값을 쓴다. 저장값이 없거나 규칙(한글 1~6자) 밖이면 '선생님'.
+const TEACHER_TITLE_KEY = "jobcard_teacher_title";
+export const DEFAULT_TEACHER_TITLE = "선생님";
+const TITLE_RE = /^[가-힣]{1,6}$/;
+
+export function isValidTeacherTitle(v: unknown): v is string {
+  return typeof v === "string" && TITLE_RE.test(v);
+}
+
+export function getSavedTeacherTitle(): string {
+  try {
+    const v = localStorage.getItem(TEACHER_TITLE_KEY);
+    return isValidTeacherTitle(v) ? v : DEFAULT_TEACHER_TITLE;
+  } catch {
+    return DEFAULT_TEACHER_TITLE;
+  }
+}
+
+export function saveTeacherTitle(title: unknown) {
+  if (!isValidTeacherTitle(title)) return;
+  try {
+    if (localStorage.getItem(TEACHER_TITLE_KEY) !== title) localStorage.setItem(TEACHER_TITLE_KEY, title);
+  } catch {
+    /* 저장 못 하면 로그인 전 화면이 '선생님'으로 부를 뿐 */
+  }
+}
+
+/**
+ * (2d) 기기 연결 주소(/w?site=CODE)로 열렸을 때: 기기 연결 화면(SetupScreen)이 하는 일을 미리 한다.
+ * 저장된 코드와 다르면 예전 가게 이름·호칭·기기 표시를 지우고 새 코드를 저장한다. 바꿨으면 true.
+ * 근로자 로그인 자체는 바꾸지 않는다(번호 4자리 + 저장된 사업장 코드).
+ */
+export function applySiteCode(raw: string | null | undefined): boolean {
+  const code = normalizeWorkplaceCode(raw ?? "");
+  if (!code || code.length > 32) return false;
+  const saved = getSavedWorkplaceCode();
+  if (saved === code) return false;
+  clearSavedWorkplaceCode();
+  saveWorkplaceCode(code);
+  return true;
 }

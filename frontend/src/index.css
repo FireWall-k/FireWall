@@ -86,3 +86,31 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* (2d) 인쇄용 카드: 인쇄할 때는 data-print-area 안만 보인다(근로자 카드·기기 연결 카드). */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  [data-print-area],
+  [data-print-area] * {
+    visibility: visible;
+  }
+  [data-print-area] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: 0;
+  }
+}
+
+/* (2d 팔레트 잠금) 옛 새 직무 화면(pages/ManagerPage.tsx·components/SplitPreviewList.tsx)은 2b-1(feat/p2b1-editor)이
+   지우므로 여기서 고치지 않는다. 다만 팔레트가 잠기면 흰 글씨 단추의 바탕색이 빠져 글씨가 보이지 않는다(axe color-contrast).
+   2b-1 병합 전까지 흰 글씨 단추 바탕색만 속성 선택자로 남긴다(클래스를 새로 만들지 않음). 2b-1을 병합하면 이 블록을 지운다. */
+[class~="bg-blue-700"] { background-color: #1d4ed8; }
+[class~="hover:bg-blue-800"]:hover { background-color: #1e40af; }
+[class~="bg-emerald-600"] { background-color: #059669; }
+[class~="hover:bg-emerald-700"]:hover { background-color: #047857; }
+[class~="bg-green-700"] { background-color: #15803d; }
+[class~="bg-slate-900"] { background-color: #0f172a; }

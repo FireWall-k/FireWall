@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 // 같은 객체 그림(예: 상자)이라도 동작이 다르면 칩으로 구분돼 인지부하를 낮춘다.
 // 결정론적(네트워크 의존 없음)이라 폴백 상징에도 항상 적용된다.
 //
+// (2d 팔레트 잠금) 동작마다 다른 기본 팔레트 색을 쓰던 칩은 모두 중립 토큰으로 바꿨다(명세 7.4: 칩은 걸러보기 메타로만).
 // 주의(Tailwind): 색 클래스는 반드시 '리터럴 문자열'로 둔다. `bg-${x}-100`처럼
 // 동적으로 만들면 Tailwind가 스캔하지 못해 빌드에서 누락된다.
 
@@ -25,55 +26,55 @@ function svg(children: ReactNode): ReactNode {
 export const ACTION_META: Record<string, ActionMeta> = {
   observe: {
     label: "확인하기",
-    chip: "bg-blue-100 text-blue-800",
+    chip: "bg-paper-100 text-ink-700",
     icon: svg(<><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></>),
   },
   move: {
     label: "옮기기",
-    chip: "bg-green-100 text-green-800",
+    chip: "bg-paper-100 text-ink-700",
     icon: svg(<><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></>),
   },
   stack: {
     label: "쌓기",
-    chip: "bg-purple-100 text-purple-800",
+    chip: "bg-paper-100 text-ink-700",
     icon: svg(<><path d="m12 2 9 5-9 5-9-5 9-5Z" /><path d="m3 12 9 5 9-5" /><path d="m3 17 9 5 9-5" /></>),
   },
   sort: {
     label: "분류하기",
-    chip: "bg-orange-100 text-orange-800",
+    chip: "bg-paper-100 text-ink-700",
     icon: svg(<><path d="M11 5h10" /><path d="M11 9h7" /><path d="M11 13h4" /><path d="m3 8 3-3 3 3" /><path d="M6 5v14" /></>),
   },
   // pack은 담다·포장하다·밀봉하다·접다를 묶은 계열이다(ai_service/taxonomy.py). 예전 라벨 "담기"는 그중
   // 한 동사라, 상자를 접는 단계에도 "담기"가 붙었다. 계열 이름은 묶음 전체를 가리키는 말로 둔다.
   pack: {
     label: "포장하기",
-    chip: "bg-teal-100 text-teal-800",
+    chip: "bg-paper-100 text-ink-700",
     icon: svg(<><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" /></>),
   },
   clean: {
     label: "청소하기",
-    chip: "bg-cyan-100 text-cyan-800",
+    chip: "bg-paper-100 text-ink-700",
     icon: svg(<><path d="M9 4v4" /><path d="M7 6h4" /><path d="M15 10l1.6 3.4L20 15l-3.4 1.6L15 20l-1.6-3.4L10 15l3.4-1.6Z" /></>),
   },
   // 아래 셋은 분류 체계(taxonomy.py)에 있는데 여기 없어서 '작업하기'로 뭉개져 보였다.
   wear: {
     label: "착용하기",
-    chip: "bg-indigo-100 text-indigo-800",
+    chip: "bg-paper-100 text-ink-700",
     icon: svg(<><path d="M20.4 18.6 12 14l-8.4 4.6" /><path d="M12 14V3" /><path d="m8 6 4-3 4 3" /></>),
   },
   operate: {
     label: "조작하기",
-    chip: "bg-amber-100 text-amber-900",
+    chip: "bg-paper-100 text-ink-700",
     icon: svg(<><circle cx="12" cy="12" r="3" /><path d="M12 2v3" /><path d="M12 19v3" /><path d="M2 12h3" /><path d="M19 12h3" /></>),
   },
   assemble: {
     label: "조립하기",
-    chip: "bg-rose-100 text-rose-800",
+    chip: "bg-paper-100 text-ink-700",
     icon: svg(<><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8Z" /></>),
   },
   other: {
     label: "작업하기",
-    chip: "bg-slate-100 text-slate-700",
+    chip: "bg-paper-100 text-ink-700",
     icon: svg(<><circle cx="12" cy="12" r="9" /><path d="M12 8v4l2 2" /></>),
   },
 };

@@ -4,7 +4,8 @@ import tailwindConfig from "../../tailwind.config.js";
 // 사업주 글자 조합이 모두 4.5:1 이상인지 토큰 값으로 직접 계산한다(명세 6.1, R1).
 // 토큰 값을 바꾸다 대비가 무너지면 여기서 실패한다.
 type Palette = Record<string, Record<string, string> | string>;
-const colors = (tailwindConfig.theme!.extend!.colors ?? {}) as Palette;
+// (2d 팔레트 잠금) 색은 theme.extend가 아니라 theme.colors에 있다(기본 팔레트를 덮어씀).
+const colors = (tailwindConfig.theme!.colors ?? {}) as Palette;
 
 function hex(name: string): string {
   if (name === "white") return "#FFFFFF";

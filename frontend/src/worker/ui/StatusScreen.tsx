@@ -15,7 +15,7 @@ export interface StatusScreenProps {
   kind: StatusKind;
   /** 주 버튼을 눌렀을 때(다시 해 보기·새로 보기·번호 다시 넣기). 없으면 주 버튼을 그리지 않는다. */
   onAction?: () => void;
-  /** unpaired의 작은 보조 버튼 [선생님용: 기기 연결하기]. */
+  /** unpaired의 작은 보조 버튼 [(호칭)용: 기기 연결하기]. */
   onSecondary?: () => void;
   /** offline: 받아 둔 일이 있으면 '받아 둔 일은 할 수 있어요.'를 덧붙인다. */
   hasCachedWork?: boolean;
@@ -109,7 +109,7 @@ export function StatusScreen({ kind, onAction, onSecondary, hasCachedWork = fals
         </PrimaryAction>
       )}
       {kind === "unpaired" && onSecondary && (
-        // 선생님만 누르는 버튼이라 일부러 작게 둔다(근로자가 우연히 누르지 않게). 그래도 터치 영역은 48px.
+        // 사업주만 누르는 버튼이라 일부러 작게 둔다(근로자가 우연히 누르지 않게). 그래도 터치 영역은 48px.
         <button
           type="button"
           onClick={onSecondary}

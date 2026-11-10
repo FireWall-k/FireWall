@@ -33,7 +33,8 @@ describe("manager/copy.ts 금지어", () => {
   });
 
   it("영어 enum(draft·needs_check 같은 영어 낱말)이 화면 문구에 없다", () => {
-    const bad = strings.filter(([, s]) => /[A-Za-z]{2,}/.test(s));
+    // 'QR 코드'는 사업주가 그대로 부르는 이름이라 예외(설정·인쇄 카드).
+    const bad = strings.filter(([, s]) => /[A-Za-z]{2,}/.test(s.replace(/QR/g, "")));
     expect(bad).toEqual([]);
   });
 
@@ -84,7 +85,6 @@ describe("조사 고르기(명세 6.7: '을(를)' 같은 기계식 표기 대신
     expect(copy.taskToast.archived("컵 씻기")).toBe("'컵 씻기'를 보관함으로 옮겼어요");
     expect(copy.taskDelete.title("옛 창고 정리")).toBe("'옛 창고 정리'를 완전히 지울까요?");
     expect(copy.taskToast.deleted("상자 옮김")).toBe("'상자 옮김'을 완전히 지웠어요");
-    expect(copy.dashboardArchive.confirm("분류 작업")).toMatch(/^'분류 작업'을 보관함으로/);
     expect(copy.ui.confirmNameLabel("김민지")).toBe("지우려면 '김민지'를 똑같이 적어 주세요");
   });
 
