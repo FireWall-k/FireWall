@@ -75,7 +75,7 @@ describe("contract §3.7 문구(글자 그대로)", () => {
     expect(Object.values(copy.taskFilter)).toEqual(["전체", "초안", "확인 필요", "보냄", "보관"]);
     expect(copy.taskRow.needsCheck(3)).toBe("확인 필요 3");
     expect(copy.taskRow.unsentChanges).toBe("고친 내용 안 보냄");
-    expect(copy.taskMenu.editLater).toBe("새 편집기에서 열려요");
+    expect(copy.taskMenu.resendBlocked(2)).toBe("확인할 것 2개가 남았어요");
   });
 });
 

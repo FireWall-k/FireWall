@@ -2,15 +2,16 @@
 // - 걸러보기 5개(전체·초안·확인 필요·보냄·보관)와 개수. 걸러보기는 서로 겹친다(서버가 셈, 화면은 그대로 보임).
 // - 제목 검색(잠깐 멈추면 찾음). 걸러보기와 검색어는 주소(?filter=&q=)에 남아 뒤로 가기·새로고침에도 그대로다.
 // - 열: 대표 그림 32 + 제목, 단계 수, 상태 배지('확인 필요 n'·'고친 내용 안 보냄'), 받은 사람(아바타 3 + '+n'), 고친 날.
-// - … 메뉴: 고치기(2b-1 새 편집기 전까지 꺼 둠), 복제해서 고치기, 보관하기 / 보관함에서 꺼내기, 완전히 지우기(보관한 것만).
+// - … 메뉴: 고치기(편집기), 다시 보내기(보낸 직무: 확인할 것이 남으면 그 편집기의 첫 확인 단계로, 아니면 보내기 시트 —
+//   클릭 3번: … → [다시 보내기] → [n명에게 보내기]), 복제해서 고치기, 보관하기 / 보관함에서 꺼내기, 완전히 지우기(보관한 것만).
 // - 직무 삭제는 먼저 보관(명세 5.0). 완전히 지우기는 지워지는 것 목록을 보이는 위험 창으로 확인받는다.
 // - 행이 사라지는 일(보관·꺼내기·완전히 지우기·실행 취소) 뒤에는 키보드 초점을 그 자리 행의 … 단추로 옮긴다
 //   (다음 행, 없으면 이전 행, 없으면 목록 칸). 초점이 문서 처음으로 사라지지 않게(WCAG 2.4.3).
 // - 행동 뒤 다시 받기(reload)는 늘 '지금' 걸러보기·검색어로 부른다(그사이 탭을 바꿔도 옛 탭 목록을 부르지 않게).
 // - 걸러보기·검색어를 바꾼 뒤에는 결과 개수(또는 '없어요')를 화면 읽기 프로그램에 알린다(WCAG 4.1.3).
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { Archive, ArchiveRestore, Copy, Ellipsis, ImageOff, Lightbulb, PencilLine, Plus, Search, Trash2, X } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Archive, ArchiveRestore, Copy, Ellipsis, ImageOff, Lightbulb, PencilLine, Plus, Search, Send, Trash2, X } from "lucide-react";
 import {
   AvatarGroup,
   Badge,
@@ -32,9 +33,10 @@ import {
   type Tone,
 } from "../../components/ui";
 import { cn } from "../../cn";
-import { errors, taskDelete, taskFilter, taskList, taskMenu, taskRow, taskState, taskToast } from "../copy";
+import { errors, sendSheet, taskDelete, taskFilter, taskList, taskMenu, taskRow, taskState, taskToast } from "../copy";
 import { archiveTask, deleteTask, duplicateTask, listEmployerTasks, unarchiveTask } from "../api/tasks";
-import { TASK_FILTERS, type TaskFilter, type TaskListOut, type TaskSummaryOut } from "../api/types";
+import { TASK_FILTERS, type SendResult, type TaskFilter, type TaskListOut, type TaskSummaryOut } from "../api/types";
+import SendSheet from "./editor/SendSheet";
 import { SEARCH_DEBOUNCE_MS, errorMessage } from "./listHelpers";
 import { parseServerTime, relativeDate } from "./relativeDate";
 
@@ -73,6 +75,8 @@ export default function TaskListPage() {
   }
   const [busyIds, setBusyIds] = useState<ReadonlySet<string>>(new Set());
   const [toDelete, setToDelete] = useState<TaskSummaryOut | null>(null);
+  const [sendFor, setSendFor] = useState<TaskSummaryOut | null>(null);
+  const navigate = useNavigate();
   const [deleting, setDeleting] = useState(false);
   const seq = useRef(0);
   const panelRef = useRef<HTMLElement>(null);
@@ -267,7 +271,17 @@ export default function TaskListPage() {
 
   function menuItems(row: TaskSummaryOut): MenuItem[] {
     const icon = (I: typeof Copy) => <I size={16} strokeWidth={2} aria-hidden="true" />;
-    const edit: MenuItem = { id: "edit", label: taskMenu.edit, icon: icon(PencilLine), disabled: true, hint: taskMenu.editLater };
+    const editPath = `/m/tasks/${encodeURIComponent(row.id)}`;
+    const edit: MenuItem = { id: "edit", label: taskMenu.edit, icon: icon(PencilLine), onSelect: () => navigate(editPath) };
+    // 다시 보내기(contract §3.6): 확인할 것이 남았으면 보내기 대신 그 직무 편집기의 첫 확인 단계로 간다.
+    const resend: MenuItem | null = row.current_version_no
+      ? row.needs_check_count > 0
+        ? {
+            id: "resend", label: taskMenu.resend, icon: icon(Send), hint: taskMenu.resendBlocked(row.needs_check_count),
+            onSelect: () => navigate(`${editPath}?review=1`),
+          }
+        : { id: "resend", label: taskMenu.resend, icon: icon(Send), onSelect: () => setSendFor(row) }
+      : null;
     const dup: MenuItem = { id: "duplicate", label: taskMenu.duplicate, icon: icon(Copy), onSelect: () => duplicate(row) };
     if (row.state === "archived") {
       return [
@@ -279,7 +293,12 @@ export default function TaskListPage() {
           : []),
       ];
     }
-    return [edit, dup, { id: "archive", label: taskMenu.archive, icon: icon(Archive), onSelect: () => archive(row) }];
+    return [
+      ...(resend ? [resend] : []),
+      edit,
+      dup,
+      { id: "archive", label: taskMenu.archive, icon: icon(Archive), onSelect: () => archive(row) },
+    ];
   }
 
   const columns: Column<TaskSummaryOut>[] = [
@@ -292,9 +311,19 @@ export default function TaskListPage() {
         <div className="flex min-w-0 items-center gap-3">
           <Cover url={r.cover_url} />
           <div className="flex min-w-0 flex-col gap-1">
-            <span className="truncate font-semibold text-ink-900" title={r.title}>
-              {r.title}
-            </span>
+            {r.state === "archived" ? (
+              <span className="truncate font-semibold text-ink-900" title={r.title}>
+                {r.title}
+              </span>
+            ) : (
+              <Link
+                to={`/m/tasks/${encodeURIComponent(r.id)}`}
+                className="truncate font-semibold text-ink-900 underline-offset-2 hover:underline"
+                title={r.title}
+              >
+                {r.title}
+              </Link>
+            )}
             {/* 휴대폰(768 미만): 상태·단계 수·받은 사람·고친 날 열을 숨기고 제목 아래 두 줄로 보인다(제목이 잘리지 않게). */}
             <StatusBadges row={r} className="md:hidden" />
             <MobileMeta row={r} />
@@ -506,6 +535,28 @@ export default function TaskListPage() {
         confirmLabel={taskDelete.confirm}
         onConfirm={() => void confirmDelete()}
         busy={deleting}
+      />
+
+      <SendSheet
+        open={!!sendFor}
+        onClose={() => setSendFor(null)}
+        taskId={sendFor?.id ?? ""}
+        hasUnsentChanges={!!sendFor?.has_unsent_changes}
+        versionNo={sendFor?.current_version_no ?? null}
+        onGoToStep={(stepId) => {
+          const id = sendFor?.id;
+          setSendFor(null);
+          if (id) navigate(`/m/tasks/${encodeURIComponent(id)}?step=${encodeURIComponent(stepId)}`);
+        }}
+        onSent={(result: SendResult) => {
+          setSendFor(null);
+          toast.show({
+            tone: "success",
+            message: sendSheet.sentMessage(result.results.length),
+            action: { label: sendSheet.viewStatus, onClick: () => navigate("/m") },
+          });
+          reload();
+        }}
       />
     </div>
   );

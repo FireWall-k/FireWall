@@ -1,8 +1,10 @@
 import { test, expect, devices, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { loginEmployer, mockEmployer } from "./employer-mock";
+import { FIXED_SENTENCE, fixedDraft, fourStateDraft, mockEditor } from "./editor-mock";
 
-// 사업주 접근성 자동 검사(명세 8.2·8.3, tasks §3.4): 로그인·직무 목록·새 직무를 1440·390 폭에서 axe로 본다.
+// 사업주 접근성 자동 검사(명세 8.2·8.3, tasks §3.4·§4.4): 로그인·직무 목록·새 직무·편집기·그림 한눈에·보내기 시트를
+// 1440·390 폭에서 axe로 본다.
 // 기준: 심각(serious·critical) 위반 0, 이름 없는 버튼(button-name) 0.
 const { defaultBrowserType: _ignored, ...DESKTOP } = devices["Desktop Chrome"];
 void _ignored;
@@ -46,11 +48,11 @@ for (const width of [1440, 390] as const) {
       expect(r.serious).toEqual([]);
     });
 
-    // 2a-1 병합: 새 직무 화면(옛 ManagerPage). 'AI' 글자와 slate-400 낮은 대비를 고친 뒤 넣었다.
+    // 2b-1: 새 직무 화면(NewTaskPage). 라벨은 '어떤 일을 시킬까요?'(옛 '직무 내용'). 1회차 검증에서 옛 화면 기준으로 늘 실패했다.
     test("새 직무(/m/tasks/new?example=1): axe 심각 0·button-name 0, 'AI' 글자 0", async ({ page }) => {
       await mockEmployer(page);
       await loginEmployer(page, "/m/tasks/new?example=1");
-      await expect(page.getByLabel("직무 내용")).toHaveValue(/손을 깨끗이 씻어요/);
+      await expect(page.getByLabel("어떤 일을 시킬까요?")).toHaveValue(/손을 깨끗이 씻어요/);
       await expect(page.getByTestId("example-note")).toBeVisible();
       await expect(page.getByTestId("help-alert-strip")).toBeVisible();
       const r = await axe(page);
@@ -59,20 +61,62 @@ for (const width of [1440, 390] as const) {
       expect(await page.locator("main").innerText()).not.toMatch(/\bAI\b/);
     });
 
-    // 1회차 검증: 나누기 → [이대로 그림 고르기] 뒤 편집 상태(드래그 손잡이·'(N단계)'·'✦ 자동' 확인 단추)도 본다.
-    test("새 직무 편집 상태: axe 심각 0·button-name 0, 'AI' 글자 0", async ({ page }) => {
-      await mockEmployer(page);
+    test("새 직무 나눈 뒤('이렇게 나눴어요'): axe 심각 0·button-name 0, 'AI' 글자 0", async ({ page }) => {
+      await mockEditor(page);
       await loginEmployer(page, "/m/tasks/new");
-      await page.getByLabel("직무 내용").fill("손을 씻어요. 컵을 씻어요.");
+      await page.getByLabel("어떤 일을 시킬까요?").fill(FIXED_SENTENCE);
       await page.getByRole("button", { name: "단계로 나누기" }).click();
-      await page.getByRole("button", { name: "이대로 그림 고르기 ›" }).click();
-      await expect(page.getByRole("heading", { name: /검토 · 수정/ })).toBeVisible();
-      await expect(page.getByRole("button", { name: /1단계 그림 확인$/ })).toBeVisible();
+      await expect(page.getByRole("heading", { name: /이렇게 나눴어요/ })).toBeVisible();
       await page.waitForTimeout(500); // 등장 애니메이션이 끝난 뒤 대비를 잰다
       const r = await axe(page);
       expect(r.serious).toEqual([]);
       expect(r.buttonName).toEqual([]);
       expect(await page.locator("main").innerText()).not.toMatch(/\bAI\b/);
+    });
+
+    // 2b-1 1회차 검증: 편집기(그림 4상태)·그림 한눈에(확인 전·후)·보내기 시트를 axe로 본다(tasks §4.4·4.5).
+    // 단계 행·한눈에 칸 단추는 보이는 글이 이름이다(aria-label로 덮으면 label-content-name-mismatch).
+    test("편집기 상세 4상태: axe 심각 0·button-name 0", async ({ page }) => {
+      const t = fourStateDraft();
+      await mockEditor(page, { tasks: [t] });
+      await loginEmployer(page, `/m/tasks/${t.id}`);
+      await expect(page.getByTestId("task-editor")).toBeVisible();
+      await page.waitForTimeout(400);
+      let r = await axe(page);
+      expect(r.serious).toEqual([]);
+      for (let n = 1; n <= 4; n++) {
+        if (width === 390) {
+          await page.goto(`/m/tasks/${t.id}`);
+          await expect(page.getByTestId("task-editor")).toBeVisible();
+        }
+        await page.getByTestId(`step-row-${n}`).getByRole("button").first().click();
+        await expect(page.getByTestId("step-detail")).toHaveAttribute("data-step-id", t.steps[n - 1].id);
+        await page.waitForTimeout(400);
+        r = await axe(page);
+        expect(r.serious, `${n}단계`).toEqual([]);
+        expect(r.buttonName, `${n}단계`).toEqual([]);
+      }
+    });
+
+    test("그림 한눈에(확인 전·후)와 보내기 시트: axe 심각 0", async ({ page }) => {
+      const t = fixedDraft();
+      await mockEditor(page, { tasks: [t] });
+      await loginEmployer(page, `/m/tasks/${t.id}`);
+      await expect(page.getByTestId("task-editor")).toBeVisible();
+      await page.getByRole("button", { name: "그림 한눈에" }).first().click();
+      await expect(page.getByRole("heading", { name: "그림 한눈에 보기" })).toBeVisible();
+      await expect(page.getByTestId("confirm-all")).not.toHaveAttribute("aria-disabled", "true");
+      await page.waitForTimeout(400);
+      expect((await axe(page)).serious).toEqual([]);
+      await page.getByTestId("confirm-all").click();
+      await expect(page.getByTestId("picture-overview").getByText("모두 확인했어요").first()).toBeVisible();
+      expect((await axe(page)).serious).toEqual([]);
+      await page.getByTestId("picture-overview").getByRole("button", { name: "보내기" }).click();
+      await expect(page.getByRole("dialog", { name: "보내기 전에 확인해요" })).toBeVisible();
+      await page.waitForTimeout(400);
+      const r = await axe(page);
+      expect(r.serious).toEqual([]);
+      expect(r.buttonName).toEqual([]);
     });
 
     test("직무 목록 빈 상태: axe 심각 0", async ({ page }) => {

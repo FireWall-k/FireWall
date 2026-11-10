@@ -284,7 +284,8 @@ test.describe("2a-1 직무 목록(실제 서버)", () => {
       localStorage.setItem("jobcard_name", "통합 카페");
     }, token);
     await page.goto("/m/tasks/new?example=1");
-    await expect(page.getByLabel("직무 내용")).toHaveValue(/손을 깨끗이 씻어요/);
+    // 2b-1: 라벨은 '어떤 일을 시킬까요?'. 업종은 '더 알려 주기' 안에 있고, 예시는 업종을 채우므로 펼쳐진 채 연다.
+    await expect(page.getByLabel("어떤 일을 시킬까요?")).toHaveValue(/손을 깨끗이 씻어요/);
     await expect(page.getByLabel("업종")).toHaveValue("카페");
     await expect(page.getByTestId("example-note")).toBeVisible();
     expect(await page.locator("main").innerText()).not.toMatch(/\bAI\b/);

@@ -7,6 +7,7 @@ import { cn } from "../../cn";
 import { nav, shell } from "../copy";
 import { crumbsFor } from "./navItems";
 import { useHelpFeed } from "./useHelpFeed";
+import { guardLeave } from "../tasks/new/useLeaveGuard";
 
 export interface TopBarProps {
   displayName: string;
@@ -69,8 +70,8 @@ export default function TopBar({ displayName, onLogout }: TopBarProps) {
       <Menu
         label={shell.userMenu}
         items={[
-          { id: "settings", label: nav.settings, icon: <Settings size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => navigate("/m/settings") },
-          { id: "logout", label: shell.logout, icon: <LogOut size={16} strokeWidth={2} aria-hidden="true" />, onSelect: onLogout },
+          { id: "settings", label: nav.settings, icon: <Settings size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(() => navigate("/m/settings")) },
+          { id: "logout", label: shell.logout, icon: <LogOut size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(onLogout) },
         ]}
         trigger={(p) => (
           <button

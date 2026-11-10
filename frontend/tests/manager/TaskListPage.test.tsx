@@ -22,6 +22,20 @@ vi.mock("../../src/manager/api/tasks", () => ({
   renameTask: vi.fn(),
 }));
 
+// (2b-1) [다시 보내기]가 여는 보내기 시트의 서버 호출.
+const sendCheck = vi.fn();
+const recipients = vi.fn();
+const send = vi.fn();
+const listWorkers = vi.fn();
+vi.mock("../../src/manager/api/send", () => ({
+  sendApi: {
+    sendCheck: (id: string) => sendCheck(id),
+    recipients: (id: string) => recipients(id),
+    send: (id: string, ids: string[], day: string) => send(id, ids, day),
+  },
+}));
+vi.mock("../../src/manager/api/editor", () => ({ editorApi: { listWorkers: () => listWorkers() } }));
+
 import TaskListPage from "../../src/manager/tasks/TaskListPage";
 import { ToastProvider } from "../../src/components/ui";
 
@@ -84,6 +98,7 @@ function renderPage(path = "/m/tasks") {
         <Routes>
           <Route path="/m/tasks" element={<TaskListPage />} />
           <Route path="/m/tasks/new" element={<p>새 직무 화면</p>} />
+          <Route path="/m/tasks/:id" element={<p>편집기 화면</p>} />
         </Routes>
         <Where />
       </MemoryRouter>
@@ -183,11 +198,25 @@ describe("직무 목록 행", () => {
     expect(document.body.textContent).not.toMatch(/draft|published|archived|needs_check/);
   });
 
-  it("고치기는 꺼져 있고 '새 편집기에서 열려요'를 함께 보인다", async () => {
+  it("(2b-1) 고치기를 누르면 편집기(/m/tasks/:id)로 간다", async () => {
+    renderPage();
+    const { user, menu } = await openMenu("컵 씻기");
+    const edit = within(menu).getByRole("menuitem", { name: "고치기" });
+    expect(edit).not.toHaveAttribute("aria-disabled");
+    await user.click(edit);
+    expect(await screen.findByText("편집기 화면")).toBeInTheDocument();
+  });
+
+  it("(2b-1) 제목을 누르면 편집기로 간다", async () => {
+    renderPage();
+    const link = await screen.findByRole("link", { name: "컵 씻기" });
+    expect(link).toHaveAttribute("href", "/m/tasks/t1");
+  });
+
+  it("초안에는 [다시 보내기]가 없다", async () => {
     renderPage();
     const { menu } = await openMenu("컵 씻기");
-    const edit = within(menu).getByRole("menuitem", { name: "고치기 새 편집기에서 열려요" });
-    expect(edit).toHaveAttribute("aria-disabled", "true");
+    expect(within(menu).queryByRole("menuitem", { name: /다시 보내기/ })).not.toBeInTheDocument();
     // 보관하지 않은 직무에는 완전히 지우기가 없다(먼저 보관)
     expect(within(menu).queryByRole("menuitem", { name: "완전히 지우기" })).not.toBeInTheDocument();
   });
@@ -496,5 +525,59 @@ describe("결과 알림(WCAG 4.1.3)과 휴대폰 행 둘째 줄", () => {
     renderPage();
     await screen.findByText("아직 만든 직무가 없어요");
     expect(screen.getByRole("table").querySelector("thead")).toHaveClass("hidden");
+  });
+});
+
+describe("(2b-1) 다시 보내기 — 클릭 3번", () => {
+  const SENT = row({
+    id: "t4", title: "바닥 청소", state: "published", current_version_no: 1,
+    recipients: [{ worker_id: "w1", initials: "김" }],
+  });
+  beforeEach(() => {
+    listEmployerTasks.mockImplementation(async () => ({ items: [SENT, SENT_EDITED], counts: COUNTS }));
+    sendCheck.mockResolvedValue({
+      ok: true,
+      blocking: [
+        { code: "no_picture", done: 4, total: 4, step_ids: [] },
+        { code: "unconfirmed_auto", done: 4, total: 4, step_ids: [] },
+        { code: "unreviewed_split", done: 0, total: 0, step_ids: [] },
+      ],
+      warnings: [],
+    });
+    recipients.mockResolvedValue({
+      last_batch_worker_ids: ["w1"], all_ever_worker_ids: ["w1"], workplace_last_batch_worker_ids: ["w1"],
+      today_status: { w1: "none", w2: "none" },
+    });
+    listWorkers.mockResolvedValue([
+      { id: "w1", display_name: "김민지", access_code_hint: "34", access_code_length: 4, access_code: "1234" },
+      { id: "w2", display_name: "이서준", access_code_hint: "78", access_code_length: 4, access_code: "5678" },
+    ]);
+    send.mockResolvedValue({ version_no: 1, version_created: false, day: "2026-11-10", results: [{ worker_id: "w1", display_name: "김민지", outcome: "created" }] });
+  });
+
+  it("… → [다시 보내기] → [1명에게 보내기]: 지난번 받은 사람이 미리 체크되어 있고 접속 코드는 시트에 없다", async () => {
+    renderPage();
+    const { user, menu } = await openMenu("바닥 청소");
+    await user.click(within(menu).getByRole("menuitem", { name: "다시 보내기" }));
+    const sheet = await screen.findByRole("dialog", { name: "보내기 전에 확인해요" });
+    expect(await within(sheet).findByRole("checkbox", { name: /김민지 님/ })).toBeChecked();
+    expect(within(sheet).getByRole("checkbox", { name: /이서준 님/ })).not.toBeChecked();
+    expect(within(sheet).getByText("지난번 받은 사람을 골라 두었어요")).toBeInTheDocument();
+    expect(sheet.textContent).not.toMatch(/1234|5678/);
+    await user.click(within(sheet).getByRole("button", { name: "1명에게 보내기" }));
+    await waitFor(() => expect(send).toHaveBeenCalledWith("t4", ["w1"], "today"));
+    expect(await screen.findByText("1명에게 보냈어요")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "현황 보기" })).toBeInTheDocument();
+  });
+
+  it("확인할 것이 남은 직무는 '확인할 것 n개가 남았어요'를 보이고, 누르면 편집기의 첫 확인 단계로 간다", async () => {
+    renderPage();
+    const { user, menu } = await openMenu("상자 옮기기");
+    const item = within(menu).getByRole("menuitem", { name: /다시 보내기/ });
+    expect(item).toHaveTextContent("확인할 것 1개가 남았어요");
+    await user.click(item);
+    expect(await screen.findByText("편집기 화면")).toBeInTheDocument();
+    expect(screen.getByTestId("where")).toHaveTextContent("/m/tasks/t3?review=1");
+    expect(sendCheck).not.toHaveBeenCalled();
   });
 });

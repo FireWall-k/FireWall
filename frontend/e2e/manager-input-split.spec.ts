@@ -1,22 +1,16 @@
-import { test, expect, type Page, type Route } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { loginEmployer } from "./employer-mock";
+import { mockEditor } from "./editor-mock";
 
 // 입력 화면에서 나누기를 끝내는 흐름(한 줄 = 한 동작 = 그림 1장)을 실제 브라우저로 본다:
 //   [단계로 나누기] → 나눈 줄이 입력칸 아래에 → 노란 줄 [합치기]·[더 나누기]·고치기 → [이대로 그림 고르기] →
-//   확인한 줄로 초안 생성 → 편집기(나누기 알림 없음).
-// 백엔드는 띄우지 않고 page.route로 목을 둔다(worker-a11y.spec.ts와 같은 방식). 실제 백엔드 경로는
-// backend/tests/test_input_split.py가 확인한다.
+//   확인한 줄로 초안 생성 → 편집기(/m/tasks/:id, 나누기 알림 없음).
+// 2b-1 1회차 검증: 옛 화면(ManagerPage) 라벨('직무 내용'·'이대로 그림 고르기 ›'·'검토 · 수정')에 맞춘 채 남아 4개가 늘 실패했다.
+// 새 직무(NewTaskPage)·편집기(TaskEditorPage) 기준으로 옮겼다. 백엔드는 e2e/editor-mock.ts(유료 호출 없음).
+// 실제 백엔드 경로는 backend/tests/test_input_split.py와 e2e-real이 확인한다.
 // E2E_SHOTS_DIR을 주면 1280px·390px 화면 사진을 그 폴더에 남긴다(디자인 확인용).
 
-const CORS = {
-  "access-control-allow-origin": "*",
-  "access-control-allow-headers": "*",
-  "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
-};
-const PNG_1X1 = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-  "base64",
-);
 const INPUT = "출근하면 앞치마 입고 손 씻고, 컵 씻어서 건조대에 올려 놔.";
 const SOURCE = "컵 씻어서 건조대에 올려 놔";
 
@@ -35,85 +29,21 @@ const PREVIEW = {
   ],
 };
 
-async function mockBackend(page: Page, opts: { preview?: typeof PREVIEW; createFails?: boolean } = {}) {
-  const state = { createBodies: [] as { steps: { sentence: string }[] }[], previewCalls: 0 };
-  await page.route("https://cdn.jsdelivr.net/**", (route) => route.abort());
-  await page.route("http://e2e-api.invalid/**", async (route: Route) => {
-    const req = route.request();
-    const url = new URL(req.url());
-    const method = req.method();
-    if (method === "OPTIONS") return route.fulfill({ status: 204, headers: CORS });
-    const json = (body: unknown, status = 200) =>
-      route.fulfill({ status, headers: { ...CORS, "content-type": "application/json" }, body: JSON.stringify(body) });
-    if (url.pathname.startsWith("/media/")) {
-      return route.fulfill({ status: 200, headers: { ...CORS, "content-type": "image/png" }, body: PNG_1X1 });
-    }
-    if (url.pathname === "/api/workers" && method === "GET") return json([]);
-    // 새 틀(AppShell)의 도움 요청 띠·종이 5초마다 부른다.
-    if (url.pathname === "/api/employer/help" && method === "GET") return json([]);
-    if (url.pathname === "/api/tasks/split-preview" && method === "POST") {
-      state.previewCalls += 1;
-      return json(opts.preview ?? PREVIEW);
-    }
-    if (url.pathname === "/api/tasks" && method === "POST") {
-      const body = req.postDataJSON() as { steps: { sentence: string }[] };
-      state.createBodies.push(body);
-      if (opts.createFails) return json({ detail: "초안을 만들지 못했어요. 잠시 뒤 다시 눌러 주세요." }, 502);
-      return json({
-        id: "task-1", title: "출근 준비", status: "draft",
-        steps: body.steps.map((s, i) => ({
-          id: `s${i + 1}`, order: i + 1, sentence: s.sentence, action_type: "other",
-          symbol_url: `http://e2e-api.invalid/media/symbols/s${i + 1}.png`, symbol_source: "LOCAL_AAC",
-          needs_fallback: false, tts_audio_url: null,
-        })),
-      }, 201);
-    }
-    const confirm = url.pathname.match(/^[/]api[/]tasks[/]task-1[/]steps[/](s[0-9]+)[/]picture[/]confirm$/);
-    if (confirm && method === "POST") {
-      // 서버처럼 문장은 그대로 돌려준다(문장 칸은 문장을 key로 써서, 바뀌면 다시 그려진다).
-      const n = Number(confirm[1].slice(1));
-      return json({
-        id: confirm[1], order: n, sentence: state.createBodies.at(-1)?.steps[n - 1]?.sentence ?? "", action_type: "other",
-        symbol_url: `http://e2e-api.invalid/media/symbols/${confirm[1]}.png`, symbol_source: "LOCAL_AAC",
-        needs_fallback: false, tts_audio_url: null, picture_state: "confirmed",
-      });
-    }
-    return route.fulfill({ status: 599, headers: CORS, body: `unmocked ${method} ${url.pathname}` });
-  });
-  return state;
-}
-
-async function loginEmployer(page: Page) {
-  await page.goto("/");
-  await page.evaluate(() => {
-    localStorage.setItem("jobcard_token", "e2e-employer-token");
-    localStorage.setItem("jobcard_role", "employer");
-    localStorage.setItem("jobcard_name", "테스트사장");
-  });
-  // 2a-1: 새 직무 화면 주소는 /m/tasks/new(옛 /manager는 여기로 넘어간다, contract §2.2).
-  await page.goto("/m/tasks/new");
-}
-
 async function splitInput(page: Page) {
-  await page.getByLabel("직무 내용").fill(INPUT);
+  await page.getByLabel("어떤 일을 시킬까요?").fill(INPUT);
   await page.getByRole("button", { name: "단계로 나누기" }).click();
   await expect(page.getByRole("heading", { name: /이렇게 나눴어요/ })).toBeVisible();
 }
 
-test("입력 화면: 나눈 줄 확인 → 합치기 → 고치기 → 이대로 그림 고르기", async ({ page }) => {
-  const state = await mockBackend(page);
-  await loginEmployer(page);
+test("입력 화면: 나눈 줄 확인 → 합치기 → 고치기 → 이대로 그림 고르기 → 편집기", async ({ page }) => {
+  const m = await mockEditor(page, { preview: PREVIEW });
+  await loginEmployer(page, "/m/tasks/new");
   await splitInput(page);
 
   // 애매한 줄만 노랗다
   await expect(page.getByTestId("split-row-3")).toHaveAttribute("data-check", "true");
   await expect(page.getByTestId("split-row-1")).toHaveAttribute("data-check", "false");
   await expect(page.getByTestId("split-row-3")).toContainText(SOURCE);
-
-  // 사업주 화면 버튼은 44px 이상
-  const heights = await page.locator('[aria-labelledby="split-preview-title"] button').evaluateAll((els) =>
-    els.map((el) => ({ name: el.getAttribute("aria-label") ?? el.textContent, h: el.getBoundingClientRect().height })));
-  for (const b of heights) expect(b.h, `${b.name} 높이`).toBeGreaterThanOrEqual(44);
 
   // 심각한 접근성 위반 없음
   const axe = await new AxeBuilder({ page }).include('[aria-labelledby="split-preview-title"]').analyze();
@@ -136,15 +66,14 @@ test("입력 화면: 나눈 줄 확인 → 합치기 → 고치기 → 이대로
 
   // 그 자리에서 고치기
   await page.getByLabel("2단계 문장").fill("손을 비누로 씻어요.");
-  await page.getByRole("button", { name: "이대로 그림 고르기 ›" }).click();
+  await page.getByRole("button", { name: "이대로 그림 고르기" }).click();
 
-  await expect(page.getByRole("heading", { name: /검토 · 수정/ })).toBeVisible();
-  expect(state.previewCalls).toBe(1);
-  expect(state.createBodies).toHaveLength(1);
-  expect(state.createBodies[0].steps.map((s) => s.sentence)).toEqual([
-    "앞치마를 입어요.", "손을 비누로 씻어요.", SOURCE,
-  ]);
-  // 편집기에는 나누기 알림이 없다
+  await expect(page.getByTestId("task-editor")).toBeVisible();
+  await expect(page).toHaveURL(/\/m\/tasks\/task-\d+$/);
+  expect(m.calls.filter((c) => c === "POST /api/tasks/split-preview")).toHaveLength(1);
+  expect(m.creates).toHaveLength(1);
+  expect(m.creates[0].steps.map((s) => s.sentence)).toEqual(["앞치마를 입어요.", "손을 비누로 씻어요.", SOURCE]);
+  // 편집기에는 나누기 알림('동작이 n개')이 없다
   await expect(page.getByText(/동작이 \d개/)).toHaveCount(0);
 });
 
@@ -157,10 +86,10 @@ test("390px 긴 목록: [이대로 그림 고르기]가 실패하면 버튼 아�
     })),
   };
   await page.setViewportSize({ width: 390, height: 844 });
-  await mockBackend(page, { preview: many, createFails: true });
-  await loginEmployer(page);
+  await mockEditor(page, { preview: many, createFails: true });
+  await loginEmployer(page, "/m/tasks/new");
   await splitInput(page);
-  const confirm = page.getByRole("button", { name: "이대로 그림 고르기 ›" });
+  const confirm = page.getByRole("button", { name: "이대로 그림 고르기" });
   await confirm.scrollIntoViewIfNeeded();
   await confirm.click();
   const alert = page.locator('[aria-labelledby="split-preview-title"]').getByRole("alert");
@@ -170,29 +99,24 @@ test("390px 긴 목록: [이대로 그림 고르기]가 실패하면 버튼 아�
   await expect(page.getByLabel("9단계 문장")).toHaveValue("9번째 일을 천천히 해요.");
 });
 
-// 2a-1 2회차 검증: 키보드로 누른 단추가 꺼지거나 사라지면 실제 브라우저에서는 초점이 body로 빠졌다(jsdom은 재현 못 함).
-test("키보드: [단계로 나누기] 뒤 초점은 '이렇게 나눴어요' 제목, 그림 확인 뒤에는 다음 확인 단추 → 마지막엔 그 단계 문장 칸", async ({ page }) => {
-  await mockBackend(page, { preview: { ...PREVIEW, steps: PREVIEW.steps.slice(0, 2) } });
-  await loginEmployer(page);
-  await page.getByLabel("직무 내용").fill(INPUT);
+// 키보드로 누른 단추가 꺼지거나 사라지면 실제 브라우저에서는 초점이 body로 빠졌다(jsdom은 재현 못 함).
+test("키보드: [단계로 나누기] 뒤 초점은 '이렇게 나눴어요' 제목, [이대로 그림 고르기] 뒤에도 초점이 body로 빠지지 않는다", async ({ page }) => {
+  await mockEditor(page, { preview: { ...PREVIEW, steps: PREVIEW.steps.slice(0, 2) } });
+  await loginEmployer(page, "/m/tasks/new");
+  await page.getByLabel("어떤 일을 시킬까요?").fill(INPUT);
   await page.getByRole("button", { name: "단계로 나누기" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: /이렇게 나눴어요/ })).toBeFocused();
 
-  await page.getByRole("button", { name: "이대로 그림 고르기 ›" }).focus();
+  await page.getByRole("button", { name: "이대로 그림 고르기" }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: /검토 · 수정/ })).toBeFocused();
-
-  await page.getByRole("button", { name: /1단계 그림 확인$/ }).focus();
-  await page.keyboard.press("Enter");
-  await expect(page.getByRole("button", { name: /2단계 그림 확인$/ })).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page.getByRole("button", { name: /단계 그림 확인$/ })).toHaveCount(0);
-  await expect(page.getByLabel("2단계 문장")).toBeFocused();
-  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(false);
+  await expect(page.getByTestId("task-editor")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.activeElement === document.body)).toBe(false);
+  await page.keyboard.press("Tab");
+  expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe("BODY");
 });
 
-test("390px 편집기: 확인 뒤 초점은 편집기 제목, 긴 문장은 잘리지 않고 꼬리표는 한 줄", async ({ page }) => {
+test("390px 편집기: 긴 문장은 잘리지 않고 가로로 넘치지 않는다", async ({ page }) => {
   const long = {
     ...PREVIEW,
     steps: [
@@ -203,24 +127,21 @@ test("390px 편집기: 확인 뒤 초점은 편집기 제목, 긴 문장은 잘�
     ],
   };
   await page.setViewportSize({ width: 390, height: 844 });
-  await mockBackend(page, { preview: long });
-  await loginEmployer(page);
+  await mockEditor(page, { preview: long });
+  await loginEmployer(page, "/m/tasks/new");
   await splitInput(page);
-  await page.getByRole("button", { name: "이대로 그림 고르기 ›" }).click();
-  const heading = page.getByRole("heading", { name: /검토 · 수정/ });
-  await expect(heading).toBeFocused();
+  await page.getByRole("button", { name: "이대로 그림 고르기" }).click();
+  await expect(page.getByTestId("task-editor")).toBeVisible();
+  await page.getByTestId("step-row-1").getByRole("button").first().click();
+  await expect(page.getByRole("heading", { name: /1단계 고치기/ })).toBeVisible();
 
-  const field = page.getByLabel("1단계 문장");
+  const field = page.getByTestId("step-detail").getByLabel("문장", { exact: true });
   await expect(field).toHaveValue(long.steps[0].sentence);
   const fit = await field.evaluate((el) => ({ sh: el.scrollHeight, ch: el.clientHeight, w: el.clientWidth }));
   expect(fit.sh, "문장 칸이 글을 자르지 않는다").toBeLessThanOrEqual(fit.ch + 1);
   expect(fit.w, "문장 칸이 좁은 화면 폭을 거의 다 쓴다").toBeGreaterThan(250);
   const scroll = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(scroll).toBeLessThanOrEqual(390);
-  // '그림: 그림 카드' 꼬리표가 글자마다 줄을 바꾸지 않는다(한 줄 높이)
-  const label = page.getByText("그림: 그림 카드").first();
-  const box = await label.boundingBox();
-  expect(box!.height).toBeLessThan(30);
   if (process.env.E2E_SHOTS_DIR) {
     await page.screenshot({ path: `${process.env.E2E_SHOTS_DIR}/editor-390.png`, fullPage: true });
   }

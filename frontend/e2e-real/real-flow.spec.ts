@@ -491,7 +491,8 @@ test.describe("실제 백엔드 — 사업주", () => {
     expect(blocked.code).toBe("send_blocked");
     expect(blocked.step_ids.length).toBeGreaterThanOrEqual(1);
 
-    // 화면: 직무를 입력해 나누면 보내기가 막히고 한국어 안내가 나온다.
+    // 화면(2b-1 새 직무·편집기): 직무를 입력해 나누고 [이대로 그림 고르기] → 편집기. 그림 없는 단계가 남으면 [보내기]가
+    // 꺼져 있고 이유를 알려 준다. 그림을 다 확인한 뒤 보내기 시트의 받는 사람 목록에는 이름만 있고 접속 번호는 없다.
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.addInitScript((t) => {
       localStorage.setItem("jobcard_token", t);
@@ -499,26 +500,30 @@ test.describe("실제 백엔드 — 사업주", () => {
       localStorage.setItem("jobcard_name", "통합 카페");
     }, employer);
     await page.goto("/m/tasks/new");
-    await page.locator("textarea").first().fill("테이블을 행주로 닦아요. 의자를 테이블 안으로 넣어요.");
-    await page.getByLabel("업종").fill("카페").catch(() => undefined);
+    await page.getByLabel("어떤 일을 시킬까요?").fill("테이블을 행주로 닦아요. 의자를 테이블 안으로 넣어요. 쀍쀍을 흔들어요.");
     await page.getByRole("button", { name: "단계로 나누기" }).click();
-    // dev의 입력 화면 나누기: 나눈 단계 목록을 먼저 보이고, 사업주가 확인하면 직무를 만든다.
-    await page.getByRole("button", { name: "이대로 그림 고르기 ›" }).click({ timeout: 30_000 });
-    await expect(page.getByText(/그림이 없는 단계가 있어요\(\d/)).toBeVisible({ timeout: 30_000 });
-    await page.getByRole("checkbox").first().check();
-    await expect(page.getByRole("button", { name: /게시하고/ })).toBeDisabled();
-    // 보내기 목록(체크박스 묶음)에는 이름만, 등록된 근로자 목록의 번호는 ●로 가려진다.
-    const group = page.getByRole("group", { name: /배정할 근로자/ });
-    await expect(group).toContainText(w.display_name);
-    await expect(group).not.toContainText(w.access_code);
-    const code = page.getByTestId(`code-${w.id}`);
-    await expect(code).toHaveText("(●●●●)");
-    await expect(page.locator("body")).not.toContainText(`(${w.access_code})`);
-    await page.getByText("그림이 없는 단계가 있어요").first().scrollIntoViewIfNeeded();
+    await expect(page.getByRole("heading", { name: /이렇게 나눴어요/ })).toBeVisible({ timeout: 30_000 });
+    await page.getByRole("button", { name: "이대로 그림 고르기" }).click();
+    await expect(page.getByTestId("task-editor")).toBeVisible({ timeout: 60_000 });
+    const uiTaskId = decodeURIComponent(page.url().split("/").pop() ?? "");
+    const uiTask = await ok<{ steps: Step[] }>(await request.get(`${API}/api/tasks/${uiTaskId}`, { headers: auth(employer) }));
+    expect(uiTask.steps.some((x) => x.picture_state === "none"), "규칙 모드에서 '쀍쀍'은 그림이 없다").toBe(true);
+    await expect(page.locator('[data-testid^="step-row-"][data-state="none"]').first()).toBeVisible();
+    const send = page.getByTestId("editor-send");
+    await expect(send).toHaveAttribute("aria-disabled", "true");
+    await send.focus();
+    await expect(page.getByRole("tooltip")).toContainText(/확인할 것 \d+개가 남았어요\. 확인하면 보낼 수 있어요/);
     await shot(page, "20-employer-blocked");
-    await page.getByRole("button", { name: `${w.display_name} 번호 보기` }).click();
-    await expect(code).toHaveText(`(${w.access_code})`);
-    await expect(code).toHaveText("(●●●●)", { timeout: 8_000 });
+
+    // 그림을 다 붙이고 확인한 뒤(API) 다시 열면 보낼 수 있고, 시트에는 이름만 보인다.
+    await givePictures(request, employer, uiTaskId, uiTask.steps);
+    await page.reload();
+    await expect(page.getByTestId("review-queue").first()).toHaveAttribute("data-remaining", "0", { timeout: 30_000 });
+    await page.getByTestId("editor-send").click();
+    const sheet = page.getByRole("dialog", { name: "보내기 전에 확인해요" });
+    await expect(sheet.getByTestId("send-recipients")).toContainText(w.display_name, { timeout: 30_000 });
+    expect(await sheet.innerText()).not.toContain(w.access_code);
+    await shot(page, "20b-employer-send-sheet");
   });
 
   // 1차 검증: 전역 버튼 nowrap 때문에 390px 휴대폰에서 직무 편집·근로자 목록이 옆으로 넘쳤다('삭제'·휴지통이 화면 밖).
@@ -547,7 +552,7 @@ test.describe("실제 백엔드 — 사업주", () => {
     await noSideScroll("근로자 목록");
     await shot(page, "21-employer-workers-390");
     await page.goto("/m/tasks/new");
-    await page.getByLabel("직무 내용").fill(RAW);
+    await page.getByLabel("어떤 일을 시킬까요?").fill(RAW);
     await page.getByRole("button", { name: "단계로 나누기" }).click();
     await expect(page.getByLabel("1단계 문장")).toBeVisible({ timeout: 60_000 });
     await page.waitForTimeout(1000);

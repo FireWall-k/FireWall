@@ -281,3 +281,43 @@ test("6. 움직임 줄이기를 켜면 전환 시간이 0이다", async ({ page 
   expect(["0s", "0ms"]).toContain(anim);
   expect(["0s", "0ms"]).toContain(trans);
 });
+
+// 2b-1 1회차 검증: 도움 띠와 함께 떠 그림 상자가 좁아져도 '조심해요' 띠 글자는 한 줄이고 40px 띠 밖으로 넘치지 않는다
+// (예전에는 360x560 130%에서 '심/해/요' 4줄로 서고 '조'가 잘렸다).
+test.describe("조심 띠 글자는 늘 한 줄(도움 띠 + 글자 130%)", () => {
+  for (const [name, vp] of [
+    ["360x560", { width: 360, height: 560 }],
+    ["390x740", { width: 390, height: 740 }],
+    ["640x360", { width: 640, height: 360 }],
+    ["844x390", { width: 844, height: 390 }],
+  ] as const) {
+    test(name, async ({ page }) => {
+      for (const s of state.jobs[0].steps) (s as Record<string, unknown>).safety_flag = true;
+      await loginAsWorker(page);
+      await page.addInitScript(() => {
+        const set = () => {
+          document.documentElement.style.fontSize = "130%";
+        };
+        if (document.documentElement) set();
+        document.addEventListener("DOMContentLoaded", set);
+      });
+      await page.setViewportSize(vp);
+      await page.goto("/w/job/asg-1/step/3");
+      await page.getByTestId("caution-band").waitFor();
+      await page.getByTestId("help-button").click();
+      await page.getByTestId("help-band").waitFor();
+      await page.evaluate(() => document.fonts.ready);
+      const m = await page.evaluate(() => {
+        const band = document.querySelector("[data-testid=caution-band]") as HTMLElement;
+        const text = band.querySelector("span") as HTMLElement;
+        const a = text.getBoundingClientRect();
+        const b = band.getBoundingClientRect();
+        return { bandH: b.height, textH: a.height, top: a.top - b.top, bottom: b.bottom - a.bottom, lh: parseFloat(getComputedStyle(text).fontSize) * 1.6 };
+      });
+      expect(m.bandH, name).toBeCloseTo(40, 0);
+      expect(m.textH, `${name} 한 줄`).toBeLessThanOrEqual(m.lh);
+      expect(m.top, `${name} 위로 넘침`).toBeGreaterThanOrEqual(0);
+      expect(m.bottom, `${name} 아래로 넘침`).toBeGreaterThanOrEqual(0);
+    });
+  }
+});

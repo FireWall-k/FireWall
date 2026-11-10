@@ -17,7 +17,7 @@ import {
 import type { A11yPrefs, Step } from "../api";
 import { cn } from "../cn";
 import { isSignedMediaUrl } from "../media";
-import { IconDone, IconExit, IconNext, IconPrev, IconRetry, IconSpeak, IconStop } from "../ui/icons";
+import { IconCaution, IconDone, IconExit, IconNext, IconPrev, IconRetry, IconSpeak, IconStop } from "../ui/icons";
 import { COPY } from "./copy";
 import { HelpBanner, HelpButton } from "./Help";
 import type { HelpController } from "./hooks/useHelp";
@@ -160,8 +160,26 @@ function useMoreBelow(ref: { current: HTMLElement | null }, key: string): boolea
 }
 
 // --- 그림 ---
-// TODO(2차): 위험 단계 '조심해요' 띠(명세 4.4-C·7.1). 단계에 위험 표시(safety_flags)가 아직 없다 — 백엔드 Step·근로자
-// today 응답·사업주 편집 화면에 필드를 더한 뒤 그림 위에 40px 띠(COPY.step.caution)를 그린다.
+// (2b-1) 위험 단계 '조심해요' 띠(명세 4.4-C, contract §3.5): safety_flag=true면 그림 상자 위쪽 가장자리에 40px 글 띠
+// (세모 아이콘 + '조심해요', caution 바탕·cautionInk 글 8.06:1). 그림을 하나 더 넣지 않고 글 띠로,
+// 그림 상자 크기는 그대로 두고 그 안에서 그림이 띠 아래 남은 칸에 맞춰진다. 띠 글자는 늘 한 줄(nowrap)이고, 그림 상자가
+// 좁으면 글자를 줄이고 세모를 숨긴다(index.css .caution-band-*, 그림 칸 컨테이너 기준, 1회차 검증).
+// TODO(창업자 결정): 작은 화면+도움 띠에서는 그림이 띠 몫 40px만큼 작아진다(92x52까지). 그림 칸 바닥을 40px 올리면
+// 360x560 130%에서 문장 첫 줄·[듣기]가 화면 밖으로 밀려 1회차에서는 바닥을 그대로 뒀다.
+// 소리는 바꾸지 않는다(문장만 읽음, 명세 4.11).
+// 띠가 없는 단계는 예전과 똑같이 그린다(기준 이미지 그대로).
+function CautionBand() {
+  return (
+    <div
+      data-testid="caution-band"
+      className="flex h-[40px] shrink-0 items-center justify-center gap-2 bg-worker-caution px-3 text-worker-caption font-bold leading-none text-worker-caution-ink hc:border-b-2 hc:border-black hc:bg-white hc:text-black"
+    >
+      <IconCaution size={24} className="caution-band-icon" />
+      <span className="caution-band-text">{COPY.step.caution}</span>
+    </div>
+  );
+}
+
 function StepPicture({ step, onMediaError }: { step: Step; onMediaError?: (url: string | null | undefined) => void }) {
   const url = step.symbol_url;
   const [st, setSt] = useState<{ url: string | null; state: "loading" | "ok" | "failed"; nonce: number }>({
@@ -191,12 +209,9 @@ function StepPicture({ step, onMediaError }: { step: Step; onMediaError?: (url: 
   };
 
   const failed = !url || current.state === "failed";
-  return (
-    <div
-      data-testid="step-picture"
-      data-state={failed ? "failed" : current.state}
-      className="relative size-[100cqmin] overflow-hidden rounded-worker-pic border-2 border-worker-line-soft bg-white hc:border-black"
-    >
+  const caution = step.safety_flag === true;
+  const body = (
+    <>
       {url && !failed && (
         <img
           key={`${url}#${current.nonce}`}
@@ -220,6 +235,26 @@ function StepPicture({ step, onMediaError }: { step: Step; onMediaError?: (url: 
             </SecondaryAction>
           )}
         </div>
+      )}
+    </>
+  );
+  return (
+    <div
+      data-testid="step-picture"
+      data-state={failed ? "failed" : current.state}
+      data-caution={caution || undefined}
+      className={cn(
+        "relative size-[100cqmin] overflow-hidden rounded-worker-pic border-2 border-worker-line-soft bg-white hc:border-black",
+        caution && "flex flex-col",
+      )}
+    >
+      {caution ? (
+        <>
+          <CautionBand />
+          <div className="relative min-h-0 flex-1">{body}</div>
+        </>
+      ) : (
+        body
       )}
     </div>
   );
@@ -270,8 +305,8 @@ export function StepPlayer({
   const step = steps[index];
   const live = mode === "live";
   const helpPhaseForFit = live ? (help?.phase ?? "idle") : "idle";
-  // 띠가 나타나거나 바뀌면(도움·오프라인) 가운데 높이가 달라지므로 글자 크기를 다시 맞춘다.
-  const layoutKey = `${helpPhaseForFit}|${band ? "band" : ""}`;
+  // 띠가 나타나거나 바뀌면(도움·오프라인·조심) 가운데 높이가 달라지므로 글자 크기를 다시 맞춘다.
+  const layoutKey = `${helpPhaseForFit}|${band ? "band" : ""}|${step?.safety_flag ? "caution" : ""}`;
   const tablet = useMedia(TABLET_QUERY);
   const wide = useMedia(WIDE_QUERY);
   const land = useMedia(LAND_QUERY);

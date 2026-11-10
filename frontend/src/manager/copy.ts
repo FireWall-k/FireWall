@@ -86,10 +86,12 @@ export const taskRow = {
   rowMenu: (title: string) => `${title} 메뉴`,
 } as const;
 
-/** 직무 … 메뉴(명세 5.3). 편집은 2b-1 새 편집기에서 열린다. */
+/** 직무 … 메뉴(명세 5.3, contract §3.6). */
 export const taskMenu = {
   edit: "고치기",
-  editLater: "새 편집기에서 열려요",
+  resend: "다시 보내기",
+  /** 확인할 것이 남은 직무의 [다시 보내기]: 누르면 그 직무 편집기의 첫 확인 단계로 간다. */
+  resendBlocked: (n: number) => `확인할 것 ${n}개가 남았어요`,
   duplicate: "복제해서 고치기",
   archive: "보관하기",
   unarchive: "보관함에서 꺼내기",
@@ -137,13 +139,48 @@ export function sendCheckLabel(code: string, n: { done?: number; total?: number;
   }
 }
 
-/** 보내기 시트(contract §3.7, 2b-1에서 씀). */
+/** 보내기 시트(contract §3.6·3.7). */
 export const sendSheet = {
   title: "보내기 전에 확인해요",
+  /** 성공 토스트는 글(sentMessage)과 [현황 보기] 단추로 나눠 그린다 — 합치면 sentToast(contract §3.7 글자 그대로). */
   sentToast: (n: number) => `${n}명에게 보냈어요 · 현황 보기`,
+  sentMessage: (n: number) => `${n}명에게 보냈어요`,
+  viewStatus: "현황 보기",
   inProgressNote: (name: string) => `${name} 님은 지금 하는 중이라 다음에 보낼 때부터 바뀌어요`,
   disabledTooltip: (n: number) => `확인할 것 ${n}개가 남았어요. 확인하면 보낼 수 있어요`,
   prefilled: "지난번 받은 사람을 골라 두었어요",
+  /** 머리 아래 덧줄(has_unsent_changes): 다음에 만들어질 버전 번호. */
+  versionLine: (no: number) => `고친 내용도 함께 보내요 · ${no}번째 버전`,
+  loading: "점검표와 받는 사람을 불러오고 있어요",
+  loadFailed: "점검표를 불러오지 못했어요 · 다시 시도해 주세요",
+  checksHeading: "점검표",
+  checksHint: "막힌 줄을 누르면 그 단계로 가요",
+  /** 막힌 줄 없이 경고만 있을 때(보내기는 막지 않는다). */
+  warnsHint: "줄을 누르면 그 단계로 가요. 보내기는 그대로 할 수 있어요",
+  goToStep: (label: string) => `${label} · 그 단계로 가기`,
+  recipientsHeading: "받는 사람",
+  searchLabel: "이름으로 찾기",
+  selectAll: "모두 선택",
+  clearAll: "모두 해제",
+  noWorkers: "아직 근로자가 없어요. 근로자 화면에서 먼저 더해 주세요.",
+  noMatch: "찾는 이름이 없어요",
+  status: {
+    done: "오늘 이미 다 했어요 · 한 번 더 보내요",
+    in_progress: "지금 하는 중이라 다음부터 바뀌어요",
+    not_started: "아직 시작 전이에요",
+    none: "",
+  },
+  whenHeading: "언제",
+  today: "오늘",
+  tomorrow: "내일",
+  pickDate: "날짜 고르기",
+  dateLabel: "보낼 날짜",
+  submit: (n: number) => `${n}명에게 보내기`,
+  needRecipient: "받는 사람을 한 명 이상 골라 주세요",
+  needDate: "보낼 날짜를 골라 주세요",
+  failed: "보내지 못했어요 · 다시 시도해 주세요",
+  archived: "보관한 직무는 보낼 수 없어요. 보관함에서 꺼낸 뒤 보내 주세요.",
+  noSteps: "단계가 하나도 없어요. 단계를 넣어 주세요.",
 } as const;
 
 /** 편집기 위 버전 안내(contract §3.7, 2b-1에서 씀). */
@@ -248,4 +285,224 @@ export const dashboardArchive = {
   /** 이미 보관한 직무를 고르면 [보관하기] 대신 보이는 표시. 기록은 계속 볼 수 있다. */
   already: "보관함에 있는 직무예요",
   optionSuffix: "(보관함)",
+} as const;
+
+/** 새 직무 화면(명세 5.4, tasks §4.3 NewTaskPage). */
+export const newTask = {
+  heading: "새 직무",
+  label: "어떤 일을 시킬까요?",
+  hint: "평소 말하듯 적어 주세요. 단계는 잡카드가 나눠요.",
+  placeholder: "예: 출근하면 앞치마 입고 손 씻고, 컵 씻어서 건조대에 올려 놔.",
+  charCount: (n: number, max: number) => `${n}/${max}자`,
+  fillExample: "예시 넣기",
+  exampleNote: "예시를 채워 두었어요. 고쳐도 되고, 그대로 [단계로 나누기]를 눌러 봐도 돼요.",
+  restored: "적던 내용을 다시 불러왔어요",
+  more: "더 알려 주기(선택)",
+  businessType: "업종",
+  businessTypeHint: "예: 카페, 물류",
+  workEnvironment: "일하는 곳",
+  workEnvironmentHint: "예: 창고, 미끄러운 바닥",
+  workerNote: "근로자 특성",
+  workerNoteHint: "예: 그림을 보면 더 잘 알아요",
+  noteWorker: "맞춤 대상 근로자",
+  noteWorkerNone: "고르지 않음",
+  noteWorkerHint: "근로자 특성은 그 근로자의 메모 사용 설정을 켜고 처리 동의를 기록한 경우에만 자동 나누기에 쓰여요.",
+  privacy: "근로자 이름은 A로 바꿔서 처리해요.",
+  split: "단계로 나누기",
+  splitting: "문장을 나누고 있어요",
+  splitEmpty: "나눌 문장을 찾지 못했어요. 할 일을 조금 더 자세히 적어 주세요.",
+  splitFailed: "문장을 나누지 못했어요 · 잠시 뒤 다시 눌러 주세요",
+  createFailed: "초안을 만들지 못했어요 · 잠시 뒤 다시 눌러 주세요",
+  resplitTitle: "새로 나눌까요?",
+  resplitBody: "고친 줄이 있어요. 새로 나누면 고친 내용은 사라져요.",
+  resplitConfirm: "새로 나누기",
+  leaveTitle: "적던 내용이 사라져요",
+  leaveBody: "이 화면을 떠나면 적던 지시문과 나눈 단계가 지워져요.",
+  leaveConfirm: "나가기",
+  leaveCancel: "계속 적기",
+} as const;
+
+/** 입력 화면에서 나눈 단계 목록(명세 5.4·3.4-A 2번: 나누기는 이 순간에 끝낸다). */
+export const splitList = {
+  title: "이렇게 나눴어요",
+  count: (n: number) => `(${n}단계)`,
+  rule: "한 줄에 동작 하나, 그림 한 장",
+  checkNotice: (n: number) =>
+    `노란 줄 ${n}개는 나눈 곳이 애매해요. 맞으면 그대로 두고, 아니면 [합치기]나 [더 나누기]를 눌러 주세요.`,
+  stale:
+    "직무 내용을 고쳤어요. 아래 목록은 고치기 전 글로 나눈 것이에요. [이대로 그림 고르기]를 누르면 아래 목록대로 만들어요. 고친 글로 새로 나누려면 [단계로 나누기]를 다시 눌러 주세요.",
+  rowLabel: (n: number) => `${n}단계 문장`,
+  rowPlaceholder: "이 단계에서 할 일을 적어 주세요",
+  merge: "합치기",
+  mergeLabel: (a: number, b: number) => `${a}단계와 ${b}단계 합치기`,
+  splitMore: "더 나누기",
+  splitMoreLabel: (n: number) => `${n}단계 더 나누기`,
+  splitMoreHint: "커서를 둔 곳에서 두 줄로 나눠요. 커서가 없으면 아래에 빈 줄을 만들어요.",
+  deleteLabel: (n: number) => `${n}단계 지우기`,
+  lastRow: "마지막 한 줄은 지울 수 없어요",
+  full: (max: number) => `단계는 ${max}줄까지예요`,
+  addRow: "한 줄 추가",
+  noGroupHint: "동작이 여러 개일 수 있어요. 나눌 곳에 커서를 두고 [더 나누기]를 눌러 주세요.",
+  groupHint: (source: string) => (source ? `나눈 곳 확인 · 원래 문장: “${source}”` : "나눈 곳 확인"),
+  emptyRows: (list: string) => `${list}가 비어 있어요. 문장을 적거나 그 줄을 지워 주세요.`,
+  confirm: "이대로 그림 고르기",
+  confirmHint: "누르면 초안으로 저장하고 단계마다 그림을 붙여요.",
+} as const;
+
+/** 편집기 스켈레톤(명세 3.4-A 3번): 진행 단계만, 퍼센트 숫자는 꾸며내지 않는다. */
+export const editorProgress = {
+  pictures: "그림을 고르고 있어요",
+  voice: "목소리를 만들고 있어요",
+  loading: "직무를 불러오고 있어요",
+  label: "초안을 만드는 중",
+} as const;
+
+/** 그림 4상태(명세 5.5 표, contract §3.3 picture_state). ✦와 보라는 확인하지 않은 자동 결과에만. */
+export const pictureStatus = {
+  confirmed: "확인함",
+  auto_high: "✦ 자동 · 확인 필요",
+  choose: "골라 주세요",
+  none: "그림 없음",
+} as const;
+
+/** 직무 편집기(명세 5.5, tasks §4.3). */
+export const editor = {
+  loadFailed: "직무를 불러오지 못했어요 · 다시 시도해 주세요",
+  titleLabel: "직무 제목",
+  titleEdit: (title: string) => `제목 고치기 · ${title}`,
+  stepsHeading: "단계",
+  stepsCount: (n: number) => `${n}단계`,
+  /** 단계 행 번호 뒤에 화면 읽기 프로그램만 읽는 말(보이는 번호 + "단계"). */
+  stepWord: "단계",
+  caution: "조심",
+  moveUp: (n: number) => `${n}단계 위로`,
+  moveDown: (n: number) => `${n}단계 아래로`,
+  grab: (n: number) => `${n}단계 순서 바꾸기`,
+  grabHint: "스페이스 키로 들고 위아래 화살표 키로 옮긴 뒤 스페이스 키로 놓아요. 그만두려면 이스케이프 키를 눌러요.",
+  grabbed: (n: number) => `${n}단계를 들었어요. 위아래 화살표 키로 옮기고 스페이스 키로 놓아요.`,
+  movedTo: (at: number) => `${at}번째 자리예요`,
+  droppedAt: (at: number) => `${at}번째 자리에 놓았어요`,
+  reorderCancelled: "순서를 그대로 뒀어요",
+  reorderFailed: "순서를 바꾸지 못했어요 · 다시 시도해 주세요",
+  addStep: "단계 추가",
+  addStepLabel: "새 단계 문장",
+  addStepPlaceholder: "예: 컵을 건조대에 엎어 놓아요",
+  addStepSubmit: "더하기",
+  addStepFailed: "단계를 더하지 못했어요 · 다시 시도해 주세요",
+  groupBreakLabel: (n: number) => `${n}단계 앞에서 묶음 나누기`,
+  groupDivider: "묶음 경계",
+  groupHint: "9단계가 넘으면 묶음을 나눠 두면 좋아요.",
+  backToList: "단계 목록으로",
+  detailHeading: (n: number) => `${n}단계 고치기`,
+  pictureHeading: "그림",
+  source: { auto: "✦ 자동으로 고른 그림", manual: "직접 고른 그림", photo: "현장 사진" },
+  /** 확인한 자동 그림(✦는 확인하지 않은 자동 결과에만, 명세 5.10). */
+  sourceConfirmedAuto: "확인한 그림",
+  confirmPicture: "이 그림이 맞아요",
+  confirmFailed: "그림을 확인하지 못했어요 · 잠시 뒤 다시 눌러 주세요",
+  otherCandidates: "다른 후보 보기",
+  chooseHeading: "맞는 그림을 골라 주세요",
+  candidateNo: (n: number) => `후보 ${n}`,
+  candidatesLoading: "후보를 찾고 있어요",
+  candidatesFailed: "후보를 불러오지 못했어요. [다른 그림 찾기]나 [현장 사진 올리기]를 써 주세요.",
+  noCandidates: "맞는 후보가 없어요. [다른 그림 찾기]나 [현장 사진 올리기]를 써 주세요.",
+  useCurrent: "지금 그림 쓰기",
+  findPicture: "다른 그림 찾기",
+  uploadPhoto: "현장 사진 올리기",
+  removePhoto: "사진 빼기",
+  pictureApplied: "그림을 바꿨어요",
+  pictureFailed: "그림을 바꾸지 못했어요 · 다시 시도해 주세요",
+  photoRemoved: "사진을 빼고 자동 그림으로 돌렸어요",
+  sentenceLabel: "문장",
+  sentenceHint: "고치면 잠시 뒤 저절로 저장돼요. 칸을 벗어나면 목소리를 다시 만들어요.",
+  emptySentence: "문장이 비어 있어요. 할 일을 적어 주세요.",
+  originalQuote: "원래 지시문에서 온 부분",
+  lintHeading: "문장 점검",
+  lint: {
+    too_long: "20자가 넘어요",
+    hard_word: (from: string, to: string) => `어려운 말: ${from} → ${to}`,
+    command_tone: "~해요 체로 바꾸기",
+  },
+  splitNotice: "두 단계로 나눴어요",
+  undo: "되돌리기",
+  undoFailed: "되돌리지 못했어요 · 다시 시도해 주세요",
+  rewriting: "저장하는 중이에요",
+  voice: "목소리 듣기",
+  voiceStop: "멈추기",
+  voiceFallback: "목소리를 만들지 못해 이 기기 음성으로 읽어요",
+  cautionLabel: "조심 표시",
+  cautionHint: "켜면 근로자 화면 그림 위에 '조심해요' 띠가 떠요.",
+  cautionAuto: "✦ 자동 제안",
+  cautionAutoHint: "칼·뜨거운·기계 같은 낱말을 보고 켰어요. 맞으면 그대로 두면 돼요.",
+  cautionFailed: "조심 표시를 바꾸지 못했어요 · 다시 시도해 주세요",
+  dangerZone: "위험 구역",
+  deleteStep: "이 단계 지우기",
+  deleteTitle: (n: number) => `${n}단계를 지울까요?`,
+  deleteBody: "지운 단계는 되돌릴 수 없어요. 이미 보낸 근로자 화면은 받은 그대로예요.",
+  deleteConfirm: "지우기",
+  deleteFailed: "단계를 지우지 못했어요 · 다시 시도해 주세요",
+  lastStep: "마지막 단계는 지울 수 없어요",
+  blockedPicture: "이 단계 때문에 보내지 못했어요. 그림을 고르거나 사진을 올려 주세요.",
+  blockedConfirm: "이 단계 때문에 보내지 못했어요. 그림이 맞는지 확인해 주세요.",
+  overview: "그림 한눈에",
+  send: "보내기",
+  reload: "새로 불러오기",
+} as const;
+
+/** 확인 대기열 막대(ReviewQueueBar, 명세 5.5 머리). */
+export const reviewQueue = {
+  remaining: (n: number) => `확인할 것 ${n}개 남음`,
+  next: "다음 ▶",
+  nextLabel: "다음 확인할 단계로",
+  allDone: "모두 확인했어요",
+} as const;
+
+/** 저장 표시(SaveIndicator, 명세 5.5). */
+export const saveState = {
+  saved: (when: string) => `저장됨 · ${when}`,
+  saving: "저장하는 중…",
+  failed: "저장하지 못했어요",
+  retry: "다시 시도",
+} as const;
+
+/** 그림 한눈에 보기(명세 5.5 '그림 한눈에 보기'). */
+export const overview = {
+  title: "그림 한눈에 보기",
+  hint: "틀린 그림을 누르면 그 단계로 가요. ✦ 자동 그림만 한꺼번에 확인할 수 있어요.",
+  back: "편집기로 돌아가기",
+  confirmAll: "보이는 자동 그림 모두 맞아요",
+  waiting: "그림을 다 불러오면 누를 수 있어요",
+  check: (n: number) => `${n}단계 그림이 맞아요`,
+  open: (n: number) => `${n}단계 보기`,
+  /** 칸 번호 뒤에 화면 읽기 프로그램만 읽는 말(보이는 번호 + "단계 보기"). */
+  openWord: "단계 보기",
+  broken: "그림을 못 불러왔어요",
+  reloadPicture: (n: number) => `${n}단계 그림 다시 불러오기`,
+  reloadShort: "다시 불러오기",
+  brokenExcluded: (n: number) => `불러오지 못한 그림 ${n}장은 빼고 확인해요`,
+  confirmed: (n: number) => `그림 ${n}장을 확인했어요`,
+  allDone: "모두 확인했어요",
+  left: (n: number) => `단계를 열어 고칠 것 ${n}개`,
+} as const;
+
+/** 그림 찾기·사진 올리기(PicturePicker, 명세 6.5 현장 사진 가이드). */
+export const picker = {
+  searchTitle: (n: number) => `${n}단계 그림 찾기`,
+  searchLabel: "찾을 낱말",
+  searchHint: "예: 컵 닦기, 상자 옮기기",
+  searchSubmit: "찾기",
+  searching: "그림을 찾고 있어요",
+  results: (n: number) => `그림 ${n}장을 찾았어요`,
+  noResults: "맞는 그림을 찾지 못했어요. 다른 낱말로 찾아 보거나 현장 사진을 올려 주세요.",
+  searchFailed: "그림을 찾지 못했어요 · 다시 시도해 주세요",
+  apply: (label: string) => `${label} 고르기`,
+  photoTitle: (n: number) => `${n}단계 현장 사진 올리기`,
+  photoTips: ["손과 물건이 크게 보이게 찍어요", "동작 하나만 찍어요", "뒤를 치워요"],
+  photoFace: "얼굴이 찍히지 않게 해요. 근로자 얼굴은 올리지 않아요.",
+  examplesLabel: "사진 예시",
+  examples: ["좋은 예 · 손과 물건이 크게", "좋은 예 · 뒤가 깨끗해요"],
+  photoPick: "사진 고르기",
+  uploading: "사진을 올리고 있어요",
+  uploadFailed: "사진을 올리지 못했어요 · 다시 시도해 주세요",
+  uploaded: "사진을 올렸어요",
 } as const;

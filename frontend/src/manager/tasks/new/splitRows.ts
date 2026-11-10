@@ -1,6 +1,7 @@
 // 입력 화면 "단계로 나누기" 결과 목록의 순수 상태 함수들(한 줄 = 한 동작 = 그림 1장).
 // 화면(SplitPreviewList)과 분리해 두어 합치기·더 나누기·고치기·지우기를 단위 테스트로 확인한다.
-import type { ConfirmedStep, SplitPreviewStep } from "./api";
+import type { ConfirmedStep, SplitPreviewStep } from "../../../api";
+import type { CreateStep } from "../../api/editor";
 
 export interface SplitRow {
   /** 화면 key·초점 이동용. 서버 id가 아니다. */
@@ -16,6 +17,8 @@ export interface SplitRow {
   original: string;
   actionType: string;
   symbolQuery: string[] | null;
+  /** (2b-1) 나누기 미리보기의 '✦ 자동 제안' 조심 표시. 고치지 않은 줄만 그대로 보낸다. */
+  safety: boolean;
 }
 
 let seq = 0;
@@ -24,7 +27,7 @@ function nextKey(): string {
   return `row-${seq}`;
 }
 
-export function rowsFromPreview(steps: SplitPreviewStep[]): SplitRow[] {
+export function rowsFromPreview(steps: (SplitPreviewStep & { safety_flag?: boolean })[]): SplitRow[] {
   return steps.map((s) => ({
     key: nextKey(),
     text: s.sentence,
@@ -34,6 +37,7 @@ export function rowsFromPreview(steps: SplitPreviewStep[]): SplitRow[] {
     original: s.sentence,
     actionType: s.action_type || "other",
     symbolQuery: s.symbol_query?.length ? s.symbol_query : null,
+    safety: s.safety_flag === true,
   }));
 }
 
@@ -41,7 +45,7 @@ export function rowsFromPreview(steps: SplitPreviewStep[]): SplitRow[] {
 function userRow(text: string, base: Pick<SplitRow, "group" | "source">): SplitRow {
   return {
     key: nextKey(), text, group: base.group, check: false, source: base.source,
-    original: "", actionType: "other", symbolQuery: null,
+    original: "", actionType: "other", symbolQuery: null, safety: false,
   };
 }
 
@@ -132,6 +136,26 @@ export function toConfirmed(rows: SplitRow[]): ConfirmedStep[] {
     return untouched
       ? { sentence, action_type: r.actionType, symbol_query: r.symbolQuery }
       : { sentence };
+  });
+}
+
+/**
+ * (2b-1) POST /api/tasks에 보낼 단계: toConfirmed + 나눈 방법(split)·원래 지시문 조각·조심 제안(contract §3.4).
+ * - 고치지 않은 줄: 자동으로 나눈 줄이면 source "model"(원래 절 = source), 원문 그대로면 "".
+ * - 사업주가 만들거나 고친 줄: "manual". 조심 제안은 고치지 않은 줄만 보낸다(서버가 문장 낱말로 다시 본다).
+ * needs_review는 보내지 않는다 — [이대로 그림 고르기]가 나누기 확인이다(contract §3.2).
+ */
+export function toCreateSteps(rows: SplitRow[]): CreateStep[] {
+  const base = toConfirmed(rows);
+  return rows.map((r, i) => {
+    const untouched = r.text.trim() === r.original.trim() && r.original !== "";
+    const source = untouched ? (r.group !== null ? "model" : "") : "manual";
+    const span = (r.source ?? "").trim() || (untouched ? r.original.trim() : "");
+    return {
+      ...base[i],
+      split: { source, original_span: span },
+      ...(untouched && r.safety ? { safety_flag: true } : {}),
+    };
   });
 }
 
