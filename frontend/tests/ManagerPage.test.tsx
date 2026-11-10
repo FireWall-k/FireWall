@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ManagerPage from "../src/pages/ManagerPage";
+import { EXAMPLE_TASK } from "../src/manager/tasks/example";
 import { ApiError } from "../src/apiErrors";
 
 const createTask = vi.fn();
@@ -309,7 +310,7 @@ describe("ManagerPage — 자동으로 고른 그림은 확인해야 보낼 수 
     await typeAndDecompose(user);
     await screen.findByRole("checkbox", { name: /김근로/ });
 
-    await user.click(screen.getByRole("button", { name: "1단계 그림 확인" }));
+    await user.click(screen.getByRole("button", { name: /1단계 그림 확인$/ }));
     expect(screen.getByText("✓ 확인함")).toBeInTheDocument();
     const send = screen.getByRole("button", { name: /게시하고 보내기/ });
     expect(send).toBeEnabled();
@@ -396,7 +397,7 @@ describe("ManagerPage — 그림 확인을 서버에 적는다(2a-0)", () => {
     await screen.findByRole("checkbox", { name: /김근로/ });
     expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeDisabled();
 
-    await user.click(screen.getByRole("button", { name: "1단계 그림 확인" }));
+    await user.click(screen.getByRole("button", { name: /1단계 그림 확인$/ }));
 
     expect(reqMock).toHaveBeenCalledWith("/api/tasks/task-1/steps/s1/picture/confirm", { method: "POST" });
     expect(await screen.findByText("✓ 확인함")).toBeInTheDocument();
@@ -411,10 +412,10 @@ describe("ManagerPage — 그림 확인을 서버에 적는다(2a-0)", () => {
     await typeAndDecompose(user);
     await screen.findByRole("checkbox", { name: /김근로/ });
 
-    await user.click(screen.getByRole("button", { name: "1단계 그림 확인" }));
+    await user.click(screen.getByRole("button", { name: /1단계 그림 확인$/ }));
 
     expect(await screen.findByText(/먼저 그림을 골라 주세요/)).toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: "1단계 그림 확인" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /1단계 그림 확인$/ })).toBeInTheDocument();
     expect(screen.queryByText("✓ 확인함")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeDisabled();
   });
@@ -429,7 +430,7 @@ describe("ManagerPage — 그림 확인을 서버에 적는다(2a-0)", () => {
     await typeAndDecompose(user);
     await screen.findByRole("checkbox", { name: /김근로/ });
 
-    expect(screen.queryByRole("button", { name: "1단계 그림 확인" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /1단계 그림 확인$/ })).not.toBeInTheDocument();
     expect(screen.getByText("✓ 확인함")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeEnabled();
     expect(reqMock).not.toHaveBeenCalled();
@@ -446,7 +447,53 @@ describe("ManagerPage — 그림 확인을 서버에 적는다(2a-0)", () => {
     await screen.findByRole("checkbox", { name: /김근로/ });
 
     expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "1단계 그림 확인" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /1단계 그림 확인$/ })).toBeInTheDocument();
+  });
+});
+
+describe("ManagerPage — [그림 확인]을 키보드로 눌러도 초점이 body로 빠지지 않는다(2a-1 2회차 검증)", () => {
+  const autoHigh = {
+    ...baseStep, symbol_url: "http://localhost:8000/api/aac/images/cafe/CAFE_012.webp",
+    symbol_source: "LOCAL_AAC", needs_fallback: false, picture_state: "auto_high",
+  };
+  const two = [autoHigh, { ...autoHigh, id: "s2", order: 2, sentence: "상자를 내려놓으세요" }];
+
+  beforeEach(() => {
+    listWorkers.mockResolvedValue(workers);
+  });
+
+  it("확인하면 단추가 사라지고 초점은 다음 단계의 확인 단추로, 마지막이면 그 단계 문장 칸으로 간다", async () => {
+    const user = userEvent.setup();
+    createTask.mockResolvedValue({ id: "task-1", title: "직무", status: "draft", steps: two });
+    reqMock.mockImplementation((path: string) => Promise.resolve(
+      path.includes("/s1/") ? { ...two[0], picture_state: "confirmed" } : { ...two[1], picture_state: "confirmed" }));
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    screen.getByRole("button", { name: /1단계 그림 확인$/ }).focus();
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: /2단계 그림 확인$/ })));
+
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(screen.queryByRole("button", { name: /단계 그림 확인$/ })).not.toBeInTheDocument());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText("2단계 문장")));
+  });
+
+  it("확인에 실패하면 다시 나타난 그 단계의 확인 단추로 돌아간다", async () => {
+    const user = userEvent.setup();
+    createTask.mockResolvedValue({ id: "task-1", title: "직무", status: "draft", steps: two });
+    let fail: (e: unknown) => void = () => {};
+    reqMock.mockImplementation(() => new Promise((_resolve, reject) => { fail = reject; }));
+    render(<ManagerPage />);
+    await typeAndDecompose(user);
+    await screen.findByRole("checkbox", { name: /김근로/ });
+
+    screen.getByRole("button", { name: /1단계 그림 확인$/ }).focus();
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: /2단계 그림 확인$/ })));
+    await act(async () => fail(new ApiError(422, "그림이 없는 단계는 확인할 수 없어요. 먼저 그림을 골라 주세요.")));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: /1단계 그림 확인$/ })));
   });
 });
 
@@ -466,7 +513,7 @@ describe("ManagerPage — [그림 확인] 요청 중에는 보내지 않는다(2
     await typeAndDecompose(user);
     await screen.findByRole("checkbox", { name: /김근로/ });
 
-    await user.click(screen.getByRole("button", { name: "1단계 그림 확인" }));
+    await user.click(screen.getByRole("button", { name: /1단계 그림 확인$/ }));
     const send = screen.getByRole("button", { name: /게시하고 보내기/ });
     expect(send).toBeDisabled();
     fireEvent.click(send);
@@ -533,9 +580,9 @@ describe("ManagerPage — 보내기가 서버 검사(422)에 막히면 그 단�
     expect(assign).not.toHaveBeenCalled();
     // 막힌 단계는 다시 확인하게 하고, 그동안 보내기는 막힌다.
     expect(screen.getByRole("button", { name: /게시하고 보내기/ })).toBeDisabled();
-    expect(screen.queryByRole("button", { name: "1단계 그림 확인" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /1단계 그림 확인$/ })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "2단계 그림 확인" }));
+    await user.click(screen.getByRole("button", { name: /2단계 그림 확인$/ }));
 
     expect(reqMock).toHaveBeenCalledWith("/api/tasks/task-1/steps/s2/picture/confirm", { method: "POST" });
     await waitFor(() => expect(stepItem("s2")).not.toHaveAttribute("data-send-blocked"));
@@ -576,7 +623,7 @@ describe("ManagerPage — 보내기가 서버 검사(422)에 막히면 그 단�
     await waitFor(() => expect(stepItem("s1")).toHaveAttribute("data-send-blocked", "true"));
     expect(getTask).toHaveBeenCalledWith("task-1");
     expect(screen.getByText(/이 단계 때문에 보내지 못했어요\. 그림을 고르거나 사진을 올려 주세요\./)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "1단계 그림 확인" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /1단계 그림 확인$/ })).not.toBeInTheDocument();
   });
 
   it("422가 아닌 실패(네트워크 등)는 점검표를 읽지 않고 강조도 하지 않는다", async () => {
@@ -591,5 +638,30 @@ describe("ManagerPage — 보내기가 서버 검사(422)에 막히면 그 단�
     expect((await screen.findAllByText("인터넷 연결을 확인해 주세요.")).length).toBeGreaterThanOrEqual(1);
     expect(reqMock).not.toHaveBeenCalled();
     expect(document.querySelector("[data-send-blocked]")).toBeNull();
+  });
+});
+
+// 2a-1 병합: 직무 목록 빈 상태의 [예시로 만들어 보기]가 /m/tasks/new?example=1로 온다.
+describe("ManagerPage ?example=1 (예시로 만들어 보기)", () => {
+  it("주소에 example=1이 있으면 예시 지시문·업종을 채우고, 나누기는 사업주가 누를 때만 한다", async () => {
+    window.history.pushState({}, "", "/m/tasks/new?example=1");
+    try {
+      render(<ManagerPage />);
+      expect(screen.getByLabelText("직무 내용")).toHaveValue(EXAMPLE_TASK.rawInput);
+      expect(screen.getByLabelText("업종")).toHaveValue("카페");
+      expect(screen.getByTestId("example-note")).toHaveTextContent("예시를 채워 두었어요");
+      expect(splitPreview).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: "단계로 나누기" }));
+      await waitFor(() => expect(splitPreview).toHaveBeenCalledWith(EXAMPLE_TASK.rawInput, expect.anything()));
+    } finally {
+      window.history.pushState({}, "", "/");
+    }
+  });
+
+  it("example이 없으면 빈 입력칸이고 'AI'라는 글자가 화면에 없다", () => {
+    render(<ManagerPage />);
+    expect(screen.getByLabelText("직무 내용")).toHaveValue("");
+    expect(screen.queryByTestId("example-note")).toBeNull();
+    expect(document.body.textContent ?? "").not.toMatch(/\bAI\b/);
   });
 });

@@ -1,10 +1,19 @@
-import { useEffect, useState } from "react";
+// 로그인(명세 5.1, R12). /m/login·/login·/ 이 함께 쓴다.
+// - 768 이상: 좌우 반반. 왼쪽 paper-100 패널(잡카드 로고 Gmarket Sans 28 · 소개 문구 · 단계 카드 예시 3장), 오른쪽 400 폼.
+// - 768 미만(390 휴대폰): 왼쪽 패널을 위쪽 120 띠로 접는다.
+// - form이라 Enter로 제출되고, 라벨은 눈에 보인다(KWCAG 7.3.2). [로그인]은 44 moss-600.
+// - 사업주/근로자 탭: 근로자 탭은 /w 키패드로 못 넣는 예전 긴 번호용 우회로다(/login?tab=worker).
+import { useEffect, useState, type FormEvent } from "react";
+import { GlassWater, Shirt, SoapDispenserDroplet, type LucideIcon } from "lucide-react";
 import { auth, type AuthState } from "../api";
 import { getSavedWorkplaceCode, normalizeWorkplaceCode, saveWorkplaceCode } from "../workerCodes";
-import { cn } from "../cn";
+import { Button, Field, Input, Tabs } from "../components/ui";
+import { login as copy } from "../manager/copy";
+
+type LoginTab = "employer" | "worker";
 
 // /login?tab=worker로 오면 근로자 탭을 연다(/w 키패드로 못 넣는 예전 긴 번호용 우회로).
-function initialTab(): "employer" | "worker" {
+function initialTab(): LoginTab {
   try {
     return new URLSearchParams(window.location.search).get("tab") === "worker" ? "worker" : "employer";
   } catch {
@@ -12,8 +21,12 @@ function initialTab(): "employer" | "worker" {
   }
 }
 
+// 예시 문장과 뜻이 맞는 그림(손 씻기 → 비누, 앞치마 → 옷, 컵 → 물컵). AAC 그림 파일은 서버 그림 사전에만 있어
+// 로그인 전 화면에서 부를 수 없으므로 선 아이콘으로 대신한다(실제 그림 카드는 3차 그림 사전 화면에서).
+const EXAMPLE_ICONS: LucideIcon[] = [SoapDispenserDroplet, Shirt, GlassWater];
+
 export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void }) {
-  const [tab, setTab] = useState<"employer" | "worker">(initialTab);
+  const [tab, setTab] = useState<LoginTab>(initialTab);
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -45,7 +58,9 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
       }
       if (d.employer || d.worker) setDemoFilled(true);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const workplace = editingWorkplace ? normalizeWorkplaceCode(workplaceInput) : savedWorkplace ?? "";
@@ -53,15 +68,13 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
   // 비어 있으면 서버 검증(422) 응답을 받게 되는데, 그 메시지는 사용자용 문장이 아니다.
   const ready = tab === "employer" ? !!loginId.trim() && !!password : !!code.trim() && !!workplace;
 
-  async function submit() {
-    if (!ready) return;
+  async function submit(e?: FormEvent) {
+    e?.preventDefault();
+    if (!ready || busy) return;
     setBusy(true);
     setError(null);
     try {
-      const state =
-        tab === "employer"
-          ? await auth.loginEmployer(loginId, password)
-          : await auth.loginWorker(workplace, code);
+      const state = tab === "employer" ? await auth.loginEmployer(loginId, password) : await auth.loginWorker(workplace, code);
       if (tab === "worker") {
         // 로그인에 성공한 사업장 코드만 저장한다. 실패한 값을 저장하면 오타가 기기에 남아
         // 근로자가 맞는 접속 코드를 눌러도 계속 실패하게 된다.
@@ -70,9 +83,9 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
         setEditingWorkplace(false);
       }
       onLogin(state);
-    } catch (e) {
+    } catch (err) {
       // 번호·비밀번호가 틀렸을 때(401)는 서버 문장을 그대로 보인다(api.ts가 로그인 401을 AuthError로 바꾸지 않음).
-      setError(e instanceof Error ? e.message : "로그인하지 못했어요. 다시 시도해 주세요.");
+      setError(err instanceof Error ? err.message : copy.failed);
     } finally {
       setBusy(false);
     }
@@ -88,76 +101,144 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
 
   return (
     // break-keep: 한국어 안내 문장을 낱말 중간에서 끊지 않는다(근로자도 이 화면에서 로그인한다).
-    <div className="mx-auto mt-10 max-w-sm break-keep rounded-2xl border border-slate-200 bg-white p-6 [overflow-wrap:anywhere]">
-      <h1 className="text-xl font-bold text-slate-900">잡카드 로그인</h1>
-      <div className="mt-4 flex gap-1 rounded-lg bg-slate-100 p-1">
-        {(["employer", "worker"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => { setTab(t); setError(null); }}
-            className={cn("min-h-12 flex-1 rounded-md px-3 py-2 text-base font-medium",
-              tab === t ? "bg-white text-slate-900 shadow" : "text-slate-500")}
-          >
-            {t === "employer" ? "사업주" : "근로자"}
-          </button>
-        ))}
-      </div>
+    <div className="flex min-h-screen flex-col break-keep bg-white font-body text-ink-900 md:grid md:grid-cols-2">
+      {/* 왼쪽 소개 패널(390에서는 위쪽 120 띠). */}
+      <section
+        data-testid="login-intro"
+        aria-label={copy.intro}
+        className="flex h-login-band shrink-0 flex-col justify-center gap-1 bg-paper-100 px-6 md:h-auto md:min-h-screen md:gap-6 md:px-12 lg:px-16"
+      >
+        <p className="font-display text-ui-logo font-bold text-moss-600">잡카드</p>
+        <p className="text-ui-base text-ink-700 md:text-ui-lg">{copy.intro}</p>
+        <ol aria-label={copy.examplesLabel} className="hidden max-w-sm flex-col gap-3 md:flex">
+          {copy.examples.map((sentence, i) => {
+            const Icon = EXAMPLE_ICONS[i];
+            return (
+              <li key={sentence} className="flex items-center gap-3 rounded-card border border-paper-200 bg-white p-3 shadow-ui-sm">
+                <span className="flex size-14 shrink-0 items-center justify-center rounded-control border border-worker-line-soft bg-white text-worker-primary">
+                  <Icon size={28} strokeWidth={2} aria-hidden="true" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-ui-xs font-semibold tabular-nums text-ink-500">{i + 1}단계</span>
+                  <span className="block text-ui-md font-bold text-ink-900">{sentence}</span>
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
 
-      {tab === "employer" ? (
-        <div className="mt-4 space-y-3">
-          <input className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base"
-            value={loginId} onChange={(e) => setLoginId(e.target.value)} aria-label="아이디" placeholder="아이디" />
-          <input type="password" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base"
-            value={password} onChange={(e) => setPassword(e.target.value)} aria-label="비밀번호" placeholder="비밀번호" />
+      {/* 오른쪽 400 폼. */}
+      <main className="flex flex-1 items-start justify-center px-4 py-8 md:items-center md:px-8">
+        <div className="w-full max-w-form">
+          <h1 className="text-ui-xl text-ink-900">{copy.title}</h1>
+          <Tabs<LoginTab>
+            className="mt-4"
+            fill
+            label={copy.tabsLabel}
+            value={tab}
+            onChange={(t) => {
+              setTab(t);
+              setError(null);
+            }}
+            items={[
+              { id: "employer", label: copy.employerTab },
+              { id: "worker", label: copy.workerTab },
+            ]}
+          />
+
+          <form onSubmit={submit} noValidate className="mt-5 flex flex-col gap-4">
+            {tab === "employer" ? (
+              <>
+                <Field label={copy.loginId}>
+                  <Input value={loginId} onChange={(e) => setLoginId(e.target.value)} autoComplete="username" />
+                </Field>
+                <Field label={copy.password}>
+                  <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+                </Field>
+              </>
+            ) : (
+              <>
+                {editingWorkplace ? (
+                  <div className="flex flex-col gap-1">
+                    <Field label={copy.workplaceCode} hint={copy.workplaceHint}>
+                      <Input
+                        className="text-center uppercase tracking-widest"
+                        value={workplaceInput}
+                        onChange={(e) => setWorkplaceInput(e.target.value)}
+                        autoCapitalize="characters"
+                        autoComplete="off"
+                      />
+                    </Field>
+                    {savedWorkplace && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingWorkplace(false);
+                          setError(null);
+                        }}
+                        className="min-h-8 self-start text-ui-sm text-ink-700 underline underline-offset-2 coarse:min-h-control-coarse"
+                      >
+                        {copy.keepWorkplace(savedWorkplace)}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-control bg-paper-50 px-3 py-2 text-ui-base text-ink-700">
+                    <span>
+                      {copy.workplaceSaved} <strong className="tracking-widest text-ink-900">{savedWorkplace}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={changeWorkplace}
+                      className="min-h-8 text-ui-sm text-ink-700 underline underline-offset-2 coarse:min-h-control-coarse"
+                    >
+                      {copy.changeWorkplace}
+                    </button>
+                  </div>
+                )}
+                <Field label={copy.accessCode}>
+                  <Input
+                    className="text-center text-ui-xl tracking-widest"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    inputMode="numeric"
+                    autoComplete="off"
+                  />
+                </Field>
+              </>
+            )}
+
+            {demoFilled && <p className="text-ui-sm text-ink-500">{copy.demoFilled}</p>}
+            {error && (
+              <div role="alert" className="rounded-control border border-danger-700/20 bg-danger-50 p-3 text-ui-base text-danger-700">
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={!ready}
+              loading={busy}
+              className="min-h-control-coarse w-full text-ui-md"
+            >
+              {busy ? copy.submitting : copy.submit}
+            </Button>
+          </form>
+
+          {/* 근로자는 번호 키패드 화면(/w)으로. Router 밖에서도 렌더되도록(테스트) 일반 링크를 쓴다. */}
+          <p className="mt-6 text-center text-ui-base text-ink-700">
+            {copy.workerQuestion}{" "}
+            <a
+              href="/w"
+              className="inline-flex min-h-control items-center font-semibold text-info-700 underline underline-offset-2 coarse:min-h-control-coarse"
+            >
+              {copy.workerLink}
+            </a>
+          </p>
         </div>
-      ) : (
-        <div className="mt-4 space-y-3">
-          {editingWorkplace ? (
-            <div>
-              <input className="w-full rounded-lg border border-slate-300 px-3 py-2 text-center text-lg uppercase tracking-widest"
-                value={workplaceInput} onChange={(e) => setWorkplaceInput(e.target.value)}
-                aria-label="사업장 코드" placeholder="사업장 코드" autoCapitalize="characters" autoComplete="off" />
-              <p className="mt-1 text-xs text-slate-500">
-                사업주에게 받은 사업장 코드를 넣어 주세요. 한 번 로그인하면 이 기기에 저장돼요.
-              </p>
-              {savedWorkplace && (
-                <button type="button" onClick={() => { setEditingWorkplace(false); setError(null); }}
-                  className="mt-1 text-xs text-slate-500 underline">
-                  취소 (사업장 {savedWorkplace} 그대로 쓰기)
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
-              <span>
-                사업장 <strong className="tracking-widest text-slate-900">{savedWorkplace}</strong>
-              </span>
-              <button type="button" onClick={changeWorkplace} className="text-xs text-slate-500 underline">
-                이 기기 사업장 변경
-              </button>
-            </div>
-          )}
-          <input className="w-full rounded-lg border border-slate-300 px-3 py-3 text-center text-2xl tracking-widest"
-            value={code} onChange={(e) => setCode(e.target.value)} aria-label="접속 코드" placeholder="접속 코드" inputMode="numeric" />
-        </div>
-      )}
-
-      {demoFilled && (
-        <p className="mt-3 text-xs text-slate-500">시연용 데모 계정이 미리 채워져 있어요. 로그인을 누르세요.</p>
-      )}
-      {error && <div role="alert" className="mt-3 rounded-lg bg-red-50 p-2 text-sm text-red-800">{error}</div>}
-
-      <button onClick={submit} disabled={busy || !ready}
-        className="mt-4 min-h-12 w-full rounded-lg bg-moss-600 py-2.5 font-semibold text-white hover:bg-moss-700 disabled:opacity-50">
-        {busy ? "확인 중…" : "로그인"}
-      </button>
-      {/* 근로자는 번호 키패드 화면(/w)으로. Router 밖에서도 렌더되도록(테스트) 일반 링크를 쓴다. */}
-      <p className="mt-4 text-center text-sm text-ink-700">
-        근로자이신가요?{" "}
-        <a href="/w" className="font-semibold text-info-700 underline underline-offset-2">
-          근로자 화면으로 ›
-        </a>
-      </p>
+      </main>
     </div>
   );
 }

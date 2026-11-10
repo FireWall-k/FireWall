@@ -12,6 +12,53 @@ import { fileURLToPath } from 'node:url'
 // 실행 위치에 따라 "Could not resolve tailwindcss"로 죽는다(실측). 그래서 절대경로로 넘긴다.
 const tailwindConfigPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'tailwind.config.js')
 
+// className을 + 로 이어붙이지 못하게 하는 규칙. 아래 새 폴더 규칙에서도 다시 적는다 — flat config는 같은 규칙을
+// 뒤 블록이 통째로 덮어쓰므로(옵션이 합쳐지지 않음) 빠뜨리면 새 폴더에서 이 검사가 사라진다.
+const NO_CLASSNAME_PLUS = {
+  selector: "JSXAttribute[name.name='className'] BinaryExpression[operator='+']",
+  message: 'className은 + 로 이어붙이지 말고 cn(...)(src/cn.ts)을 쓰세요 — 이어붙인 클래스는 tailwind 린트가 검사하지 못합니다.',
+}
+
+// 새 사업주 폴더에서 막는 Tailwind 기본 팔레트(명세 6.1 R2: blue-700·green-700·emerald·sky·violet·slate·amber 등).
+// 색은 tailwind.config.js의 사업주 토큰(ink·paper·moss·ok·warn·danger·info·auto·line)만 쓴다.
+// 옛 화면(ManagerPage 등 197곳)은 그 화면을 새로 쓸 때 함께 없앤다(명세 9) — 그래서 팔레트 자체를 줄이지 않고
+// 새 폴더에만 이 규칙을 건다.
+const DEFAULT_PALETTE =
+  'slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose'
+const COLOR_UTIL =
+  'bg|text|border|border-[xytrbl]|ring|ring-offset|outline|fill|stroke|from|via|to|divide|placeholder|decoration|accent|caret|shadow'
+const PALETTE_RE = `(^|[\\s:!])(${COLOR_UTIL})-(${DEFAULT_PALETTE})-[0-9]`
+// 10~11px 글자(명세 6.2 R3: 가장 작은 글씨 12px).
+const SMALL_TEXT_RE = 'text-\\[1[01]px\\]'
+
+const NEW_FOLDER_RULES = [
+  NO_CLASSNAME_PLUS,
+  {
+    selector: `Literal[value=/${PALETTE_RE}/]`,
+    message: 'Tailwind 기본 팔레트 색(slate·blue·green·amber…)은 새 사업주 화면에서 쓰지 않아요 — 사업주 토큰(ink·paper·moss·ok·warn·danger·info·auto)을 쓰세요(명세 6.1).',
+  },
+  {
+    selector: `TemplateElement[value.raw=/${PALETTE_RE}/]`,
+    message: 'Tailwind 기본 팔레트 색(slate·blue·green·amber…)은 새 사업주 화면에서 쓰지 않아요 — 사업주 토큰을 쓰세요(명세 6.1).',
+  },
+  {
+    selector: `Literal[value=/${SMALL_TEXT_RE}/]`,
+    message: '10~11px 글자는 쓰지 않아요 — 가장 작은 글씨는 text-ui-xs(12px)예요(명세 6.2).',
+  },
+  {
+    selector: `TemplateElement[value.raw=/${SMALL_TEXT_RE}/]`,
+    message: '10~11px 글자는 쓰지 않아요 — 가장 작은 글씨는 text-ui-xs(12px)예요(명세 6.2).',
+  },
+  {
+    selector: "CallExpression[callee.name='confirm']",
+    message: 'window.confirm 대신 components/ui의 Dialog를 쓰세요(명세 5.0 R11).',
+  },
+  {
+    selector: "CallExpression[callee.object.name='window'][callee.property.name='confirm']",
+    message: 'window.confirm 대신 components/ui의 Dialog를 쓰세요(명세 5.0 R11).',
+  },
+]
+
 export default defineConfig([
   globalIgnores(['dist', 'playwright-report', 'test-results']),
   {
@@ -44,10 +91,14 @@ export default defineConfig([
     rules: {
       'tailwindcss/no-custom-classname': 'error',
       // className을 + 로 이어붙이면 위 규칙이 그 안을 못 본다(검사 구멍). cn(...)이나 템플릿 리터럴을 쓰게 한다.
-      'no-restricted-syntax': ['error', {
-        selector: "JSXAttribute[name.name='className'] BinaryExpression[operator='+']",
-        message: 'className은 + 로 이어붙이지 말고 cn(...)(src/cn.ts)을 쓰세요 — 이어붙인 클래스는 tailwind 린트가 검사하지 못합니다.',
-      }],
+      'no-restricted-syntax': ['error', NO_CLASSNAME_PLUS],
+    },
+  },
+  {
+    // 2차 새 폴더(사업주 기본 부품·새 사업주 화면·새 로그인)에만 거는 규칙(tasks §3.2). 옛 화면은 지울 때 함께 정리한다.
+    files: ['src/components/ui/**/*.{ts,tsx}', 'src/manager/**/*.{ts,tsx}', 'src/pages/LoginPage.tsx'],
+    rules: {
+      'no-restricted-syntax': ['error', ...NEW_FOLDER_RULES],
     },
   },
 ])

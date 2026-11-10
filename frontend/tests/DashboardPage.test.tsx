@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DashboardPage from "../src/pages/DashboardPage";
 
@@ -11,6 +11,9 @@ const workerActiveDates = vi.fn();
 const workerTasks = vi.fn();
 const dashboard = vi.fn();
 const coaching = vi.fn();
+const archiveTask = vi.fn();
+
+vi.mock("../src/manager/api/tasks", () => ({ archiveTask: (id: string) => archiveTask(id) }));
 
 vi.mock("../src/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/api")>();
@@ -73,7 +76,7 @@ describe("DashboardPage", () => {
   it("등록된 근로자가 없으면 안내 문구를 보여준다", async () => {
     listWorkers.mockResolvedValue([]);
     render(<DashboardPage />);
-    await screen.findByText(/아직 등록된 근로자가 없습니다/);
+    await screen.findByText(/아직 등록된 근로자가 없어요. ‘근로자’ 메뉴에서/);
     expect(workerTasks).not.toHaveBeenCalled();
   });
 
@@ -111,6 +114,96 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
 
     expect(await screen.findByText(/AI 처리 동의가 기록되지 않은 근로자가 있어/)).toBeInTheDocument();
+  });
+
+  it("2a-1: [삭제] 대신 [보관하기] — 확인하면 archive를 부르고(DELETE 아님) '보관함'으로 표시한다", async () => {
+    listWorkers.mockResolvedValue([worker]);
+    workerTasks.mockResolvedValue([task]);
+    dashboard.mockResolvedValue(dashboardData);
+    coaching.mockResolvedValue({ summary: "", suggestions: [] });
+    archiveTask.mockReset().mockResolvedValue({});
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<DashboardPage />);
+    await screen.findByText("50%");
+    expect(screen.queryByRole("button", { name: /삭제/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "선택한 직무 보관하기" }));
+    expect(confirm.mock.calls[0][0]).toContain("'분류 작업'을 보관함으로 옮길까요?");
+    expect(archiveTask).toHaveBeenCalledWith("task-1");
+    await waitFor(() => expect(screen.queryByRole("button", { name: "선택한 직무 보관하기" })).not.toBeInTheDocument());
+    expect(screen.getByText("보관함에 있는 직무예요")).toBeInTheDocument();
+    await waitFor(() => expect(document.activeElement?.id).toBe("dashboard-archived-note"));
+    expect(screen.getByRole("option", { name: /분류 작업 \(보관함\)/ })).toBeInTheDocument();
+    confirm.mockRestore();
+  });
+
+  it("2회차 검증: 보관 응답이 늦고 다음 프레임이 React 반영보다 먼저 와도 초점은 '보관함에 있는 직무예요'로 간다", async () => {
+    listWorkers.mockResolvedValue([worker]);
+    workerTasks.mockResolvedValue([task]);
+    dashboard.mockResolvedValue(dashboardData);
+    coaching.mockResolvedValue({ summary: "", suggestions: [] });
+    let finish: (v: unknown) => void = () => {};
+    archiveTask.mockReset().mockImplementation(() => new Promise((r) => { finish = r; }));
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    // 실서버에서 본 경쟁: rAF 콜백이 setState 반영(커밋)보다 먼저 돈다. 콜백을 바로 돌려 그 순서를 만든다.
+    const raf = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => { cb(0); return 0; });
+    render(<DashboardPage />);
+    await screen.findByText("50%");
+    const button = screen.getByRole("button", { name: "선택한 직무 보관하기" });
+    button.focus();
+    await userEvent.keyboard("{Enter}");
+    expect(archiveTask).toHaveBeenCalledWith("task-1");
+    finish({});
+    await waitFor(() => expect(document.activeElement?.id).toBe("dashboard-archived-note"));
+    expect(document.activeElement).not.toBe(document.body);
+    raf.mockRestore();
+    confirm.mockRestore();
+  });
+
+  it("2회차 검증: 보관이 끝나기 전에 다른 직무로 바꾸면 초점을 빼앗지 않는다", async () => {
+    const other = { ...task, id: "task-2", title: "포장 작업" };
+    listWorkers.mockResolvedValue([worker]);
+    workerTasks.mockResolvedValue([task, other]);
+    dashboard.mockResolvedValue(dashboardData);
+    coaching.mockResolvedValue({ summary: "", suggestions: [] });
+    let finish: (v: unknown) => void = () => {};
+    archiveTask.mockReset().mockImplementation(() => new Promise((r) => { finish = r; }));
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<DashboardPage />);
+    await screen.findByText("50%");
+    await userEvent.click(screen.getByRole("button", { name: "선택한 직무 보관하기" }));
+    const select = screen.getByRole("combobox", { name: "대시보드 직무 선택" });
+    await userEvent.selectOptions(select, "task-2");
+    finish({});
+    await waitFor(() => expect(screen.getByRole("option", { name: /분류 작업 \(보관함\)/ })).toBeInTheDocument());
+    expect(document.activeElement?.id).not.toBe("dashboard-archived-note");
+    confirm.mockRestore();
+  });
+
+  it("1회차 검증: 서버가 보관한 직무라고 주면 [보관하기]를 띄우지 않는다(다시 열어도 또 보관하지 않음)", async () => {
+    listWorkers.mockResolvedValue([worker]);
+    workerTasks.mockResolvedValue([{ ...task, archived: true }]);
+    dashboard.mockResolvedValue(dashboardData);
+    coaching.mockResolvedValue({ summary: "", suggestions: [] });
+    archiveTask.mockReset();
+    render(<DashboardPage />);
+    await screen.findByText("50%");
+    expect(screen.queryByRole("button", { name: "선택한 직무 보관하기" })).not.toBeInTheDocument();
+    expect(screen.getByText("보관함에 있는 직무예요")).toBeInTheDocument();
+    expect(archiveTask).not.toHaveBeenCalled();
+  });
+
+  it("보관 확인을 취소하면 아무것도 부르지 않는다", async () => {
+    listWorkers.mockResolvedValue([worker]);
+    workerTasks.mockResolvedValue([task]);
+    dashboard.mockResolvedValue(dashboardData);
+    coaching.mockResolvedValue({ summary: "", suggestions: [] });
+    archiveTask.mockReset();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<DashboardPage />);
+    await screen.findByText("50%");
+    await userEvent.click(screen.getByRole("button", { name: "선택한 직무 보관하기" }));
+    expect(archiveTask).not.toHaveBeenCalled();
+    confirm.mockRestore();
   });
 
   // 2회차 검증: 달력에서 지난 날을 고르면 같은 직무라도 그날 배정의 숫자를 묻는다(오늘 배정의 숫자가 아님).

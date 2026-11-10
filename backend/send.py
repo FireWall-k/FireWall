@@ -222,6 +222,9 @@ def _resolve_workers(db: Session, employer_id: str, worker_ids: list[str]) -> li
 def send_to_workers(db: Session, request: Request, user: dict, task: Task, worker_ids: list[str],
                     day: str | None) -> tuple[SendResultOut, list[Assignment]]:
     """보내기 본체(커밋까지). 검사 → (내용이 바뀌었으면) 새 버전 → 근로자마다 배정 → 감사 task.assign."""
+    # 보관한 직무는 받는 사람·날짜 검사보다 먼저 409로 막는다(옛 배정 경로와 같은 답). 잠금 뒤 재검사는 ensure_sendable.
+    if _is_archived(task):
+        raise ApiError(409, MSG_ARCHIVED, code="archived", step_ids=[])
     picked = resolve_day(day)
     workers = _resolve_workers(db, user["sub"], worker_ids)
     # 쓰기 잠금을 먼저 잡고(값을 바꾸지 않는 UPDATE) 그 뒤에 읽는다. 근로자 기기의 /me/today가 first_seen_at을 쓰는

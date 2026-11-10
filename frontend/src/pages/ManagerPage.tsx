@@ -10,6 +10,7 @@ import { cn } from "../cn";
 import SplitPreviewList from "../components/SplitPreviewList";
 import { rowsFromPreview, toConfirmed, type SplitRow } from "../splitRows";
 import { blockedStepIdsAfterSendError, sendApi } from "../manager/api/send";
+import { EXAMPLE_TASK } from "../manager/tasks/example";
 
 // 문장 칸 높이를 내용에 맞춘다(SplitPreviewList와 같은 방식).
 function fitHeight(el: HTMLTextAreaElement) {
@@ -21,9 +22,19 @@ function fitHeight(el: HTMLTextAreaElement) {
 const SAMPLE =
   "예: 택배 상자를 크기별로 분류하고, 큰 상자는 A구역으로 옮겨주세요. 그리고 5개씩 쌓아주세요. 마지막에 수량을 확인하세요.";
 
+// 주소에 ?example=1이 있으면 예시로 채운다. 옛 화면 시험은 라우터 없이 그리므로 useSearchParams 대신 location을 읽는다.
+function wantsExample(): boolean {
+  try {
+    return new URLSearchParams(window.location.search).get("example") === "1";
+  } catch {
+    return false;
+  }
+}
+
 export default function ManagerPage() {
-  const [rawInput, setRawInput] = useState("");
-  const [businessType, setBusinessType] = useState("");
+  const [fromExample] = useState(wantsExample);
+  const [rawInput, setRawInput] = useState(() => (fromExample ? EXAMPLE_TASK.rawInput : ""));
+  const [businessType, setBusinessType] = useState(() => (fromExample ? EXAMPLE_TASK.businessType : ""));
   const [workEnvironment, setWorkEnvironment] = useState("");
   const [workerNote, setWorkerNote] = useState("");
   // 맞춤 대상 근로자. 근로자 특성 메모는 이 근로자가 "AI 코칭에 메모 사용"을 허용하고 AI 처리 동의가
@@ -150,6 +161,8 @@ export default function ManagerPage() {
     const wasRecheck = recheckSteps.has(stepId);
     const wasBlocked = blockedStepIds.has(stepId);
     setError(null);
+    // 누른 단추가 곧 사라진다 — 초점은 아래 useLayoutEffect가 다음 확인 단추(없으면 이 단계 문장 칸)로 옮긴다.
+    focusAfterConfirm.current = { stepId, back: false };
     setPendingConfirm((prev) => withId(prev, stepId));
     confirmStep(stepId);
     try {
@@ -166,6 +179,7 @@ export default function ManagerPage() {
       if (wasRecheck) setRecheckSteps((prev) => withId(prev, stepId));
       if (wasBlocked) setBlockedStepIds((prev) => withId(prev, stepId));
       setConfirmedSteps((prev) => withoutId(prev, stepId));
+      focusAfterConfirm.current = { stepId, back: true }; // 실패하면 다시 나타난 그 단추로 돌아간다.
       setError(e instanceof Error ? e.message : "그림을 확인하지 못했어요. 잠시 뒤 다시 눌러 주세요.");
     } finally {
       setPendingConfirm((prev) => withoutId(prev, stepId));
@@ -227,6 +241,44 @@ export default function ManagerPage() {
     if (el) el.focus();
     else editorHeading.current?.focus();
   }, [task]);
+
+  // 2a-1 2회차 검증: 키보드로 누른 단추가 사라지거나 꺼지면 초점이 body로 빠졌다(이 화면이 /manager일 때부터 있던 문제).
+  // 화면이 반영된 커밋 바로 뒤에, 초점을 잃었을 때만(다른 곳으로 옮겼으면 그대로) 다음 할 곳으로 옮긴다.
+  const focusAfterSplit = useRef(false);
+  const focusAfterConfirm = useRef<{ stepId: string; back: boolean } | null>(null);
+  const decomposeButton = useRef<HTMLButtonElement | null>(null);
+  useLayoutEffect(() => {
+    const active = document.activeElement as HTMLElement | null;
+    const lost = !active || active === document.body || !active.isConnected
+      || (active instanceof HTMLButtonElement && active.disabled);
+    if (focusAfterSplit.current && !splitting) {
+      focusAfterSplit.current = false;
+      if (lost) {
+        // 나눴으면 '이렇게 나눴어요' 제목으로, 못 나눴으면(오류) 다시 누를 수 있는 [단계로 나누기]로.
+        const heading = preview ? document.getElementById("split-preview-title") : null;
+        (heading ?? decomposeButton.current)?.focus();
+      }
+    }
+    const want = focusAfterConfirm.current;
+    if (want && task) {
+      const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-confirm-step]"));
+      const own = buttons.find((b) => b.dataset.confirmStep === want.stepId);
+      if (want.back) {
+        // 실패: 단추가 다시 나타나면 그리로(초점을 잃었거나 다음 확인 단추로 옮겨 둔 경우에만).
+        if (!own) return;
+        focusAfterConfirm.current = null;
+        if (lost || (active instanceof HTMLButtonElement && active.dataset.confirmStep)) own.focus();
+        return;
+      }
+      if (own) return; // 아직 단추가 그대로다 — 사라진 커밋에서 옮긴다.
+      focusAfterConfirm.current = null;
+      if (!lost) return;
+      const order = task.steps.findIndex((s) => s.id === want.stepId);
+      const after = buttons.find((b) => task.steps.findIndex((s) => s.id === b.dataset.confirmStep) > order);
+      const next = after ?? buttons[0] ?? stepInputs.current.get(want.stepId);
+      next?.focus();
+    }
+  });
   // 편집기 문장 칸은 내용만큼 높이를 늘린다(390px에서 한 줄 칸이 나눈 문장을 잘라 보여 줬다).
   useLayoutEffect(() => {
     stepInputs.current.forEach(fitHeight);
@@ -254,6 +306,7 @@ export default function ManagerPage() {
   // 목록을 고쳤으면 다시 나누기 전에 묻는다(새로 나누면 고친 줄이 사라지고 GPT를 다시 부른다).
   async function handleDecompose() {
     if (previewEdited && !window.confirm("고친 줄이 있어요. 새로 나눌까요? 고친 내용은 사라져요.")) return;
+    focusAfterSplit.current = true; // 나누는 동안 단추가 꺼진다 — 끝나면 위 useLayoutEffect가 초점을 옮긴다.
     setSplitting(true);
     setConfirmError(null);
     setError(null);
@@ -641,6 +694,11 @@ export default function ManagerPage() {
         <p className="mt-1 text-sm text-slate-600">
           평소 말하듯 적어 주세요. 단계는 잡카드가 나눠요. 단계마다 그림과 음성을 붙여요.
         </p>
+        {fromExample && !preview && !task && (
+          <p data-testid="example-note" role="status" className="mt-2 rounded-lg bg-paper-100 px-3 py-2 text-sm text-ink-900">
+            예시를 채워 두었어요. 고쳐도 되고, 그대로 [단계로 나누기]를 눌러 봐도 돼요.
+          </p>
+        )}
         <textarea
           className="mt-3 w-full rounded-lg border border-slate-300 p-3 text-base"
           rows={4}
@@ -679,12 +737,14 @@ export default function ManagerPage() {
             ))}
           </select>
         )}
-        <p className="mt-1 text-xs text-slate-400">
-          업종·환경·근로자 특성을 적으면 AI가 더 맞춤형으로 단계를 나눕니다(선택).
-          근로자 특성은 맞춤 대상 근로자가 'AI 코칭에 메모 사용'을 허용하고 AI 처리 동의가 기록된 경우에만 AI에 전달돼요.
-          근로자 이름은 AI에 보내기 전에 '근로자 A'처럼 바꿔 보냅니다.
+        {/* 'AI'라고 쓰지 않는다(창업자 결정 2: 자동 결과는 '✦ 자동'). 글자색은 흰 바탕 4.5:1 이상인 slate-600. */}
+        <p className="mt-1 text-xs text-slate-600">
+          업종·환경·근로자 특성을 적으면 ✦ 자동 나누기가 더 맞춤형으로 단계를 나눠요(선택).
+          근로자 특성은 근로자 화면에서 그 근로자의 메모 사용 설정을 켜고 처리 동의를 기록한 경우에만 자동 나누기에 쓰여요.
+          근로자 이름은 보내기 전에 '근로자 A'처럼 바꿔 보내요.
         </p>
         <button
+          ref={decomposeButton}
           onClick={handleDecompose}
           // 목록이 지금 원문 그대로면(원문도 목록도 안 고침) 다시 나눌 것이 없다 — GPT를 다시 부르지 않는다.
           disabled={busy || splitting || confirming || !rawInput.trim() || (!!preview && !previewStale && !previewEdited)}
@@ -777,7 +837,7 @@ export default function ManagerPage() {
       {task && (
         <section>
           <h2 ref={editorHeading} tabIndex={-1} className="text-lg font-bold text-slate-900 focus:outline-none">
-            검토 · 수정 <span className="text-sm font-normal text-slate-500">({task.steps.length}단계)</span>
+            검토 · 수정 <span className="text-sm font-normal text-slate-600">({task.steps.length}단계)</span>
           </h2>
           <p className="mt-1 text-sm text-slate-600">
             근로자가 보게 될 화면과 같은 순서입니다. 손잡이를 끌어 순서를 바꾸고, 문장을 다듬거나 단계를 추가할 수 있습니다.
@@ -821,8 +881,10 @@ export default function ManagerPage() {
                     setDragIndex(null);
                     setDragOverIndex(null);
                   }}
-                  className="mt-1 cursor-grab text-slate-300 hover:text-slate-500 active:cursor-grabbing"
-                  aria-label={`${s.order}단계 순서 이동 손잡이`}
+                  className="mt-1 cursor-grab text-slate-500 hover:text-slate-700 active:cursor-grabbing"
+                  // 마우스 끌기 전용 손잡이(장식). 이름은 title로만 보인다
+                  // (role 없는 span의 aria-label은 axe aria-prohibited-attr).
+                  aria-hidden="true"
                   title="드래그해서 순서 변경"
                 >
                   <GripVertical size={18} />
@@ -841,7 +903,7 @@ export default function ManagerPage() {
                     <div className={cn(
                       "flex h-16 w-16 items-center justify-center rounded border border-dashed text-center text-xs",
                       stepCandidates[s.id]?.candidates.length
-                        ? "border-slate-300 bg-slate-50 text-slate-400"
+                        ? "border-slate-300 bg-slate-50 text-slate-600"
                         : "border-amber-400 bg-amber-50 text-amber-700",
                     )}>
                       {stepCandidates[s.id]?.candidates.length ? "그림 선택" : "사진 권장"}
@@ -861,7 +923,7 @@ export default function ManagerPage() {
                   </label>
                   {s.symbol_source === "photo" && (
                     <button onClick={() => handleRemovePhoto(s.id)}
-                            className="text-xs text-slate-400 hover:text-slate-600 hover:underline">
+                            className="text-xs text-slate-600 hover:text-slate-800 hover:underline">
                       되돌리기
                     </button>
                   )}
@@ -905,7 +967,7 @@ export default function ManagerPage() {
                       저장하는 중… 동작이 둘이면 두 단계로 나눠요.
                     </p>
                   )}
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-600">
                     <ActionChip action={s.action_type} className="whitespace-nowrap text-xs !px-2 !py-0.5" />
                     {/* 그림이 붙은 단계만 출처를 보여준다. 폴백 상태는 아래 후보 영역이
                         이미 설명하므로 "상징: fallback"은 중복 노이즈였다. */}
@@ -915,8 +977,9 @@ export default function ManagerPage() {
                       </span>
                     )}
                     {needsConfirm(s) && (
-                      <button type="button" onClick={() => handleConfirmPicture(s.id)}
-                              aria-label={`${s.order}단계 그림 확인`}
+                      <button type="button" onClick={() => handleConfirmPicture(s.id)} data-confirm-step={s.id}
+                              // 접근 이름은 보이는 글자로 시작한다(axe label-content-name-mismatch).
+                              aria-label={`✦ 자동 · 그림이 맞으면 누르세요, ${s.order}단계 그림 확인`}
                               className="rounded border border-auto-700/40 bg-auto-50 px-2 py-0.5 text-xs font-semibold text-auto-700 hover:bg-white">
                         {/* 자동 결과 표기는 '✦ 자동'(창업자 결정 2, 'AI'라고 쓰지 않는다). */}
                         ✦ 자동 · 그림이 맞으면 누르세요
@@ -990,7 +1053,7 @@ export default function ManagerPage() {
                 <button
                   onClick={() => handleDeleteStep(s.id)}
                   disabled={task.steps.length <= 1}
-                  className="mt-1 shrink-0 rounded p-1.5 text-slate-300 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-300"
+                  className="mt-1 shrink-0 rounded p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-300"
                   aria-label={`${s.order}단계 삭제`}
                   title={task.steps.length <= 1 ? "마지막 단계는 삭제할 수 없습니다" : "이 단계 삭제"}
                 >
@@ -1136,7 +1199,7 @@ export default function ManagerPage() {
                       </span>
                       <button
                         onClick={() => handleDeleteWorker(w.id, w.display_name)}
-                        className="rounded-full p-0.5 text-slate-300 hover:bg-red-50 hover:text-red-600"
+                        className="rounded-full p-0.5 text-slate-500 hover:bg-red-50 hover:text-red-600"
                         aria-label={`근로자 ${w.display_name} 삭제`}
                         title="근로자 삭제"
                       >

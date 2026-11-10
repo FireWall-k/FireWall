@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
@@ -458,6 +458,8 @@ class TaskSummaryOut(BaseModel):
     title: str
     status: str
     created_at: datetime
+    # (2a-1) 보관함에 있는지. 옛 대시보드(/m)가 보관한 직무에 [보관하기]를 다시 띄우지 않으려고 더한다(필드 추가만).
+    archived: bool = False
 
 
 class AssignmentOut(BaseModel):
@@ -675,3 +677,51 @@ class RecipientsOut(BaseModel):
     workplace_last_batch_worker_ids: list[str]
     # 이 직무의 오늘 배정 상태: none | not_started | in_progress | done
     today_status: dict[str, Literal["none", "not_started", "in_progress", "done"]]
+
+
+# --- 2a-1 직무 목록(contract §2.1) -------------------------------------------------------------
+# 옛 GET /api/tasks의 TaskSummaryOut(배열)은 2d까지 그대로 두므로, 새 목록 행은 이름을 달리한다.
+# 화면 타입 이름은 frontend/src/manager/api/types.ts의 TaskSummaryOut이다(필드는 같다).
+
+TaskFilter = Literal["all", "draft", "needs_check", "published", "archived"]
+
+
+class TaskRecipientOut(BaseModel):
+    worker_id: str
+    # 이름 앞 글자(아바타). 실명 전체는 목록에 싣지 않는다.
+    initials: str
+
+
+class EmployerTaskSummaryOut(BaseModel):
+    id: str
+    title: str
+    state: Literal["draft", "published", "archived"]
+    # 보내기 전에 사업주가 봐야 할 단계 수(그림 없음 + 확인 안 한 자동 그림 = 보내기 검사가 막는 단계).
+    needs_check_count: int
+    # 보낸 뒤 고쳤지만 아직 다시 보내지 않음(versions.same_content).
+    has_unsent_changes: bool
+    step_count: int
+    cover_url: str | None = None
+    recipients: list[TaskRecipientOut]
+    recipients_more: int
+    updated_at: datetime
+    current_version_no: int | None = None
+
+
+class TaskCountsOut(BaseModel):
+    all: int
+    draft: int
+    needs_check: int
+    published: int
+    archived: int
+
+
+class EmployerTaskListOut(BaseModel):
+    items: list[EmployerTaskSummaryOut]
+    counts: TaskCountsOut
+
+
+class TaskTitleUpdate(BaseModel):
+    # 길이·글자 종류 검사는 task_list.py가 한국어 422로 한다(검증 오류 기본 문구보다 다음 할 일을 알려 주려고).
+    # 글자가 아닌 값(숫자 등)도 같은 문구로 막으려고 Any로 받는다.
+    title: Any = None

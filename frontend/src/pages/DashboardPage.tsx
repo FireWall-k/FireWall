@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Bar,
   BarChart,
@@ -9,11 +9,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertCircle, BarChart3, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, RefreshCw, RotateCcw, Sparkles, Trash2 } from "lucide-react";
-import { api, AuthError, type Coaching, type Dashboard, type TaskSummary, type Worker } from "../api";
+import { AlertCircle, Archive, BarChart3, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
+import { api, ApiError, AuthError, type Coaching, type Dashboard, type TaskSummary, type Worker } from "../api";
 import { BAR_COLOR, STUCK_BAR_COLOR, stuckIndices } from "../dashboardChart";
 import { accessCodeText } from "../workerCodes";
 import { cn } from "../cn";
+import { dashboardArchive } from "../manager/copy";
+import { archiveTask } from "../manager/api/tasks";
 
 const DASHBOARD_POLL_MS = 3_000;
 
@@ -329,30 +331,51 @@ function DashboardPage() {
     setError(null);
   }
 
-  async function deleteCurrentTask() {
+  // 2a-1: 삭제 대신 보관(contract §2.1). 완전히 지우기는 직무 목록의 '보관'에서만 한다. 확인은 옛 confirm 그대로
+  // (이 화면은 2d에서 통째로 지운다).
+  async function archiveCurrentTask() {
     if (!taskId) return;
     const current = workerTasks.find((t) => t.id === taskId);
-    if (!window.confirm(`'${current?.title ?? "이 직무"}'를 삭제할까요?\n수행 기록도 함께 삭제되며 되돌릴 수 없습니다.`)) {
+    if (!window.confirm(dashboardArchive.confirm(current?.title ?? "이 직무"))) {
       return;
     }
     try {
-      await api.deleteTask(taskId);
-      const remaining = workerTasks.filter((t) => t.id !== taskId);
-      setWorkerTasks(remaining);
-      setTaskId(remaining[0]?.id ?? "");
-      setDashboard(null);
-      setCoaching(null);
+      await archiveTask(taskId);
+      // 누른 단추가 사라지므로 초점을 '보관함에 있는 직무예요' 표시로 옮긴다(body로 빠지지 않게).
+      // 표시가 화면에 붙은 뒤에 옮겨야 하므로 아래 useLayoutEffect가 한다(rAF 한 번은 React 반영보다 빠를 수 있다).
+      focusArchivedFor.current = taskId;
+      // 목록에서 빼지 않고 '보관함'으로 표시한다. 다시 불러와도 서버가 같은 직무를 주므로(기록 열람은 남긴다)
+      // 화면과 서버가 같게 보이고, [보관하기]를 또 누를 수 없다.
+      setWorkerTasks((list) => list.map((t) => (t.id === taskId ? { ...t, archived: true } : t)));
       setError(null);
     } catch (e) {
-      setError(e instanceof AuthError ? "다시 로그인해 주세요." : e instanceof Error ? e.message : "직무 삭제에 실패했습니다.");
+      setError(e instanceof AuthError ? "다시 로그인해 주세요." : e instanceof ApiError && e.detail ? e.detail : dashboardArchive.failed);
     }
   }
+
+  const currentArchived = workerTasks.find((t) => t.id === taskId)?.archived === true;
+
+  // 보관한 직무의 표시가 그려진 바로 뒤(같은 커밋)에 초점을 옮긴다. 그 사이 다른 직무로 바꿨으면 옮기지 않는다.
+  const focusArchivedFor = useRef("");
+  const archivedNoteRef = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const target = focusArchivedFor.current;
+    if (!target) return;
+    if (target !== taskId) {
+      focusArchivedFor.current = "";
+      return;
+    }
+    if (currentArchived && archivedNoteRef.current) {
+      focusArchivedFor.current = "";
+      archivedNoteRef.current.focus();
+    }
+  }, [taskId, currentArchived]);
 
   if (loading) return <EmptyState message="근로자 목록을 불러오는 중입니다…" />;
 
   return (
     <div className="mx-auto max-w-6xl">
-      <header className="sticky top-0 z-20 -mx-8 mb-6 flex flex-col gap-4 border-b border-paper-200 bg-paper-50/95 px-8 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
+      <header className="sticky top-topbar z-10 -mx-4 mb-6 flex flex-col gap-4 border-b border-paper-200 bg-paper-50/95 px-4 py-4 backdrop-blur md:-mx-8 md:flex-row md:items-center md:justify-between md:px-8">
         <div>
           <h1 className="font-display text-2xl font-semibold text-ink-900">수행 대시보드</h1>
           <p className="mt-1 text-sm text-ink-500">
@@ -412,7 +435,8 @@ function DashboardPage() {
             >
               {workerTasks.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {formatCreatedAt(t.created_at)} · {t.title} {t.status === "published" ? "(게시됨)" : "(초안)"}
+                  {formatCreatedAt(t.created_at)} · {t.title}{" "}
+                  {t.archived ? dashboardArchive.optionSuffix : t.status === "published" ? "(게시됨)" : "(초안)"}
                 </option>
               ))}
             </select>
@@ -442,22 +466,29 @@ function DashboardPage() {
               </button>
             </div>
           )}
-          {taskId && (
+          {taskId && currentArchived && (
+            <span id="dashboard-archived-note" ref={archivedNoteRef} tabIndex={-1}
+                  className="inline-flex items-center gap-1.5 px-1 py-2 text-sm font-medium text-ink-700 focus:outline-none">
+              <Archive size={15} aria-hidden="true" />
+              {dashboardArchive.already}
+            </span>
+          )}
+          {taskId && !currentArchived && (
             <button
               type="button"
-              onClick={deleteCurrentTask}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm font-medium text-signal-red hover:bg-signal-red/5"
-              aria-label="선택한 직무 삭제"
+              onClick={archiveCurrentTask}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-paper-200 bg-white px-3 py-2 text-sm font-medium text-ink-700 hover:bg-paper-100"
+              aria-label={dashboardArchive.buttonLabel}
             >
-              <Trash2 size={15} />
-              삭제
+              <Archive size={15} />
+              {dashboardArchive.button}
             </button>
           )}
         </div>
       </header>
 
       {error && <div role="alert" className="mb-5 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</div>}
-      {!allWorkers.length && <EmptyState message="아직 등록된 근로자가 없습니다. ‘직무 입력·검토’ 화면에서 근로자를 추가하고 직무를 보내 주세요." />}
+      {!allWorkers.length && <EmptyState message="아직 등록된 근로자가 없어요. ‘근로자’ 메뉴에서 근로자를 추가하고 ‘직무’에서 직무를 보내 주세요." />}
       {allWorkers.length > 0 && workerId && !workerTasks.length && !error && (
         <EmptyState
           message={

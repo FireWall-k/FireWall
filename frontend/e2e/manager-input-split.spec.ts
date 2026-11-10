@@ -49,6 +49,8 @@ async function mockBackend(page: Page, opts: { preview?: typeof PREVIEW; createF
       return route.fulfill({ status: 200, headers: { ...CORS, "content-type": "image/png" }, body: PNG_1X1 });
     }
     if (url.pathname === "/api/workers" && method === "GET") return json([]);
+    // 새 틀(AppShell)의 도움 요청 띠·종이 5초마다 부른다.
+    if (url.pathname === "/api/employer/help" && method === "GET") return json([]);
     if (url.pathname === "/api/tasks/split-preview" && method === "POST") {
       state.previewCalls += 1;
       return json(opts.preview ?? PREVIEW);
@@ -66,6 +68,16 @@ async function mockBackend(page: Page, opts: { preview?: typeof PREVIEW; createF
         })),
       }, 201);
     }
+    const confirm = url.pathname.match(/^[/]api[/]tasks[/]task-1[/]steps[/](s[0-9]+)[/]picture[/]confirm$/);
+    if (confirm && method === "POST") {
+      // 서버처럼 문장은 그대로 돌려준다(문장 칸은 문장을 key로 써서, 바뀌면 다시 그려진다).
+      const n = Number(confirm[1].slice(1));
+      return json({
+        id: confirm[1], order: n, sentence: state.createBodies.at(-1)?.steps[n - 1]?.sentence ?? "", action_type: "other",
+        symbol_url: `http://e2e-api.invalid/media/symbols/${confirm[1]}.png`, symbol_source: "LOCAL_AAC",
+        needs_fallback: false, tts_audio_url: null, picture_state: "confirmed",
+      });
+    }
     return route.fulfill({ status: 599, headers: CORS, body: `unmocked ${method} ${url.pathname}` });
   });
   return state;
@@ -78,7 +90,8 @@ async function loginEmployer(page: Page) {
     localStorage.setItem("jobcard_role", "employer");
     localStorage.setItem("jobcard_name", "테스트사장");
   });
-  await page.goto("/manager");
+  // 2a-1: 새 직무 화면 주소는 /m/tasks/new(옛 /manager는 여기로 넘어간다, contract §2.2).
+  await page.goto("/m/tasks/new");
 }
 
 async function splitInput(page: Page) {
@@ -155,6 +168,28 @@ test("390px 긴 목록: [이대로 그림 고르기]가 실패하면 버튼 아�
   await expect(alert).toBeInViewport();
   // 목록은 그대로 남아 다시 누를 수 있다
   await expect(page.getByLabel("9단계 문장")).toHaveValue("9번째 일을 천천히 해요.");
+});
+
+// 2a-1 2회차 검증: 키보드로 누른 단추가 꺼지거나 사라지면 실제 브라우저에서는 초점이 body로 빠졌다(jsdom은 재현 못 함).
+test("키보드: [단계로 나누기] 뒤 초점은 '이렇게 나눴어요' 제목, 그림 확인 뒤에는 다음 확인 단추 → 마지막엔 그 단계 문장 칸", async ({ page }) => {
+  await mockBackend(page, { preview: { ...PREVIEW, steps: PREVIEW.steps.slice(0, 2) } });
+  await loginEmployer(page);
+  await page.getByLabel("직무 내용").fill(INPUT);
+  await page.getByRole("button", { name: "단계로 나누기" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: /이렇게 나눴어요/ })).toBeFocused();
+
+  await page.getByRole("button", { name: "이대로 그림 고르기 ›" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: /검토 · 수정/ })).toBeFocused();
+
+  await page.getByRole("button", { name: /1단계 그림 확인$/ }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: /2단계 그림 확인$/ })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: /단계 그림 확인$/ })).toHaveCount(0);
+  await expect(page.getByLabel("2단계 문장")).toBeFocused();
+  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(false);
 });
 
 test("390px 편집기: 확인 뒤 초점은 편집기 제목, 긴 문장은 잘리지 않고 꼬리표는 한 줄", async ({ page }) => {

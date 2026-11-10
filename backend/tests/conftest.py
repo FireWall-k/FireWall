@@ -182,3 +182,10 @@ def publish(client, token: str, task_id: str):
     """그림 없는 단계에 그림을 붙인 뒤 직무를 보낸다. 응답을 돌려준다."""
     give_pictures(client, token, task_id)
     return client.post(f"/api/tasks/{task_id}/publish", headers=auth(token))
+
+
+def delete_task(client, task_id: str, headers: dict):
+    """(2a-1) 직무 완전히 지우기는 보관한 직무만 된다. 보관한 뒤 지우고 DELETE 응답을 돌려준다."""
+    r = client.post(f"/api/tasks/{task_id}/archive", headers=headers)
+    assert r.status_code == 200, r.text
+    return client.delete(f"/api/tasks/{task_id}", headers=headers)

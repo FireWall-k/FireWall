@@ -25,7 +25,7 @@ from sqlalchemy import func, select  # noqa: E402
 import clock  # noqa: E402
 import media  # noqa: E402
 import schemas  # noqa: E402
-from conftest import auth, give_pictures  # noqa: E402
+from conftest import auth, give_pictures, delete_task  # noqa: E402
 from database import SessionLocal  # noqa: E402
 from models import (  # noqa: E402
     Assignment,
@@ -445,7 +445,7 @@ def test_media_released_after_task_delete(client, employer_token, worker):
                                                                       TaskVersionStep.order_index == 1))
         media_id = vs.symbol_media_id
         key = db.get(MediaFile, media_id).storage_key
-    assert client.delete(f"/api/tasks/{task['id']}", headers=auth(employer_token)).status_code == 200
+    assert delete_task(client, task['id'], auth(employer_token)).status_code == 200
     with SessionLocal() as db:
         assert db.get(MediaFile, media_id) is None
         assert db.scalar(select(func.count()).select_from(TaskVersion)

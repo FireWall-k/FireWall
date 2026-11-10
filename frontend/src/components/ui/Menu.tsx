@@ -1,0 +1,188 @@
+// … 메뉴(명세 5.3, 7.3). 단추를 누르면 아래(또는 위)에 항목이 열린다.
+// 키보드(WAI-ARIA menu button): ↓/↑로 옮기고 Home/End, Enter·Space로 고르고, Esc면 닫혀 단추로 돌아가고
+// Tab이면 닫힌다. 지금 쓸 수 없는 항목은 aria-disabled + 이유(hint, 예: '새 편집기에서 열려요')를 함께 보이고 이름에도 넣는다.
+// 쓸 수 없는 항목도 ↓/↑로 초점을 받는다(WAI-ARIA APG 메뉴 기본) — 그래야 화면 읽기 사용자가 이유를 듣는다. 고르기만 막는다.
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { cn } from "../../cn";
+import { popoverClasses } from "./styles";
+
+export interface MenuItem {
+  id: string;
+  label: ReactNode;
+  onSelect?: () => void;
+  icon?: ReactNode;
+  disabled?: boolean;
+  /** 항목 아래 작은 설명(쓸 수 없는 이유 등). */
+  hint?: ReactNode;
+  danger?: boolean;
+}
+
+export interface MenuTriggerProps {
+  id: string;
+  "aria-haspopup": "menu";
+  "aria-expanded": boolean;
+  "aria-controls": string | undefined;
+  onClick: () => void;
+  onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void;
+}
+
+export interface MenuProps {
+  /** 단추를 그린다. 단추에 그대로 펼쳐 붙일 속성을 받는다. */
+  trigger: (props: MenuTriggerProps) => ReactNode;
+  items: MenuItem[];
+  align?: "left" | "right";
+  /** up: 단추 위로 연다(휴대폰 아래 탭바). */
+  placement?: "down" | "up";
+  /** 메뉴 이름(화면 읽기 프로그램). */
+  label: string;
+  /** 단추와 메뉴를 감싸는 칸의 클래스(아래 탭바처럼 칸을 꽉 채울 때). */
+  className?: string;
+}
+
+export default function Menu({ trigger, items, align = "right", placement = "down", label, className }: MenuProps) {
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const baseId = useId();
+  const menuId = baseId + "-menu";
+  const triggerId = baseId + "-trigger";
+
+  function openAt(index: number) {
+    setOpen(true);
+    setActive(index);
+  }
+  function close(returnFocus = true) {
+    setOpen(false);
+    // 단추는 trigger가 그리므로 ref 대신 id로 찾는다(렌더 중 ref를 넘기지 않음).
+    if (returnFocus) document.getElementById(triggerId)?.focus();
+  }
+
+  // 열리면 고른 항목으로 초점을 옮긴다.
+  useEffect(() => {
+    if (open) itemRefs.current[active]?.focus();
+  }, [open, active]);
+
+  // 바깥을 누르면 닫는다.
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e: PointerEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [open]);
+
+  function move(dir: 1 | -1 | "first" | "last") {
+    const n = items.length;
+    if (n === 0) return;
+    if (dir === "first") return setActive(0);
+    if (dir === "last") return setActive(n - 1);
+    setActive((active + dir + n) % n);
+  }
+
+  function onMenuKeyDown(e: KeyboardEvent) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      move(1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      move(-1);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      move("first");
+    } else if (e.key === "End") {
+      e.preventDefault();
+      move("last");
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      close();
+    } else if (e.key === "Tab") {
+      close(false);
+    }
+  }
+
+  function select(it: MenuItem) {
+    if (it.disabled) return;
+    close();
+    it.onSelect?.();
+  }
+
+  const triggerProps: MenuTriggerProps = {
+    id: triggerId,
+    "aria-haspopup": "menu",
+    "aria-expanded": open,
+    "aria-controls": open ? menuId : undefined,
+    onClick: () => (open ? close(false) : openAt(0)),
+    onKeyDown: (e) => {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        openAt(0);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        openAt(Math.max(0, items.length - 1));
+      }
+    },
+  };
+
+  return (
+    <div ref={wrapRef} className={cn("relative inline-flex", className)}>
+      {trigger(triggerProps)}
+      {open && (
+        <div
+          id={menuId}
+          role="menu"
+          aria-label={label}
+          onKeyDown={onMenuKeyDown}
+          className={cn(
+            popoverClasses,
+            "absolute z-40 min-w-48 animate-pop-in py-1",
+            align === "right" ? "right-0" : "left-0",
+            placement === "down" ? "top-full mt-1" : "bottom-full mb-1",
+          )}
+        >
+          {items.map((it, i) => (
+            <button
+              key={it.id}
+              ref={(el) => {
+                itemRefs.current[i] = el;
+              }}
+              type="button"
+              role="menuitem"
+              tabIndex={i === active ? 0 : -1}
+              aria-disabled={it.disabled || undefined}
+              // 이유(hint)도 이름에 넣는다: 보이는 글('고치기 새 편집기에서 열려요')이 모두 이름에 있어야
+              // 음성 입력으로 부를 수 있다(axe label-content-name-mismatch, WCAG 2.5.3).
+              aria-labelledby={it.hint ? `${baseId}-label-${i} ${baseId}-hint-${i}` : undefined}
+              onClick={() => select(it)}
+              onMouseEnter={() => setActive(i)}
+              className={cn(
+                "flex min-h-control w-full items-start gap-2 px-3 py-2 text-left text-ui-base coarse:min-h-control-coarse",
+                it.disabled
+                  ? "cursor-not-allowed text-ink-500 focus-visible:bg-paper-100"
+                  : it.danger
+                    ? "text-danger-700 hover:bg-danger-50 focus-visible:bg-danger-50"
+                    : "text-ink-900 hover:bg-paper-100 focus-visible:bg-paper-100",
+              )}
+            >
+              {it.icon && <span className="mt-0.5 shrink-0">{it.icon}</span>}
+              <span className="flex min-w-0 flex-col">
+                <span id={baseId + "-label-" + i} className="whitespace-nowrap font-semibold">
+                  {it.label}
+                </span>
+                {/* 라벨과 이유 사이 빈칸: 세로로 놓여 화면에는 안 보이지만, 글로 읽을 때 두 낱말이 붙지 않게 한다. */}
+                {it.hint && " "}
+                {it.hint && (
+                  <span id={baseId + "-hint-" + i} className="text-ui-xs text-ink-500">
+                    {it.hint}
+                  </span>
+                )}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
