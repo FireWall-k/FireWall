@@ -34,7 +34,7 @@ for (const width of [1440, 390] as const) {
       await mockEmployer(page);
       await loginEmployer(page, "/m/tasks");
       await expect(page.getByText("컵 씻기")).toBeVisible();
-      await expect(page.getByTestId("help-alert-strip")).toBeVisible();
+      await expect(page.getByTestId("help-band")).toBeVisible();
       let r = await axe(page);
       expect(r.serious).toEqual([]);
       expect(r.buttonName).toEqual([]);
@@ -52,7 +52,7 @@ for (const width of [1440, 390] as const) {
       await loginEmployer(page, "/m/tasks/new?example=1");
       await expect(page.getByLabel("직무 내용")).toHaveValue(/손을 깨끗이 씻어요/);
       await expect(page.getByTestId("example-note")).toBeVisible();
-      await expect(page.getByTestId("help-alert-strip")).toBeVisible();
+      await expect(page.getByTestId("help-band")).toBeVisible();
       const r = await axe(page);
       expect(r.serious).toEqual([]);
       expect(r.buttonName).toEqual([]);

@@ -48,7 +48,17 @@ export interface StepDoneInfo {
   durationSec: number;
   replayCount: number;
   stuck: boolean;
+  /** (2c) 이 단계에서 [이전]을 누른 수(이 화면을 연 뒤). */
+  prevCount: number;
 }
+
+/** (2c) 지금 보는 단계 신호(presence)와 측정 이벤트. live에서만 부른다. */
+export interface StepSignal {
+  step: Step;
+  replayCount: number;
+  prevCount: number;
+}
+export type StepEventName = "step_view" | "step_replay" | "step_prev";
 
 export interface StepPlayerProps {
   mode: "live" | "review";
@@ -72,6 +82,10 @@ export interface StepPlayerProps {
   onNext?: () => void;
   onExit: () => void;
   onMediaError?: (url: string | null | undefined) => void;
+  /** (2c) 단계를 열었을 때·다시 듣기·이전 수가 바뀔 때. */
+  onSignal?: (s: StepSignal) => void;
+  /** (2c) 측정 이벤트(실패해도 화면에 아무것도 띄우지 않음). */
+  onEvent?: (name: StepEventName, step: Step) => void;
 }
 
 // --- 화면 크기 ---
@@ -266,6 +280,8 @@ export function StepPlayer({
   onNext,
   onExit,
   onMediaError,
+  onSignal,
+  onEvent,
 }: StepPlayerProps) {
   const step = steps[index];
   const live = mode === "live";
@@ -289,6 +305,30 @@ export function StepPlayer({
   const [confirmExit, setConfirmExit] = useState(false);
   const startedAt = useRef(0);
   const praiseTimer = useRef<number | null>(null);
+  // (2c) 단계마다 [이전]을 누른 수. 이 화면을 연 동안만 센다(단계를 옮겨도 StepPlayer는 그대로다).
+  const prevCounts = useRef<Record<string, number>>({});
+  const signalRef = useRef({ onSignal, onEvent });
+  useEffect(() => {
+    signalRef.current = { onSignal, onEvent };
+  });
+  const replayNow = audio.replayCount;
+  useEffect(() => {
+    if (!live || !step) return;
+    signalRef.current.onSignal?.({ step, replayCount: replayNow, prevCount: prevCounts.current[step.id] ?? 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live, step?.id, replayNow]);
+  useEffect(() => {
+    if (live && step) signalRef.current.onEvent?.("step_view", step);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live, step?.id]);
+  const lastReplay = useRef({ id: "", n: 0 });
+  useEffect(() => {
+    if (!live || !step) return;
+    const prev = lastReplay.current;
+    if (prev.id === step.id && replayNow > prev.n) signalRef.current.onEvent?.("step_replay", step);
+    lastReplay.current = { id: step.id, n: replayNow };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live, step?.id, replayNow]);
 
   // 단계가 바뀌면: 시간 다시 재기 + 문장으로 초점(화면 읽기 프로그램이 새 문장을 읽는다).
   useEffect(() => {
@@ -338,6 +378,7 @@ export function StepPlayer({
       durationSec,
       replayCount,
       stuck: replayCount >= STUCK_REPLAY_THRESHOLD || durationSec >= STUCK_DURATION_SEC,
+      prevCount: prevCounts.current[step.id] ?? 0,
     };
     audio.stop();
     onRecord?.(info);
@@ -350,6 +391,15 @@ export function StepPlayer({
       onDone(info);
     }, PRAISE_MS);
   }, [step, praising, onDone, onRecord, index, audio, prefs.sfx, prefs.vibration]);
+
+  // [이전]: 이 단계에서 누른 수를 세고(완료 기록 prev_count), live면 측정 이벤트를 남긴 뒤 앞 단계로.
+  const handlePrev = () => {
+    if (step && live) {
+      prevCounts.current[step.id] = (prevCounts.current[step.id] ?? 0) + 1;
+      signalRef.current.onEvent?.("step_prev", step);
+    }
+    onPrev();
+  };
 
   if (!step) return null;
 
@@ -508,7 +558,7 @@ export function StepPlayer({
         <BottomBar className="wide:px-0">
           <SecondaryAction
             icon={IconPrev}
-            onPress={onPrev}
+            onPress={handlePrev}
             disabled={index === 0 || praising}
             className="w-[104px] shrink-0 !gap-1 !px-2 tablet:min-h-[96px]"
           >

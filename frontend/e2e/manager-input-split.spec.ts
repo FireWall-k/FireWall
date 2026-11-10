@@ -51,6 +51,16 @@ async function mockBackend(page: Page, opts: { preview?: typeof PREVIEW; createF
     if (url.pathname === "/api/workers" && method === "GET") return json([]);
     // 새 틀(AppShell)의 도움 요청 띠·종이 5초마다 부른다.
     if (url.pathname === "/api/employer/help" && method === "GET") return json([]);
+    // (2c) 틀의 오늘 현황 폴링(LiveProvider)과 도움 알림 스위치 설정.
+    if (url.pathname === "/api/employer/live" && method === "GET") {
+      return json({
+        server_now: new Date().toISOString().replace("Z", ""),
+        summary: { working: 0, total_workers: 0, open_help: 0, stuck_steps: 0, needs_check_tasks: 0 },
+        workers: [],
+        help: [],
+      });
+    }
+    if (url.pathname === "/api/employer/push-config") return json({ enabled: false, public_key: null });
     if (url.pathname === "/api/tasks/split-preview" && method === "POST") {
       state.previewCalls += 1;
       return json(opts.preview ?? PREVIEW);

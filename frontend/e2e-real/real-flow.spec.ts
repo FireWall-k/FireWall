@@ -234,7 +234,8 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
       localStorage.setItem("jobcard_name", "통합 카페");
     }, s.employer);
     await bossPage.goto("/m/tasks/new");
-    const strip = bossPage.getByTestId("help-alert-strip").locator("li").filter({ hasText: s.workerName });
+    // 2c: 옛 HelpAlertStrip 대신 틀(AppShell) 맨 위 도움 띠(HelpBand). 1280폭이라 [확인했어요]가 바로 보인다.
+    const strip = bossPage.getByTestId("help-band-item").filter({ hasText: s.workerName });
     await expect(strip).toContainText(`${n}단계`, { timeout: 15_000 });
     if (SHOTS) await bossPage.screenshot({ path: `${SHOTS}/${test.info().project.name}/07b-employer-help-strip.png` });
     await strip.getByRole("button", { name: "확인했어요" }).click();
@@ -273,6 +274,10 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
     await page.goto(`/w/job/${s.assignmentId}`);
     await page.getByRole("button", { name: "시작하기" }).click();
     await pressDone(page, stepUrl(s, 2));
+    // 1단계 기록이 서버에 닿은 뒤에 끊는다(느린 기계에서는 보내는 중에 끊겨 대기열로 가서 아래 비교가 흔들렸다, 2c).
+    await expect
+      .poll(async () => (await todayCard(page, request, s.assignmentId)).done_step_ids, { timeout: 10_000 })
+      .toEqual([s.stepIds[0]]);
 
     // 기기의 인터넷을 끊는다(와이파이가 잠깐 끊긴 것과 같다). API만 끊는 경우(page.route abort)는 아래
     // 새로고침 시험이 본다 — route를 걸면 Playwright가 브라우저 캐시를 꺼서 미리 받은 그림 확인을 못 한다.

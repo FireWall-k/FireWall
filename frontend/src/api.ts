@@ -115,6 +115,10 @@ export interface EmployerHelp {
   step_order: number | null;
   step_sentence: string | null;
   step_symbol_url: string | null;
+  /** (2c) 버전을 넘어 같은 단계를 가리키는 키(편집기 ?step=). 옛 서버는 없다. */
+  source_step_id?: string | null;
+  /** (2c) 띠의 단계 썸네일. */
+  step_thumb_url?: string | null;
 }
 
 export interface Task {
@@ -245,6 +249,8 @@ export async function req<T>(path: string, init?: RequestInit, opts?: ReqOptions
   if (token) headers.Authorization = `Bearer ${token}`;
   const res = await send(`${BASE}${path}`, { ...init, headers: { ...headers, ...(init?.headers ?? {}) } });
   if (!res.ok) throw await toError(path, res, undefined, token);
+  // (2c) 204(presence·이벤트·구독 지우기)는 본문이 없다.
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 

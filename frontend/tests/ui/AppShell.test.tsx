@@ -4,18 +4,27 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { EmployerHelp } from "../../src/api";
 
-const employerHelp = vi.fn();
+const getLive = vi.fn();
 
-vi.mock("../../src/api", () => ({
-  api: {
-    employerHelp: (s?: string) => employerHelp(s),
-    ackHelp: vi.fn().mockResolvedValue({}),
-    resolveHelp: vi.fn().mockResolvedValue({}),
-  },
+vi.mock("../../src/api", async (orig) => {
+  const real = await orig<typeof import("../../src/api")>();
+  return {
+    ...real,
+    api: {
+      ackHelp: vi.fn().mockResolvedValue({}),
+      resolveHelp: vi.fn().mockResolvedValue({}),
+    },
+  };
+});
+// (2c) 도움 띠·종은 오늘 현황(GET /api/employer/live) 하나를 나눠 쓴다.
+vi.mock("../../src/manager/api/live", () => ({
+  getLive: () => getLive(),
+  getTimeline: vi.fn().mockReturnValue(new Promise(() => {})),
+  getPushConfig: vi.fn().mockResolvedValue({ enabled: false, public_key: null }),
 }));
 
 import AppShell from "../../src/manager/shell/AppShell";
-import { HELP_FEED_POLL_MS } from "../../src/manager/shell/useHelpFeed";
+import { LIVE_POLL_MS } from "../../src/manager/shell/useLive";
 import { crumbsFor, isFullWidth } from "../../src/manager/shell/navItems";
 
 function help(over: Partial<EmployerHelp> = {}): EmployerHelp {
@@ -50,8 +59,20 @@ function renderShell(path = "/m/tasks", onLogout = vi.fn()) {
   );
 }
 
+function liveWith(help: EmployerHelp[]) {
+  return {
+    server_now: new Date().toISOString().replace("Z", ""),
+    summary: { working: 0, total_workers: 0, open_help: help.length, stuck_steps: 0, needs_check_tasks: 0 },
+    workers: [],
+    help,
+  };
+}
+const employerHelp = {
+  mockResolvedValue: (list: EmployerHelp[]) => getLive.mockResolvedValue(liveWith(list)),
+};
+
 beforeEach(() => {
-  employerHelp.mockReset().mockResolvedValue([]);
+  getLive.mockReset().mockResolvedValue(liveWith([]));
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -114,33 +135,31 @@ describe("AppShell(사이드바·상단 바·아래 탭바)", () => {
   });
 });
 
-describe("도움 띠·종이 useHelpFeed 하나를 나눠 쓴다(contract §2.2)", () => {
-  it("띠와 종이 함께 있어도 도움 요청 주소를 한 번만 부른다", async () => {
+describe("도움 띠·종이 LiveProvider 하나를 나눠 쓴다(contract §5.2)", () => {
+  it("띠와 종이 함께 있어도 현황 주소를 한 번만 부른다", async () => {
     vi.useFakeTimers();
     employerHelp.mockResolvedValue([help(), help({ id: "h2", worker_name: "이수진" })]);
     renderShell("/m/tasks");
     await act(async () => {});
-    expect(employerHelp).toHaveBeenCalledTimes(1);
-    expect(employerHelp).toHaveBeenCalledWith("active");
-    // 띠(본문 위)와 종 배지가 같은 목록을 보인다.
-    expect(screen.getByTestId("help-alert-strip")).toHaveTextContent("김민지 님이 도움을 요청했어요");
+    expect(getLive).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("help-band")).toHaveTextContent("김민지 님이 도움을 요청했어요");
     expect(screen.getByRole("button", { name: "도움 요청 2건 · 띠로 가기" }).querySelector("[data-badge]")).toHaveAttribute("data-badge", "2");
     await act(async () => {
-      vi.advanceTimersByTime(HELP_FEED_POLL_MS);
+      vi.advanceTimersByTime(LIVE_POLL_MS);
     });
-    expect(employerHelp).toHaveBeenCalledTimes(2);
+    expect(getLive).toHaveBeenCalledTimes(2);
   });
 
   it("화면을 옮겨도 틀은 그대로라 다시 부르지 않고, 모든 /m 화면에서 띠가 보인다", async () => {
     employerHelp.mockResolvedValue([help()]);
     const user = userEvent.setup();
     renderShell("/m");
-    await screen.findByTestId("help-alert-strip");
+    await screen.findByTestId("help-band");
     for (const name of ["직무", "설정", "홈"]) {
       await user.click(within(screen.getByRole("navigation", { name: "주 메뉴" })).getByRole("link", { name }));
-      expect(screen.getByTestId("help-alert-strip")).toBeInTheDocument();
+      expect(screen.getByTestId("help-band")).toBeInTheDocument();
     }
-    expect(employerHelp).toHaveBeenCalledTimes(1);
+    expect(getLive).toHaveBeenCalledTimes(1);
   });
 
   it("종을 누르면 띠의 첫 버튼으로 초점이 간다", async () => {
@@ -149,6 +168,6 @@ describe("도움 띠·종이 useHelpFeed 하나를 나눠 쓴다(contract §2.2)
     renderShell("/m/tasks");
     const bell = await screen.findByRole("button", { name: "도움 요청 1건 · 띠로 가기" });
     await user.click(bell);
-    await waitFor(() => expect(screen.getByRole("button", { name: "확인했어요" })).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole("button", { name: "보러 가기" })).toHaveFocus());
   });
 });

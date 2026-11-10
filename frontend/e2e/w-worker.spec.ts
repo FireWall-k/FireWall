@@ -257,11 +257,21 @@ test("[다 했어요]를 600ms 안에 두 번 눌러도 한 단계만 넘어간�
   await loginAsWorker(page);
   await page.goto("/w/job/asg-1/step/1");
   await expect(page.getByTestId("step-sentence")).toHaveText("박스 바닥 덮개를 접어요");
-  // 두 누름의 간격을 브라우저 안에서 정확히 450ms로 맞춘다(Playwright 클릭 대기 시간에 흔들리지 않게).
-  await doneButton(page).evaluate((btn: HTMLElement) => {
-    btn.click();
-    window.setTimeout(() => btn.click(), 450);
-  });
+  // 진짜 입력 이벤트 두 번을 '누른 시각' 450ms 간격으로 보낸다(CDP timestamp). 예전에는 페이지 안 setTimeout(450)으로
+  // 눌렀는데, 다음 단계를 그리느라 화면이 바쁘면 그 타이머가 600ms 넘어서야 불려 '늦게 누른 것'이 되었다(2c).
+  // 버튼은 이제 처리한 때가 아니라 누른 때(event.timeStamp)로 재므로, 둘째 누름이 다음 단계에서 늦게 처리되어도 막는다.
+  const box = (await doneButton(page).boundingBox())!;
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  const cdp = await page.context().newCDPSession(page);
+  const t0 = Date.now() / 1000;
+  const tap = async (ts: number) => {
+    await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1, timestamp: ts });
+    await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1, timestamp: ts + 0.01 });
+  };
+  await tap(t0);
+  await expect(page.getByTestId("step-sentence")).toHaveText("테이프를 붙여요");
+  await tap(t0 + 0.45);
   await expect(page.getByTestId("step-sentence")).toHaveText("테이프를 붙여요");
   await page.waitForTimeout(700);
   await expect(page.getByTestId("step-sentence")).toHaveText("테이프를 붙여요");

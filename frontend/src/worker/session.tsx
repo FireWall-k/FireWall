@@ -18,6 +18,8 @@ export interface StepCompletion {
   replayCount: number;
   /** '어려움 신호'(다시 듣기 과다·시간 초과). 도움 요청은 따로 보낸다. */
   stuck: boolean;
+  /** (2c) 이 단계에서 [이전]을 누른 수. */
+  prevCount?: number;
 }
 
 export interface WorkerSessionValue {

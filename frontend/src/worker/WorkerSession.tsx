@@ -238,6 +238,7 @@ export function WorkerSession({ token, onLogout, children }: { token: string; on
         duration_sec: Math.round(info.durationSec * 10) / 10,
         replay_count: info.replayCount,
         stuck: info.stuck,
+        prev_count: info.prevCount ?? 0,
         completed: true,
       });
       void flush();

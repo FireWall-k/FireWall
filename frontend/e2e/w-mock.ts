@@ -62,6 +62,9 @@ export interface MockState {
   prefs: Record<string, unknown>;
   /** 했던 일 목록의 날짜("YYYY-MM-DD"). 없으면 실행하는 날(현지). 브라우저 시계를 고정하는 시험은 같은 날로 맞춘다. */
   historyDate?: string;
+  /** (2c) 받은 presence 본문과 측정 이벤트. */
+  presence?: Record<string, unknown>[];
+  events?: Record<string, unknown>[];
 }
 
 export function newState(): MockState {
@@ -127,6 +130,15 @@ export async function mockWorkerBackend(page: Page, state: MockState) {
       return json(helpOut("open"), 201);
     }
     if (p === "/api/worker/help/h1") return json(helpOut(state.helpState));
+    // (2c) 지금 단계 신호와 측정 이벤트(204). 화면에는 아무것도 보이지 않는다.
+    if (p === "/api/worker/presence" && req.method() === "POST") {
+      (state.presence ??= []).push(JSON.parse(req.postData() || "{}"));
+      return route.fulfill({ status: 204, headers: CORS });
+    }
+    if (p === "/api/events" && req.method() === "POST") {
+      (state.events ??= []).push(...(JSON.parse(req.postData() || "{}").events ?? []));
+      return route.fulfill({ status: 204, headers: CORS });
+    }
     if (p === "/api/worker/help/h1/cancel") return json(helpOut("cancelled"));
     // 목킹하지 않은 API를 화면이 부르기 시작하면 조용히 넘어가지 않고 드러나게 한다.
     return route.fulfill({ status: 599, headers: CORS, body: `unmocked ${req.method()} ${p}` });

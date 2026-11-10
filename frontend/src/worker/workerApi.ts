@@ -41,6 +41,8 @@ export interface LogBody {
   duration_sec: number;
   replay_count: number;
   stuck: boolean;
+  /** (2c) 이 단계에서 [이전]을 누른 수. 옛 대기열 기록에는 없다(서버 기본 0). */
+  prev_count?: number;
   completed: boolean;
   client_event_id: string;
   client_completed_at: string;
@@ -144,3 +146,39 @@ export const workerApi = {
 };
 
 export type WorkerApi = typeof workerApi;
+
+/** (2c) 지금 보는 단계 신호(POST /api/worker/presence → 204). 시각은 기기 시계, 서버가 차이만 쓴다. */
+export interface PresenceBody {
+  assignment_id: string;
+  step_id: string | null;
+  step_started_at: string;
+  replay_count: number;
+  prev_count: number;
+  client_sent_at: string;
+}
+
+/** (2c) 근로자 측정 이벤트(이름은 서버 목록만, 개인정보 없음). */
+export interface WorkerEvent {
+  name: "step_view" | "step_replay" | "step_prev" | "help_open";
+  task_id?: string | null;
+  step_id?: string | null;
+  at: string;
+}
+
+/** presence·이벤트는 기다리지 않는다(5초에 끊음). 실패는 부른 쪽이 버린다 — 오프라인 대기열에 넣지 않는다. */
+export const SIGNAL_TIMEOUT_MS = 5_000;
+
+function withTimeout<T>(run: (signal?: AbortSignal) => Promise<T>): Promise<T> {
+  const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), SIGNAL_TIMEOUT_MS) : null;
+  return run(ctrl?.signal).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
+export const signalApi = {
+  presence: (body: PresenceBody) =>
+    withTimeout((signal) => req<void>("/api/worker/presence", { method: "POST", body: JSON.stringify(body), signal })),
+  events: (events: WorkerEvent[]) =>
+    withTimeout((signal) => req<void>("/api/events", { method: "POST", body: JSON.stringify({ events }), signal })),
+};
