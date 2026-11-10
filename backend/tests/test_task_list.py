@@ -158,6 +158,40 @@ def test_sent_then_edited_stays_in_published(client):
     assert tid not in _ids(_list(client, emp, "draft"))
 
 
+def test_list_reads_only_last_version(client):
+    """목록은 직무마다 마지막 버전 하나만 읽는다(보낸 횟수만큼 느려지지 않게). current_version_id가 비어도 마지막 버전."""
+    from sqlalchemy import event
+    emp = _employer(client)
+    w = _worker(client, emp)
+    tid = _task(client, emp, "여러 번 보냄 0")
+    for n in range(1, 5):
+        assert _send(client, emp, tid, [w["id"]]).status_code == 200
+        assert client.patch(f"/api/tasks/{tid}", json={"title": f"여러 번 보냄 {n}"}, headers=emp).status_code == 200
+    assert _send(client, emp, tid, [w["id"]]).status_code == 200
+    other = _task(client, emp, "한 번 보냄")
+    assert _send(client, emp, other, [w["id"]]).status_code == 200
+    with SessionLocal() as db:
+        assert db.scalar(select(func.count()).select_from(TaskVersion).where(TaskVersion.task_id == tid)) == 5
+        db.get(Task, other).current_version_id = None  # 옛 데이터: 가리키는 버전이 없다
+        db.commit()
+
+    loaded: list[tuple[str, int]] = []
+
+    def on_load(target, _ctx):
+        loaded.append((target.task_id, target.version_no))
+
+    event.listen(TaskVersion, "load", on_load)
+    try:
+        body = _list(client, emp)
+    finally:
+        event.remove(TaskVersion, "load", on_load)
+    rows = {it["id"]: it for it in body["items"]}
+    assert rows[tid]["current_version_no"] == 5 and rows[tid]["state"] == "published"
+    assert rows[tid]["has_unsent_changes"] is False
+    assert rows[other]["current_version_no"] == 1 and rows[other]["state"] == "published"
+    assert sorted(loaded) == sorted([(tid, 5), (other, 1)])
+
+
 def test_unsent_title_change_and_updated_at(client):
     emp = _employer(client)
     w = _worker(client, emp)
@@ -206,7 +240,8 @@ def test_rename_title_control_chars_and_non_text(client):
     r = client.patch(f"/api/tasks/{tid}", json={"title": "\x9f\x9f"}, headers=emp)
     assert r.status_code == 422 and r.json() == msg
     # 보이지 않는 글자(폭 없는 공백·BOM·방향 문자·폭 없는 이음·한글 채움)만 있는 제목도 막는다.
-    for bad in ("\u200b\u200b", "\ufeff", "\u202e \u2066", "\u200d\u200c", "\u3164\u3164", " \u200b\x85 "):
+    for bad in ("\u200b\u200b", "\ufeff", "\u202e \u2066", "\u200d\u200c", "\u3164\u3164", " \u200b\x85 ",
+                "\u2800\u2800", "\u3164\u2800"):
         r = client.patch(f"/api/tasks/{tid}", json={"title": bad}, headers=emp)
         assert r.status_code == 422 and r.json() == msg, repr(bad)
     assert _row(client, emp, tid)["title"] == "a  b c d"

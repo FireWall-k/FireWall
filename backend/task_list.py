@@ -64,24 +64,32 @@ def _initials(name: str | None) -> str:
 
 
 def _versions_of(db: Session, tasks: list[Task]) -> dict[str, TaskVersion]:
-    """직무마다 마지막 버전(한 번에 읽는다). current_version_id가 비었으면 version_no가 가장 큰 것."""
-    ids = [t.id for t in tasks]
-    if not ids:
+    """직무마다 마지막 버전(한 번에 읽는다). current_version_id가 비었으면 version_no가 가장 큰 것.
+
+    지난 버전을 전부 읽지 않는다(보낸 횟수만큼 목록이 느려지지 않게): 먼저 current_version_id가 가리키는 버전만 읽고,
+    그것이 없거나 다른 직무의 버전이면 (task_id, max(version_no))로 마지막 버전만 찾는다. 단계는 고른 버전 것만 읽는다."""
+    if not tasks:
         return {}
-    rows = db.scalars(select(TaskVersion).where(TaskVersion.task_id.in_(ids))
-                      .options(selectinload(TaskVersion.steps))).all()
-    by_id = {v.id: v for v in rows}
-    by_task: dict[str, list[TaskVersion]] = {}
-    for v in rows:
-        by_task.setdefault(v.task_id, []).append(v)
     out: dict[str, TaskVersion] = {}
-    for t in tasks:
-        v = by_id.get(t.current_version_id) if t.current_version_id else None
-        if v is None or v.task_id != t.id:
-            mine = by_task.get(t.id, [])
-            v = max(mine, key=lambda x: x.version_no) if mine else None
-        if v is not None:
-            out[t.id] = v
+    cur_ids = [t.current_version_id for t in tasks if t.current_version_id]
+    if cur_ids:
+        rows = db.scalars(select(TaskVersion).where(TaskVersion.id.in_(cur_ids))
+                          .options(selectinload(TaskVersion.steps))).all()
+        by_id = {v.id: v for v in rows}
+        for t in tasks:
+            v = by_id.get(t.current_version_id) if t.current_version_id else None
+            if v is not None and v.task_id == t.id:
+                out[t.id] = v
+    rest = [t.id for t in tasks if t.id not in out]
+    if rest:
+        last = (select(TaskVersion.task_id, func.max(TaskVersion.version_no).label("no"))
+                .where(TaskVersion.task_id.in_(rest)).group_by(TaskVersion.task_id).subquery())
+        rows = db.scalars(select(TaskVersion)
+                          .join(last, (TaskVersion.task_id == last.c.task_id)
+                                & (TaskVersion.version_no == last.c.no))
+                          .options(selectinload(TaskVersion.steps))).all()
+        for v in rows:
+            out[v.task_id] = v
     return out
 
 
@@ -196,9 +204,14 @@ _INVISIBLE = re.compile(
 )
 
 
+# 범주가 기호(So)라 형식 문자로 걸리지 않지만 화면에서 빈칸으로 보이는 글자(점자 빈칸 U+2800).
+_BLANK_LOOKING = frozenset("\u2800")
+
+
 def _has_visible(title: str) -> bool:
-    """공백·형식 문자(Cf, 폭 없는 이음 포함)만으로 된 제목이 아닌지 본다."""
-    return any(not ch.isspace() and unicodedata.category(ch) != "Cf" for ch in title)
+    """공백·형식 문자(Cf, 폭 없는 이음 포함)·빈칸처럼 보이는 글자(점자 빈칸)만으로 된 제목이 아닌지 본다."""
+    return any(not ch.isspace() and ch not in _BLANK_LOOKING and unicodedata.category(ch) != "Cf"
+               for ch in title)
 
 
 @router.patch("/api/tasks/{task_id}", response_model=TaskOut)
