@@ -102,3 +102,169 @@ export interface Recipients {
   workplace_last_batch_worker_ids: string[];
   today_status: Record<string, TodayStatus>;
 }
+
+// ── 2b-1 만들고 보내기: 편집기 단계·후보·일괄 확인·자동 저장·미리보기(contract §3.3·3.4) ──
+
+
+// 이 파일은 e2e 목(page.route)도 가져다 쓴다. src/api.ts는 import.meta.env를 써서 e2e tsconfig에서 타입 검사가
+// 깨지므로 가져오지 않고, 단계·직무의 공통 칸을 여기에 그대로 적는다(src/api.ts Step·Task와 같은 칸).
+
+/** 그림 4상태(src/api.ts PictureState와 같다). */
+export type PictureState = "confirmed" | "auto_high" | "choose" | "none";
+
+/** 근로자 화면 단계 모양(src/api.ts Step과 같은 칸). */
+export interface StepBase {
+  id: string;
+  order: number;
+  sentence: string;
+  action_type: string;
+  symbol_url: string | null;
+  symbol_source: string;
+  needs_fallback: boolean;
+  tts_audio_url: string | null;
+  picture_state?: PictureState;
+  /** 근로자 '조심해요' 띠(2b-1). */
+  safety_flag?: boolean;
+}
+
+/** (2a-0) 보낸 버전 정보. */
+export interface TaskVersionInfo {
+  current_no: number | null;
+  has_unsent_changes: boolean;
+}
+
+/** 지금 그림의 출처. auto = 자동으로 붙음(✦), manual = 사업주가 후보·검색에서 고름, photo = 현장 사진. */
+export type PictureSource = "auto" | "manual" | "photo";
+
+export interface StepPicture {
+  /** AAC 그림 id(그림 파일 이름) 또는 사진 media id. */
+  card_id: string;
+  url: string;
+  /** 그림 이름(사진은 빈 글). */
+  label: string;
+  source: PictureSource;
+}
+
+/** 그림 후보 한 장. 적용은 POST …/steps/{sid}/picture에 그대로 보낸다. */
+export interface PictureCandidate {
+  card_id: string;
+  url: string;
+  label: string;
+}
+
+export type SplitSource = "rule" | "model" | "manual" | "";
+
+export interface StepSplit {
+  source: SplitSource;
+  /** 늘 false(나눈 문장 확인은 입력 화면이 끝냄, contract §3.2). 화면은 쓰지 않는다. */
+  needs_review: boolean;
+  /** 원래 지시문에서 온 부분(편집기 원문 인용). 없으면 빈 글. */
+  original_span: string;
+}
+
+/** 문장 점검 code. 화면 문구는 manager/copy.ts('20자가 넘어요', '어려운 말: 적재 → 쌓기', '~해요 체로 바꾸기'). */
+export type LintCode = "too_long" | "hard_word" | "command_tone";
+
+export interface LintItem {
+  code: LintCode;
+  /** hard_word일 때만: 어려운 말 → 쉬운 말. 나머지는 null. */
+  from: string | null;
+  to: string | null;
+}
+
+/** 조심 표시 출처. auto = '✦ 자동 제안'(보라), manual = 사업주가 스위치를 바꿈, '' = 정한 적 없음. */
+export type SafetySource = "auto" | "manual" | "";
+
+export interface StepSafety {
+  flag: boolean;
+  source: SafetySource;
+  note: string;
+}
+
+/** 편집기 단계(EditorStepOut). 근로자 Step 칸 + 편집 칸. 확신 점수 숫자는 오지 않는다. */
+export interface EditorStep extends StepBase {
+  picture_state: PictureState;
+  safety_flag: boolean;
+  picture: StepPicture | null;
+  /** 늘 빈 목록 — 후보는 GET /api/tasks/{id}/candidates가 모든 단계를 한 번에 준다. */
+  candidates: PictureCandidate[];
+  split: StepSplit;
+  lint: LintItem[];
+  safety: StepSafety;
+  /** 이 단계 앞에서 묶음을 나눈다(9단계가 넘는 직무, 데이터만). */
+  group_break: boolean;
+  /** 이 단계를 고친 뒤의 직무 updated_at. 다음 자동 저장의 expected_updated_at으로 보낸다. */
+  task_updated_at: string | null;
+}
+
+/** 편집기 직무(TaskOut). 단계가 EditorStep이다. */
+export interface EditorTask {
+  id: string;
+  title: string;
+  status: string;
+  steps: EditorStep[];
+  version: TaskVersionInfo | null;
+  /** 오늘 배정 중 하는 중인 수(VersionNotice '{m}명 중 {k}명이 지금 하고 있어요'의 k). */
+  in_progress_count: number;
+  /** 이 직무를 받은 적 있는 근로자 수(VersionNotice의 m). */
+  recipients_count: number;
+  /** 마지막으로 고친 시각(naive UTC ISO). */
+  updated_at: string | null;
+}
+
+/** GET /api/tasks/{id}/candidates — 모든 단계(확인한 단계 포함) 후보 최대 3장. 유료 모델 없이 찾는다. */
+export interface TaskCandidates {
+  steps: { step_id: string; candidates: PictureCandidate[] }[];
+}
+
+/** POST /api/tasks/{id}/pictures/confirm 요청. 응답은 EditorStep[](보낸 순서). 섞이면 422 code "not_confirmable". */
+export interface PicturesConfirmRequest {
+  step_ids: string[];
+}
+
+/** POST /api/tasks/{id}/steps/{sid}/picture 요청(후보·검색 결과 적용 → 확인함). label은 저장하지 않는다. */
+export interface PictureApplyRequest {
+  card_id: string;
+  url: string;
+  label?: string;
+}
+
+/** PATCH /api/tasks/{id}/steps/{sid} 요청(2b-1). 응답은 EditorStep(+ task_updated_at). */
+export interface StepPatchRequest {
+  sentence?: string;
+  /** 보내면 safety.source = "manual"(같은 값이어도). */
+  safety_flag?: boolean;
+  safety_note?: string;
+  group_break?: boolean;
+  /** 600ms 자동 저장: 문장만 저장(음성·나누기 검사 없음). 칸을 벗어날 때 rewrite로 마무리한다. */
+  defer_media?: boolean;
+  /** 이 창이 마지막으로 본 직무 updated_at. 다르면 409 code "stale_edit"(다른 창에서 먼저 고침). */
+  expected_updated_at?: string;
+}
+
+/** POST /api/tasks/{id}/steps/{sid}/tts. 합성하지 못했으면 null(기기 음성이 대신). */
+export interface StepTtsOut {
+  tts_url: string | null;
+}
+
+/** GET /api/tasks/{id}/preview 단계: 근로자 Step 모양 + 조심 + 묶음 경계. picture_state는 지금 편집 단계 그대로. */
+export interface PreviewStep extends StepBase {
+  safety_flag: boolean;
+  group_break: boolean;
+}
+
+/** GET /api/tasks/{id}/preview(사업주 토큰, 기록 없음). */
+export interface TaskPreview {
+  title: string;
+  steps: PreviewStep[];
+}
+
+/** 나누기 미리보기 한 줄에 2b-1에서 더한 칸, POST /api/tasks 단계에 그대로 돌려보낸다. */
+export interface ConfirmedStepExtra {
+  split?: { source: SplitSource; original_span?: string | null };
+  /** 미리보기의 '✦ 자동 제안' 조심 표시. */
+  safety_flag?: boolean;
+}
+
+/** 보내기·편집 API 오류 code(영어, 화면에 보이지 않음). 단계를 가리키면 step_ids가 함께 온다. */
+export type EditorErrorCode = "not_confirmable" | "stale_edit" | "send_blocked" | "no_steps" | "archived";

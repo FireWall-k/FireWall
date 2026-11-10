@@ -56,6 +56,11 @@ export interface Step {
    * choose = 그림은 있으나 골라 주세요, none = 그림 없음(보내기 막힘). 예전 서버는 이 필드가 없다.
    */
   picture_state?: PictureState;
+  /**
+   * (2b-1, contract §3.4·3.5) 근로자 화면 '조심해요' 띠. 서버는 today·history·미리보기 단계에 늘 싣는다(기본 false).
+   * 소리는 바꾸지 않는다(문장만 읽음). 예전 서버·오프라인 캐시에는 없을 수 있어 선택 칸이다.
+   */
+  safety_flag?: boolean;
 }
 
 export type PictureState = "confirmed" | "auto_high" | "choose" | "none";
@@ -117,11 +122,26 @@ export interface EmployerHelp {
   step_symbol_url: string | null;
 }
 
+/** (2a-0) 보낸 버전 정보. current_no: 마지막으로 보낸 버전 번호(보낸 적 없으면 null). */
+export interface TaskVersionInfo {
+  current_no: number | null;
+  /** 보낸 뒤 고친 내용이 있는지('고친 내용 안 보냄'). */
+  has_unsent_changes: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
   status: string;
   steps: Step[];
+  /** (2a-0, contract §1.4) 아래는 GET /api/tasks/{id} 등 TaskOut에 더한 칸이다. 옛 서버에는 없을 수 있다. */
+  version?: TaskVersionInfo | null;
+  /** 오늘 배정 중 하는 중(완료 단계 1개 이상, 다 하지 않음)인 수 — VersionNotice '{m}명 중 {k}명이 지금 하고 있어요'. */
+  in_progress_count?: number;
+  /** 이 직무를 받은 적 있는 근로자 수. */
+  recipients_count?: number;
+  /** 마지막으로 고친 시각(naive UTC ISO). 단계 자동 저장의 expected_updated_at으로 보낸다. */
+  updated_at?: string | null;
 }
 
 export interface TodayCard {
