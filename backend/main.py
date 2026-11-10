@@ -66,8 +66,9 @@ import db_migrate
 import send
 import task_list
 import versions
+import workers_admin
 from codes import normalize_workplace_code
-from database import checkpoint_wal, get_db
+from database import get_db
 from models import (
     Assignment,
     Employer,
@@ -135,7 +136,6 @@ from schemas import (
     WorkerOut,
     WorkerUpdate,
     WorkerWithCodeOut,
-    WorkplaceOut,
     merge_a11y_prefs,
     parse_a11y_prefs,
 )
@@ -522,13 +522,16 @@ def list_workers(request: Request, db: Session = Depends(get_db),
     # 목록에는 근로자마다 이름·메모가 실린다. worker_id=None 한 줄로는 누구의 정보가 보였는지 추적할 수 없어
     # 실린 근로자마다 남긴다(3차 검증 지적). 3초 폴링 묶기는 근로자별로 적용된다.
     record_access_for_workers(db, request, user, "worker.list", ids)
-    return [_worker_out(w, w.id in consented, w.id in personal) for w in workers]
+    # (2d) 목록 열: 오늘 배지·7일 완료·7일 도움·동의 상태. 전체 접속 코드는 싣지 않는다(reveal로만).
+    columns = workers_admin.list_columns(db, ids)
+    return [_worker_out(w, w.id in consented, w.id in personal).model_copy(update=columns[w.id])
+            for w in workers]
 
 
 def _worker_out(w: Worker, ai_consent: bool = False, personal_info_consent: bool = False) -> WorkerOut:
     return WorkerOut(id=w.id, display_name=w.display_name,
-                     access_code=decrypt_access_code(w.employer_id, w.access_code_cipher),
                      access_code_hint=w.access_code_hint, access_code_length=w.access_code_length,
+                     code_length=w.access_code_length,
                      note=w.note or "", ai_note_allowed=bool(w.ai_note_allowed), ai_consent=ai_consent,
                      personal_info_consent=personal_info_consent,
                      name_ambiguous=is_ambiguous_name(w.display_name),
@@ -551,16 +554,6 @@ def _worker_with_code(w: Worker, code: str, ai_consent: bool = False,
     return WorkerWithCodeOut(**out)
 
 
-@app.get("/api/workplace", response_model=WorkplaceOut)
-def my_workplace(db: Session = Depends(get_db),
-                 user: dict = Depends(require_employer)) -> WorkplaceOut:
-    """근로자 기기에 입력해 둘 사업장 코드. 근로자 관리 화면에 보여 준다."""
-    employer = db.get(Employer, user["sub"])
-    if employer is None:
-        raise HTTPException(status_code=401, detail="사업주 정보를 찾을 수 없습니다. 다시 로그인해 주세요.")
-    return WorkplaceOut(workplace_code=employer.workplace_code, org_name=employer.org_name)
-
-
 @app.post("/api/workers", response_model=WorkerWithCodeOut, status_code=201)
 def create_worker(payload: WorkerCreate, db: Session = Depends(get_db),
                   user: dict = Depends(require_employer)) -> WorkerWithCodeOut:
@@ -580,7 +573,9 @@ def create_worker(payload: WorkerCreate, db: Session = Depends(get_db),
     for _ in range(_CODE_COMMIT_ATTEMPTS):
         code = (payload.access_code if payload.access_code is not None
                 else _new_access_code(db, user["sub"]))
-        worker = Worker(employer_id=user["sub"], display_name=payload.display_name)
+        # (2d) 새 근로자의 화면 설정은 사업장 기본값에서(이미 있는 근로자는 기본값을 바꿔도 그대로).
+        worker = Worker(employer_id=user["sub"], display_name=payload.display_name,
+                        a11y_prefs=workers_admin.new_worker_prefs(db.get(Employer, user["sub"])))
         worker.set_access_code(code)
         db.add(worker)
         try:
@@ -878,57 +873,7 @@ def worker_active_dates(worker_id: str, request: Request, db: Session = Depends(
     return sorted({r.isoformat() for r in rows if r})
 
 
-@app.delete("/api/workers/{worker_id}")
-def delete_worker(worker_id: str, request: Request, db: Session = Depends(get_db),
-                  user: dict = Depends(require_employer)) -> dict:
-    """근로자를 삭제한다. 그 근로자의 배정·수행 로그·동의 기록도 함께 지운다(직무는 사업주 데이터라 유지).
-
-    개인정보 파기 요건: DB 행만 지우면 SQLite 파일의 빈 페이지와 WAL에 이름·메모가 남는다.
-    secure_delete(database.py)로 지운 페이지를 0으로 덮고, 커밋 뒤 WAL을 체크포인트해 옛 프레임도 비운다.
-    근로자 단위로 저장하는 파일은 아직 없다(사진·TTS는 직무 단계 단위 — docs/privacy/data-map.md 참고).
-    접근 감사 로그는 보존기간 동안 남기되 근로자 id만 담고 이름은 담지 않는다.
-
-    직무 원문·제목·단계 문장(과 그 문장으로 만든 TTS mp3)에 이름을 적었다면 그건 사업주 데이터라 여기서
-    지우지 않는다. 대신 이름이 들어 있는 직무 목록(name_mentions)을 돌려줘, 사업주가 고치거나 지우게 한다
-    (직무를 고치면 옛 TTS 파일은 미참조가 되어 purge가 지운다).
-    WAL 체크포인트가 다른 연결의 읽기 때문에 끝나지 않으면 wal_checkpointed=false로 알린다(purge가 다시 한다).
-    """
-    worker = _owned_worker(worker_id, user["sub"], db)
-    name_mentions = _tasks_mentioning(db, user["sub"], worker.display_name)
-    assignment_ids = [a.id for a in db.scalars(
-        select(Assignment).where(Assignment.worker_id == worker_id)
-    ).all()]
-    # 도움 요청은 배정·근로자를 가리키므로 먼저 지운다(남기면 FK 고아 + 근로자 기록이 남는다).
-    db.execute(delete(HelpRequest).where(HelpRequest.worker_id == worker_id))
-    if assignment_ids:
-        db.execute(delete(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids)))
-        db.execute(delete(Assignment).where(Assignment.worker_id == worker_id))
-    db.execute(delete(WorkerConsent).where(WorkerConsent.worker_id == worker_id))
-    db.delete(worker)
-    record_access(db, request, user, "worker.delete", worker_id, commit=False)
-    db.commit()
-    checkpointed = checkpoint_wal(db)
-    return {"ok": True, "wal_checkpointed": checkpointed, "name_mentions": name_mentions}
-
-
-def _tasks_mentioning(db: Session, employer_id: str, name: str) -> list[dict]:
-    """이 사업장 직무 중 원문·제목·단계 문장에 이름이 그대로 들어 있는 것. 근로자 삭제 뒤 사업주 안내용."""
-    name = (name or "").strip()
-    if len(name) < 2:
-        # 한 글자 이름은 거의 모든 문장에 걸려 목록이 의미가 없다.
-        return []
-    pattern = f"%{name}%"
-    in_steps = select(Step.task_id).where(Step.sentence.like(pattern))
-    # (2a-0) 보낸 버전의 문장·제목에도 이름이 남는다(편집기에서 고쳐도 옛 버전은 그대로다).
-    in_versions = (select(TaskVersion.task_id)
-                   .join(TaskVersionStep, TaskVersionStep.version_id == TaskVersion.id, isouter=True)
-                   .where(TaskVersionStep.sentence.like(pattern) | TaskVersion.title.like(pattern)))
-    tasks = db.scalars(select(Task).where(
-        Task.employer_id == employer_id,
-        (Task.title.like(pattern)) | (Task.raw_input.like(pattern)) | (Task.id.in_(in_steps))
-        | (Task.id.in_(in_versions)),
-    ).order_by(Task.created_at)).all()
-    return [{"task_id": t.id, "title": t.title} for t in tasks]
+# (2d) 근로자 지우기는 POST /api/workers/{id}/delete(이름 다시 적기, workers_admin.py). 옛 DELETE는 옛 화면과 함께 지웠다.
 
 
 def _step_search_terms(step: "Step") -> list[str]:
@@ -1838,8 +1783,8 @@ def worker_me(db: Session = Depends(get_db),
     return WorkerMeOut(
         id=worker.id, display_name=worker.display_name,
         workplace_name=(employer.org_name or employer.name) if employer is not None else "",
-        # 창업자 결정 1: 근로자 화면에서 사업주는 '선생님'. 사업장별 호칭 설정은 2차.
-        teacher_title="선생님",
+        # 창업자 결정 1의 기본 '선생님'. (2d) 사업장 설정 호칭(employers.teacher_title).
+        teacher_title=workers_admin.teacher_title_of(employer),
         a11y_prefs=parse_a11y_prefs(worker.a11y_prefs),
     )
 
@@ -2742,3 +2687,4 @@ def remove_step_photo(task_id: str, step_id: str,
 # (2a-0) 보내기 검사·보내기·받는 사람(send.py). 새 라우트는 APIRouter 모듈에 두고 여기서는 include만 한다.
 app.include_router(send.router)
 app.include_router(task_list.router)
+app.include_router(workers_admin.router)

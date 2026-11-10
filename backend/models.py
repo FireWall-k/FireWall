@@ -67,6 +67,10 @@ class Employer(Base):
     workplace_code: Mapped[str] = mapped_column(String, unique=True, index=True,
                                                 default=new_workplace_code)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+    # (2d, 0010) 근로자 화면에서 사업주를 부르는 호칭. 한글 1~6자(PATCH /api/workplace가 검사).
+    teacher_title: Mapped[str] = mapped_column(String, default="선생님", server_default="선생님")
+    # (2d, 0010) 새 근로자의 화면 설정 기본값(A11yPrefs 키 일부 JSON, 빈 객체 = 앱 기본값). 이미 있는 근로자는 그대로.
+    worker_defaults: Mapped[str] = mapped_column(Text, default="{}", server_default="{}")
 
     tasks: Mapped[list["Task"]] = relationship(back_populates="employer")
     workers: Mapped[list["Worker"]] = relationship(back_populates="employer")

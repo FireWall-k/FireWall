@@ -100,6 +100,8 @@ def _reset_login_throttle():
     ratelimit.worker_wp_day_throttle.clear()
     ratelimit.help_throttle.clear()
     ratelimit.ai_split_throttle.clear()
+    import workers_admin
+    workers_admin.reveal_throttle.clear()
     yield
 
 
@@ -189,3 +191,16 @@ def delete_task(client, task_id: str, headers: dict):
     r = client.post(f"/api/tasks/{task_id}/archive", headers=headers)
     assert r.status_code == 200, r.text
     return client.delete(f"/api/tasks/{task_id}", headers=headers)
+
+
+def delete_worker(client, worker_id: str, headers: dict):
+    """(2d) 근로자 지우기는 이름을 다시 적는 POST /api/workers/{id}/delete. 옛 DELETE는 지웠다.
+
+    시험 정리용: 목록에서 이름을 찾아 그대로 적는다. 목록에 없는(남의·없는) 근로자는 빈 이름으로 보내
+    서버의 404(소유 확인이 이름 확인보다 먼저)를 그대로 돌려준다.
+    """
+    listed = client.get("/api/workers", headers=headers)
+    name = ""
+    if listed.status_code == 200:
+        name = next((w["display_name"] for w in listed.json() if w["id"] == worker_id), "")
+    return client.post(f"/api/workers/{worker_id}/delete", json={"confirm_name": name}, headers=headers)

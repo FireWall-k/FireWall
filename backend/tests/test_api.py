@@ -4,7 +4,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from conftest import auth, publish  # noqa: E402
+from conftest import auth, publish, delete_worker  # noqa: E402
 from auth import make_token, verify_password, hash_password, verify_token  # noqa: E402
 import ai_client  # noqa: E402
 
@@ -128,8 +128,8 @@ def test_assign_task_to_multiple_workers_at_once(client, employer_token):
                          headers=auth(employer_token))
         assert {a["id"] for a in r2.json()} == {a["id"] for a in assignments}
     finally:
-        client.delete(f"/api/workers/{w1['id']}", headers=auth(employer_token))
-        client.delete(f"/api/workers/{w2['id']}", headers=auth(employer_token))
+        delete_worker(client, w1['id'], auth(employer_token))
+        delete_worker(client, w2['id'], auth(employer_token))
 
 
 def test_completed_task_disappears_from_today_but_stays_in_history(client, employer_token, worker_token):

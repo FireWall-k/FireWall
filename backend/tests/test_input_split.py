@@ -3,7 +3,7 @@
 AI 하네스(ai_client)는 conftest가 목으로 바꾼다. 네트워크는 부르지 않는다.
 """
 import ai_client
-from conftest import auth, publish
+from conftest import auth, publish, delete_worker
 
 
 def _preview_response(raw_input, context=None, **kw):
@@ -96,7 +96,7 @@ def test_split_preview_masks_worker_names(client, employer_token, monkeypatch):
     # 화면에는 실명으로 되돌려 보여 준다
     assert r.json()["steps"][0]["sentence"].startswith("홍길순")
     assert r.json()["steps"][0]["source_text"] == "홍길순 상자 주기"
-    client.delete(f"/api/workers/{w.json()['id']}", headers=auth(employer_token))
+    delete_worker(client, w.json()['id'], auth(employer_token))
 
 
 def test_create_task_with_confirmed_steps_skips_decompose(client, employer_token, monkeypatch):

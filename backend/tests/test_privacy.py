@@ -23,7 +23,7 @@ import manage
 import media
 import retention
 from auth import verify_token
-from conftest import auth, publish, delete_task
+from conftest import auth, publish, delete_task, delete_worker
 from database import SessionLocal, engine
 from models import AccessAuditLog, Assignment, PerformanceLog, Step, Worker, WorkerConsent
 
@@ -337,7 +337,7 @@ def test_consent_api_is_owner_only(client):
     assert client.get("/api/workers/wrk-demo/export", headers=auth(token)).status_code == 404
     assert client.patch("/api/workers/wrk-demo", json={"ai_note_allowed": True},
                         headers=auth(token)).status_code == 404
-    assert client.delete("/api/workers/wrk-demo", headers=auth(token)).status_code == 404
+    assert delete_worker(client, 'wrk-demo', auth(token)).status_code == 404
 
 
 def test_unknown_consent_type_is_rejected(client):
@@ -387,7 +387,7 @@ def test_delete_worker_leaves_no_trace_in_db_or_disk(client, capture):
     delete_task(client, task['id'], auth(token))
     assert name.encode("utf-8") in _db_files_bytes()  # 전제: 지우기 전에는 디스크에 있다
 
-    r = client.delete(f"/api/workers/{wid}", headers=auth(token))
+    r = delete_worker(client, wid, auth(token))
     assert r.status_code == 200, r.text
 
     with SessionLocal() as db:
@@ -681,7 +681,7 @@ def test_delete_reports_tasks_that_still_mention_the_name(client, capture):
     token = _new_employer(client)
     wid, task = _coaching_setup(client, token, capture, name="이름남는근로자")
     plain = client.post("/api/tasks", json={"raw_input": "상자를 옮기세요."}, headers=auth(token)).json()
-    r = client.delete(f"/api/workers/{wid}", headers=auth(token))
+    r = delete_worker(client, wid, auth(token))
     assert r.status_code == 200, r.text
     mentions = [m["task_id"] for m in r.json()["name_mentions"]]
     assert task["id"] in mentions
@@ -709,7 +709,7 @@ def test_delete_with_open_reader_retries_and_purge_finishes_checkpoint(client, c
         reader.execute("BEGIN")
         reader.execute("SELECT count(*) FROM workers").fetchone()
         with caplog.at_level("WARNING", logger="jobcard.database"):
-            r = client.delete(f"/api/workers/{wid}", headers=auth(token))
+            r = delete_worker(client, wid, auth(token))
         assert r.status_code == 200, r.text
         assert r.json()["wal_checkpointed"] is False
         assert "WAL 체크포인트" in caplog.text
