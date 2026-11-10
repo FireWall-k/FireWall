@@ -119,6 +119,9 @@ def _patch_ai(monkeypatch):
     # 테스트가 실제 Google TTS를 부르지 않게 한다(느리고 과금되며, CI에는 자격 증명이 없다).
     # TTS 모듈 자체는 test_tts.py가 가짜 google 모듈로 따로 검증한다.
     monkeypatch.setattr(main, "synthesize_tts", lambda text, scope: None)
+    # (2b-1) 보내기 전 음성 다시 만들기·[목소리 듣기](step_audio)도 같은 이유로 모의로 바꾼다.
+    import step_audio
+    monkeypatch.setattr(step_audio, "synthesize_tts", lambda text, scope: None)
     monkeypatch.setattr(ai_client, "decompose", _fake_decompose)
     monkeypatch.setattr(ai_client, "map_symbols", _fake_map_symbols)
     monkeypatch.setattr(ai_client, "classify_action", _fake_classify_action)

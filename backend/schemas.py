@@ -129,6 +129,13 @@ class WorkerMeOut(BaseModel):
 
 
 # --- 요청 ---
+class ConfirmedSplit(BaseModel):
+    source: Literal["rule", "model", "manual", ""] = ""
+    original_span: str | None = Field(default=None, max_length=MAX_STEP_SENTENCE * 2)
+    # 받아도 쓰지 않는다(contract §3.2: POST /api/tasks는 needs_review를 늘 False로 저장).
+    needs_review: bool | None = None
+
+
 class ConfirmedStep(BaseModel):
     """입력 화면에서 사업주가 확인한 단계 한 줄(한 줄 = 한 동작 = 그림 1장)."""
     sentence: str = Field(min_length=1, max_length=MAX_STEP_SENTENCE)
@@ -138,6 +145,11 @@ class ConfirmedStep(BaseModel):
     # 나누기 미리보기가 준 그림 검색어. 사업주가 문장을 고치지 않은 줄만 그대로 돌려보낸다
     # (고친 줄은 비워 보내고, 서버가 문장에서 검색어를 다시 뽑는다).
     symbol_query: list[str] | None = Field(default=None, max_length=8)
+    # (2b-1) 입력 화면이 이 줄을 어떻게 나눴는지와 원래 지시문 조각. needs_review는 받아도 버린다(늘 False로 저장 —
+    # [이대로 그림 고르기]가 나누기 확인이다, contract §3.2).
+    split: ConfirmedSplit | None = None
+    # (2b-1) 나누기 미리보기의 '✦ 자동 제안' 조심 표시. 없거나 False여도 서버가 문장 낱말 규칙으로 다시 본다.
+    safety_flag: bool | None = None
 
     @field_validator("sentence")
     @classmethod
@@ -192,6 +204,37 @@ class StepUpdate(BaseModel):
     symbol_url: str | None = Field(default=None, max_length=2000)
     # 검토 화면에서 AAC 후보를 직접 고른 경우 "LOCAL_AAC". 생략하면 기존처럼 fallback.
     symbol_source: Literal["LOCAL_AAC", "fallback"] | None = None
+    # (2b-1) 조심 스위치. 보내면 source='manual'(같은 값이어도 — 사업주가 본 것이다).
+    safety_flag: bool | None = None
+    safety_note: str | None = Field(default=None, max_length=200)
+    # (2b-1) 이 단계 앞에서 묶음을 나눈다(데이터만).
+    group_break: bool | None = None
+    # (2b-1) 600ms 자동 저장: 문장만 저장하고 음성은 만들지 않는다(tts_stale=1). 나누기 검사도 하지 않는다.
+    defer_media: bool = False
+    # (2b-1) 이 창이 마지막으로 본 직무 updated_at. 다르면 409(다른 창에서 먼저 고침). 없으면 검사하지 않는다.
+    expected_updated_at: datetime | None = None
+
+    @field_validator("sentence")
+    @classmethod
+    def _sentence_not_blank(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = v.strip()
+        if not v:
+            raise ValueError("문장을 입력해 주세요.")
+        return v
+
+
+class PicturesConfirm(BaseModel):
+    """그림 한눈에 보기의 [보이는 자동 그림 모두 맞아요]. 하나라도 확인할 수 없으면 아무것도 바꾸지 않는다."""
+    step_ids: list[str] = Field(min_length=1, max_length=MAX_CONFIRMED_STEPS * 2)
+
+
+class PictureApply(BaseModel):
+    """후보·검색 결과 적용. card_id는 AAC 그림 id(그림 주소의 파일 이름과 같다)."""
+    card_id: str = Field(min_length=1, max_length=100)
+    url: str = Field(min_length=1, max_length=2000)
+    label: str | None = Field(default=None, max_length=200)
 
 
 class StepRewrite(BaseModel):
@@ -386,6 +429,8 @@ class AacSearchRequest(BaseModel):
 PictureState = Literal["confirmed", "auto_high", "choose", "none"]
 
 
+# 근로자 화면이 읽는 단계 모양(today·history·도움). 사업주 편집기는 EditorStepOut(이것 + 편집 칸).
+# 근로자 응답 스키마 스냅샷(test_versions) 때문에 설명은 docstring이 아니라 주석으로 둔다.
 class StepOut(BaseModel):
     id: str
     order: int
@@ -396,6 +441,88 @@ class StepOut(BaseModel):
     needs_fallback: bool
     tts_audio_url: str | None
     picture_state: PictureState = "none"
+    # (2b-1) 근로자 화면 '조심해요' 띠(contract §3.5). source·note는 보내지 않는다.
+    safety_flag: bool = False
+
+
+# --- (2b-1) 편집기 단계 응답(contract §3.3) ---
+PictureSource = Literal["auto", "manual", "photo"]
+
+
+class PictureOut(BaseModel):
+    # AAC 그림 id(그림 파일 이름) 또는 사진 media id.
+    card_id: str
+    url: str
+    label: str = ""
+    source: PictureSource
+
+
+class CandidateOut(BaseModel):
+    card_id: str
+    url: str
+    label: str = ""
+
+
+class SplitOut(BaseModel):
+    source: Literal["rule", "model", "manual", ""] = ""
+    needs_review: bool = False
+    original_span: str = ""
+
+
+LintCode = Literal["too_long", "hard_word", "command_tone"]
+
+
+class LintOut(BaseModel):
+    # 화면 문구는 copy.ts가 만든다('20자가 넘어요', '어려운 말: 적재 → 쌓기', '~해요 체로 바꾸기').
+    model_config = ConfigDict(populate_by_name=True)
+    code: LintCode
+    from_: str | None = Field(default=None, alias="from")
+    to: str | None = None
+
+
+class SafetyOut(BaseModel):
+    flag: bool = False
+    source: Literal["auto", "manual", ""] = ""
+    note: str = ""
+
+
+class EditorStepOut(StepOut):
+    """사업주 편집기 단계. 확신 점수 숫자는 보내지 않는다. needs_fallback은 남기되 화면은 picture_state만 본다.
+
+    candidates는 응답마다 다시 찾지 않는다(그림 검색이 단계마다 한 번씩 돈다) — 늘 빈 목록이고, 후보는
+    GET /api/tasks/{id}/candidates가 모든 단계를 한 번에 돌려준다."""
+    picture: PictureOut | None = None
+    candidates: list[CandidateOut] = []
+    split: SplitOut = SplitOut()
+    lint: list[LintOut] = []
+    safety: SafetyOut = SafetyOut()
+    group_break: bool = False
+    # 이 단계를 고친 뒤의 직무 updated_at(다음 자동 저장의 expected_updated_at으로 쓴다).
+    task_updated_at: datetime | None = None
+
+
+class StepCandidatesOut(BaseModel):
+    step_id: str
+    candidates: list[CandidateOut]
+
+
+class TaskCandidatesOut(BaseModel):
+    steps: list[StepCandidatesOut]
+
+
+class TtsOut(BaseModel):
+    # 합성하지 못했으면 None(근로자·사업주 기기의 음성 합성이 대신 읽는다).
+    tts_url: str | None
+
+
+class PreviewStepOut(StepOut):
+    """미리보기(근로자 Step 모양 + 묶음 경계). picture_state는 지금 편집 단계의 실제 상태다(경고 배지용)."""
+    group_break: bool = False
+
+
+class PreviewOut(BaseModel):
+    title: str
+    steps: list[PreviewStepOut]
 
 
 class TaskVersionInfoOut(BaseModel):
@@ -409,7 +536,7 @@ class TaskOut(BaseModel):
     id: str
     title: str
     status: str
-    steps: list[StepOut]
+    steps: list[EditorStepOut]
     # (2a-0) 아래는 더한 칸이다(옛 화면은 무시해도 된다).
     version: TaskVersionInfoOut | None = None
     # 오늘 배정 중 하는 중(완료 단계 1개 이상, 다 하지 않음)인 수.
@@ -431,6 +558,8 @@ class SplitPreviewStep(BaseModel):
     split_check: bool = False
     # 이 줄들이 나온 원래 절 — [합치기]가 되돌릴 문장.
     source_text: str | None = None
+    # (2b-1) '✦ 자동 제안' 조심 표시(ai_service safety_flags 또는 낱말 규칙). [이대로 그림 고르기]가 그대로 돌려보낸다.
+    safety_flag: bool = False
 
 
 class SplitPreviewOut(BaseModel):
@@ -725,3 +854,4 @@ class TaskTitleUpdate(BaseModel):
     # 길이·글자 종류 검사는 task_list.py가 한국어 422로 한다(검증 오류 기본 문구보다 다음 할 일을 알려 주려고).
     # 글자가 아닌 값(숫자 등)도 같은 문구로 막으려고 Any로 받는다.
     title: Any = None
+

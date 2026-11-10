@@ -23,14 +23,12 @@ from __future__ import annotations
 import logging
 import mimetypes
 import os
-import posixpath
 import re
 import secrets
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
-from urllib.parse import unquote
 
 from typing import Literal
 
@@ -63,9 +61,12 @@ from auth import (
 )
 import clock
 import db_migrate
+import editor
+import safety_rules
 import send
 import task_list
 import versions
+from step_context import _OWN_IMAGE_PATHS, _is_own_image_url, _step_search_terms, _task_context  # noqa: F401
 from codes import normalize_workplace_code
 from database import checkpoint_wal, get_db
 from models import (
@@ -103,6 +104,7 @@ from schemas import (
     ConsentOut,
     DashboardOut,
     DashboardWorkerOut,
+    EditorStepOut,
     ActiveHelpOut,
     EmployerHelpOut,
     EmployerLogin,
@@ -117,7 +119,6 @@ from schemas import (
     StepAddOut,
     StepCreate,
     StepMerge,
-    StepOut,
     StepReorder,
     StepRewrite,
     StepRewriteOut,
@@ -931,43 +932,6 @@ def _tasks_mentioning(db: Session, employer_id: str, name: str) -> list[dict]:
     return [{"task_id": t.id, "title": t.title} for t in tasks]
 
 
-def _step_search_terms(step: "Step") -> list[str]:
-    """단계의 AAC 검색어. 저장된 symbol_query가 있으면 그걸 쓴다(생성 때와 같은 질의),
-    없으면 문장에서 뽑는다(사업주가 직접 추가했거나 문장을 수정한 경우)."""
-    stored = [t.strip() for t in (step.symbol_query or "").split(",") if t.strip()]
-    if stored:
-        return stored[:4]
-    terms = re.findall(r"[가-힣A-Za-z]+", step.sentence) or [step.sentence[:12]]
-    return terms[:4]
-
-
-def _task_context(task: Task, sentence: str, action_type: str) -> dict:
-    """AAC 검색용 맥락. 직무 생성 시와 같은 조건을 재현한다.
-
-    같은 문장이라도 업종 맥락이 있고 없고에 따라 순위와 채택 여부가 달라진다.
-    생성·후보조회·단계추가가 모두 이 함수를 거쳐야 결과가 어긋나지 않는다.
-    """
-    return {
-        "business_type": task.business_type or "",
-        "work_environment": task.work_environment or "",
-
-        "job": (
-            (task.business_type or "")
-            if (task.business_type or "").strip()
-            else ""
-        ),
-        "job_hint": task.job or "",
-
-        "sentence": sentence,
-        "action_type": action_type,
-        # 업종을 안 넣은 직무는 단계 문장 하나만으로 직무를 못 알아낼 때가 많다
-        # ("큰 나사를 나누세요"만 봐서는 조립인지 알 수 없다). 원문 전체에는 대개
-        # 직무를 알려주는 단어가 하나쯤 있다("부품 상자에서 나사를...") — AAC 검색의
-        # infer_job()이 이걸 보조 신호로 쓴다.
-        "raw_input": task.raw_input or "",
-    }
-
-
 # --- 사업주: 직무 생성(AI 분해 트리거) ---
 def _pick_symbol(
     terms: list[str],
@@ -1096,6 +1060,8 @@ def split_preview(payload: TaskCreate, db: Session = Depends(get_db),
             action_type=str(step.get("action_type") or "other")[:20],
             symbol_query=[masker.unmask(t) for t in _step_terms(step)][:8],
             **_split_fields(step, masker),
+            # (2b-1) '✦ 자동 제안' 조심 표시: ai_service safety_flags, 없으면 낱말 규칙(유료 호출 없음).
+            safety_flag=safety_rules.auto_flag(masker.unmask(sentence), step.get("safety_flags")),
         ))
     if len(steps) > MAX_CONFIRMED_STEPS:
         # 확인하면 반드시 실패하는 목록을 보여 주지 않는다(GPT가 안 될 때 쓰는 규칙 경로는 단계 수를 자르지 않는다).
@@ -1126,6 +1092,10 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
                     "action_type": cs.action_type or ai_client.classify_action(masker.mask(cs.sentence)),
                     "symbol_query": masker.mask_obj(
                         cs.symbol_query or re.findall(r"[가-힣A-Za-z]+", cs.sentence)[:4]),
+                    # (2b-1) 나누기 출처·원래 지시문 조각(저장은 사업주가 쓴 그대로)과 미리보기의 자동 조심 제안.
+                    "split_source": cs.split.source if cs.split is not None else "",
+                    "original_span": ((cs.split.original_span or "").strip() if cs.split is not None else ""),
+                    "safety_flag": bool(cs.safety_flag),
                 }
                 for i, cs in enumerate(payload.steps, start=1)
             ],
@@ -1204,6 +1174,12 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
 
     for step, p in zip(steps, prepared):
         sym = p["sym"]
+        # (2b-1) 조심 표시 자동 제안: 미리보기가 켠 것, ai_service safety_flags, 문장 낱말 규칙 중 하나라도 있으면 켠다.
+        safety = bool(step.get("safety_flag")) or safety_rules.auto_flag(p["sentence"], step.get("safety_flags"))
+        source_text = step.get("source_text")
+        original_span = step.get("original_span")
+        if original_span is None:
+            original_span = masker.unmask(source_text) if isinstance(source_text, str) else ""
         db.add(
             Step(
                 task_id=task.id,
@@ -1219,6 +1195,11 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
                 symbol_source=sym.get("source", "fallback"),
                 needs_fallback=sym.get("needs_fallback", True),
                 tts_media_id=_tts_media_id(db, user["sub"], p["tts"]),
+                safety_flag=safety, safety_source=safety_rules.SOURCE_AUTO if safety else "",
+                split_source=str(step.get("split_source") or ""),
+                # [이대로 그림 고르기]가 나누기 확인이다 — 요청에 needs_review=true가 와도 늘 False(contract §3.2).
+                split_needs_review=False,
+                original_span=(original_span or "")[:1000],
             )
         )
 
@@ -1294,9 +1275,9 @@ def add_step(task_id: str, payload: StepCreate, db: Session = Depends(get_db),
     action_type = payload.action_type or "other"
     next_order = max((s.order_index for s in task.steps), default=0) + 1
     parts = _detect_split(db, task, user["sub"], sentence) if task.status != "published" else []
-    prepared = ([_prepare_new_step(db, task, user["sub"], part["sentence"], part["action_type"], part["terms"])
-                 for part in parts]
-                or [_prepare_new_step(db, task, user["sub"], sentence, action_type)])
+    prepared = (_mark_split([_prepare_new_step(db, task, user["sub"], part["sentence"], part["action_type"],
+                                               part["terms"]) for part in parts], "model", sentence)
+                or _mark_split([_prepare_new_step(db, task, user["sub"], sentence, action_type)], "manual", ""))
     new_steps = [_insert_step(db, task, user["sub"], prep, next_order + i) for i, prep in enumerate(prepared)]
     db.commit()
     db.refresh(task)
@@ -1330,6 +1311,14 @@ def _prepare_new_step(db: Session, task: Task, employer_id: str, sentence: str,
             "tts": synthesize_tts(sentence, employer_id)}
 
 
+def _mark_split(prepared: list[dict], source: str, original: str) -> list[dict]:
+    """(2b-1) 새 단계의 나누기 출처와 원래 문장(편집기 원문 인용). 확인은 되돌리기로 끝나므로 needs_review는 없다."""
+    for p in prepared:
+        p["split_source"] = source
+        p["original_span"] = original
+    return prepared
+
+
 def _insert_step(db: Session, task: Task, employer_id: str, prepared: dict, order_index: int) -> Step:
     sym = prepared["sym"]
     step = Step(
@@ -1344,7 +1333,11 @@ def _insert_step(db: Session, task: Task, employer_id: str, prepared: dict, orde
         # 확인 안 한 자동 그림(auto_high)이 되어 보낸 직무를 고친 뒤 다시 보내기가 422로 막혔다(1회차 검증).
         picture_confirmed=bool(sym.get("photo_media_id")),
         tts_media_id=_tts_media_id(db, employer_id, prepared["tts"]),
+        split_source=prepared.get("split_source") or "",
+        original_span=(prepared.get("original_span") or "")[:1000],
     )
+    # (2b-1) 조심 표시 자동 제안(문장 낱말 규칙).
+    safety_rules.apply_auto(step, prepared["sentence"])
     db.add(step)
     return step
 
@@ -1447,7 +1440,8 @@ def rewrite_step(task_id: str, step_id: str, payload: StepRewrite, db: Session =
     if step is None or step.task_id != task_id:
         raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
     sentence = payload.sentence
-    if sentence == step.sentence:
+    # (2b-1) 자동 저장(defer_media)으로 문장은 이미 같아도 음성·나누기 검사가 남았으면(tts_stale) 지금 한다.
+    if sentence == step.sentence and not step.tts_stale:
         return StepRewriteOut(task=_task_out(task), sentence=sentence)
     parts = _detect_split(db, task, user["sub"], sentence)
     if not parts:
@@ -1457,9 +1451,9 @@ def rewrite_step(task_id: str, step_id: str, payload: StepRewrite, db: Session =
     # 네트워크 호출(그림·음성)을 먼저 끝낸다 — SQLite 쓰기 잠금을 오래 쥐지 않게(직무 생성과 같은 이유).
     # 사업주가 올린 사진은 첫 단계로 넘긴다(지우지 않는다) — [되돌리기]하면 합친 단계로 다시 돌아온다.
     photo = step.symbol_media_id if step.symbol_source == "photo" else None
-    prepared = [_prepare_new_step(db, task, user["sub"], part["sentence"], part["action_type"], part["terms"],
-                                  photo_media_id=photo if i == 0 else None)
-                for i, part in enumerate(parts)]
+    prepared = _mark_split([_prepare_new_step(db, task, user["sub"], part["sentence"], part["action_type"],
+                                              part["terms"], photo_media_id=photo if i == 0 else None)
+                            for i, part in enumerate(parts)], "model", sentence)
     new_steps, media_ids = _replace_steps(db, task, user["sub"], [step], prepared)
     db.commit()
     media.release(db, media_ids)
@@ -1490,7 +1484,8 @@ def merge_steps(task_id: str, payload: StepMerge, db: Session = Depends(get_db),
     # 화면이 나누기 전 동작 종류를 모르면(단계 추가를 되돌림) 문장 고치기와 같은 규칙 분류기로 다시 매긴다.
     action_type = payload.action_type or ai_client.classify_action(
         employer_pseudonymizer(db, user["sub"]).mask(payload.sentence))
-    prepared = [_prepare_new_step(db, task, user["sub"], payload.sentence, action_type, photo_media_id=photo)]
+    prepared = _mark_split([_prepare_new_step(db, task, user["sub"], payload.sentence, action_type,
+                                              photo_media_id=photo)], "manual", "")
     _, media_ids = _replace_steps(db, task, user["sub"], run, prepared)
     db.commit()
     media.release(db, media_ids)
@@ -1518,51 +1513,32 @@ def reorder_steps(task_id: str, payload: StepReorder, db: Session = Depends(get_
     return _task_out(task)
 
 
-# (Phase 0.3) 업로드 사진은 더 이상 경로 prefix로 받지 않는다. "/api/photos/"만 맞으면 다른 사업장의 사진 URL도
-# 붙일 수 있었다. 사진은 아래 update_step에서 소유 레코드(MediaFile.employer_id)를 조회해 받는다.
-_OWN_IMAGE_PATHS = ("/api/aac/images/",)
-
-
-def _is_own_image_url(url: str) -> bool:
-    """근로자 화면에 뜨는 그림은 이 서버가 내주는 AAC 이미지여야 한다(업로드 사진은 update_step이 따로 본다).
-
-    아무 URL이나 받으면 외부 이미지(부적절한 그림, 접속 추적용 픽셀)가 근로자 화면에 뜬다.
-    경로는 퍼센트 인코딩을 끝까지 푼 뒤 검사한다. 브라우저·프록시는 %2e%2e를 ..로, %2f를 /로 풀어 정규화하므로
-    인코딩된 채로 보면 "/api/aac/images/%2e%2e/..."가 prefix 검사를 통과해 AAC 폴더 밖 경로를 가리킬 수 있다.
-    이중 인코딩(%252e)도 있으니 더 바뀌지 않을 때까지 푼다. 정규화 결과가 원래 경로와 다르면(., .., //) 거부한다.
-    """
-    base = os.getenv("PUBLIC_BACKEND_URL", "http://localhost:8000").rstrip("/")
-    path = url[len(base):] if url.startswith(base + "/") else url
-    decoded = path
-    for _ in range(5):
-        nxt = unquote(decoded)
-        if nxt == decoded:
-            break
-        decoded = nxt
-    else:
-        return False  # 다섯 번 풀어도 계속 바뀌는 경로는 정상 그림 URL이 아니다
-    if any(ch in decoded for ch in ("\\", "\x00", "?", "#")) or "//" in decoded:
-        return False
-    # 제어 문자(탭·줄바꿈 등)는 브라우저 URL 파서가 지운 뒤 정규화한다. ".\t."은 여기서는 ".."이 아니지만
-    # 브라우저에서는 ".."이 되어 AAC 폴더 밖 경로를 가리키므로, 정상 그림 경로에 없을 제어 문자는 통째로 거부한다.
-    if any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in decoded):
-        return False
-    if posixpath.normpath(decoded) != decoded or ".." in decoded.split("/"):
-        return False
-    return decoded.startswith(_OWN_IMAGE_PATHS)
-
-
 _MEDIA_GONE = "사진이 방금 다른 화면에서 지워졌습니다. 사진을 다시 올려 주세요."
 
 
-@app.patch("/api/tasks/{task_id}/steps/{step_id}", response_model=StepOut)
+_MSG_STALE_EDIT = "다른 창에서 먼저 고쳤어요. 새로 불러온 뒤 다시 고쳐 주세요."
+
+
+@app.patch("/api/tasks/{task_id}/steps/{step_id}", response_model=EditorStepOut)
 def update_step(task_id: str, step_id: str, payload: StepUpdate,
                 db: Session = Depends(get_db),
-                user: dict = Depends(require_employer)) -> StepOut:
-    _owned_task(task_id, user["sub"], db)
+                user: dict = Depends(require_employer)) -> EditorStepOut:
+    """단계 고치기(문장·그림·조심 스위치·묶음 경계).
+
+    (2b-1, contract §3.4)
+    - defer_media=true(600ms 자동 저장): 문장만 저장하고 음성은 만들지 않는다(tts_stale=1, 옛 음성은 놓아준다).
+      나누기 검사·동작 종류 다시 매기기도 하지 않는다 — 칸을 벗어날 때(rewrite)와 보낼 때 한 번 한다.
+    - expected_updated_at이 지금 직무 updated_at과 다르면 409(다른 창에서 먼저 고침). 없으면 검사하지 않는다.
+    - safety_flag를 보내면 source=manual(사업주가 정함). 문장을 고치면 manual이 아닌 단계만 자동 제안을 다시 매긴다.
+    - 응답은 편집기 단계 모양 + task_updated_at(다음 자동 저장의 expected_updated_at).
+    """
+    task = _owned_task(task_id, user["sub"], db)
     step = db.get(Step, step_id)
     if step is None or step.task_id != task_id:
         raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
+    if payload.expected_updated_at is not None and \
+            _naive_utc(payload.expected_updated_at) != _naive_utc(task.updated_at):
+        raise send.ApiError(409, _MSG_STALE_EDIT, code="stale_edit", step_ids=[step.id])
     released: list[str] = []
     claimed: str | None = None
     if payload.symbol_url is not None:
@@ -1594,20 +1570,42 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
         step.picture_confirmed = True
     if payload.sentence is not None:
         step_sentence_before = step.sentence
-        step.sentence = payload.sentence
-        if step.tts_media_id:
-            released.append(step.tts_media_id)
-        step.tts_media_id = _tts_media_id(db, user["sub"], synthesize_tts(payload.sentence, user["sub"]))
-        # 저장된 symbol_query는 옛 문장에 묶여 있다. 비우면 후보 조회가 새 문장에서
-        # 검색어를 다시 뽑는다.
-        step.symbol_query = ""
-        # 동작 계열도 옛 문장의 것이다("상자를 옮기세요"→move를 "바닥을 쓸어주세요"로 고쳐도 move로 남았다).
-        # 남겨 두면 후보 재검색이 맞는 그림을 계열 불일치로 깎고, 화면에 틀린 꼬리표가 붙는다. 새 문장으로
-        # 직무 분해와 같은 규칙 분류기(AI 하네스 /ai/classify-action, LLM 없음)에 다시 매긴다. 하네스가 죽어 있으면
-        # other(벌점 없음·꼬리표 숨김)다. 하네스로 보내는 글은 직무 생성과 같이 근로자 실명을 별칭으로 바꾼다.
-        if payload.sentence != step_sentence_before:
-            masker = employer_pseudonymizer(db, user["sub"])
-            step.action_type = ai_client.classify_action(masker.mask(payload.sentence))
+        changed = payload.sentence != step_sentence_before
+        if changed or step.tts_stale:
+            step.sentence = payload.sentence
+            # 문장을 고쳐 저장하면 나눈 문장 확인은 끝난 것이다(옛 데이터 방어 칸, contract §3.2).
+            step.split_needs_review = False
+            safety_rules.apply_auto(step, payload.sentence)
+            if payload.defer_media:
+                # 자동 저장: 음성은 옛 문장이라 떼어 두고, 칸을 벗어날 때·보낼 때 만든다.
+                if step.tts_media_id:
+                    released.append(step.tts_media_id)
+                step.tts_media_id = None
+                step.tts_stale = True
+                if changed:
+                    step.symbol_query = ""
+            else:
+                if step.tts_media_id:
+                    released.append(step.tts_media_id)
+                step.tts_media_id = _tts_media_id(db, user["sub"], synthesize_tts(payload.sentence, user["sub"]))
+                step.tts_stale = False
+                # 저장된 symbol_query는 옛 문장에 묶여 있다. 비우면 후보 조회가 새 문장에서
+                # 검색어를 다시 뽑는다.
+                step.symbol_query = ""
+                # 동작 계열도 옛 문장의 것이다("상자를 옮기세요"→move를 "바닥을 쓸어주세요"로 고쳐도 move로 남았다).
+                # 남겨 두면 후보 재검색이 맞는 그림을 계열 불일치로 깎고, 화면에 틀린 꼬리표가 붙는다. 새 문장으로
+                # 직무 분해와 같은 규칙 분류기(AI 하네스 /ai/classify-action, LLM 없음)에 다시 매긴다. 하네스가 죽어
+                # 있으면 other(벌점 없음·꼬리표 숨김)다. 하네스로 보내는 글은 직무 생성과 같이 근로자 실명을 별칭으로
+                # 바꾼다. 자동 저장(defer_media)으로 이미 문장이 바뀐 단계(tts_stale)도 여기서 다시 매긴다.
+                masker = employer_pseudonymizer(db, user["sub"])
+                step.action_type = ai_client.classify_action(masker.mask(payload.sentence))
+    if payload.safety_flag is not None:
+        step.safety_flag = payload.safety_flag
+        step.safety_source = safety_rules.SOURCE_MANUAL
+    if payload.safety_note is not None:
+        step.safety_note = payload.safety_note.strip()
+    if payload.group_break is not None:
+        step.group_break = payload.group_break
     # 확인과 커밋 사이에 다른 요청의 release()가 레코드를 지우지 못하게 커밋 직전에 같은 트랜잭션에서 잠근다
     # (media.claim). TTS 합성(네트워크 호출) 뒤에 잠그는 이유: SQLite 쓰기 잠금은 DB 전체라, 합성 동안 쥐고 있으면
     # 다른 모든 쓰기가 기다린다. 이미 지워졌으면 붙이지 않는다 — 400(남의 것)과 구분해 409로 다시 시도하게 한다.
@@ -1652,10 +1650,9 @@ def step_symbol_candidates(task_id: str, step_id: str, db: Session = Depends(get
         raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
 
     masker = employer_pseudonymizer(db, user["sub"])
-    symbols = ai_client.map_symbols(
-        masker.mask_obj(_step_search_terms(step)),
-        context=masker.mask_obj(_task_context(task, step.sentence, step.action_type)),
-    ).get("symbols", [])
+    # (2b-1) 후보 조회는 유료 모델(GPT 재순위)을 부르지 않는다(contract §3.3) — editor.symbol_query와 같은 질의.
+    terms, context = editor.symbol_query(task, step, masker)
+    symbols = ai_client.map_symbols(terms, context=context).get("symbols", [])
     sym = symbols[0] if symbols else {}
     reason = sym.get("reason", "no_candidate")
 
@@ -1732,9 +1729,9 @@ def publish_task(task_id: str, db: Session = Depends(get_db),
     return _task_out(task)
 
 
-@app.post("/api/tasks/{task_id}/steps/{step_id}/picture/confirm", response_model=StepOut)
+@app.post("/api/tasks/{task_id}/steps/{step_id}/picture/confirm", response_model=EditorStepOut)
 def confirm_step_picture(task_id: str, step_id: str, db: Session = Depends(get_db),
-                         user: dict = Depends(require_employer)) -> StepOut:
+                         user: dict = Depends(require_employer)) -> EditorStepOut:
     """자동으로 붙은 그림을 사업주가 보고 "이 그림이 맞다"고 확인한다(그림 4상태의 '확인함'). 2차 편집기용."""
     _owned_task(task_id, user["sub"], db)
     step = db.get(Step, step_id)
@@ -2676,11 +2673,11 @@ def get_media(media_id: str, exp: str = "", sig: str = "", db: Session = Depends
     })
 
 
-@app.post("/api/tasks/{task_id}/steps/{step_id}/photo", response_model=StepOut)
+@app.post("/api/tasks/{task_id}/steps/{step_id}/photo", response_model=EditorStepOut)
 async def upload_step_photo(task_id: str, step_id: str,
                             file: UploadFile = File(...),
                             db: Session = Depends(get_db),
-                            user: dict = Depends(require_employer)) -> StepOut:
+                            user: dict = Depends(require_employer)) -> EditorStepOut:
     """단계에 실제 현장 사진을 올려 자체 AAC 자동 상징을 대체한다(기능 5)."""
     _owned_task(task_id, user["sub"], db)
     step = db.get(Step, step_id)
@@ -2718,10 +2715,10 @@ async def upload_step_photo(task_id: str, step_id: str,
     return _step_to_out(step)
 
 
-@app.delete("/api/tasks/{task_id}/steps/{step_id}/photo", response_model=StepOut)
+@app.delete("/api/tasks/{task_id}/steps/{step_id}/photo", response_model=EditorStepOut)
 def remove_step_photo(task_id: str, step_id: str,
                       db: Session = Depends(get_db),
-                      user: dict = Depends(require_employer)) -> StepOut:
+                      user: dict = Depends(require_employer)) -> EditorStepOut:
     """업로드한 사진을 제거하고 기본(자동 상징) 상태로 되돌린다."""
     _owned_task(task_id, user["sub"], db)
     step = db.get(Step, step_id)
@@ -2742,3 +2739,4 @@ def remove_step_photo(task_id: str, step_id: str,
 # (2a-0) 보내기 검사·보내기·받는 사람(send.py). 새 라우트는 APIRouter 모듈에 두고 여기서는 include만 한다.
 app.include_router(send.router)
 app.include_router(task_list.router)
+app.include_router(editor.router)

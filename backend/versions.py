@@ -6,6 +6,8 @@
 - 같은 내용인지는 해시 없이 필드별로 바로 비교한다(same_content 하나).
 - 근로자 응답은 version_step_to_out으로 만든다. 보낸 단계는 사업주가 확인한 것이라 picture_state='confirmed',
   needs_fallback=false로 고정한다.
+- (2b-1) 편집기 단계 응답(step_to_out = EditorStepOut)에 그림(picture)·나누기(split)·문장 점검(lint)·조심(safety)·
+  묶음 경계를 싣는다. 근로자 응답에는 조심 표시(safety_flag)만 더한다.
 """
 from __future__ import annotations
 
@@ -16,8 +18,19 @@ from sqlalchemy.orm import Session
 
 import clock
 import media
+import sentence_lint
+from aac_assets import asset_label, card_id_from_url
 from models import Assignment, PerformanceLog, Step, Task, TaskVersion, TaskVersionStep
-from schemas import StepOut, TaskVersionInfoOut
+from schemas import (
+    EditorStepOut,
+    LintOut,
+    PictureOut,
+    PreviewStepOut,
+    SafetyOut,
+    SplitOut,
+    StepOut,
+    TaskVersionInfoOut,
+)
 
 logger = logging.getLogger("jobcard.versions")
 
@@ -47,31 +60,67 @@ def _urls(s) -> tuple[str | None, str | None]:
     return symbol_url, tts_url
 
 
-def step_to_out(s: Step) -> StepOut:
-    """편집 단계(steps) 응답."""
+def _picture(s: Step, symbol_url: str | None) -> PictureOut | None:
+    """지금 그림. source: photo(사업주가 올린 사진) | manual(사업주가 후보·검색에서 골라 적용) | auto(자동으로 붙음)."""
+    if s.symbol_media is not None:
+        return PictureOut(card_id=s.symbol_media.id, url=symbol_url or "", label="", source="photo")
+    if not symbol_url:
+        return None
+    card_id = card_id_from_url(s.symbol_url) or ""
+    source = "manual" if s.symbol_source == SOURCE_MANUAL_PICK else "auto"
+    return PictureOut(card_id=card_id, url=symbol_url, label=asset_label(card_id), source=source)
+
+
+# 편집기에서 후보·검색 결과를 적용한 그림의 symbol_source(POST …/steps/{sid}/picture). 근로자 화면은 이 값을 쓰지 않는다.
+SOURCE_MANUAL_PICK = "manual"
+
+
+def _base_fields(s, symbol_url, tts_url) -> dict:
+    return dict(id=s.id, order=s.order_index, sentence=s.sentence, action_type=s.action_type,
+                symbol_url=symbol_url, symbol_source=s.symbol_source, tts_audio_url=tts_url,
+                safety_flag=bool(getattr(s, "safety_flag", False)))
+
+
+def step_to_out(s: Step) -> EditorStepOut:
+    """편집 단계(steps) 응답(사업주 편집기). candidates는 GET …/candidates가 따로 준다."""
     symbol_url, tts_url = _urls(s)
-    return StepOut(
-        id=s.id, order=s.order_index, sentence=s.sentence,
-        action_type=s.action_type, symbol_url=symbol_url,
-        symbol_source=s.symbol_source, needs_fallback=s.needs_fallback,
-        tts_audio_url=tts_url, picture_state=picture_state(s),
+    task = s.task
+    return EditorStepOut(
+        **_base_fields(s, symbol_url, tts_url),
+        needs_fallback=s.needs_fallback, picture_state=picture_state(s),
+        picture=_picture(s, symbol_url),
+        split=SplitOut(source=s.split_source or "", needs_review=bool(s.split_needs_review),
+                       original_span=s.original_span or ""),
+        lint=[LintOut(**item) for item in sentence_lint.lint(s.sentence)],
+        safety=SafetyOut(flag=bool(s.safety_flag), source=s.safety_source or "", note=s.safety_note or ""),
+        group_break=bool(s.group_break),
+        task_updated_at=task.updated_at if task is not None else None,
     )
 
 
 def version_step_to_out(vs: TaskVersionStep) -> StepOut:
-    """버전 단계 응답(근로자 화면). 모양은 StepOut 그대로다."""
+    """버전 단계 응답(근로자 화면). 모양은 StepOut 그대로다(2b-1: + safety_flag)."""
     symbol_url, tts_url = _urls(vs)
-    return StepOut(
-        id=vs.id, order=vs.order_index, sentence=vs.sentence,
-        action_type=vs.action_type, symbol_url=symbol_url,
-        symbol_source=vs.symbol_source, needs_fallback=False,
-        tts_audio_url=tts_url, picture_state="confirmed",
-    )
+    return StepOut(**_base_fields(vs, symbol_url, tts_url), needs_fallback=False, picture_state="confirmed")
+
+
+def legacy_worker_step_out(s: Step) -> StepOut:
+    """버전 없는 옛 배정(대체 경로)의 근로자 응답. 편집 칸은 싣지 않는다."""
+    symbol_url, tts_url = _urls(s)
+    return StepOut(**_base_fields(s, symbol_url, tts_url), needs_fallback=s.needs_fallback,
+                   picture_state=picture_state(s))
 
 
 def worker_step_out(s) -> StepOut:
-    """배정 단계 응답. 버전 단계면 version_step_to_out, (버전 없는 옛 배정의 대체 경로) Step이면 step_to_out."""
-    return version_step_to_out(s) if isinstance(s, TaskVersionStep) else step_to_out(s)
+    """배정 단계 응답. 버전 단계면 version_step_to_out, (버전 없는 옛 배정의 대체 경로) Step이면 근로자 모양 그대로."""
+    return version_step_to_out(s) if isinstance(s, TaskVersionStep) else legacy_worker_step_out(s)
+
+
+def preview_step_out(s: Step) -> PreviewStepOut:
+    """미리보기(GET …/preview): 근로자 Step 모양 + 묶음 경계. 그림 상태는 지금 편집 단계 그대로(경고 배지용)."""
+    symbol_url, tts_url = _urls(s)
+    return PreviewStepOut(**_base_fields(s, symbol_url, tts_url), needs_fallback=s.needs_fallback,
+                          picture_state=picture_state(s), group_break=bool(s.group_break))
 
 
 def step_key(s) -> str:
@@ -91,12 +140,14 @@ def latest_version(db: Session, task: Task) -> TaskVersion | None:
 
 
 def _fields(s) -> tuple:
-    # 2b-1부터 safety_flag·group_break를 더한다(contract §1.1).
-    return (s.sentence or "", s.symbol_url or None, s.symbol_media_id or None, s.action_type or "")
+    # (2b-1) safety_flag·group_break를 더했다(contract §1.1). 0008 이전 버전은 둘 다 0이라 그대로 같다.
+    return (s.sentence or "", s.symbol_url or None, s.symbol_media_id or None, s.action_type or "",
+            bool(s.safety_flag), bool(s.group_break))
 
 
 def same_content(task: Task, version: TaskVersion | None) -> bool:
-    """지금 steps와 버전 단계가 같은 내용인지(제목, 단계 수, 순서마다 문장·그림 URL·사진·동작 종류). 해시는 쓰지 않는다."""
+    """지금 steps와 버전 단계가 같은 내용인지(제목, 단계 수, 순서마다 문장·그림 URL·사진·동작 종류·조심·묶음 경계).
+    해시는 쓰지 않는다. 음성(tts_media_id)은 문장에서 나오므로 비교하지 않는다."""
     if version is None:
         return False
     if (task.title or "") != (version.title or ""):
@@ -122,6 +173,7 @@ def snapshot(db: Session, task: Task, created_by: str | None) -> TaskVersion:
             source_step_id=s.id, order_index=i, sentence=s.sentence, action_type=s.action_type,
             symbol_query=s.symbol_query or "", symbol_url=s.symbol_url, symbol_source=s.symbol_source,
             symbol_media_id=s.symbol_media_id, tts_media_id=s.tts_media_id,
+            safety_flag=bool(s.safety_flag), group_break=bool(s.group_break),
         ))
     db.add(v)
     db.flush()
