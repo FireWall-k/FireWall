@@ -395,7 +395,9 @@ event.listen(AccessAuditLog, "before_delete", _reject_audit_mutation)
 
 # (2b-1) 음성만 다시 만든 것(보낼 때 미리 합성, 목소리 듣기)은 사업주가 고친 것이 아니다. updated_at을 올리면
 # 다른 창의 자동 저장(expected_updated_at)이 이유 없이 409가 된다.
-_MEDIA_ONLY_ATTRS = frozenset({"tts_media_id", "tts_stale", "tts_media"})
+# 보낼 때·목소리 듣기 때 자동 저장한 문장으로 동작 종류(action_type)를 다시 매기는 것도 같다 — 문장을 고친 순간에 이미
+# updated_at이 올랐고, 동작 종류는 그 문장에서 정해지는 값이다(step_audio.refresh).
+_MEDIA_ONLY_ATTRS = frozenset({"tts_media_id", "tts_stale", "tts_media", "action_type"})
 
 
 def _only_media_changed(step: "Step") -> bool:

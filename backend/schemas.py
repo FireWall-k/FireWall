@@ -240,6 +240,8 @@ class PictureApply(BaseModel):
 class StepRewrite(BaseModel):
     """편집기에서 단계 문장을 고쳐 저장. 동작이 둘이면 서버가 두 단계로 나눈다(되돌리기 가능)."""
     sentence: str = Field(min_length=1, max_length=500)
+    # (2b-1, 1회차 검증) 자동 저장(StepUpdate)과 같은 다른 창 검사. 다르면 409. 없으면 검사하지 않는다(옛 화면).
+    expected_updated_at: datetime | None = None
 
     @field_validator("sentence")
     @classmethod

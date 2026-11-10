@@ -38,6 +38,7 @@ from models import (  # noqa: E402
     PerformanceLog,
     Step,
     TaskVersion,
+    TaskVersionStep,
 )
 
 ACCEPTED_URL = "/api/aac/images/retail/RETAIL_029.webp"
@@ -243,6 +244,23 @@ def test_safety_keywords():
     assert safety_rules.auto_flag("상품을 놓아요", []) is False
 
 
+def test_safety_keywords_inflections_and_compounds():
+    """1회차 검증: '뜨겁-' 활용형과 불 합성어를 놓치지 않는다."""
+    for sentence in ("냄비가 뜨겁습니다 조심해요", "물을 뜨겁게 데워요", "팬이 뜨겁다", "가스불을 켜요",
+                     "가스불이 꺼졌는지 봐요", "숯불에 고기를 올려요", "촛불을 꺼요"):
+        assert safety_rules.matched_keyword(sentence) in ("뜨거운", "불"), sentence
+
+
+def test_safety_keywords_false_positives():
+    """1회차 검증: 조심 낱말이 들어 있지만 다른 뜻인 흔한 말에는 켜지 않는다(거짓 양성 문장 표 고정)."""
+    for sentence in ("칼슘 우유를 진열해요", "칼라 상자를 접어요", "칼집 낸 소시지를 담아요", "불만 접수를 받아요",
+                     "불만을 적어요", "사다리꼴 상자를 접어요", "가위표를 쳐요", "이불을 개요", "불량품을 빼요"):
+        assert safety_rules.matched_keyword(sentence) is None, sentence
+    # 진짜 위험 낱말은 그대로 걸린다.
+    assert safety_rules.matched_keyword("칼로 양파를 썰어요") == "칼"
+    assert safety_rules.matched_keyword("사다리를 펴요") == "사다리"
+
+
 def test_split_preview_has_auto_safety_flag(client, employer_token, monkeypatch):
     monkeypatch.setattr(ai_client, "decompose", lambda raw, context=None, **kw: {
         "task_title": "t", "steps": [
@@ -445,6 +463,85 @@ def test_expected_updated_at_conflict(client, employer_token):
     assert _get(client, employer_token, task["id"])["steps"][0]["sentence"] == "상자를 들어요"
     # 값을 안 보내면 검사하지 않는다(옛 화면).
     assert _patch(client, employer_token, task["id"], s1, sentence="상자를 내려요").status_code == 200
+
+
+def test_defer_then_send_reclassifies_action(client, employer_token, worker, monkeypatch):
+    """1회차 검증: 자동 저장 뒤 칸을 벗어나지 않고 보내도 동작 종류가 새 문장으로 다시 매겨진다(옛 값 고정 금지)."""
+    task = _create(client, employer_token, ["상자를 옮겨요"])
+    give_pictures(client, employer_token, task["id"])
+    _confirm_all(client, employer_token, task["id"])
+    sid = task["steps"][0]["id"]
+    monkeypatch.setattr(ai_client, "classify_action", lambda s: "clean" if "닦" in s else "move")
+    r = _patch(client, employer_token, task["id"], sid, sentence="바닥을 걸레로 닦아요", defer_media=True)
+    assert r.status_code == 200, r.text
+    seen = r.json()["task_updated_at"]
+    r = _send(client, employer_token, task["id"], [worker["id"]])
+    assert r.status_code == 200, r.text
+    with SessionLocal() as db:
+        assert db.get(Step, sid).action_type == "clean"
+        vs = db.scalars(select(TaskVersionStep).join(TaskVersion)
+                        .where(TaskVersion.task_id == task["id"])).all()
+        assert [(v.sentence, v.action_type) for v in vs] == [("바닥을 걸레로 닦아요", "clean")]
+    # 다시 매긴 것은 사업주가 고친 것이 아니다 — 같은 창의 다음 자동 저장이 409가 되지 않는다.
+    assert _get(client, employer_token, task["id"])["updated_at"] == seen
+
+
+def test_defer_then_tts_reclassifies_action(client, employer_token, monkeypatch):
+    task = _create(client, employer_token, ["상자를 옮겨요"])
+    sid = task["steps"][0]["id"]
+    monkeypatch.setattr(ai_client, "classify_action", lambda s: "clean")
+    monkeypatch.setattr(step_audio, "synthesize_tts", _fake_tts_file([]))
+    _patch(client, employer_token, task["id"], sid, sentence="바닥을 걸레로 닦아요", defer_media=True)
+    r = client.post(f"/api/tasks/{task['id']}/steps/{sid}/tts", headers=auth(employer_token))
+    assert r.status_code == 200, r.text
+    with SessionLocal() as db:
+        assert db.get(Step, sid).action_type == "clean"
+
+
+def test_stale_window_rewrite_409(client, employer_token):
+    """1회차 검증: 옛 창이 칸을 벗어나며 저장(rewrite)해도 다른 창이 먼저 고친 문장을 덮지 않는다."""
+    task = _create(client, employer_token, ["상자를 옮겨요"])
+    tid, sid, seen = task["id"], task["steps"][0]["id"], task["updated_at"]
+    r = _patch(client, employer_token, tid, sid, sentence="창A가 고친 문장이에요", defer_media=True,
+               expected_updated_at=seen)
+    assert r.status_code == 200, r.text
+    r = client.post(f"/api/tasks/{tid}/steps/{sid}/rewrite", headers=auth(employer_token),
+                    json={"sentence": "창B가 고친 문장이에요", "expected_updated_at": seen})
+    assert r.status_code == 409
+    assert r.json()["detail"] == "다른 창에서 먼저 고쳤어요. 새로 불러온 뒤 다시 고쳐 주세요."
+    assert _get(client, employer_token, tid)["steps"][0]["sentence"] == "창A가 고친 문장이에요"
+    # 같은 창(최신 값)은 저장된다.
+    nxt = _get(client, employer_token, tid)["updated_at"]
+    r = client.post(f"/api/tasks/{tid}/steps/{sid}/rewrite", headers=auth(employer_token),
+                    json={"sentence": "창A가 또 고친 문장이에요", "expected_updated_at": nxt})
+    assert r.status_code == 200, r.text
+
+
+def test_patch_race_same_expected_one_wins(client, employer_token, monkeypatch):
+    """1회차 검증: 같은 expected로 거의 동시에 온 두 저장 중 하나만 통과한다(음성 합성 동안 다른 창이 먼저 커밋)."""
+    import threading
+    import time
+    task = _create(client, employer_token, ["상자를 옮겨요"])
+    tid, sid, seen = task["id"], task["steps"][0]["id"], task["updated_at"]
+
+    def slow(text, scope):
+        time.sleep(1.0)
+        return None
+    monkeypatch.setattr(main, "synthesize_tts", slow)
+    out = {}
+
+    def a():
+        out["a"] = _patch(client, employer_token, tid, sid, sentence="창A 문장이에요",
+                          expected_updated_at=seen).status_code
+
+    def b():
+        time.sleep(0.3)
+        out["b"] = _patch(client, employer_token, tid, sid, sentence="창B 문장이에요", defer_media=True,
+                          expected_updated_at=seen).status_code
+    ta, tb = threading.Thread(target=a), threading.Thread(target=b)
+    ta.start(); tb.start(); ta.join(); tb.join()
+    assert out == {"a": 409, "b": 200}
+    assert _get(client, employer_token, tid)["steps"][0]["sentence"] == "창B 문장이에요"
 
 
 def test_blank_sentence_422(client, employer_token):

@@ -1440,12 +1440,15 @@ def rewrite_step(task_id: str, step_id: str, payload: StepRewrite, db: Session =
     if step is None or step.task_id != task_id:
         raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
     sentence = payload.sentence
+    expected = payload.expected_updated_at
     # (2b-1) 자동 저장(defer_media)으로 문장은 이미 같아도 음성·나누기 검사가 남았으면(tts_stale) 지금 한다.
     if sentence == step.sentence and not step.tts_stale:
         return StepRewriteOut(task=_task_out(task), sentence=sentence)
+    # (1회차 검증) 자동 저장(PATCH)과 같은 다른 창 검사. 옛 창이 칸을 벗어나며 저장해도 먼저 고친 문장을 덮지 않는다.
+    _check_not_stale(task, expected, step.id)
     parts = _detect_split(db, task, user["sub"], sentence)
     if not parts:
-        update_step(task_id, step_id, StepUpdate(sentence=sentence), db, user)
+        update_step(task_id, step_id, StepUpdate(sentence=sentence, expected_updated_at=expected), db, user)
         db.refresh(task)
         return StepRewriteOut(task=_task_out(task), sentence=sentence)
     # 네트워크 호출(그림·음성)을 먼저 끝낸다 — SQLite 쓰기 잠금을 오래 쥐지 않게(직무 생성과 같은 이유).
@@ -1454,6 +1457,7 @@ def rewrite_step(task_id: str, step_id: str, payload: StepRewrite, db: Session =
     prepared = _mark_split([_prepare_new_step(db, task, user["sub"], part["sentence"], part["action_type"],
                                               part["terms"], photo_media_id=photo if i == 0 else None)
                             for i, part in enumerate(parts)], "model", sentence)
+    _lock_not_stale(db, task, expected, step.id)
     new_steps, media_ids = _replace_steps(db, task, user["sub"], [step], prepared)
     db.commit()
     media.release(db, media_ids)
@@ -1519,6 +1523,26 @@ _MEDIA_GONE = "사진이 방금 다른 화면에서 지워졌습니다. 사진�
 _MSG_STALE_EDIT = "다른 창에서 먼저 고쳤어요. 새로 불러온 뒤 다시 고쳐 주세요."
 
 
+def _check_not_stale(task: Task, expected, step_id: str) -> None:
+    """이 창이 본 직무 updated_at(expected)이 지금과 다르면 409(다른 창에서 먼저 고침). expected가 없으면 검사하지 않는다."""
+    if expected is not None and _naive_utc(expected) != _naive_utc(task.updated_at):
+        raise send.ApiError(409, _MSG_STALE_EDIT, code="stale_edit", step_ids=[step_id])
+
+
+def _lock_not_stale(db: Session, task: Task, expected, step_id: str) -> None:
+    """쓰기 잠금을 잡으면서 다시 검사한다(원자적). 이 세션이 읽은 updated_at 그대로일 때만 값을 바꾸지 않는 UPDATE가
+    한 줄을 고치고, 그사이(음성 합성·그림 찾기 동안) 다른 창이 먼저 커밋했으면 0줄이라 409다. 단계를 바꾸기 전에 부른다
+    (먼저 바꾸면 flush가 이 세션의 updated_at을 올려 버린다)."""
+    if expected is None:
+        return
+    _check_not_stale(task, expected, step_id)
+    res = db.execute(update(Task).where(Task.id == task.id, Task.updated_at == task.updated_at)
+                     .values(status=Task.status).execution_options(synchronize_session=False))
+    if res.rowcount == 0:
+        db.rollback()
+        raise send.ApiError(409, _MSG_STALE_EDIT, code="stale_edit", step_ids=[step_id])
+
+
 @app.patch("/api/tasks/{task_id}/steps/{step_id}", response_model=EditorStepOut)
 def update_step(task_id: str, step_id: str, payload: StepUpdate,
                 db: Session = Depends(get_db),
@@ -1536,9 +1560,21 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
     step = db.get(Step, step_id)
     if step is None or step.task_id != task_id:
         raise HTTPException(status_code=404, detail="단계를 찾을 수 없습니다.")
-    if payload.expected_updated_at is not None and \
-            _naive_utc(payload.expected_updated_at) != _naive_utc(task.updated_at):
-        raise send.ApiError(409, _MSG_STALE_EDIT, code="stale_edit", step_ids=[step.id])
+    _check_not_stale(task, payload.expected_updated_at, step.id)
+    # 네트워크 호출(음성 합성·동작 종류 분류)은 단계를 바꾸기 전에 끝낸다. 그 뒤 잠그면서 다시 검사해야, 그사이 다른
+    # 창이 먼저 저장한 문장을 덮어쓰지 않는다(1회차 검증: 같은 expected로 보낸 두 PATCH가 둘 다 200이던 문제).
+    pre_tts_key: str | None = None
+    pre_action: str | None = None
+    if payload.sentence is not None and not payload.defer_media and \
+            (payload.sentence != step.sentence or step.tts_stale):
+        pre_tts_key = synthesize_tts(payload.sentence, user["sub"])
+        # 동작 계열도 옛 문장의 것이다("상자를 옮기세요"→move를 "바닥을 쓸어주세요"로 고쳐도 move로 남았다).
+        # 남겨 두면 후보 재검색이 맞는 그림을 계열 불일치로 깎고, 화면에 틀린 꼬리표가 붙는다. 새 문장으로
+        # 직무 분해와 같은 규칙 분류기(AI 하네스 /ai/classify-action, LLM 없음)에 다시 매긴다. 하네스가 죽어
+        # 있으면 other(벌점 없음·꼬리표 숨김)다. 하네스로 보내는 글은 직무 생성과 같이 근로자 실명을 별칭으로
+        # 바꾼다. 자동 저장(defer_media)으로 이미 문장이 바뀐 단계(tts_stale)도 여기서 다시 매긴다.
+        pre_action = ai_client.classify_action(employer_pseudonymizer(db, user["sub"]).mask(payload.sentence))
+    _lock_not_stale(db, task, payload.expected_updated_at, step.id)
     released: list[str] = []
     claimed: str | None = None
     if payload.symbol_url is not None:
@@ -1587,18 +1623,12 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
             else:
                 if step.tts_media_id:
                     released.append(step.tts_media_id)
-                step.tts_media_id = _tts_media_id(db, user["sub"], synthesize_tts(payload.sentence, user["sub"]))
+                step.tts_media_id = _tts_media_id(db, user["sub"], pre_tts_key)
                 step.tts_stale = False
                 # 저장된 symbol_query는 옛 문장에 묶여 있다. 비우면 후보 조회가 새 문장에서
                 # 검색어를 다시 뽑는다.
                 step.symbol_query = ""
-                # 동작 계열도 옛 문장의 것이다("상자를 옮기세요"→move를 "바닥을 쓸어주세요"로 고쳐도 move로 남았다).
-                # 남겨 두면 후보 재검색이 맞는 그림을 계열 불일치로 깎고, 화면에 틀린 꼬리표가 붙는다. 새 문장으로
-                # 직무 분해와 같은 규칙 분류기(AI 하네스 /ai/classify-action, LLM 없음)에 다시 매긴다. 하네스가 죽어
-                # 있으면 other(벌점 없음·꼬리표 숨김)다. 하네스로 보내는 글은 직무 생성과 같이 근로자 실명을 별칭으로
-                # 바꾼다. 자동 저장(defer_media)으로 이미 문장이 바뀐 단계(tts_stale)도 여기서 다시 매긴다.
-                masker = employer_pseudonymizer(db, user["sub"])
-                step.action_type = ai_client.classify_action(masker.mask(payload.sentence))
+                step.action_type = pre_action or "other"
     if payload.safety_flag is not None:
         step.safety_flag = payload.safety_flag
         step.safety_source = safety_rules.SOURCE_MANUAL
