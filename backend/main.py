@@ -63,10 +63,14 @@ from auth import (
 )
 import clock
 import db_migrate
+import events
+import live
+import push
 import send
 import task_list
 import versions
 from codes import normalize_workplace_code
+from deps import current_worker
 from database import checkpoint_wal, get_db
 from models import (
     Assignment,
@@ -80,6 +84,7 @@ from models import (
     TaskVersionStep,
     Worker,
     WorkerConsent,
+    WorkerPresence,
 )
 from privacy import (
     employer_pseudonymizer,
@@ -494,19 +499,7 @@ def worker_login(payload: WorkerLogin, request: Request,
                                                    code_fingerprint(worker.access_code_hash)))
 
 
-def current_worker(user: dict = Depends(require_worker), db: Session = Depends(get_db)) -> dict:
-    """근로자 토큰이 지금도 유효한 근로자를 가리키는지 확인한다.
-
-    토큰은 서명만 확인하면 만료(24시간)까지 통과한다. 그러면 삭제된 근로자나, 코드가 새어
-    재발급한 뒤의 예전 토큰도 계속 쓰인다. 근로자 존재와 접속 코드 지문(cf)을 DB와 대조한다.
-    지문이 없는 토큰은 이 기능 이전에 발급된 것이라 만료까지만 받아 준다.
-    """
-    worker = db.get(Worker, user["sub"])
-    if worker is None:
-        raise HTTPException(status_code=401, detail="근로자 정보를 찾을 수 없습니다. 다시 로그인해 주세요.")
-    if "cf" in user and user["cf"] != code_fingerprint(worker.access_code_hash):
-        raise HTTPException(status_code=401, detail="접속 코드가 바뀌었습니다. 새 코드로 다시 로그인해 주세요.")
-    return user
+# current_worker(근로자 토큰이 지금도 유효한 근로자인지)는 deps.py에 있다(live·events 라우터와 같이 쓴다).
 
 
 # --- 사업주: 근로자 관리 ---
@@ -904,6 +897,8 @@ def delete_worker(worker_id: str, request: Request, db: Session = Depends(get_db
         db.execute(delete(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids)))
         db.execute(delete(Assignment).where(Assignment.worker_id == worker_id))
     db.execute(delete(WorkerConsent).where(WorkerConsent.worker_id == worker_id))
+    # (2c) 지금 보던 단계(worker_presence)도 근로자 기록이다(contract §1.7).
+    db.execute(delete(WorkerPresence).where(WorkerPresence.worker_id == worker_id))
     db.delete(worker)
     record_access(db, request, user, "worker.delete", worker_id, commit=False)
     db.commit()
@@ -1264,6 +1259,9 @@ def delete_task(task_id: str, db: Session = Depends(get_db),
     if assignment_ids:
         db.execute(delete(HelpRequest).where(HelpRequest.assignment_id.in_(assignment_ids)))
         db.execute(delete(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids)))
+        # (2c) 지운 배정을 보던 근로자의 '지금 단계'는 비운다(근로자 줄은 남기고 가리키는 곳만 지움).
+        db.execute(update(WorkerPresence).where(WorkerPresence.assignment_id.in_(assignment_ids))
+                   .values(assignment_id=None, step_id=None, step_started_at=None))
         db.execute(delete(Assignment).where(Assignment.task_id == task_id))
     version_ids = list(db.scalars(select(TaskVersion.id).where(TaskVersion.task_id == task_id)).all())
     version_steps = (db.scalars(select(TaskVersionStep).where(TaskVersionStep.version_id.in_(version_ids))).all()
@@ -2074,6 +2072,7 @@ def _create_log_once(payload: PerformanceLogCreate, response: Response, db: Sess
         db.add(log)
     log.duration_sec = payload.duration_sec
     log.replay_count = payload.replay_count
+    log.prev_count = payload.prev_count
     log.stuck = payload.stuck
     log.completed_at = at
     log.client_event_id = payload.client_event_id
@@ -2134,9 +2133,11 @@ _HELP_CANCELLED = "근로자가 이미 취소한 요청이에요."
 
 
 def notify_help_opened(db: Session, help_request: HelpRequest) -> None:
-    """새 도움 요청이 생겼을 때 사업주에게 알린다. 지금은 사업주 화면이 GET /api/employer/help를 폴링한다."""
-    # TODO(결정 6): 웹 푸시 — 사업주 구독 기기로 알림
-    return None
+    """새 도움 요청이 생겼을 때(또는 확인한 요청을 다시 불렀을 때) 사업주에게 알린다(결정 6, 2c).
+
+    사업주 홈은 GET /api/employer/live(4초 캐시)를 5초마다 불러 띠를 보인다. 키와 구독이 있으면 웹 푸시도 보낸다
+    (요청 처리 밖, 근로자 이름 없음). 푸시가 실패해도 도움 요청은 그대로 201이다."""
+    push.notify_help(help_request.employer_id)
 
 
 def _help_out(db: Session, h: HelpRequest) -> HelpOut:
@@ -2360,6 +2361,8 @@ def employer_help(request: Request, state: Literal["active", "open", "today"] = 
             step_order=step.order_index if step is not None else None,
             step_sentence=step.sentence if step is not None else None,
             step_symbol_url=step_out.symbol_url if step_out is not None else None,
+            source_step_id=versions.step_key(step) if step is not None else None,
+            step_thumb_url=step_out.symbol_url if step_out is not None else None,
         ))
     # 근로자 이름이 실리므로 근로자마다 열람 기록을 남긴다(5초 폴링은 privacy.DEDUPED_ACTIONS가 묶는다).
     # 빈 목록은 개인정보를 보여 주지 않으므로 남기지 않는다(2차 검증: 예전에는 worker_id 없는 행이 1분에 하나씩 쌓였다).
@@ -2742,3 +2745,6 @@ def remove_step_photo(task_id: str, step_id: str,
 # (2a-0) 보내기 검사·보내기·받는 사람(send.py). 새 라우트는 APIRouter 모듈에 두고 여기서는 include만 한다.
 app.include_router(send.router)
 app.include_router(task_list.router)
+app.include_router(live.router)
+app.include_router(events.router)
+app.include_router(push.router)

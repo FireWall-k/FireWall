@@ -18,6 +18,8 @@
 - (0007) 버전 고정: TaskVersion·TaskVersionStep(보낼 때 steps를 복사한 스냅샷). 배정은 task_version_id로 버전을
   가리키고, 근로자 화면·완료 판정·도움·대시보드·내보내기는 그 버전 단계를 읽는다. steps는 사업주 편집 작업면이다.
   수행 로그·도움 요청의 step_id는 버전 단계 id다(편집으로 지워지지 않는다). 배정의 '그 날'은 scheduled_day(현지 날짜).
+- (0009) 오늘 현황과 도움(2c): WorkerPresence(근로자 기기가 지금 보는 단계, 근로자마다 한 줄), PerformanceLog.prev_count
+  ([이전] 누름 수), PushSubscription(사업주 기기 웹 푸시 구독), ClientEvent(측정 이벤트, 개인정보 없음).
 """
 from __future__ import annotations
 
@@ -291,6 +293,8 @@ class PerformanceLog(Base):
     completed: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
     # 근로자 기기 오프라인 대기열의 재전송 묶기 키. 같은 값이 다시 오면 아무것도 바꾸지 않는다.
     client_event_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # (0009) 이 단계에서 [이전]을 누른 수(타임라인·코칭 신호). stuck처럼 저장만 하고 막힘 판정에는 쓰지 않는다.
+    prev_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
 
 class HelpRequest(Base):
@@ -325,6 +329,50 @@ class HelpRequest(Base):
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class WorkerPresence(Base):
+    """(0009) 근로자 기기가 지금 보고 있는 단계(근로자마다 한 줄, 덮어씀). 오늘 현황의 '지금 단계'·막힘·연결 끊김 판정용.
+
+    step_started_at은 서버 시계로 옮긴 값이다(기기 '보낸 시각 - 시작 시각'만큼 서버 수신 시각에서 뺌). updated_at은
+    서버가 마지막으로 신호를 받은 시각(같은 내용이면 15초 안에는 다시 쓰지 않는다). 근로자를 지우면 함께 지운다.
+    """
+    __tablename__ = "worker_presence"
+    worker_id: Mapped[str] = mapped_column(ForeignKey("workers.id"), primary_key=True)
+    assignment_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    # 버전 단계 id(직무 시작·완료 화면이면 NULL).
+    step_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    step_started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    replay_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    prev_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
+class PushSubscription(Base):
+    """(0009) 사업주 기기의 웹 푸시 구독. 도움 요청이 생기면 이 사업장 구독마다 '도움 요청이 있어요'를 보낸다(이름 없음).
+    푸시 서비스가 410·404를 주면 지운다."""
+    __tablename__ = "push_subscriptions"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    employer_id: Mapped[str] = mapped_column(ForeignKey("employers.id"), index=True)
+    endpoint: Mapped[str] = mapped_column(String, unique=True)
+    p256dh: Mapped[str] = mapped_column(String)
+    auth: Mapped[str] = mapped_column(String)
+    user_agent: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+    last_ok_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class ClientEvent(Base):
+    """(0009) 화면 측정 이벤트(명세 8.4). 이름·문장 같은 개인정보 칸은 두지 않는다(누가 했는지는 actor 종류뿐)."""
+    __tablename__ = "client_events"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    employer_id: Mapped[str] = mapped_column(String, index=True)
+    actor: Mapped[str] = mapped_column(String)  # "worker" | "employer"
+    name: Mapped[str] = mapped_column(String)
+    task_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    step_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    value_num: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
 
 class WorkerConsent(Base):

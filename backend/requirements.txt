@@ -8,3 +8,4 @@ python-multipart==0.0.12
 alembic==1.13.3
 pillow==11.3.0
 cryptography==49.0.0
+pywebpush==2.5.0
