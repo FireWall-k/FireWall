@@ -427,6 +427,8 @@ test("390폭 세로 + 도움 띠(100%·130%): 문장 첫 줄과 [듣기]가 흐�
 });
 
 test("넘치는 시작·완료 화면도 axe 심각 위반이 없다(390×740·가로·130%)", async ({ page }) => {
+  // axe를 12번 돌린다. 혼자 돌면 17~24초지만 병렬로 돌 때 30초를 넘는 일이 있어(dev에서도 같음) 90초로 둔다.
+  test.setTimeout(90_000);
   for (const big of [false, true]) {
     if (big) await bigText(page);
     await loginAsWorker(page);
