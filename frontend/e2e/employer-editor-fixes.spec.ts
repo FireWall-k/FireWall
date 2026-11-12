@@ -236,7 +236,8 @@ test.describe("휴대폰", () => {
     await page.goto(`/m/tasks/${t.id}`);
     await page.getByTestId("editor-bottom-bar").getByRole("button", { name: "그림 한눈에" }).tap();
     const box = page.getByTestId("picture-overview").getByRole("checkbox").first();
-    await box.scrollIntoViewIfNeeded();
+    // 가운데로 굴린다: scrollIntoViewIfNeeded는 화면 끝에 겨우 맞춰, 머리 높이에 따라 아래 고정 줄에 반쯤 가려진 채 잴 수 있다.
+    await box.evaluate((el) => el.scrollIntoView({ block: "center" }));
     expect(await hitHeight(box)).toBeGreaterThanOrEqual(44);
     // 보내기 시트 받는 사람 줄
     const done = fixedDraft();

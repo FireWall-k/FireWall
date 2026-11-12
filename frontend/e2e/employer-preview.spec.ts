@@ -101,3 +101,52 @@ test.describe("편집기 미리보기 1440", () => {
     await expect(page.getByTestId("phone-preview")).toHaveCount(0);
   });
 });
+
+// 2b-2 병합 검증: 390(768 미만)에서는 오른쪽 단추 묶음이 숨고 P 단축키도 꺼져 있어 미리보기를 열 길이 없었다.
+// 머리의 [미리보기](preview-toggle-mobile)를 실제로 눌러 목록·단계 상세 두 화면에서 전체 화면 서랍이 열려야 한다.
+const { defaultBrowserType: _ignoredPixel, ...PIXEL } = devices["Pixel 7"];
+void _ignoredPixel;
+
+test.describe("편집기 미리보기 390", () => {
+  test.use({ ...PIXEL, locale: "ko-KR", viewport: { width: 390, height: 844 } });
+
+  test("목록·상세에서 [미리보기]를 눌러 전체 화면으로 열고 닫는다 — 금지 요청 0건, axe 심각 0, 가로 넘침 없음", async ({ page }) => {
+    const draft = fourStateDraft();
+    const m = await mockEditor(page, { tasks: [draft] });
+    await mockPreview(page, m);
+    const banned: string[] = [];
+    page.on("request", (r) => {
+      if (r.url().startsWith(API) && BANNED.test(new URL(r.url()).pathname)) banned.push(`${r.method()} ${r.url()}`);
+    });
+
+    await loginEmployer(page, `/m/tasks/${draft.id}`);
+    await expect(page.getByTestId("step-row-1")).toBeVisible();
+    await expect(page.getByTestId("preview-toggle")).toBeHidden();
+    const toggle = page.getByTestId("preview-toggle-mobile");
+    const drawer = page.getByTestId("preview-drawer");
+
+    for (const where of ["목록", "상세"] as const) {
+      if (where === "상세") await page.getByTestId("step-row-1").getByRole("button").first().click();
+      if (where === "상세") await expect(page.getByTestId("step-detail")).toBeVisible();
+      await expect(toggle, where).toBeVisible();
+      await expect(toggle).toHaveAttribute("aria-expanded", "false");
+      await toggle.click();
+      await expect(toggle).toHaveAttribute("aria-expanded", "true");
+      await expect(drawer).toBeVisible();
+      await expect(drawer).toHaveAttribute("data-layout", "full");
+      const box = (await drawer.boundingBox())!;
+      expect(Math.round(box.width), where).toBe(390);
+      await expect(page.frameLocator('[data-testid="phone-preview-frame"]').locator("h1").first()).toContainText("앞치마를 입어요.");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth), where).toBeLessThanOrEqual(390);
+
+      const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
+      const serious = r.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id);
+      expect(serious, where).toEqual([]);
+
+      await drawer.getByRole("button", { name: "미리보기 닫기" }).click();
+      await expect(drawer).toBeHidden();
+      await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    }
+    expect(banned).toEqual([]);
+  });
+});

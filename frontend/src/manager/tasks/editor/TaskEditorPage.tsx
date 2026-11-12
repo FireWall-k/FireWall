@@ -741,6 +741,19 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed, onP
           </span>
           <SaveIndicator status={saveStatus} when={when} onRetry={saveError?.retry} />
         </div>
+        {/* 좁은 화면(768 미만)의 [미리보기]: 오른쪽 단추 묶음은 md 이상에서만 보이고 P 단축키도 넓은 화면 전용이라,
+            이 단추가 없으면 390에서 미리보기를 열 길이 없었다(2b-2 병합 검증). 아래 고정 줄은 320에서 세 칸이 넘쳐 머리에 둔다. */}
+        <Button
+          variant="secondary"
+          onClick={preview.toggle}
+          aria-expanded={preview.open}
+          aria-controls="editor-preview-drawer"
+          data-testid="preview-toggle-mobile"
+          className="md:hidden"
+          icon={<PanelRight size={16} strokeWidth={2} aria-hidden="true" />}
+        >
+          {previewCopy.toggle}
+        </Button>
         <div className="hidden items-center gap-3 md:flex">
           <ReviewQueueBar
             remaining={remaining}
