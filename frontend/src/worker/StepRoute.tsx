@@ -4,7 +4,7 @@
 // - 도움 요청은 따로(useHelp), [다 했어요]를 누르면 서버가 열린 요청을 닫는다.
 // - 화면 꺼짐 방지는 이 화면에 있는 동안 켠다.
 // - (2c) 지금 보는 단계를 사업주 홈에 알린다(usePresence). 측정 이벤트는 모아 보낸다(실패·오프라인이면 버림).
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useHelp } from "./hooks/useHelp";
 import { trackWorkerEvent, usePresence } from "./hooks/usePresence";
@@ -21,23 +21,15 @@ function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
   const p = progressOf(job);
   const index = resolveStepIndex(job.steps, n, p.doneIds);
   const step = index == null ? null : job.steps[index];
-  const rawHelp = useHelp({
-    assignmentId: job.assignment_id,
-    stepId: step?.id ?? null,
-    initial: job.active_help,
-  });
   const stepId = step?.id ?? null;
-  // [도와주세요]를 누른 것도 측정 이벤트로 남긴다(도움 요청 자체는 useHelp가 서버에 보낸다).
-  const help = useMemo(
-    () => ({
-      ...rawHelp,
-      request: () => {
-        trackWorkerEvent("help_open", { task_id: job.task_id, step_id: stepId }, online);
-        rawHelp.request();
-      },
-    }),
-    [rawHelp, job.task_id, stepId, online],
-  );
+  // 도움 요청도 측정 이벤트로 남긴다(요청 자체는 useHelp가 서버에 보낸다). 실제로 부르기를 시작할 때만 센다:
+  // 이미 '부르는 중'·'불렀어요'일 때 다시 누른 것은 세지 않는다(1회차 검증: 4번 누르면 help_open 4건, 요청은 1건).
+  const help = useHelp({
+    assignmentId: job.assignment_id,
+    stepId,
+    initial: job.active_help,
+    onSend: () => trackWorkerEvent("help_open", { task_id: job.task_id, step_id: stepId }, online),
+  });
   const report = usePresence({ assignmentId: job.assignment_id, online });
   const onSignal = useCallback(
     (s: StepSignal) => report({ stepId: s.step.id, replayCount: s.replayCount, prevCount: s.prevCount }),
@@ -61,9 +53,9 @@ function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
         stuck: info.stuck,
         prevCount: info.prevCount,
       });
-      rawHelp.markStepDone(info.step.id);
+      help.markStepDone(info.step.id);
     },
-    [completeStep, job, rawHelp],
+    [completeStep, job, help],
   );
   const onDone = useCallback(
     (info: StepDoneInfo) => {

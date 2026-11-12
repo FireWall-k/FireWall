@@ -50,6 +50,8 @@ interface Options {
   /** 새로고침 전에 열어 둔 요청(today 카드의 active_help). */
   initial?: ActiveHelp | null;
   api?: HelpApi;
+  /** 실제로 부르기를 시작할 때만(이미 '부르는 중'·'불렀어요'라 무시한 누름은 빼고) 한 번 불린다. 측정 이벤트용. */
+  onSend?: () => void;
 }
 
 // --- 이 탭이 기억하는 것(sessionStorage, 막혀 있으면 기억 없이 동작) ---
@@ -86,7 +88,7 @@ function isActive(h: { state: string }): boolean {
   return h.state === "open" || h.state === "acknowledged";
 }
 
-export function useHelp({ assignmentId, stepId, initial, api = workerApi }: Options): HelpController {
+export function useHelp({ assignmentId, stepId, initial, api = workerApi, onSend }: Options): HelpController {
   const openKey = `${OPEN_KEY}${assignmentId}`;
   // 처음 확인할 요청: 서버 목록의 active_help, 없으면 이 탭이 기억한 요청(목록이 아직 옛것일 때).
   const [startId] = useState<string | null>(() => initial?.id ?? sget(openKey));
@@ -98,11 +100,13 @@ export function useHelp({ assignmentId, stepId, initial, api = workerApi }: Opti
   const helpStep = useRef<string | null>(null);
   const apiRef = useRef(api);
   const stepRef = useRef(stepId);
+  const onSendRef = useRef(onSend);
   // 화면을 떠난 뒤 늦게 온 응답이 상태를 바꾸지 않게.
   const gen = useRef(0);
   useEffect(() => {
     apiRef.current = api;
     stepRef.current = stepId;
+    onSendRef.current = onSend;
   });
 
   const remember = useCallback(
@@ -174,6 +178,7 @@ export function useHelp({ assignmentId, stepId, initial, api = workerApi }: Opti
 
   const request = useCallback(() => {
     if (phase === "sending" || phase === "sent") return;
+    onSendRef.current?.();
     const my = ++gen.current;
     const clientRequestId = (phase === "failed" && retryRequestId.current) || newId();
     retryRequestId.current = clientRequestId;
