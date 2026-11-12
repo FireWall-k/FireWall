@@ -490,6 +490,9 @@ def _build_from_llm(raw: dict, clauses: list[Clause] | None = None) -> Decompose
     steps: list[Step] = []
     srcs: list[object] = []
     bad_form: set[int] = set()
+    # 사업주 원문의 말투. 원문 문장이 모두 '~해요'면 GPT가 '~세요'로 바꾼 단계 문장을 되돌린다(step_split.restyle).
+    styles = {step_split.text_style(c.sentence_text or c.text) for c in clauses or []}
+    style = styles.pop() if len(styles) == 1 else None
     for i, s in enumerate(raw_steps[:_MAX_STEPS], start=1):
         sentence = str(s.get("sentence", "")).strip()
         if not sentence:
@@ -497,6 +500,7 @@ def _build_from_llm(raw: dict, clauses: list[Clause] | None = None) -> Decompose
         sentence = sentence[:_MAX_SENTENCE]
         # GPT가 쓴 틀린 지시형('눌러세요'·'알려세요')을 바로잡는다. 못 고치면 노란 줄(근로자는 이 문장을 그대로 듣는다).
         sentence, form_ok = step_split.fix_polite(sentence)
+        sentence = step_split.restyle(sentence, style)
         action = s.get("action_type", "other")
         if action not in _VALID_ACTIONS:
             action = "other"

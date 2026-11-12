@@ -761,6 +761,53 @@ def _style(s: _Sentence) -> str | None:
     return None
 
 
+def text_style(text: str) -> str | None:
+    """원문 한 문장의 말투 — '…세요'면 "seyo", 그 밖의 지시 '…요'(담아요·올려요)면 "yo", 지시가 아니면 None."""
+    an = _analyzer()
+    body = text.strip().rstrip(".!。 ")
+    if an is None or not body:
+        return None
+    return _style(_Sentence(body, an))
+
+
+def restyle(sentence: str, style: str | None) -> str:
+    """GPT 단계 문장의 끝맺음을 사업주 원문 말투로 맞춘다(2026-11-13 그림 정확도 조사: '~해요'로 쓴 지시문의
+    단계 100개 중 96개를 GPT가 '~세요'로 바꿨다).
+
+    원문이 '-아요/-어요'(style "yo")인데 단계 문장이 '…세요'로 끝날 때만 바꾼다. 끝 어절의 원형이 하나로만 읽히고,
+    활용기의 '-(으)세요' 꼴이 그 어절과 글자 그대로 같고, 바꾼 '-아요/-어요' 꼴을 다시 읽어도 그 원형 하나일 때만
+    ('넣으세요' → '넣어요', '살펴보세요' → '살펴봐요'). '쓰세요'(쓰다/쓸다)·'끄세요'처럼 읽기가 둘이면 그대로 둔다.
+    사전에 없는 'X하세요'(결제하세요)는 'X해요'로 바꾼다. 따옴표 속 말은 건드리지 않는다."""
+    if style != "yo":
+        return sentence
+    an = _analyzer()
+    body = sentence.rstrip()
+    end = ""
+    while body and body[-1] in ".!":
+        end = body[-1] + end
+        body = body[:-1]
+    m = re.search(r"([가-힣]+)$", body)
+    if an is None or m is None or not m.group(1).endswith("세요"):
+        return sentence
+    word = m.group(1)
+    if body[:m.start()].count('"') % 2 or body[:m.start()].count("'") % 2:
+        return sentence   # 따옴표가 닫히지 않았다 — 끝 어절이 인용 속 말이다
+    lemmas = {q.lemma for q in an.analyze_word(word)}
+    if not lemmas and word.endswith("하세요") and len(word) > 3:
+        new = word[:-3] + "해요"
+    elif len(lemmas) == 1:
+        lemma = next(iter(lemmas))
+        forms = conjugate.conjugate(lemma)
+        if forms is None or forms.polite != word:
+            return sentence
+        new = imperative(lemma, "yo")
+        if not new or " " in new or {q.lemma for q in an.analyze_word(new)} != {lemma}:
+            return sentence
+    else:
+        return sentence
+    return body[:m.start()] + new + end
+
+
 def imperative(lemma: str, style: str) -> str | None:
     """원형의 지시형(앞 절 끝 어절을 바꿀 말). 확실하지 않으면 None.
 
