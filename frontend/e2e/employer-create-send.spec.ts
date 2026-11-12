@@ -61,7 +61,8 @@ test.describe("1440 전체 흐름", () => {
     await expect(page.getByRole("button", { name: "현황 보기" })).toBeVisible();
     expect(m.sends).toHaveLength(1);
     // 보낸 직무를 다시 열면 버전 안내(contract §3.7)
-    await expect(page.getByTestId("version-notice")).toHaveText(/이 직무를 받은 1명 중 0명이 지금 하고 있어요.*다음에 보낼 때부터 바뀌어요/);
+    // 하는 사람이 0명이고 고친 것이 없으면 '0명이 지금 하고 있어요'·'다음에 보낼 때부터 바뀌어요'를 붙이지 않는다(2회차 검증).
+    await expect(page.getByTestId("version-notice")).toHaveText("이 직무를 받은 사람이 1명 있어요");
     expect(await horizontalOverflow(page)).toBe(0);
     expect(await page.locator("main").innerText()).not.toMatch(/\bAI\b|동작이 2개/);
   });

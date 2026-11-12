@@ -126,7 +126,8 @@ export function SentenceLint({
 
 // --- VersionNotice: 보낸 직무를 고칠 때 머리 아래(contract §3.7) ---
 
-export function VersionNotice({ recipients, working }: { recipients: number; working: number }) {
+// '다음에 보낼 때부터 바뀌어요'는 보낸 뒤 고친 것이 있을 때(changed)만 붙인다(2회차 검증).
+export function VersionNotice({ recipients, working, changed }: { recipients: number; working: number; changed: boolean }) {
   if (recipients <= 0) return null;
   return (
     <p
@@ -135,10 +136,14 @@ export function VersionNotice({ recipients, working }: { recipients: number; wor
     >
       <Users size={16} strokeWidth={2} aria-hidden="true" className="shrink-0 text-info-700" />
       <span>{versionNotice.working(recipients, working)}</span>
-      <span aria-hidden="true" className="text-ink-500">
-        ·
-      </span>
-      <span className="text-ink-700">{versionNotice.nextTime}</span>
+      {changed && (
+        <>
+          <span aria-hidden="true" className="text-ink-500">
+            ·
+          </span>
+          <span className="text-ink-700">{versionNotice.nextTime}</span>
+        </>
+      )}
     </p>
   );
 }

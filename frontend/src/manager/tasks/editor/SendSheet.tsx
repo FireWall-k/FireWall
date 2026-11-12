@@ -26,7 +26,8 @@ export interface SendSheetProps {
   /** 마지막으로 보낸 버전 번호(없으면 null). */
   versionNo: number | null;
   /** 점검표의 실패·경고 줄을 눌렀을 때: 그 단계로 간다(시트는 닫힌다). */
-  onGoToStep: (stepId: string) => void;
+  /** code: 누른 점검표 줄(auto_caution이면 조심 스위치로 초점을 옮긴다). */
+  onGoToStep: (stepId: string, code?: string) => void;
   onSent: (result: SendResult) => void;
 }
 
@@ -172,14 +173,14 @@ function SendSheetBody({ onClose, taskId, hasUnsentChanges, versionNo, onGoToSte
                         {label}
                       </span>
                     ) : (
-                      <CheckLink tone="danger" label={label} onClick={() => b.step_ids[0] && onGoToStep(b.step_ids[0])} />
+                      <CheckLink tone="danger" label={label} onClick={() => b.step_ids[0] && onGoToStep(b.step_ids[0], b.code)} />
                     )}
                   </li>
                 );
               })}
               {warns.map((w) => (
                 <li key={w.code} data-code={w.code}>
-                  <CheckLink tone="warning" label={sendCheckLabel(w.code, w)} onClick={() => w.step_ids[0] && onGoToStep(w.step_ids[0])} />
+                  <CheckLink tone="warning" label={sendCheckLabel(w.code, w)} onClick={() => w.step_ids[0] && onGoToStep(w.step_ids[0], w.code)} />
                 </li>
               ))}
             </ul>

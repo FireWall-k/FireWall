@@ -117,8 +117,13 @@ export function Checkbox({ label, hint, onChange, className, id, disabled, ...re
   const boxId = id ?? `c${auto}`;
   const hintId = hint ? `${boxId}-hint` : undefined;
   return (
-    <div className={cn("flex items-start gap-2", className)}>
-      <span className="relative mt-0.5 inline-flex size-5 shrink-0 coarse:mt-0">
+    <div className={cn("flex items-start gap-2 coarse:items-center", className)}>
+      {/* (2회차 검증) 휴대폰(pointer:coarse)에서 누를 곳 44px: 상자 둘레에 투명한 44px 라벨 영역(before)을 두고,
+          글자 라벨도 44px 높이로 키운다. 상자 모양(20px)은 그대로다. */}
+      <label
+        htmlFor={boxId}
+        className="relative mt-0.5 inline-flex size-5 shrink-0 coarse:mt-0 coarse:before:absolute coarse:before:-inset-3 coarse:before:content-['']"
+      >
         <input
           id={boxId}
           type="checkbox"
@@ -134,9 +139,15 @@ export function Checkbox({ label, hint, onChange, className, id, disabled, ...re
           aria-hidden="true"
           className="pointer-events-none absolute left-[3px] top-[3px] hidden text-white peer-checked:block"
         />
-      </span>
+      </label>
       <span className="flex min-w-0 flex-col">
-        <label htmlFor={boxId} className={cn("cursor-pointer text-ui-base text-ink-900", disabled && "text-ink-500")}>
+        <label
+          htmlFor={boxId}
+          className={cn(
+            "cursor-pointer text-ui-base text-ink-900 coarse:flex coarse:min-h-control-coarse coarse:items-center",
+            disabled && "text-ink-500",
+          )}
+        >
           {label}
         </label>
         {hint && (
@@ -168,7 +179,14 @@ export function Switch({ label, checked, onChange, hint, disabled = false, id, c
   return (
     <div className={cn("flex items-start justify-between gap-3", className)}>
       <span className="flex min-w-0 flex-col">
-        <span id={labelId} className={cn("text-ui-base text-ink-900", disabled && "text-ink-500")} onClick={() => !disabled && onChange(!checked)}>
+        <span
+          id={labelId}
+          className={cn(
+            "cursor-pointer text-ui-base text-ink-900 coarse:flex coarse:min-h-control-coarse coarse:items-center",
+            disabled && "cursor-default text-ink-500",
+          )}
+          onClick={() => !disabled && onChange(!checked)}
+        >
           {label}
         </span>
         {hint && (
@@ -188,6 +206,8 @@ export function Switch({ label, checked, onChange, hint, disabled = false, id, c
         onClick={() => onChange(!checked)}
         className={cn(
           "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors duration-hover",
+          // (2회차 검증) 휴대폰에서 누를 곳 44px: 위아래로 12px씩 투명한 영역(테두리 안쪽 기준)을 더한다(스위치 모양은 그대로).
+          "coarse:my-2.5 coarse:before:absolute coarse:before:-inset-x-px coarse:before:-inset-y-3 coarse:before:content-['']",
           "disabled:cursor-not-allowed disabled:opacity-50",
           checked ? "border-moss-600 bg-moss-600" : "border-line-strong bg-paper-200",
         )}

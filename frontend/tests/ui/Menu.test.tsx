@@ -98,6 +98,17 @@ describe("Menu(… 메뉴)", () => {
 });
 
 describe("Tooltip·Kbd·Badge·Avatar·EmptyState", () => {
+  it("Tooltip align=end는 오른쪽 끝을 맞춰 화면 밖으로 잘리지 않는다(2회차 검증)", () => {
+    render(
+      <Tooltip content="확인할 것이 남았어요" align="end">
+        <Button aria-disabled="true">보내기</Button>
+      </Tooltip>,
+    );
+    const tip = screen.getByRole("tooltip", { hidden: true });
+    expect(tip.className).toMatch(/(^| )right-0( |$)/);
+    expect(tip.className).not.toMatch(/-translate-x-1\/2|left-1\/2/);
+  });
+
   it("Tooltip: 초점이 가면 보이고 설명으로 읽히며 Esc로 숨는다", async () => {
     const user = userEvent.setup();
     render(

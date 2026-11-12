@@ -16,7 +16,7 @@ import { newTask as copy } from "../../copy";
 import EditorSkeleton from "../editor/EditorSkeleton";
 import { EXAMPLE_TASK } from "../example";
 import { errorMessage } from "../listHelpers";
-import { clearDraft, EMPTY_DRAFT, readDraft, writeDraft, type NewTaskDraft } from "./draft";
+import { clearDraft, EMPTY_DRAFT, readDraft, readSavedPreview, writeDraft, writeSavedPreview, type NewTaskDraft } from "./draft";
 import SplitPreviewList from "./SplitPreviewList";
 import { rowsFromPreview, toCreateSteps, type SplitRow } from "./splitRows";
 import { useLeaveGuard } from "./useLeaveGuard";
@@ -41,6 +41,18 @@ export interface NewTaskPageProps {
   onCreated: (task: EditorTask) => void;
 }
 
+function isPreview(v: unknown): v is Preview {
+  if (!v || typeof v !== "object") return false;
+  const p = v as Partial<Preview>;
+  return (
+    typeof p.title === "string" && typeof p.job === "string" && typeof p.input === "string" &&
+    Array.isArray(p.initial) && p.initial.every((t) => typeof t === "string") &&
+    Array.isArray(p.rows) && p.rows.length > 0 &&
+    p.rows.every((r) => !!r && typeof r === "object" && typeof r.key === "string" && typeof r.text === "string" &&
+      typeof r.original === "string" && typeof r.actionType === "string")
+  );
+}
+
 function initialDraft(example: boolean): { draft: NewTaskDraft; restored: boolean } {
   if (example) return { draft: { ...EMPTY_DRAFT, rawInput: EXAMPLE_TASK.rawInput, businessType: EXAMPLE_TASK.businessType }, restored: false };
   const saved = readDraft();
@@ -55,7 +67,8 @@ export default function NewTaskPage({ example = false, onCreated }: NewTaskPageP
     () => !!(start.draft.businessType || start.draft.workEnvironment || start.draft.workerNote || start.draft.noteWorkerId),
   );
   const [workers, setWorkers] = useState<Worker[]>([]);
-  const [preview, setPreview] = useState<Preview | null>(null);
+  // 이 기기에 둔 나눈 목록은 원문이 함께 돌아왔을 때만 되살린다(예시로 열면 버린다).
+  const [preview, setPreview] = useState<Preview | null>(() => (start.restored ? readSavedPreview(isPreview) : null));
   const [splitting, setSplitting] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +90,14 @@ export default function NewTaskPage({ example = false, onCreated }: NewTaskPageP
     }
     writeDraft(draft);
   }, [draft, example]);
+  const firstPreviewWrite = useRef(true);
+  useEffect(() => {
+    if (firstPreviewWrite.current) {
+      firstPreviewWrite.current = false;
+      if (example) return;
+    }
+    writeSavedPreview(preview);
+  }, [preview, example]);
 
   useEffect(() => {
     let alive = true;

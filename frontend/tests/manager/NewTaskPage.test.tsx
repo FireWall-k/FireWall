@@ -140,6 +140,19 @@ describe("쓰는 순간 나누기", () => {
     expect(document.activeElement).toBe(screen.getByLabelText("3단계 문장"));
   });
 
+  it("뒤로 갔다 돌아와도(다시 그려도) 나눈 단계 목록과 고친 줄이 남는다(2회차 검증)", async () => {
+    const user = await openNew();
+    await split(user);
+    const row2 = screen.getByLabelText("2단계 문장") as HTMLTextAreaElement;
+    await user.clear(row2);
+    await user.type(row2, "손을 비누로 씻어요.");
+    document.body.innerHTML = "";
+    await openNew();
+    expect(rowTexts()).toEqual(["앞치마를 입어요.", "손을 비누로 씻어요.", "컵을 씻어요.", "컵을 칼로 긁어요."]);
+    expect(screen.getByRole("button", { name: "이대로 그림 고르기" })).toBeInTheDocument();
+    expect(m.splitPreview).toHaveBeenCalledTimes(1);
+  });
+
   it("[더 나누기]는 커서 자리에서 자르고, 문장 칸 Enter는 줄바꿈을 넣지 않는다", async () => {
     const user = await openNew();
     await split(user);

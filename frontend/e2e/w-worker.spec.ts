@@ -287,6 +287,9 @@ test("6. 움직임 줄이기를 켜면 전환 시간이 0이다", async ({ page 
 test.describe("조심 띠 글자는 늘 한 줄(도움 띠 + 글자 130%)", () => {
   for (const [name, vp] of [
     ["360x560", { width: 360, height: 560 }],
+    ["360x640", { width: 360, height: 640 }],
+    ["320x568", { width: 320, height: 568 }],
+    ["320x700", { width: 320, height: 700 }],
     ["390x740", { width: 390, height: 740 }],
     ["640x360", { width: 640, height: 360 }],
     ["844x390", { width: 844, height: 390 }],
@@ -312,8 +315,14 @@ test.describe("조심 띠 글자는 늘 한 줄(도움 띠 + 글자 130%)", () =
         const text = band.querySelector("span") as HTMLElement;
         const a = text.getBoundingClientRect();
         const b = band.getBoundingClientRect();
-        return { bandH: b.height, textH: a.height, top: a.top - b.top, bottom: b.bottom - a.bottom, lh: parseFloat(getComputedStyle(text).fontSize) * 1.6 };
+        const fs = parseFloat(getComputedStyle(text).fontSize);
+        return { bandH: b.height, textH: a.height, top: a.top - b.top, bottom: b.bottom - a.bottom, lh: fs * 1.6, fs,
+          left: a.left - b.left, right: b.right - a.right };
       });
+      // 2회차 검증: 근로자 화면 가장 작은 글씨 20px(명세 worker-caption) — 상자가 좁아도 그보다 작아지지 않는다.
+      expect(m.fs, `${name} 글자 20px 이상`).toBeGreaterThanOrEqual(20);
+      expect(m.left, `${name} 왼쪽으로 넘침`).toBeGreaterThanOrEqual(0);
+      expect(m.right, `${name} 오른쪽으로 넘침`).toBeGreaterThanOrEqual(0);
       expect(m.bandH, name).toBeCloseTo(40, 0);
       expect(m.textH, `${name} 한 줄`).toBeLessThanOrEqual(m.lh);
       expect(m.top, `${name} 위로 넘침`).toBeGreaterThanOrEqual(0);

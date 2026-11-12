@@ -163,7 +163,7 @@ function useMoreBelow(ref: { current: HTMLElement | null }, key: string): boolea
 // (2b-1) 위험 단계 '조심해요' 띠(명세 4.4-C, contract §3.5): safety_flag=true면 그림 상자 위쪽 가장자리에 40px 글 띠
 // (세모 아이콘 + '조심해요', caution 바탕·cautionInk 글 8.06:1). 그림을 하나 더 넣지 않고 글 띠로,
 // 그림 상자 크기는 그대로 두고 그 안에서 그림이 띠 아래 남은 칸에 맞춰진다. 띠 글자는 늘 한 줄(nowrap)이고, 그림 상자가
-// 좁으면 글자를 줄이고 세모를 숨긴다(index.css .caution-band-*, 그림 칸 컨테이너 기준, 1회차 검증).
+// 좁으면 글자를 줄이고(20px 아래로는 안 줄임) 세모와 좌우 여백을 줄인다(index.css .caution-band*, 그림 칸 컨테이너 기준, 1·2회차 검증).
 // TODO(창업자 결정): 작은 화면+도움 띠에서는 그림이 띠 몫 40px만큼 작아진다(92x52까지). 그림 칸 바닥을 40px 올리면
 // 360x560 130%에서 문장 첫 줄·[듣기]가 화면 밖으로 밀려 1회차에서는 바닥을 그대로 뒀다.
 // 소리는 바꾸지 않는다(문장만 읽음, 명세 4.11).
@@ -172,7 +172,7 @@ function CautionBand() {
   return (
     <div
       data-testid="caution-band"
-      className="flex h-[40px] shrink-0 items-center justify-center gap-2 bg-worker-caution px-3 text-worker-caption font-bold leading-none text-worker-caution-ink hc:border-b-2 hc:border-black hc:bg-white hc:text-black"
+      className="caution-band flex h-[40px] shrink-0 items-center justify-center gap-2 bg-worker-caution text-worker-caption font-bold leading-none text-worker-caution-ink hc:border-b-2 hc:border-black hc:bg-white hc:text-black"
     >
       <IconCaution size={24} className="caution-band-icon" />
       <span className="caution-band-text">{COPY.step.caution}</span>

@@ -121,7 +121,7 @@ describe("시트 내용", () => {
     const warn = screen.getByRole("button", { name: "✦ 자동으로 켠 조심 표시가 1개 있어요 · 그 단계로 가기" });
     expect(screen.getByRole("button", { name: "1명에게 보내기" })).toBeEnabled();
     await user.click(warn);
-    expect(props.onGoToStep).toHaveBeenCalledWith("s1");
+    expect(props.onGoToStep).toHaveBeenCalledWith("s1", "auto_caution");
   });
 
   it("막힌 줄(그림 확인 2/4)은 빨갛게, 누르면 그 단계로 — [보내기]는 꺼진다", async () => {
@@ -135,7 +135,7 @@ describe("시트 내용", () => {
     };
     const { user, props } = await open(rec({ last_batch_worker_ids: ["w1"] }), check);
     await user.click(screen.getByRole("button", { name: "자동으로 고른 그림을 확인했어요 2/4 · 그 단계로 가기" }));
-    expect(props.onGoToStep).toHaveBeenCalledWith("s3");
+    expect(props.onGoToStep).toHaveBeenCalledWith("s3", "unconfirmed_auto");
     expect(screen.getByRole("button", { name: "1명에게 보내기" })).toBeDisabled();
   });
 

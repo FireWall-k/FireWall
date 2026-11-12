@@ -185,7 +185,8 @@ export const sendSheet = {
 
 /** 편집기 위 버전 안내(contract §3.7, 2b-1에서 씀). */
 export const versionNotice = {
-  working: (m: number, k: number) => `이 직무를 받은 ${m}명 중 ${k}명이 지금 하고 있어요`,
+  // 하는 사람이 0명이면 '0명이 지금 하고 있어요' 대신 받은 사람 수만(2회차 검증, TODO(창업자 확인): 문구).
+  working: (m: number, k: number) => (k > 0 ? `이 직무를 받은 ${m}명 중 ${k}명이 지금 하고 있어요` : `이 직무를 받은 사람이 ${m}명 있어요`),
   nextTime: "다음에 보낼 때부터 바뀌어요",
 } as const;
 

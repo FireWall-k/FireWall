@@ -180,4 +180,87 @@ test.describe("휴대폰", () => {
     expect(box!.width).toBeGreaterThanOrEqual(44);
     expect(box!.height).toBeGreaterThanOrEqual(44);
   });
+
+  // ── 2회차 검증 ──
+  for (const width of [390, 360, 320] as const) {
+    test(`${width}: 꺼진 [보내기]를 누르면 토스트는 아래 고정 줄 위에 뜨고, 툴팁은 화면 안에 있다`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      const t = fixedDraft();
+      await mockEditor(page, { tasks: [t] });
+      await loginEmployer(page, `/m/tasks/${t.id}`);
+      await page.getByTestId("editor-send-mobile").tap({ force: true });
+      const toast = page.locator("[data-toast-layer] > *").last();
+      await expect(toast).toBeVisible();
+      const barTop = (await page.getByTestId("editor-bottom-bar").boundingBox())!.y;
+      const tb = (await toast.boundingBox())!;
+      expect(tb.y + tb.height, "토스트가 고정 줄을 덮지 않는다").toBeLessThanOrEqual(barTop);
+      // 고정 줄 단추를 그대로 누를 수 있다(토스트가 가로채지 않음).
+      await page.getByTestId("editor-bottom-bar").getByRole("button", { name: "그림 한눈에" }).tap();
+      await expect(page.getByTestId("picture-overview")).toBeVisible();
+      await page.goto(`/m/tasks/${t.id}`);
+      await page.getByTestId("editor-send-mobile").tap({ force: true });
+      const tip = page.getByRole("tooltip").filter({ visible: true });
+      if (await tip.count()) {
+        const b = (await tip.first().boundingBox())!;
+        expect(b.x).toBeGreaterThanOrEqual(0);
+        expect(b.x + b.width, "툴팁이 오른쪽으로 잘리지 않는다").toBeLessThanOrEqual(width);
+      }
+    });
+  }
+
+  test("390: 보내기 시트 받는 사람·그림 한눈에 체크·조심 스위치·경로 링크는 손가락으로 누를 곳이 44px", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const t = fixedDraft();
+    await mockEditor(page, { tasks: [t] });
+    await loginEmployer(page, `/m/tasks/${t.id}`);
+    const hitHeight = (sel: import("@playwright/test").Locator) =>
+      sel.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        const x = r.left + r.width / 2;
+        const owns = (y: number) => {
+          const at = document.elementFromPoint(x, y);
+          return !!at && (at === el || el.contains(at) || (at instanceof HTMLLabelElement && at.control === el) || at.closest("label")?.control === el);
+        };
+        let top = r.top + r.height / 2;
+        let bottom = top;
+        while (owns(top - 1)) top -= 1;
+        while (owns(bottom + 1)) bottom += 1;
+        return bottom - top + 1;
+      });
+    const crumb = page.getByRole("link", { name: "직무", exact: true }).first();
+    expect((await crumb.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await page.getByTestId("step-row-1").getByRole("button").first().click();
+    const sw = page.getByTestId("step-detail").getByRole("switch");
+    await sw.scrollIntoViewIfNeeded();
+    expect(await hitHeight(sw)).toBeGreaterThanOrEqual(44);
+    await page.goto(`/m/tasks/${t.id}`);
+    await page.getByTestId("editor-bottom-bar").getByRole("button", { name: "그림 한눈에" }).tap();
+    const box = page.getByTestId("picture-overview").getByRole("checkbox").first();
+    await box.scrollIntoViewIfNeeded();
+    expect(await hitHeight(box)).toBeGreaterThanOrEqual(44);
+    // 보내기 시트 받는 사람 줄
+    const done = fixedDraft();
+    for (const st of done.steps) st.state = "confirmed";
+    await mockEditor(page, { tasks: [done] });
+    await page.goto(`/m/tasks/${done.id}`);
+    await page.getByTestId("editor-send-mobile").tap();
+    const who = page.getByRole("dialog", { name: "보내기 전에 확인해요" }).getByRole("checkbox", { name: /김민지 님/ });
+    await who.scrollIntoViewIfNeeded();
+    expect(await hitHeight(who)).toBeGreaterThanOrEqual(44);
+  });
+
+  test("390: 새 직무에서 나눈 뒤 [뒤로] → [앞으로]로 돌아와도 나눈 단계 목록이 남는다", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockEditor(page);
+    await loginEmployer(page, "/m/tasks");
+    await page.goto("/m/tasks/new");
+    await page.getByLabel("어떤 일을 시킬까요?").fill(FIXED_SENTENCE);
+    await page.getByRole("button", { name: "단계로 나누기" }).click();
+    await expect(page.getByRole("button", { name: "이대로 그림 고르기" })).toBeVisible();
+    await page.goBack();
+    await page.goForward();
+    await expect(page).toHaveURL(/\/m\/tasks\/new$/);
+    await expect(page.getByRole("button", { name: "이대로 그림 고르기" })).toBeVisible();
+  });
 });
+

@@ -86,9 +86,10 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
   const detailHeading = useRef<HTMLHeadingElement | null>(null);
   const overviewHeading = useRef<HTMLHeadingElement | null>(null);
   const nextButton = useRef<HTMLButtonElement | null>(null);
+  const bottomBar = useRef<HTMLDivElement | null>(null);
   const sendButton = useRef<HTMLButtonElement | null>(null);
   const mobileSendButton = useRef<HTMLButtonElement | null>(null);
-  const focusWant = useRef<"detail" | "detailIfLost" | "overview" | "afterConfirm" | "list" | { row: string } | null>(null);
+  const focusWant = useRef<"detail" | "caution" | "detailIfLost" | "overview" | "afterConfirm" | "list" | { row: string } | null>(null);
   const listHeading = useRef<HTMLHeadingElement | null>(null);
 
   // ── 불러오기 ── 처음 받은 초안은 마운트 때 한 번만 쓴다(부모가 넘긴 뒤 비워도 다시 불러오지 않게 값을 붙잡아 둔다).
@@ -234,7 +235,7 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
     if (!selectedId && selected) setSelectedId(selected.id);
   }
 
-  function select(id: string | null, focus: "detail" | null = null) {
+  function select(id: string | null, focus: "detail" | "caution" | null = null) {
     setSelectedId(id);
     setPickFirstReview(false);
     setView("edit");
@@ -249,6 +250,16 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
       if (detailHeading.current) {
         focusWant.current = null;
         detailHeading.current.focus();
+      }
+      return;
+    }
+    if (want === "caution") {
+      // 보내기 시트의 '✦ 자동으로 켠 조심 표시' 줄 → 그 단계의 조심 스위치로(390에서는 화면 아래 밖이라 스크롤도).
+      const sw = document.querySelector<HTMLElement>("[data-testid='step-detail'] [role='switch']");
+      if (sw) {
+        focusWant.current = null;
+        sw.focus();
+        sw.scrollIntoView?.({ block: "center" });
       }
       return;
     }
@@ -283,6 +294,24 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
     focusWant.current = null;
     document.querySelector<HTMLButtonElement>(`[data-step-id="${want.row}"] button[data-row-select]`)?.focus();
   });
+
+  // 390: 토스트가 아래 고정 줄([다음 ▶]·[그림 한눈에]·[보내기])을 덮지 않게 토스트 층을 그 줄 위로 올린다(2회차 검증).
+  const hasTask = !!task;
+  useEffect(() => {
+    const bar = bottomBar.current;
+    if (wide || !bar) return;
+    const root = document.documentElement;
+    const place = () => root.style.setProperty("--toast-bottom", `${Math.max(0, window.innerHeight - bar.getBoundingClientRect().top) + 8}px`);
+    place();
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(place);
+    ro?.observe(bar);
+    window.addEventListener("resize", place);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", place);
+      root.style.removeProperty("--toast-bottom");
+    };
+  }, [wide, hasTask]);
 
   // [되돌리기]는 나눈 단계가 그대로 붙어 있을 때만 뜻이 있다(순서를 바꿨거나 하나를 지웠으면 내린다).
   const ids = steps.map((s) => s.id);
@@ -564,10 +593,11 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
     reload();
   }
 
-  function goToStep(stepId: string) {
+  function goToStep(stepId: string, code?: string) {
     setSendOpen(false);
     setBlockedIds((cur) => (needsReview(steps.find((s) => s.id === stepId) ?? { picture_state: "confirmed" }) ? new Set(cur).add(stepId) : cur));
-    select(stepId, "detail");
+    // 초점은 시트가 닫히며 [보내기]로 돌아가지 않고 그 단계로 간다(focus.ts는 이미 옮긴 초점을 덮지 않는다).
+    select(stepId, code === "auto_caution" ? "caution" : "detail");
   }
 
   function nextReview() {
@@ -625,7 +655,7 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
         {copy.send}
       </Button>
     ) : (
-      <Tooltip content={sendDisabledText} side={wide ? "bottom" : "top"} className={className}>
+      <Tooltip content={sendDisabledText} side={wide ? "bottom" : "top"} align={wide ? "center" : "end"} className={className}>
         <Button
           ref={ref}
           variant="primary"
@@ -669,7 +699,7 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
         </div>
       </header>
 
-      {published && <VersionNotice recipients={task.recipients_count ?? 0} working={task.in_progress_count ?? 0} />}
+      {published && <VersionNotice recipients={task.recipients_count ?? 0} working={task.in_progress_count ?? 0} changed={!!task.version?.has_unsent_changes} />}
 
       {view === "overview" ? (
         <PictureOverview
@@ -744,6 +774,7 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
         // [그림 한눈에]에 가려지고 320(200% 확대)에서는 아예 보이지 않았다(1회차 검증).
         <div
           data-testid="editor-bottom-bar"
+          ref={bottomBar}
           className="fixed inset-x-0 bottom-tabbar z-20 flex flex-col gap-2 border-t border-paper-200 bg-white px-4 py-2"
         >
           <ReviewQueueBar

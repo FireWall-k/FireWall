@@ -200,6 +200,25 @@ describe("확인 대기열 · 보내기 단추", () => {
     expect(await screen.findByRole("dialog", { name: "보내기 전에 확인해요" })).toBeInTheDocument();
   });
 
+  it("시트의 '✦ 자동으로 켠 조심 표시' 줄을 누르면 초점이 [보내기]가 아니라 그 단계의 조심 스위치로 간다(2회차 검증)", async () => {
+    const t = task([step("s1", 1, "손을 씻어요.", "confirmed"), step("s2", 2, "칼을 닦아요.", "confirmed")]);
+    sendMock.sendCheck.mockResolvedValue({
+      ok: true,
+      blocking: [{ code: "no_picture", done: 2, total: 2, step_ids: [] }],
+      warnings: [{ code: "auto_caution", count: 1, step_ids: ["s2"] }],
+    });
+    sendMock.recipients.mockResolvedValue({ last_batch_worker_ids: [], all_ever_worker_ids: [], workplace_last_batch_worker_ids: [], today_status: {} });
+    const { user } = await open(t);
+    await user.click(screen.getByTestId("editor-send"));
+    const sheet = await screen.findByRole("dialog", { name: "보내기 전에 확인해요" });
+    await user.click(await within(sheet).findByRole("button", { name: /자동으로 켠 조심 표시가 1개 있어요 · 그 단계로 가기/ }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "보내기 전에 확인해요" })).toBeNull());
+    expect(detail()).toHaveAttribute("data-step-id", "s2");
+    await waitFor(() => expect(document.activeElement).toBe(within(detail()).getByRole("switch")));
+    await new Promise((r) => setTimeout(r, 30));
+    expect(document.activeElement).toBe(within(detail()).getByRole("switch"));
+  });
+
   it("?review=1이면 첫 확인 단계, ?step=이면 그 단계를 연다(목록 [다시 보내기]·홈 딥링크)", async () => {
     await open(FOUR(), "/m/tasks/task-1?step=s4");
     expect(detail()).toHaveAttribute("data-step-id", "s4");
@@ -435,6 +454,11 @@ describe("단계 지우기 · 목소리 · 버전 안내", () => {
     const notice = screen.getByTestId("version-notice");
     expect(notice).toHaveTextContent("이 직무를 받은 3명 중 1명이 지금 하고 있어요");
     expect(notice).toHaveTextContent("다음에 보낼 때부터 바뀌어요");
+  });
+
+  it("보낸 직무: 하는 사람이 0명이고 고친 것이 없으면 받은 사람 수만 보이고 '바뀌어요'는 없다(2회차 검증)", async () => {
+    await open(task(FOUR().steps, { status: "published", version: { current_no: 1, has_unsent_changes: false }, recipients_count: 2, in_progress_count: 0 }));
+    expect(screen.getByTestId("version-notice")).toHaveTextContent(/^이 직무를 받은 사람이 2명 있어요$/);
   });
 
   it("제목은 그 자리에서 고친다(Enter 저장)", async () => {
