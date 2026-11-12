@@ -374,14 +374,18 @@ def compute(db: Session, employer_id: str) -> LiveOut:
                 if p.step_started_at is not None:
                     dwell = (now - p.step_started_at).total_seconds()
                 replay = p.replay_count or 0
-            active = bool(done_ids) or looking
+            # 하는 중은 근로자 단위다(명세 5.2): 오늘 배정 어디든 완료 기록이 하나라도 있으면 하는 중이다.
+            # 직무 1을 끝내고 직무 2를 아직 시작하지 않은 사이에도 하는 중이라 '연결 끊김'을 알아챌 수 있다.
+            active = looking or any(done_by_a.get(it[0].id) for it in today_items)
         plans.append((w, p, today_items, current, cur_step, dwell, replay, active))
 
     avgs = averages(db, [cs.source_step_id for (_w, _p, _t, _c, cs, dw, _r, act) in plans
                          if act and cs is not None and dw is not None])
 
     workers_out: list[LiveWorkerOut] = []
-    working = stuck = 0
+    working = 0
+    # 막힘 의심은 '단계 수'다(명세 5.2 '막힘 의심 2단계'): 같은 단계에서 여러 명이 막혀도 한 단계로 센다.
+    stuck_keys: set[str] = set()
     for w, p, today_items, current, cur_step, dwell, replay, active in plans:
         a_last = [last_log_at.get(it[0].id) for it in today_items]
         looking_at = (p.step_started_at if (p is not None and current is not None
@@ -395,8 +399,8 @@ def compute(db: Session, employer_id: str) -> LiveOut:
                      replay_count=replay, avg_sec=avg, samples=n)
         if active:
             working += 1
-        if b == "stuck_suspect":
-            stuck += 1
+        if b == "stuck_suspect" and cur_step is not None:
+            stuck_keys.add(cur_step.source_step_id or cur_step.id)
         cur_out = None
         if current is not None:
             a, title, vno, steps, _st, _n = current
@@ -432,7 +436,7 @@ def compute(db: Session, employer_id: str) -> LiveOut:
     summary = LiveSummaryOut(
         working=working, total_workers=len(worker_rows),
         open_help=sum(1 for h, *_ in h_rows if h.state == "open"),
-        stuck_steps=stuck, needs_check_tasks=_needs_check_tasks(db, employer_id))
+        stuck_steps=len(stuck_keys), needs_check_tasks=_needs_check_tasks(db, employer_id))
     return LiveOut(server_now=now, summary=summary, workers=workers_out, help=help_out)
 
 

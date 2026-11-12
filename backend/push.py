@@ -4,6 +4,11 @@
   기본 mailto). 공개 키나 개인 키 파일이 없으면 enabled=false이고 아무것도 보내지 않는다. 키는 manage.py vapid-keys로 만든다.
 - 내용: 제목 '잡카드', 내용 '도움 요청이 있어요'(근로자 이름 없음 — 잠금 화면에 뜬다), 누르면 /m#help. 문자 메시지는 없다.
 - 보내기는 요청 처리 밖(작은 스레드 풀)에서 한다. 도움 생성은 푸시 결과와 상관없이 늘 201이다.
+  사업장마다 한 번에 하나만 돈다. 도는 중에 또 부르면 '한 번 더'만 표시하고 끝난 뒤 한 번 더 돈다 — 한 사업장의
+  느린 구독이 풀을 독차지해 다른 사업장 푸시를 늦추지 못하게 한다. 구독 하나는 연결 3초·읽기 5초, 한 번 도는 데
+  ROUND_BUDGET_SEC(30초)를 넘으면 남은 구독은 이번에 건너뛴다(최근에 성공한 구독부터 보낸다).
+- 구독 주소는 알려진 푸시 서비스 호스트(PUSH_HOST_SUFFIXES)의 https 443만 받는다. 서버가 내부 주소로 POST를
+  보내게 하지 못하게 한다(SSRF).
   푸시 서비스가 410·404를 주면 그 구독을 지우고, 나머지 실패는 기록만 남기고 무시한다.
 - 이 모듈은 main을 import하지 않는다(main이 include하고 notify_help_opened가 notify_help를 부른다).
 """
@@ -13,6 +18,7 @@ import json
 import logging
 import os
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlparse
 
@@ -41,12 +47,18 @@ TITLE = "잡카드"
 BODY_HELP = "도움 요청이 있어요"
 URL_HELP = "/m#help"
 TTL_SEC = 300
-TIMEOUT_SEC = 10
+# requests의 (연결, 읽기) 시간 제한. 읽기는 받을 때마다 다시 세므로 한 번 도는 전체 상한(ROUND_BUDGET_SEC)도 둔다.
+TIMEOUT_SEC = (3, 5)
+ROUND_BUDGET_SEC = 30.0
 # 한 사업장의 구독 상한. 넘으면 가장 오래된 것부터 지운다(브라우저를 바꿀 때마다 쌓이지 않게).
 MAX_SUBSCRIPTIONS = 20
 GONE_STATUS = (404, 410)
 
-_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="push")
+_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="push")
+# 사업장마다 도는 중인지·끝나고 한 번 더 돌지(도는 중에 새 도움이 열림).
+_round_lock = threading.Lock()
+_running: set[str] = set()
+_again: set[str] = set()
 _vapid_lock = threading.Lock()
 _vapid_cache: dict[str, object] = {}
 
@@ -105,8 +117,14 @@ def send_all(employer_id: str, data: str) -> dict:
     """사업장 구독마다 보낸다. 410·404는 구독을 지운다. 결과 수를 돌려준다(시험·기록용)."""
     sent = gone = failed = 0
     with SessionLocal() as db:
-        subs = db.scalars(select(PushSubscription).where(PushSubscription.employer_id == employer_id)).all()
+        subs = db.scalars(select(PushSubscription).where(PushSubscription.employer_id == employer_id)
+                          .order_by(PushSubscription.last_ok_at.is_(None), PushSubscription.last_ok_at.desc(),
+                                    PushSubscription.created_at.desc())).all()
+        deadline = time.monotonic() + ROUND_BUDGET_SEC
         for sub in subs:
+            if time.monotonic() > deadline:
+                failed += 1
+                continue
             try:
                 send_one(sub, data)
             except Exception as exc:  # noqa: BLE001 — 어떤 실패도 도움 요청을 막지 않는다
@@ -136,13 +154,41 @@ def _safe(fn, *args) -> None:
         logger.exception("웹 푸시 작업이 실패했습니다")
 
 
+def _run_rounds(employer_id: str, data: str) -> None:
+    """한 사업장의 보내기를 돈다. 도는 중에 또 불렸으면 끝난 뒤 한 번 더 돈다(여러 번 불려도 한 번으로 합친다)."""
+    try:
+        while True:
+            try:
+                send_all(employer_id, data)
+            except Exception:  # noqa: BLE001
+                logger.exception("웹 푸시 작업이 실패했습니다")
+            with _round_lock:
+                if employer_id not in _again:
+                    _running.discard(employer_id)
+                    return
+                _again.discard(employer_id)
+    except BaseException:
+        with _round_lock:
+            _running.discard(employer_id)
+            _again.discard(employer_id)
+        raise
+
+
 def notify_help(employer_id: str | None) -> None:
     """도움 요청이 열렸다(새 요청 또는 확인한 요청을 다시 부름). 키가 없으면 아무것도 하지 않는다."""
     if not employer_id or not enabled():
         return
+    with _round_lock:
+        if employer_id in _running:
+            _again.add(employer_id)
+            return
+        _running.add(employer_id)
     try:
-        _submit(send_all, employer_id, help_payload())
+        _submit(_run_rounds, employer_id, help_payload())
     except Exception:  # noqa: BLE001 — 스레드 풀이 닫힌 경우 등. 도움 요청은 그대로 201이다.
+        with _round_lock:
+            _running.discard(employer_id)
+            _again.discard(employer_id)
         logger.exception("웹 푸시를 맡기지 못했습니다")
 
 
@@ -151,10 +197,31 @@ def notify_help(employer_id: str | None) -> None:
 _MSG_ENDPOINT = "알림 주소가 올바르지 않아요. 알림을 다시 켜 주세요."
 
 
+# 브라우저가 주는 푸시 서비스 호스트(정확히 같거나 '.'+접미사로 끝남). 그 밖의 주소(사설·루프백·링크 로컬 IP,
+# localhost, 다른 도메인)는 받지 않는다 — 서버가 그 주소로 POST를 보내게 되기 때문이다.
+PUSH_HOST_SUFFIXES = (
+    "fcm.googleapis.com",            # Chrome·Edge(안드로이드 포함)·삼성 인터넷
+    "push.services.mozilla.com",     # Firefox (updates.push.services.mozilla.com)
+    "notify.windows.com",            # 예전 Edge(WNS)
+    "push.apple.com",                # Safari (web.push.apple.com)
+)
+
+
+def _allowed_host(host: str) -> bool:
+    host = host.lower().rstrip(".")
+    return any(host == suf or host.endswith("." + suf) for suf in PUSH_HOST_SUFFIXES)
+
+
 def _check_endpoint(endpoint: str) -> str:
     endpoint = endpoint.strip()
-    u = urlparse(endpoint)
-    if u.scheme != "https" or not u.netloc:
+    try:
+        u = urlparse(endpoint)
+        port = u.port
+    except ValueError:
+        raise HTTPException(status_code=422, detail=_MSG_ENDPOINT) from None
+    host = u.hostname or ""
+    if (u.scheme != "https" or not host or u.username is not None or u.password is not None
+            or port not in (None, 443) or not _allowed_host(host)):
         raise HTTPException(status_code=422, detail=_MSG_ENDPOINT)
     return endpoint
 

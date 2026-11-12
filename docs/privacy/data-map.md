@@ -1,6 +1,6 @@
 # 개인정보 데이터 맵 (잡카드)
 
-> 기준: Phase 0.3 (2026-11-07). 코드가 바뀌면 이 문서도 같이 고친다 — 특히 `backend/privacy.py`, `backend/retention.py`, `backend/main.py`의 AI 호출부, `ai_service/schemas.py`.
+> 기준: Phase 0.3 (2026-11-07), 2c 오늘 현황(0009) 반영. 코드가 바뀌면 이 문서도 같이 고친다 — 특히 `backend/privacy.py`, `backend/retention.py`, `backend/main.py`의 AI 호출부, `ai_service/schemas.py`.
 > 법무 검토 전 초안이다. 보존기간의 법적 근거는 법무 검토로 확정해야 한다.
 
 ## 1. 정보 주체와 데이터 항목
@@ -16,6 +16,9 @@
 | 근로자 | 도움 요청(`help_requests`, 0006) | **민감 가능** | 근로자가 [도와주세요]를 누른 기록: 배정·단계, 상태(열림/취소/확인/해결), 해결 방식, 부른·확인·취소·해결 시각. "언제 어느 단계에서 막혔는지"라 수행 로그와 같은 종류다 |
 | 근로자 | 화면 설정(`workers.a11y_prefs`, 0006) | **민감 가능** | 글자 크기·소리 자동 재생·말 빠르기·고대비·왼손 등. 장애 특성을 짐작할 수 있다 |
 | 근로자 | 마지막 접속(`workers.last_seen_at`, 0006) | 개인정보 | 근로자 기기가 오늘 할 일을 마지막으로 받은 시각(30초보다 자주 갱신하지 않음) |
+| 근로자 | 지금 보는 단계(`worker_presence`, 0009) | **민감 가능** | 근로자마다 한 줄(덮어씀): 배정·단계 id, 단계 시작 시각(서버 시계로 보정), 다시 듣기·이전 누름 횟수, 마지막 신호 시각. 오늘 현황의 '지금 단계'·막힘 의심·연결 끊김 판정에 쓴다 |
+| 근로자·사업주 | 화면 측정 이벤트(`client_events`, 0009) | **민감 가능** | 사업장 id, 누가(`worker`/`employer` 종류만), 이벤트 이름(step_view·step_replay·step_prev·help_open, 사업주 화면 이벤트), 직무·단계 id, 숫자 값, 시각. 이름·문장·근로자 id는 담지 않지만, 직무·단계·시각으로 수행 로그·도움 요청과 이어 볼 수 있다 |
+| 사업주 | 웹 푸시 구독(`push_subscriptions`, 0009) | 개인정보 | 사업주 기기 브라우저의 푸시 주소(`endpoint`, 알려진 푸시 서비스 호스트만 받음)·암호 키(p256dh·auth)·브라우저 정보(`user_agent`, 200자까지)·만든 시각·마지막 성공 시각. 푸시 내용은 '도움 요청이 있어요'뿐이고 근로자 이름은 없다(잠금 화면) |
 | 사업주 | 아이디, 비밀번호 해시(PBKDF2), 사업장명 | 개인정보 | |
 | 사업주 | 접근 감사 로그(`access_audit_logs`) | 접속기록 | actor id, 행위, 근로자 id, 시각, IP. 이름은 담지 않는다 |
 | 사업주 | 직무 원문·단계 문장(`tasks`, `steps`) | 업무 정보 | 사업주가 근로자 이름을 적을 수 있다 → 아래 "별칭" 참고 |
@@ -45,6 +48,7 @@
 | OpenAI (Chat Completions) | 미국 | AI 코칭(`/ai/coaching`) | 직무 제목·단계 문장(별칭), 단계별 수행 수치, 업종·환경·직무 분류, 메모(**근로자 지정 + 허용 + 동의 시에만**) | 실명, 근로자 id. **AI 처리 동의가 없거나 철회된 근로자의 기록이 섞이면 LLM을 아예 부르지 않는다**(규칙 기반 제안) |
 | OpenAI (Embeddings, `OPENAI_EMBED_MODEL`) | 미국 | 그림(AAC) 검색 | 단계 문장·검색어(별칭 적용) | 메모, 실명 |
 | Google Cloud Text-to-Speech | 미국 등 | 단계 음성 합성 | 단계 문장 **원문**(실명이 들어 있으면 그대로) | 근로자 정보 |
+| 브라우저 푸시 서비스(Google FCM·Mozilla·Apple·Microsoft, 사업주 브라우저가 고름) | 미국 등 | 도움 요청이 열릴 때(2c) | 암호화한 '잡카드 / 도움 요청이 있어요 / /m#help' | 근로자 이름·직무·단계 |
 
 - 별칭 매핑은 `backend/privacy.py: Pseudonymizer`. 사업장 근로자 전원의 표시 이름을 등록 순서대로 "근로자 A, B, …"로 바꾸고 응답에서 되돌린다. 매핑은 요청 하나 안에서만 쓰고 저장하지 않는다.
 - 한계 1(놓침): 등록된 표시 이름과 **글자가 똑같을 때만** 바꾼다(라틴 문자 이름은 대소문자 무시). 성을 뺀 이름·별명은 못 잡는다. 기본 이름 "근로자" 같은 일반 명사는 바꾸지 않는다.
@@ -74,6 +78,9 @@
 | 수행 로그 | `PERFORMANCE_LOG_RETENTION_DAYS` (기본 365일, `completed_at` 기준) | scheduler가 매일 `purge` (아래 "삭제 스케줄") |
 | 도움 요청 | 수행 로그와 같은 `PERFORMANCE_LOG_RETENTION_DAYS` (기본 365일, `created_at` 기준) | scheduler가 매일 `purge`(결과의 `help_requests` 개수). 근로자를 지우면 함께 지우고, 직무를 지우면 그 배정의 요청을 지운다. 단계만 지우면 기록은 남기고 `step_id`를 비운다 |
 | 화면 설정·마지막 접속 | 근로자 프로필과 같이(사업주가 삭제할 때까지) | `DELETE /api/workers/{id}` |
+| 지금 보는 단계(`worker_presence`) | 근로자마다 한 줄을 덮어쓴다(옛 값은 남지 않음). 근로자 프로필과 같이 | `DELETE /api/workers/{id}`가 함께 지운다 |
+| 화면 측정 이벤트(`client_events`) | 수행 로그와 같은 `PERFORMANCE_LOG_RETENTION_DAYS` (기본 365일, `created_at` 기준) | scheduler가 매일 `purge`(결과의 `client_events` 개수). 남기면 지운 수행 로그·도움 요청을 시각·단계로 다시 이어 볼 수 있어 같은 기한에 지운다 |
+| 웹 푸시 구독(`push_subscriptions`) | 사업주가 알림을 끌 때까지. 한 사업장 20개까지(넘으면 가장 오래된 것부터 지움) | 알림 끄기(`DELETE /api/employer/push-subscriptions`), 푸시 서비스가 410·404를 주면 바로 지운다 |
 | 접근 감사 로그 | `ACCESS_AUDIT_RETENTION_DAYS` (기본 730일) — 「개인정보의 안전성 확보조치 기준」 제8조: 민감정보 처리 시 접속기록 2년 이상 | scheduler가 매일 `purge` (앱 코드에 다른 삭제·수정 경로 없음) |
 | TTS mp3 | 단계를 지우거나 문장을 고치면 그 단계의 소유 레코드는 바로 지운다. 파일은 어느 레코드도 가리키지 않게 된 뒤 `MEDIA_ORPHAN_GRACE_HOURS`(없으면 `TTS_ORPHAN_GRACE_HOURS`, 기본 24시간) 뒤. 캐시를 다시 쓰면 수정 시각을 갱신하고, 정리는 지우기 직전에 레코드·시각을 다시 확인한다(재사용과의 경합 방지) | `manage.py purge` 또는 `manage.py gc-media` |
 | 단계 사진 | 사진을 교체·되돌리거나 단계·직무를 지우면, 다른 단계가 쓰지 않는 한 레코드와 파일을 **바로** 지운다. 레코드 없는 파일(업로드 중 실패 등)은 유예시간 뒤 | 즉시(API) + scheduler의 매일 `purge`(`gc-media`와 같은 정리) |
@@ -108,7 +115,7 @@ WAL을 재시작해도 파일을 자르지 않으면 새로 쓴 지점 뒤의 �
 
 compose 기본 프로필의 `scheduler` 서비스(backend와 같은 이미지, `python manage.py schedule`)가
 마지막 성공 후 `PURGE_INTERVAL_HOURS`(기본 24시간)마다 `purge`를 한 번 돌린다 — 보존기간이 지난 수행 로그·
-접근 감사 로그 삭제, 고아 사진·TTS 정리(`gc-media`와 같은 일), WAL 체크포인트. 실패하면
+도움 요청·화면 측정 이벤트·접근 감사 로그 삭제, 고아 사진·TTS 정리(`gc-media`와 같은 일), WAL 체크포인트. 실패하면
 `PURGE_RETRY_MINUTES`(기본 60분) 뒤 다시 한다. `docker compose up`이면 같이 뜨므로 예전처럼 호스트 crontab에
 등록할 필요가 없다(등록을 잊으면 개인정보가 보존기간을 넘겨 남는데 아무 데서도 드러나지 않았다).
 

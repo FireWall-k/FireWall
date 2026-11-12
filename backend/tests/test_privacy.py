@@ -465,6 +465,41 @@ def test_purge_removes_only_expired_rows_and_orphan_tts(client, capture, monkeyp
     assert new_orphan.exists()
 
 
+def test_purge_removes_expired_client_events(client, monkeypatch, tmp_path):
+    """(2c) 화면 측정 이벤트도 수행 로그와 같은 기한에 지운다. 남기면 지운 수행 로그·도움 요청을
+    시각·단계로 다시 이어 볼 수 있다."""
+    from models import ClientEvent
+    monkeypatch.setenv("TTS_CACHE_DIR", str(tmp_path))
+    monkeypatch.setenv("PERFORMANCE_LOG_RETENTION_DAYS", "365")
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    with SessionLocal() as db:
+        old = ClientEvent(employer_id="purge-ev", actor="worker", name="help_open", task_id="t", step_id="s",
+                          created_at=now - timedelta(days=3000))
+        fresh = ClientEvent(employer_id="purge-ev", actor="worker", name="step_replay",
+                            created_at=now - timedelta(days=10))
+        db.add_all([old, fresh])
+        db.commit()
+        old_id, fresh_id = old.id, fresh.id
+    with SessionLocal() as db:
+        dry = retention.purge(db, dry_run=True)
+    assert dry["client_events"] >= 1
+    with SessionLocal() as db:
+        assert db.get(ClientEvent, old_id) is not None
+        report = retention.purge(db)
+    assert report["client_events"] >= 1
+    with SessionLocal() as db:
+        assert db.get(ClientEvent, old_id) is None
+        assert db.get(ClientEvent, fresh_id) is not None
+
+
+def test_data_map_lists_2c_tables():
+    """data-map.md에 0009의 새 표 세 개와 보존·삭제 방법이 적혀 있다(privacy.py: 바꾸면 그 문서도 고친다)."""
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    doc = open(os.path.join(root, "docs", "privacy", "data-map.md"), encoding="utf-8").read()
+    for table in ("worker_presence", "client_events", "push_subscriptions"):
+        assert doc.count(table) >= 2, table  # 항목 표와 보존 표 둘 다
+
+
 def test_purge_dry_run_deletes_nothing(client, monkeypatch, tmp_path):
     monkeypatch.setenv("TTS_CACHE_DIR", str(tmp_path))
     now = datetime.now(timezone.utc).replace(tzinfo=None)

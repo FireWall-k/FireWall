@@ -165,6 +165,44 @@ def test_live_offline_boundary(client, clk):
     assert site.live()["summary"]["working"] == 1
 
 
+def test_between_tasks_is_in_progress_then_offline(client, clk):
+    """직무 1을 끝내고 직무 2를 아직 시작하지 않은 근로자도 하는 중이다(하는 중은 근로자 단위, 명세 5.2).
+    그래서 기기 신호가 121초 없으면 '연결 끊김'이 되고, '지금 일하는 사람'에도 센다."""
+    site = Site(client)
+    w = site.workers[0]
+    t2 = site.new_task()
+    site.send(t2["id"], [w["id"]])
+    card = site.card(w)
+    for st in card["steps"]:
+        site.log(w, card["assignment_id"], st["id"])
+    data = site.live()
+    me = next(x for x in data["workers"] if x["worker_id"] == w["id"])
+    assert sorted(t["status"] for t in me["today"]) == ["done", "new"]
+    assert me["badge"] == "in_progress" and data["summary"]["working"] == 1
+    clk.at(119)
+    assert site.worker_live(w)["badge"] == "in_progress"
+    clk.at(121)
+    data = site.live()
+    me = next(x for x in data["workers"] if x["worker_id"] == w["id"])
+    assert me["badge"] == "offline" and data["summary"]["working"] == 1
+
+
+def test_stuck_steps_counts_distinct_steps_not_workers(client, clk):
+    """'막힘 의심 n단계'는 단계 수다. 두 사람이 같은 단계에서 막히면 1, 다른 단계면 2."""
+    site = Site(client, n_workers=3)
+    a, b, c = site.workers
+    for w in (a, b):
+        card = site.card(w)
+        site.presence(w, card["assignment_id"], card["steps"][0]["id"], replay=3)
+    data = site.live()
+    assert sorted(x["badge"] for x in data["workers"]) == ["new", "stuck_suspect", "stuck_suspect"]
+    assert data["summary"]["stuck_steps"] == 1
+    card = site.card(c)
+    site.log(c, card["assignment_id"], card["steps"][0]["id"])
+    site.presence(c, card["assignment_id"], card["steps"][1]["id"], replay=3)
+    assert site.live()["summary"]["stuck_steps"] == 2
+
+
 def test_new_worker_is_not_offline_and_idle_without_work(client, clk):
     site = Site(client, n_workers=1)
     idle = site.add_worker("쉬는 사람")

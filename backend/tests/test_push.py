@@ -83,7 +83,7 @@ def test_config_enabled_with_keys(client, keys):
 def test_no_keys_sends_nothing(client, sent):
     calls, _ = sent
     site = Site(client)
-    _subscribe(site, "https://push.example.com/a", client)
+    _subscribe(site, "https://fcm.googleapis.com/fcm/send/a", client)
     r_help, _card = _open_help(site)
     assert r_help["state"] == "open"
     assert calls == []
@@ -93,16 +93,16 @@ def test_sends_to_each_subscription_without_worker_name(client, keys, sent):
     calls, _ = sent
     site = Site(client)
     other = Site(client, task=False)
-    _subscribe(site, "https://push.example.com/a", client)
-    _subscribe(site, "https://push.example.com/b", client)
-    _subscribe(other, "https://push.example.com/other", client)
+    _subscribe(site, "https://fcm.googleapis.com/fcm/send/a", client)
+    _subscribe(site, "https://fcm.googleapis.com/fcm/send/b", client)
+    _subscribe(other, "https://fcm.googleapis.com/fcm/send/other", client)
     w = site.workers[0]
     card = site.card(w)
     r = client.post("/api/worker/help", headers=w["h"],
                     json={"assignment_id": card["assignment_id"], "step_id": card["steps"][0]["id"],
                           "client_request_id": "p1"})
     assert r.status_code == 201
-    assert sorted(c["endpoint"] for c in calls) == ["https://push.example.com/a", "https://push.example.com/b"]
+    assert sorted(c["endpoint"] for c in calls) == ["https://fcm.googleapis.com/fcm/send/a", "https://fcm.googleapis.com/fcm/send/b"]
     for c in calls:
         assert c["data"] == {"title": "잡카드", "body": "도움 요청이 있어요", "url": "/m#help"}
         assert w["display_name"] not in json.dumps(c["data"], ensure_ascii=False)
@@ -120,22 +120,22 @@ def test_gone_subscriptions_deleted_other_failures_ignored(client, keys, sent):
     calls, plan = sent
     site = Site(client)
     for name in ("gone410", "gone404", "err500", "boom", "ok"):
-        _subscribe(site, f"https://push.example.com/{name}", client)
-    plan.update({"https://push.example.com/gone410": 410, "https://push.example.com/gone404": 404,
-                 "https://push.example.com/err500": 500, "https://push.example.com/boom": "boom"})
+        _subscribe(site, f"https://fcm.googleapis.com/fcm/send/{name}", client)
+    plan.update({"https://fcm.googleapis.com/fcm/send/gone410": 410, "https://fcm.googleapis.com/fcm/send/gone404": 404,
+                 "https://fcm.googleapis.com/fcm/send/err500": 500, "https://fcm.googleapis.com/fcm/send/boom": "boom"})
     w = site.workers[0]
     card = site.card(w)
     r = client.post("/api/worker/help", headers=w["h"],
                     json={"assignment_id": card["assignment_id"], "step_id": card["steps"][0]["id"]})
     assert r.status_code == 201  # 푸시가 실패해도 도움은 만들어진다
     assert len(calls) == 5
-    assert _subs(site.employer_id) == ["https://push.example.com/boom", "https://push.example.com/err500",
-                                       "https://push.example.com/ok"]
+    assert _subs(site.employer_id) == ["https://fcm.googleapis.com/fcm/send/boom", "https://fcm.googleapis.com/fcm/send/err500",
+                                       "https://fcm.googleapis.com/fcm/send/ok"]
 
 
 def test_help_201_even_if_dispatch_breaks(client, keys, monkeypatch):
     site = Site(client)
-    _subscribe(site, "https://push.example.com/a", client)
+    _subscribe(site, "https://fcm.googleapis.com/fcm/send/a", client)
 
     def broken(*_a, **_k):
         raise RuntimeError("pool closed")
@@ -150,7 +150,7 @@ def test_help_201_even_if_dispatch_breaks(client, keys, monkeypatch):
 def test_reopen_after_acknowledge_pushes_again(client, keys, sent):
     calls, _ = sent
     site = Site(client)
-    _subscribe(site, "https://push.example.com/a", client)
+    _subscribe(site, "https://fcm.googleapis.com/fcm/send/a", client)
     h, card = _open_help(site)
     assert len(calls) == 1
     client.post(f"/api/employer/help/{h['id']}/acknowledge", headers=site.h)
@@ -166,23 +166,23 @@ def test_subscribe_validation_upsert_and_delete(client):
     bad = client.post("/api/employer/push-subscriptions", headers=site.h,
                       json={"endpoint": "http://insecure.example.com/x", "keys": {"p256dh": "a", "auth": "b"}})
     assert bad.status_code == 422 and "알림" in bad.json()["detail"]
-    _subscribe(site, "https://push.example.com/same", client)
-    _subscribe(site, "https://push.example.com/same", client)  # 같은 주소는 한 줄
-    assert _subs(site.employer_id) == ["https://push.example.com/same"]
+    _subscribe(site, "https://fcm.googleapis.com/fcm/send/same", client)
+    _subscribe(site, "https://fcm.googleapis.com/fcm/send/same", client)  # 같은 주소는 한 줄
+    assert _subs(site.employer_id) == ["https://fcm.googleapis.com/fcm/send/same"]
     # 같은 기기에서 다른 사업장으로 로그인해 켜면 그 사업장으로 옮긴다
-    _subscribe(other, "https://push.example.com/same", client)
-    assert _subs(site.employer_id) == [] and _subs(other.employer_id) == ["https://push.example.com/same"]
+    _subscribe(other, "https://fcm.googleapis.com/fcm/send/same", client)
+    assert _subs(site.employer_id) == [] and _subs(other.employer_id) == ["https://fcm.googleapis.com/fcm/send/same"]
     # 남의 구독은 지우지 못한다
     r = client.request("DELETE", "/api/employer/push-subscriptions", headers=site.h,
-                       json={"endpoint": "https://push.example.com/same"})
-    assert r.status_code == 204 and _subs(other.employer_id) == ["https://push.example.com/same"]
+                       json={"endpoint": "https://fcm.googleapis.com/fcm/send/same"})
+    assert r.status_code == 204 and _subs(other.employer_id) == ["https://fcm.googleapis.com/fcm/send/same"]
     r = client.request("DELETE", "/api/employer/push-subscriptions", headers=other.h,
-                       json={"endpoint": "https://push.example.com/same"})
+                       json={"endpoint": "https://fcm.googleapis.com/fcm/send/same"})
     assert r.status_code == 204 and _subs(other.employer_id) == []
     # 근로자 토큰은 안 됨
     site2 = Site(client)
     r = client.post("/api/employer/push-subscriptions", headers=site2.workers[0]["h"],
-                    json={"endpoint": "https://push.example.com/w", "keys": {"p256dh": "a", "auth": "b"}})
+                    json={"endpoint": "https://fcm.googleapis.com/fcm/send/w", "keys": {"p256dh": "a", "auth": "b"}})
     assert r.status_code == 403
 
 
@@ -194,5 +194,86 @@ def test_subscription_cap_drops_oldest(client, monkeypatch):
     base = clock.utcnow()
     for i in range(5):
         monkeypatch.setattr(clock, "utcnow", lambda i=i: base + timedelta(seconds=i))
-        _subscribe(site, f"https://push.example.com/{i}", client)
-    assert _subs(site.employer_id) == [f"https://push.example.com/{i}" for i in (2, 3, 4)]
+        _subscribe(site, f"https://fcm.googleapis.com/fcm/send/{i}", client)
+    assert _subs(site.employer_id) == [f"https://fcm.googleapis.com/fcm/send/{i}" for i in (2, 3, 4)]
+
+
+def test_endpoint_only_known_push_hosts(client):
+    """내부 주소로 POST를 보내게 하지 못한다(SSRF). 알려진 푸시 서비스 호스트의 https 443만 받는다."""
+    site = Site(client, task=False)
+    keys = {"p256dh": "a", "auth": "b"}
+    for bad in ("https://127.0.0.1:8000/api/anything", "https://169.254.169.254/latest/meta-data",
+                "https://localhost/x", "https://10.0.0.5/admin", "https://[::1]/x",
+                "https://fcm.googleapis.com.evil.example/x", "https://evilfcm.googleapis.com/x",
+                "https://fcm.googleapis.com:8443/x", "https://user@fcm.googleapis.com/x",
+                "https://fcm.googleapis.com:99999/x", "http://fcm.googleapis.com/x"):
+        r = client.post("/api/employer/push-subscriptions", headers=site.h, json={"endpoint": bad, "keys": keys})
+        assert r.status_code == 422, bad
+        assert r.json()["detail"].startswith("알림 주소가 올바르지 않아요")
+    for good in ("https://fcm.googleapis.com/fcm/send/abc", "https://updates.push.services.mozilla.com/wpush/v2/x",
+                 "https://web.push.apple.com/QAbc", "https://db5p.notify.windows.com/w/?token=x",
+                 "https://FCM.googleapis.com./fcm/send/up"):
+        r = client.post("/api/employer/push-subscriptions", headers=site.h, json={"endpoint": good, "keys": keys})
+        assert r.status_code == 201, good
+    assert len(_subs(site.employer_id)) == 5
+
+
+def test_short_timeout_per_subscription(client, keys, sent):
+    calls, _plan = sent
+    seen = []
+    orig = push.webpush
+
+    def spy(**kw):
+        seen.append(kw["timeout"])
+        return orig(**kw)
+
+    push.webpush = spy
+    try:
+        site = Site(client)
+        _subscribe(site, "https://fcm.googleapis.com/fcm/send/t", client)
+        _open_help(site)
+    finally:
+        push.webpush = orig
+    assert seen == [(3, 5)]
+
+
+def test_one_slow_tenant_does_not_starve_others(client, keys, monkeypatch):
+    """한 사업장의 느린 구독 20개와 도움 여러 건이 있어도 다른 사업장 푸시는 바로 나간다(사업장마다 한 번에 하나)."""
+    import threading
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    pool = ThreadPoolExecutor(max_workers=2)
+    monkeypatch.setattr(push, "_submit", lambda fn, *a: pool.submit(push._safe, fn, *a))
+    sent_at: dict[str, float] = {}
+    a_calls = []
+    lock = threading.Lock()
+
+    def fake_webpush(subscription_info, data, vapid_private_key, vapid_claims, ttl, timeout):
+        ep = subscription_info["endpoint"]
+        if "/slow" in ep:
+            with lock:
+                a_calls.append(ep)
+            time.sleep(0.05)
+        else:
+            sent_at[ep] = time.monotonic()
+
+    monkeypatch.setattr(push, "webpush", fake_webpush)
+    a = Site(client, n_workers=3)
+    b = Site(client)
+    for i in range(20):
+        _subscribe(a, f"https://fcm.googleapis.com/fcm/send/slow{i}", client)
+    _subscribe(b, "https://fcm.googleapis.com/fcm/send/fast", client)
+    for w in a.workers:  # 도움 3건 → 한 번 돌고, 도는 중에 온 2건은 '한 번 더' 하나로 합친다
+        card = a.card(w)
+        a.help(w, card["assignment_id"], card["steps"][0]["id"])
+    t0 = time.monotonic()
+    _open_help(b)
+    deadline = time.monotonic() + 10
+    while "https://fcm.googleapis.com/fcm/send/fast" not in sent_at and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert sent_at["https://fcm.googleapis.com/fcm/send/fast"] - t0 < 0.5
+    pool.shutdown(wait=True)
+    # 사업장 A는 한 번 + 합친 한 번 더 = 40번(도움 3건마다 20번씩 60번이 아니다). 요청을 잃지는 않는다.
+    assert len(a_calls) == 40
+    assert not push._running and not push._again
