@@ -250,6 +250,26 @@ def test_org_name_patch(client):
     assert client.patch("/api/workplace", json={"pin": "1234"}, headers=emp).status_code == 422
 
 
+@pytest.mark.parametrize("bad", ["\u200b", "\u200b\u200b", "\u3164", "\ufeff", "\u2800", "\x00", " \x00\t\u200b "])
+def test_org_name_invisible_only_is_422_and_keeps_old(client, bad):
+    """보이지 않는 글자·NUL만 있는 사업장 이름은 빈 이름이다(저장되면 근로자 화면에 빈칸으로 나온다)."""
+    emp = _employer(client)
+    before = client.get("/api/workplace", headers=emp).json()["org_name"]
+    r = client.patch("/api/workplace", json={"org_name": bad}, headers=emp)
+    assert r.status_code == 422 and r.json()["detail"] == "사업장 이름을 1~40자로 적어 주세요."
+    assert client.get("/api/workplace", headers=emp).json()["org_name"] == before
+
+
+@pytest.mark.parametrize("raw", ["행복 카페\u200b\n\t 2호점\ufeff", "행복\x00카페 2호점"])
+def test_org_name_mixed_invisible_is_cleaned(client, raw):
+    """섞여 있는 제어 문자는 공백 하나로, 보이지 않는 글자는 지워서 저장한다."""
+    emp = _employer(client)
+    want = "행복 카페 2호점"
+    r = client.patch("/api/workplace", json={"org_name": raw}, headers=emp)
+    assert r.status_code == 200 and r.json()["org_name"] == want
+    assert client.get("/api/workplace", headers=emp).json()["org_name"] == want
+
+
 def test_me_reflects_teacher_title(client):
     emp = _employer(client)
     w = _worker(client, emp)

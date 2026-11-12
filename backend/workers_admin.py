@@ -49,6 +49,7 @@ from schemas import (
     merge_a11y_prefs,
     parse_a11y_prefs,
 )
+from text_clean import clean_one_line, has_visible
 
 router = APIRouter()
 
@@ -133,8 +134,10 @@ def update_workplace(payload: WorkplaceUpdate, db: Session = Depends(get_db),
     employer = _employer(db, user)
     org_name = title = None
     if payload.org_name is not None:
-        org_name = " ".join(unicodedata.normalize("NFC", payload.org_name).split())
-        if not 1 <= len(org_name) <= ORG_NAME_MAX:
+        # 직무 제목과 같은 규칙: 제어 문자는 공백으로, 보이지 않는 글자는 지우고, 보이는 글자가 없으면 빈 이름이다
+        # (빈칸처럼 보이는 이름이 저장되면 근로자 쪽 'org_name or name' 대체가 듣지 않아 사업장 이름이 빈칸으로 나온다).
+        org_name = " ".join(clean_one_line(unicodedata.normalize("NFC", payload.org_name)).split())
+        if not 1 <= len(org_name) <= ORG_NAME_MAX or not has_visible(org_name):
             raise HTTPException(status_code=422, detail=MSG_ORG_NAME)
     if payload.teacher_title is not None:
         title = unicodedata.normalize("NFC", payload.teacher_title).strip()
