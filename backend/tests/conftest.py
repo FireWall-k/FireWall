@@ -100,6 +100,11 @@ def _reset_login_throttle():
     ratelimit.worker_wp_day_throttle.clear()
     ratelimit.help_throttle.clear()
     ratelimit.ai_split_throttle.clear()
+    # (2c) 오늘 현황 응답 캐시·세션 제한, presence·이벤트 제한도 테스트마다 비운다.
+    import events
+    import live
+    live.clear_cache()
+    events.events_throttle.clear()
     yield
 
 
@@ -141,6 +146,22 @@ def _patch_ai(monkeypatch):
                             "suggestions": [{"order": 2, "issue": "다시듣기 과다",
                                              "suggestion": "사진으로 교체하세요.", "action": "photo"}],
                         })
+
+
+@pytest.fixture(autouse=True)
+def _no_real_push(monkeypatch):
+    # 테스트가 실제 푸시 서비스를 부르지 않게 한다. 키는 기본으로 없고(enabled=false), 키를 넣는 시험도
+    # push.webpush를 가짜로 바꾼다. 맡기기(_submit)는 바로 돌려 결과를 확인할 수 있게 한다.
+    import push
+
+    def _refuse(*a, **kw):
+        raise AssertionError("테스트에서 실제 웹 푸시를 부르면 안 됩니다")
+
+    monkeypatch.setattr(push, "webpush", _refuse)
+    monkeypatch.setattr(push, "_submit", lambda fn, *args: push._safe(fn, *args))
+    monkeypatch.delenv("VAPID_PUBLIC_KEY", raising=False)
+    monkeypatch.delenv("VAPID_PRIVATE_KEY_FILE", raising=False)
+    yield
 
 
 @pytest.fixture()

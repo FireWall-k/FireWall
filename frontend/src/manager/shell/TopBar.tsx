@@ -1,13 +1,15 @@
 // 상단 바 56(명세 3.3, 5.0): 이동 경로 · [새 직무] · 도움 요청 종(숫자 배지) · 사용자 메뉴.
-// 종은 띠와 같은 도움 요청 목록(useHelpFeed)을 읽는다 — 같은 주소를 두 번 부르지 않는다.
+// 종은 띠와 같은 오늘 현황(useLive, LiveProvider 하나)을 읽는다 — 같은 주소를 두 번 부르지 않는다.
+// (2c) 사용자 메뉴에 '도움 알림 받기' 스위치(웹 푸시). 서버에 키가 없거나 브라우저가 못 하면 보이지 않는다.
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Bell, ChevronRight, CircleUser, LogOut, Plus, Settings } from "lucide-react";
-import { IconButton, Menu, buttonClasses } from "../../components/ui";
+import { Bell, BellRing, ChevronRight, CircleUser, LogOut, Plus, Settings } from "lucide-react";
+import { IconButton, Menu, buttonClasses, useToast, type MenuItem } from "../../components/ui";
 import { cn } from "../../cn";
-import { nav, shell } from "../copy";
+import { nav, pushToggle, shell } from "../copy";
 import { crumbsFor } from "./navItems";
-import { useHelpFeed } from "./useHelpFeed";
 import { guardLeave } from "../tasks/new/useLeaveGuard";
+import { usePushToggle } from "./pushToggle";
+import { useLive } from "./useLive";
 
 export interface TopBarProps {
   displayName: string;
@@ -16,7 +18,7 @@ export interface TopBarProps {
 
 /** 띠의 첫 버튼으로 초점을 옮긴다(띠는 본문 위에 있다). */
 function focusHelpStrip() {
-  const strip = document.querySelector<HTMLElement>("[data-testid='help-alert-strip']");
+  const strip = document.querySelector<HTMLElement>("[data-testid='help-band']");
   if (!strip) return;
   (strip.querySelector<HTMLElement>("button") ?? strip).focus();
 }
@@ -24,10 +26,35 @@ function focusHelpStrip() {
 export default function TopBar({ displayName, onLogout }: TopBarProps) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { items } = useHelpFeed();
+  const { help } = useLive();
+  const push = usePushToggle();
+  const toast = useToast();
   const crumbs = crumbsFor(pathname);
   const name = displayName || shell.employerFallbackName;
-  const helpCount = items.length;
+  const helpCount = help.length;
+
+  async function togglePush() {
+    const r = await push.toggle();
+    if (r === "on") toast.show({ tone: "success", message: pushToggle.turnedOn });
+    else if (r === "off") toast.show({ tone: "info", message: pushToggle.turnedOff });
+    else if (r === "denied") toast.show({ tone: "error", message: pushToggle.denied });
+    else toast.show({ tone: "error", message: pushToggle.failed });
+  }
+
+  const menuItems: MenuItem[] = [
+    ...(push.available
+      ? [{
+          id: "push",
+          label: pushToggle.label,
+          hint: push.on ? pushToggle.on : pushToggle.off,
+          disabled: push.busy,
+          icon: <BellRing size={16} strokeWidth={2} aria-hidden="true" />,
+          onSelect: () => void togglePush(),
+        }]
+      : []),
+    { id: "settings", label: nav.settings, icon: <Settings size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(() => navigate("/m/settings")) },
+    { id: "logout", label: shell.logout, icon: <LogOut size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(onLogout) },
+  ];
 
   return (
     <header className="sticky top-0 z-20 flex h-topbar items-center gap-2 border-b border-paper-200 bg-white px-4 md:px-8">
@@ -72,10 +99,7 @@ export default function TopBar({ displayName, onLogout }: TopBarProps) {
 
       <Menu
         label={shell.userMenu}
-        items={[
-          { id: "settings", label: nav.settings, icon: <Settings size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(() => navigate("/m/settings")) },
-          { id: "logout", label: shell.logout, icon: <LogOut size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(onLogout) },
-        ]}
+        items={menuItems}
         trigger={(p) => (
           <button
             {...p}

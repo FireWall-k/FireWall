@@ -1162,4 +1162,4 @@ def test_0008_resumes_when_some_columns_already_added():
     db_migrate.upgrade_to_head(engine)
     assert db_migrate.is_at_head(engine)
     assert _diff_against_models(engine) == []
-    assert db_migrate.head_revision() == _V8
+    assert db_migrate.head_revision() == "0009_live_push"  # 0008 뒤에 2c 0009가 이어짐

@@ -3,13 +3,15 @@
 // - [다 했어요] → 대기열에 기록(오프라인이어도 잃지 않음) → 다음 단계 / 마지막이면 완료 화면.
 // - 도움 요청은 따로(useHelp), [다 했어요]를 누르면 서버가 열린 요청을 닫는다.
 // - 화면 꺼짐 방지는 이 화면에 있는 동안 켠다.
+// - (2c) 지금 보는 단계를 사업주 홈에 알린다(usePresence). 측정 이벤트는 모아 보낸다(실패·오프라인이면 버림).
 import { useCallback } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useHelp } from "./hooks/useHelp";
+import { trackWorkerEvent, usePresence } from "./hooks/usePresence";
 import { useWakeLock } from "./hooks/useWakeLock";
 import { resolveStepIndex } from "./resume";
 import { useBand, useWorkerSession } from "./session";
-import { StepPlayer, type StepDoneInfo } from "./StepPlayer";
+import { StepPlayer, type StepDoneInfo, type StepEventName, type StepSignal } from "./StepPlayer";
 import type { TodayJob } from "./workerApi";
 
 function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
@@ -19,11 +21,24 @@ function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
   const p = progressOf(job);
   const index = resolveStepIndex(job.steps, n, p.doneIds);
   const step = index == null ? null : job.steps[index];
+  const stepId = step?.id ?? null;
+  // 도움 요청도 측정 이벤트로 남긴다(요청 자체는 useHelp가 서버에 보낸다). 실제로 부르기를 시작할 때만 센다:
+  // 이미 '부르는 중'·'불렀어요'일 때 다시 누른 것은 세지 않는다(1회차 검증: 4번 누르면 help_open 4건, 요청은 1건).
   const help = useHelp({
     assignmentId: job.assignment_id,
-    stepId: step?.id ?? null,
+    stepId,
     initial: job.active_help,
+    onSend: () => trackWorkerEvent("help_open", { task_id: job.task_id, step_id: stepId }, online),
   });
+  const report = usePresence({ assignmentId: job.assignment_id, online });
+  const onSignal = useCallback(
+    (s: StepSignal) => report({ stepId: s.step.id, replayCount: s.replayCount, prevCount: s.prevCount }),
+    [report],
+  );
+  const onEvent = useCallback(
+    (name: StepEventName, s: { id: string }) => trackWorkerEvent(name, { task_id: job.task_id, step_id: s.id }, online),
+    [job.task_id, online],
+  );
   // 단계를 실제로 보일 때만 켠다. 이미 끝난 일의 단계 주소로 오면 곧바로 완료 화면으로 가므로 켜지 않는다.
   useWakeLock(index != null && String(index + 1) === n);
 
@@ -32,7 +47,12 @@ function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
   // 화면 잠금으로 화면이 사라지면 기록이 영영 없어졌다). 다음 단계로 넘어가는 것만 칭찬 뒤에 한다.
   const onRecord = useCallback(
     (info: StepDoneInfo) => {
-      completeStep(job, info.step, { durationSec: info.durationSec, replayCount: info.replayCount, stuck: info.stuck });
+      completeStep(job, info.step, {
+        durationSec: info.durationSec,
+        replayCount: info.replayCount,
+        stuck: info.stuck,
+        prevCount: info.prevCount,
+      });
       help.markStepDone(info.step.id);
     },
     [completeStep, job, help],
@@ -66,6 +86,8 @@ function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
       onPrev={() => navigate(`${base}/step/${Math.max(1, index)}`, { replace: true })}
       onExit={() => navigate("/w/today")}
       onMediaError={onMediaError}
+      onSignal={onSignal}
+      onEvent={onEvent}
     />
   );
 }

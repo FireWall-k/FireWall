@@ -21,8 +21,8 @@ for (const width of WIDTHS) {
       await loginEmployer(page, "/m");
       for (const path of ROUTES) {
         await page.goto(path);
-        await expect(page.getByTestId("help-alert-strip"), `${path} 도움 띠`).toBeVisible();
-        await expect(page.getByTestId("help-alert-strip")).toContainText("김민지");
+        await expect(page.getByTestId("help-band"), `${path} 도움 띠`).toBeVisible();
+        await expect(page.getByTestId("help-band")).toContainText("김민지");
         await page.waitForLoadState("networkidle");
         expect(await horizontalOverflow(page), `${path} 가로 넘침`).toBeLessThanOrEqual(0);
         expect(await emojiInText(page), `${path} 이모지`).toEqual([]);
@@ -154,7 +154,7 @@ test.describe("손가락 기기(휴대폰)", () => {
     const small = await page.evaluate(() =>
       Array.from(
         document.querySelectorAll<HTMLElement>(
-          "header button, header a, nav a, nav button, main button, [role=tab], [data-testid=help-alert-strip] button",
+          "header button, header a, nav a, nav button, main button, [role=tab], [data-testid=help-band] button",
         ),
       )
         .filter((el) => el.offsetParent !== null)
@@ -163,7 +163,7 @@ test.describe("손가락 기기(휴대폰)", () => {
     );
     expect(small).toEqual([]);
     // 도움 띠 단추도 검사에 들어갔는지(띠는 header·main 밖에 있다)
-    await expect(page.getByTestId("help-alert-strip").getByRole("button", { name: "도와줬어요" })).toBeVisible();
+    await expect(page.getByTestId("help-band").getByRole("button", { name: "도와줬어요" })).toBeVisible();
   });
 
   test("로그인 화면의 단추·링크('근로자 화면으로 ›' 포함)도 44 이상", async ({ page }) => {
@@ -197,7 +197,7 @@ test.describe("손가락 기기(휴대폰)", () => {
     expect(fit.lastRight).toBeLessThanOrEqual(fit.boxRight);
 
     // 버튼 줄은 글 아래로 내려가고, '1분 전'은 한 줄로 묶인다
-    const strip = page.getByTestId("help-alert-strip");
+    const strip = page.getByTestId("help-band");
     const text = strip.locator("li p").first();
     const button = strip.getByRole("button", { name: "도와줬어요" });
     const tb = (await text.boundingBox())!;

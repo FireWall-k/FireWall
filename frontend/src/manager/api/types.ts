@@ -2,6 +2,8 @@
 // 필드 이름은 서버 응답과 똑같이 쓴다(snake_case). 영어 값(state 등)은 화면에 그대로 보이지 않고
 // manager/copy.ts의 한국어 문구로 바꿔 보인다.
 
+// 이 파일은 e2e(tsconfig.e2e)도 가져다 쓴다: src/api.ts(import.meta.env)를 import하지 않는다.
+
 /** 직무 목록 걸러보기(contract §2.1). 서로 겹친다: 확인할 것이 있는 초안은 '초안'과 '확인 필요' 양쪽에 셈. */
 export type TaskFilter = "all" | "draft" | "needs_check" | "published" | "archived";
 
@@ -268,3 +270,156 @@ export interface ConfirmedStepExtra {
 
 /** 보내기·편집 API 오류 code(영어, 화면에 보이지 않음). 단계를 가리키면 step_ids가 함께 온다. */
 export type EditorErrorCode = "not_confirmable" | "stale_edit" | "send_blocked" | "no_steps" | "archived";
+
+// --- (2c) 오늘 현황과 도움(contract §5.2). 서버 schemas.py LiveOut·TimelineOut·CoachingCardOut과 같은 모양 ---
+
+/** 근로자 상태 배지. 판정은 서버(live.py)가 한다. 화면은 이 값으로 색·아이콘·글만 고른다. */
+export type LiveBadge = "help" | "help_acked" | "offline" | "stuck_suspect" | "in_progress" | "new" | "done" | "idle";
+
+export interface LiveStep {
+  id: string;
+  source_step_id: string | null;
+  order: number;
+  sentence: string;
+  thumb_url: string | null;
+}
+
+export interface LiveCurrent {
+  assignment_id: string;
+  task_id: string;
+  task_title: string;
+  version_no: number | null;
+  done: number;
+  total: number;
+  step: LiveStep | null;
+}
+
+export interface LiveToday {
+  assignment_id: string;
+  task_title: string;
+  status: "new" | "in_progress" | "done";
+  is_next: boolean;
+}
+
+export interface LiveWorker {
+  worker_id: string;
+  display_name: string;
+  initials: string;
+  badge: LiveBadge;
+  last_activity_at: string | null;
+  last_signal_at: string | null;
+  current: LiveCurrent | null;
+  today: LiveToday[];
+}
+
+export interface LiveSummary {
+  working: number;
+  total_workers: number;
+  open_help: number;
+  stuck_steps: number;
+  needs_check_tasks: number;
+}
+
+export interface LiveOut {
+  server_now: string;
+  summary: LiveSummary;
+  workers: LiveWorker[];
+  help: LiveHelp[];
+}
+
+/** 도움 요청 한 줄(src/api.ts EmployerHelp와 같은 모양 + 2c 칸). */
+export interface LiveHelp {
+  id: string;
+  state: "open" | "acknowledged" | "cancelled" | "resolved";
+  created_at: string;
+  acknowledged_at: string | null;
+  worker_id: string;
+  worker_name: string;
+  assignment_id: string;
+  task_id: string;
+  task_title: string;
+  step_id: string | null;
+  step_order: number | null;
+  step_sentence: string | null;
+  step_symbol_url: string | null;
+  source_step_id?: string | null;
+  step_thumb_url?: string | null;
+}
+
+export interface TimelineStep {
+  step_id: string;
+  source_step_id: string | null;
+  order: number;
+  sentence: string;
+  thumb_url: string | null;
+  completed: boolean;
+  completed_at: string | null;
+  duration_sec: number | null;
+  replay_count: number;
+  prev_count: number;
+  help_count: number;
+}
+
+export interface TimelineAssignment {
+  assignment_id: string;
+  task_id: string;
+  task_title: string;
+  version_no: number | null;
+  status: "new" | "in_progress" | "done";
+  assigned_at: string;
+  steps: TimelineStep[];
+}
+
+export interface TimelineEvent {
+  at: string;
+  kind: "step_done" | "help_open" | "help_ack" | "help_resolved" | "help_cancelled";
+  assignment_id: string;
+  step_order: number | null;
+}
+
+export interface TimelineOut {
+  worker_id: string;
+  display_name: string;
+  date: string;
+  assignments: TimelineAssignment[];
+  events: TimelineEvent[];
+}
+
+export interface CoachingSignals {
+  replay_avg: number;
+  duration_avg_sec: number;
+  help_count: number;
+  runs: number;
+}
+
+export type CoachingSuggestion = "photo" | "split" | "easy_words";
+
+export interface CoachingCard {
+  task_id: string;
+  task_title: string;
+  source_step_id: string;
+  /** 지금 편집 화면의 단계 id. 편집 화면에서 지운 단계면 null. */
+  step_id: string | null;
+  sentence: string;
+  thumb_url: string | null;
+  signals: CoachingSignals;
+  suggestion: CoachingSuggestion;
+  after: (CoachingSignals & { since_version_no: number }) | null;
+}
+
+export interface PushConfig {
+  enabled: boolean;
+  public_key: string | null;
+}
+
+/** 측정 이벤트 이름(contract §5.2, 명세 8.4). 서버가 역할마다 이 목록만 받는다. */
+export type EmployerEventName = "task_create_start" | "task_send_done" | "send_click_disabled" | "send_click_count";
+export type WorkerEventName = "step_view" | "step_replay" | "step_prev" | "help_open";
+
+export interface ClientEvent<N extends string = string> {
+  name: N;
+  task_id?: string | null;
+  step_id?: string | null;
+  value_num?: number | null;
+  at: string;
+}

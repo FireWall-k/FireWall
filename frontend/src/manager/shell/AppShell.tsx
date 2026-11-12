@@ -4,15 +4,15 @@
 // - 768 미만: 사이드바 대신 아래 탭바(홈·직무·근로자·더보기)
 // - 본문 위: 상단 바 56 + 도움 요청 띠(모든 /m 화면, contract §2.2). 본문은 paper-50, 좌우 32(휴대폰 16).
 //   목록·홈은 최대 1200, 편집기(/m/tasks/:id)는 꽉 채운다.
-// 토스트와 도움 요청 폴링도 여기서 한 번만 연다.
+// 토스트와 오늘 현황 폴링(LiveProvider: 도움 띠·종·홈이 함께 씀)도 여기서 한 번만 연다.
 import { useEffect, useRef, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Ellipsis, LogOut, Settings } from "lucide-react";
-import HelpAlertStrip from "../../components/HelpAlertStrip";
 import { Menu, ToastProvider } from "../../components/ui";
 import { cn } from "../../cn";
 import { nav, shell } from "../copy";
-import HelpFeedProvider from "./HelpFeedProvider";
+import HelpBand from "../home/HelpBand";
+import LiveProvider from "./LiveProvider";
 import TopBar from "./TopBar";
 import { NAV_ITEMS, TAB_ITEMS, isFullWidth } from "./navItems";
 import { guardLeave } from "../tasks/new/useLeaveGuard";
@@ -54,7 +54,7 @@ export default function AppShell({ displayName, onLogout, children }: AppShellPr
 
   return (
     <ToastProvider>
-      <HelpFeedProvider>
+      <LiveProvider>
         <div className="min-h-screen bg-paper-50 font-body text-ink-900">
           <a
             href="#main"
@@ -67,8 +67,8 @@ export default function AppShell({ displayName, onLogout, children }: AppShellPr
 
           <div className="flex min-h-screen min-w-0 flex-col md:pl-rail xl:pl-sidebar">
             <TopBar displayName={displayName} onLogout={logout} />
-            {/* 근로자 도움 요청 띠(요청이 있을 때만 보인다, 창업자 결정 6). 2c에서 LiveProvider가 대신한다. */}
-            <HelpAlertStrip />
+            {/* 근로자 도움 요청 띠(요청이 있을 때만 보인다, 창업자 결정 6). 목록은 LiveProvider가 준다. */}
+            <HelpBand />
             <main
               id="main"
               ref={mainRef}
@@ -81,7 +81,7 @@ export default function AppShell({ displayName, onLogout, children }: AppShellPr
 
           <MobileTabBar onLogout={logout} />
         </div>
-      </HelpFeedProvider>
+      </LiveProvider>
     </ToastProvider>
   );
 }

@@ -321,6 +321,8 @@ DEDUPED_ACTIONS = frozenset({
     "task.recipients",
     # (2a-1) 직무 목록의 받은 사람 아바타(이름 앞 글자). 목록을 열 때마다·행동 뒤마다 다시 부른다.
     "task.list",
+    # (2c) 오늘 현황 홈이 5초마다 부른다(근로자 이름·지금 단계가 실린다). 타임라인 서랍·코칭 카드도 다시 부른다.
+    "live.view", "timeline.view", "coaching.cards",
 })
 
 
@@ -351,6 +353,32 @@ def record_access(db: Session, request: Request, user: dict, action: str,
     db.add(AccessAuditLog(actor_id=user["sub"], actor_role=user.get("role", "employer"),
                           action=action, worker_id=worker_id, at=_utcnow_naive(), request_ip=ip))
     if commit:
+        db.commit()
+
+
+def record_access_batch(db: Session, request: Request, user: dict, action: str, worker_ids) -> None:
+    """(2c) 여러 근로자의 열람 기록을 쿼리 한 번으로 묶어 남긴다(DEDUPED_ACTIONS 전용).
+
+    record_access_for_workers는 근로자마다 '최근에 남겼나'를 따로 묻는다. 5초마다 부르는 오늘 현황은 근로자가 20명이면
+    요청마다 20번을 물었다. 여기서는 한 번에 묻고 새로 남길 줄만 더한다. 결과는 근로자마다 한 줄 묶기와 같다.
+    """
+    ids = sorted({w for w in worker_ids if w})
+    if not ids:
+        return
+    ip = client_ip(request)
+    recent: set[str] = set()
+    if AUDIT_DEDUPE_SECONDS > 0 and action in DEDUPED_ACTIONS:
+        since = _utcnow_naive() - timedelta(seconds=AUDIT_DEDUPE_SECONDS)
+        recent = set(db.scalars(select(AccessAuditLog.worker_id).where(
+            AccessAuditLog.actor_id == user["sub"], AccessAuditLog.action == action,
+            AccessAuditLog.request_ip == ip, AccessAuditLog.at >= since,
+            AccessAuditLog.worker_id.in_(ids))).all())
+    now = _utcnow_naive()
+    fresh = [w for w in ids if w not in recent]
+    for wid in fresh:
+        db.add(AccessAuditLog(actor_id=user["sub"], actor_role=user.get("role", "employer"),
+                              action=action, worker_id=wid, at=now, request_ip=ip))
+    if fresh:
         db.commit()
 
 

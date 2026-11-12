@@ -11,6 +11,7 @@
     docker compose exec backend python manage.py purge [--dry-run]   # 보존기간 지난 데이터 삭제(평소에는 scheduler 서비스가 매일 한다)
     docker compose exec backend python manage.py gc-media [--dry-run]  # 고아 사진·TTS만 정리(purge도 함께 한다)
     python manage.py schedule    # 하루 한 번 purge를 도는 루프(compose의 scheduler 서비스가 실행한다)
+    python manage.py vapid-keys --out secrets/vapid_private.pem   # 웹 푸시 키 만들기(공개 키만 화면에 보인다)
 """
 from __future__ import annotations
 
@@ -179,6 +180,32 @@ def gc_media(dry_run: bool) -> None:
     _print_media_report(report, verb)
 
 
+def vapid_keys(out: str, force: bool = False) -> str:
+    """웹 푸시(VAPID) P-256 키 한 쌍을 만든다(2c). 개인 키는 out 파일(PEM, 소유자만 읽기)에만 쓰고 화면에 내지 않는다.
+
+    돌려주는 공개 키(base64url, 압축 안 한 점)를 VAPID_PUBLIC_KEY에, 파일 경로를 VAPID_PRIVATE_KEY_FILE에 둔다.
+    키를 바꾸면 사업주 기기의 기존 구독은 모두 다시 켜야 한다(그래서 있는 파일은 --force 없이 덮어쓰지 않는다).
+    """
+    import base64
+    import os
+
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+
+    if os.path.exists(out) and not force:
+        raise SystemExit(f"이미 있는 파일이에요: {out} (바꾸려면 --force. 바꾸면 알림 구독을 모두 다시 켜야 해요)")
+    key = ec.generate_private_key(ec.SECP256R1())
+    pem = key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                            serialization.NoEncryption())
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    fd = os.open(out, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "wb") as f:
+        f.write(pem)
+    raw = key.public_key().public_bytes(serialization.Encoding.X962,
+                                        serialization.PublicFormat.UncompressedPoint)
+    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="manage.py", description="JOB CARD 운영 관리")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -203,7 +230,17 @@ def main(argv: list[str] | None = None) -> None:
     m = sub.add_parser("gc-media", help="레코드 없는 사진·TTS 파일과 어느 단계도 쓰지 않는 레코드 삭제")
     m.add_argument("--dry-run", action="store_true", help="지우지 않고 개수만 보여 주기")
 
+    v = sub.add_parser("vapid-keys", help="웹 푸시 키 만들기(개인 키는 파일로만, 공개 키를 출력)")
+    v.add_argument("--out", required=True, help="개인 키 PEM을 쓸 파일(VAPID_PRIVATE_KEY_FILE)")
+    v.add_argument("--force", action="store_true", help="있는 파일을 덮어쓰기")
+
     args = parser.parse_args(argv)
+    if args.cmd == "vapid-keys":
+        pub = vapid_keys(args.out, args.force)
+        print(f"개인 키를 썼습니다: {args.out}")
+        print(f"VAPID_PUBLIC_KEY={pub}")
+        print(f"VAPID_PRIVATE_KEY_FILE={args.out}")
+        return
     if args.cmd == "migrate":
         migrate()
         return

@@ -89,7 +89,10 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
   const bottomBar = useRef<HTMLDivElement | null>(null);
   const sendButton = useRef<HTMLButtonElement | null>(null);
   const mobileSendButton = useRef<HTMLButtonElement | null>(null);
-  const focusWant = useRef<"detail" | "caution" | "detailIfLost" | "overview" | "afterConfirm" | "list" | { row: string } | null>(null);
+  const focusWant = useRef<"detail" | "caution" | "detailIfLost" | "overview" | "afterConfirm" | "list" | { row: string } | null>(
+    // (2c 연결) 홈의 코칭 카드·도움 띠가 ?step=(&fix=)로 데려오면 불러온 뒤 그 단계 상세로 초점을 옮긴다.
+    params.get("step") ? "detail" : null,
+  );
   const listHeading = useRef<HTMLHeadingElement | null>(null);
 
   // ── 불러오기 ── 처음 받은 초안은 마운트 때 한 번만 쓴다(부모가 넘긴 뒤 비워도 다시 불러오지 않게 값을 붙잡아 둔다).

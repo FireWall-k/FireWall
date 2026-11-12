@@ -208,6 +208,16 @@ export async function mockEditor(page: Page, opts: EditorMockOptions = {}): Prom
     }
     if (path === "/api/auth/demo") return json({ detail: "없음" }, 404);
     if (path === "/api/employer/help") return json([] as ReturnType<typeof makeHelp>[]);
+    // (2c) 틀의 오늘 현황 폴링(LiveProvider)과 도움 알림 설정.
+    if (path === "/api/employer/live" && method === "GET") {
+      return json({
+        server_now: new Date().toISOString().replace("Z", ""),
+        summary: { working: 0, total_workers: 0, open_help: 0, stuck_steps: 0, needs_check_tasks: 0 },
+        workers: [],
+        help: [],
+      });
+    }
+    if (path === "/api/employer/push-config") return json({ enabled: false, public_key: null });
     if (path === "/api/workers" && method === "GET") {
       return json(m.workers.map((w) => ({ ...w, access_code_hint: w.access_code.slice(-2), access_code_length: 4 })));
     }

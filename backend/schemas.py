@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, field_validator, model_validator
 
 MAX_RAW_INPUT = 2000
 # 입력 화면에서 확인한 단계 문장 합계의 상한. 단계마다 그림 검색(임베딩 API)·음성 합성을 하므로 원문 상한과 같은
@@ -351,6 +351,8 @@ class PerformanceLogCreate(BaseModel):
     # 같은 기기 시계끼리 재고, 서버 시각 기준의 완료 순간을 얻는다. 기기 시계가 서버와 달라도 도움 요청
     # (서버 시각 created_at)과 순서를 바르게 비교할 수 있다. 없으면 client_completed_at을 그대로 쓴다.
     client_sent_at: datetime | None = None
+    # (2c, 0009) 이 단계에서 [이전]을 누른 수. 저장만 한다(타임라인·코칭 신호). 옛 기기는 보내지 않는다(0).
+    prev_count: int = Field(default=0, ge=0, le=100000)
 
     @field_validator("client_completed_at", "client_sent_at")
     @classmethod
@@ -418,6 +420,9 @@ class EmployerHelpOut(BaseModel):
     step_order: int | None
     step_sentence: str | None
     step_symbol_url: str | None
+    # (2c) 버전을 넘어 같은 단계를 가리키는 키(편집기 ?step= 로 쓴다)와 띠의 단계 썸네일(지금은 그림 URL과 같다).
+    source_step_id: str | None = None
+    step_thumb_url: str | None = None
 
 
 class AacSearchRequest(BaseModel):
@@ -857,3 +862,185 @@ class TaskTitleUpdate(BaseModel):
     # 글자가 아닌 값(숫자 등)도 같은 문구로 막으려고 Any로 받는다.
     title: Any = None
 
+
+# --- 2c 오늘 현황과 도움 (contract §5) -------------------------------------------------------
+
+def _device_time(value) -> datetime | None:
+    """기기 시각: 읽지 못하는 값·엉터리 연도는 '모르는 시각'(None)으로 본다(422·500 대신 서버 시각을 쓴다)."""
+    if value is None:
+        return None
+    try:
+        v = TypeAdapter(datetime).validate_python(value)
+    except (ValidationError, TypeError, ValueError):
+        return None
+    return v if 1900 <= v.year <= 2200 else None
+
+
+class PresenceIn(BaseModel):
+    """근로자 기기가 지금 보는 단계(POST /api/worker/presence → 204)."""
+    assignment_id: str = Field(min_length=1, max_length=64)
+    # 직무 시작·완료 화면이면 null.
+    step_id: str | None = Field(default=None, max_length=64)
+    # 기기 시계로 이 단계를 연 시각과 이 신호를 보낸 시각. 서버는 둘의 차이만 쓴다(시계가 틀려도 머문 시간은 맞다).
+    step_started_at: Any = None
+    client_sent_at: Any = None
+    replay_count: int = Field(default=0, ge=0, le=100000)
+    prev_count: int = Field(default=0, ge=0, le=100000)
+
+    @field_validator("step_started_at", "client_sent_at", mode="before")
+    @classmethod
+    def _times(cls, value):
+        return _device_time(value)
+
+
+Badge = Literal["help", "help_acked", "offline", "stuck_suspect", "in_progress", "new", "done", "idle"]
+
+
+class LiveStepOut(BaseModel):
+    id: str
+    source_step_id: str | None
+    order: int
+    sentence: str
+    thumb_url: str | None
+
+
+class LiveCurrentOut(BaseModel):
+    assignment_id: str
+    task_id: str
+    task_title: str
+    version_no: int | None
+    done: int
+    total: int
+    step: LiveStepOut | None
+
+
+class LiveTodayOut(BaseModel):
+    assignment_id: str
+    task_title: str
+    status: Literal["new", "in_progress", "done"]
+    is_next: bool
+
+
+class LiveWorkerOut(BaseModel):
+    worker_id: str
+    display_name: str
+    initials: str
+    badge: Badge
+    last_activity_at: datetime | None
+    last_signal_at: datetime | None
+    current: LiveCurrentOut | None
+    today: list[LiveTodayOut]
+
+
+class LiveSummaryOut(BaseModel):
+    working: int
+    total_workers: int
+    open_help: int
+    stuck_steps: int
+    needs_check_tasks: int
+
+
+class LiveOut(BaseModel):
+    server_now: datetime
+    summary: LiveSummaryOut
+    workers: list[LiveWorkerOut]
+    help: list[EmployerHelpOut]
+
+
+class TimelineStepOut(BaseModel):
+    step_id: str
+    source_step_id: str | None
+    order: int
+    sentence: str
+    thumb_url: str | None
+    completed: bool
+    completed_at: datetime | None
+    duration_sec: float | None
+    replay_count: int
+    prev_count: int
+    help_count: int
+
+
+class TimelineAssignmentOut(BaseModel):
+    assignment_id: str
+    task_id: str
+    task_title: str
+    version_no: int | None
+    status: Literal["new", "in_progress", "done"]
+    assigned_at: datetime
+    steps: list[TimelineStepOut]
+
+
+class TimelineEventOut(BaseModel):
+    at: datetime
+    kind: Literal["step_done", "help_open", "help_ack", "help_resolved", "help_cancelled"]
+    assignment_id: str
+    step_order: int | None
+
+
+class TimelineOut(BaseModel):
+    worker_id: str
+    display_name: str
+    date: str
+    assignments: list[TimelineAssignmentOut]
+    events: list[TimelineEventOut]
+
+
+class CoachingSignalsOut(BaseModel):
+    replay_avg: float
+    duration_avg_sec: float
+    help_count: int
+    runs: int
+
+
+class CoachingAfterOut(CoachingSignalsOut):
+    # 고친 내용을 처음 보낸 버전 번호(그 버전부터의 기록만 셈).
+    since_version_no: int
+
+
+class CoachingCardOut(BaseModel):
+    task_id: str
+    task_title: str
+    source_step_id: str
+    step_id: str | None
+    sentence: str
+    thumb_url: str | None
+    signals: CoachingSignalsOut
+    suggestion: Literal["photo", "split", "easy_words"]
+    after: CoachingAfterOut | None
+
+
+class EventIn(BaseModel):
+    name: str = Field(min_length=1, max_length=40)
+    task_id: str | None = Field(default=None, max_length=64)
+    step_id: str | None = Field(default=None, max_length=64)
+    value_num: float | None = Field(default=None, ge=-1e9, le=1e9)
+    at: Any = None
+
+    @field_validator("at", mode="before")
+    @classmethod
+    def _at(cls, value):
+        return _device_time(value)
+
+
+class EventsIn(BaseModel):
+    events: list[EventIn] = Field(min_length=1, max_length=50)
+
+
+class PushKeysIn(BaseModel):
+    p256dh: str = Field(min_length=1, max_length=256)
+    auth: str = Field(min_length=1, max_length=128)
+
+
+class PushSubscriptionIn(BaseModel):
+    endpoint: str = Field(min_length=1, max_length=2048)
+    keys: PushKeysIn
+
+
+class PushUnsubscribeIn(BaseModel):
+    endpoint: str = Field(min_length=1, max_length=2048)
+
+
+class PushConfigOut(BaseModel):
+    enabled: bool
+    public_key: str | None

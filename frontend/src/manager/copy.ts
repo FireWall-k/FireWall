@@ -507,3 +507,181 @@ export const picker = {
   uploadFailed: "사진을 올리지 못했어요 · 다시 시도해 주세요",
   uploaded: "사진을 올렸어요",
 } as const;
+
+// --- (2c) 오늘 현황과 도움(명세 5.2, contract §5.2) ---
+
+/** 걸린 시간: '45초', '2분 30초', '3분'. */
+export function durationText(sec: number): string {
+  const s = Math.max(0, Math.round(Number(sec) || 0));
+  if (s < 60) return `${s}초`;
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return r ? `${m}분 ${r}초` : `${m}분`;
+}
+
+/** 소수 한 자리까지(끝의 .0은 뺌): 3 → '3', 2.5 → '2.5'. */
+function oneDecimal(n: number): string {
+  return String(Math.round((Number(n) || 0) * 10) / 10);
+}
+
+/** LiveProvider가 제목 줄에 보이는 갱신 상태(실패해도 토스트를 띄우지 않음). */
+export const live = {
+  lastUpdated: (time: string) => `마지막 갱신 ${time}`,
+  disconnected: "연결이 잠시 끊겼어요",
+  loading: "현황을 불러오고 있어요",
+  loadFailed: "현황을 불러오지 못했어요",
+  loadFailedBody: "인터넷 연결을 확인해 주세요. 5초마다 다시 불러와요.",
+} as const;
+
+/** 근로자 상태 배지(서버 판정 값 → 글). '도움 가는 중'은 확인했지만 아직 해결 전. */
+export const liveBadge = {
+  help: "도움 요청",
+  help_acked: "도움 가는 중",
+  offline: "연결 끊김",
+  stuck_suspect: "막힘 의심",
+  in_progress: "하는 중",
+  new: "시작 전",
+  done: "다 함",
+  idle: "오늘 일 없음",
+} as const;
+
+export const home = {
+  heading: "오늘 현황",
+  newTask: "새 직무",
+  /** '11월 8일 일요일'. */
+  date: (m: number, d: number, weekday: string) => `${m}월 ${d}일 ${weekday}`,
+  weekdays: ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"],
+} as const;
+
+/** 요약 카드 4칸(누르면 아래 표나 직무 목록을 그 조건으로 걸러 봄). 완료율 %는 보이지 않는다. */
+export const summaryCards = {
+  label: "오늘 요약",
+  working: "지금 일하는 사람",
+  workingValue: (n: number, total: number) => `${n}/${total}명`,
+  openHelp: "도움 요청",
+  openHelpValue: (n: number) => `${n}건`,
+  stuck: "막힘 의심",
+  stuckValue: (n: number) => `${n}단계`,
+  needsCheck: "확인이 필요한 직무",
+  needsCheckValue: (n: number) => `${n}개`,
+  needsCheckHint: "직무 목록에서 보기",
+  filtering: (label: string) => `'${label}'${euroRo(label)} 걸러 보는 중이에요`,
+  clearFilter: "걸러보기 지우기",
+} as const;
+
+/** 근로자 실시간 표(행 56). */
+export const liveTable = {
+  heading: "근로자",
+  caption: "근로자 실시간 현황",
+  colWorker: "근로자",
+  colTask: "지금 하는 일",
+  colProgress: "진행",
+  colStep: "지금 단계",
+  colStatus: "상태",
+  colActivity: "마지막 활동",
+  colMenu: "메뉴",
+  progress: (done: number, total: number) => `${done}/${total}`,
+  progressLabel: (done: number, total: number) => `${total}단계 중 ${done}단계 함`,
+  stepLine: (order: number, sentence: string) => `${order}단계 · ${sentence}`,
+  noTask: "오늘 할 일 없음",
+  allDone: "오늘 일을 다 했어요",
+  notYet: "아직 없음",
+  offlineSince: (min: number) => `마지막 신호 ${min}분 전`,
+  rowMenu: (name: string) => `${name} 님 메뉴`,
+  openTimeline: "오늘 기록 보기",
+  workerInfo: "근로자 정보 보기",
+  emptyFiltered: "이 조건에 맞는 근로자가 없어요",
+  noWorkers: "아직 등록한 근로자가 없어요",
+} as const;
+
+/** 도움 요청 띠(모든 /m 화면 맨 위, 최대 3건 + '그 외 N건'). */
+export const helpBand = {
+  region: "도움 요청",
+  requested: "님이 도움을 요청했어요",
+  stepOf: (order: number) => `${order}단계`,
+  seeMore: "보러 가기",
+  fixStep: "이 단계 고치기",
+  resolve: "도와줬어요",
+  ack: "확인했어요",
+  acked: "도움 가는 중",
+  more: (n: number) => `그 외 ${n}건`,
+  actionsMenu: (name: string) => `${name} 님 도움 요청 메뉴 더 보기`,
+  actionFailed: "처리하지 못했어요. 다시 눌러 주세요.",
+} as const;
+
+/** 오늘 기록 서랍(오른쪽 480). 차트에는 '표로 보기'를 함께 둔다. */
+export const timeline = {
+  title: (name: string) => `${name} 님 오늘 기록`,
+  description: "단계별 걸린 시간, 다시 듣기, 이전 누름, 도움을 보여 줘요.",
+  viewLabel: "보는 방법",
+  chartView: "막대로 보기",
+  tableView: "표로 보기",
+  tableCaption: (title: string) => `${title} 단계별 기록`,
+  colStep: "단계",
+  colDuration: "걸린 시간",
+  colReplay: "다시 듣기",
+  colPrev: "이전 누름",
+  colHelp: "도움",
+  times: (n: number) => `${n}번`,
+  notDone: "아직 안 함",
+  noRecord: "오늘 받은 일이 없어요",
+  eventsHeading: "시간 순 기록",
+  event: {
+    step_done: (order: number) => `${order}단계를 했어요`,
+    help_open: "도움을 요청했어요",
+    help_ack: "선생님이 확인했어요",
+    help_resolved: "도움을 받았어요",
+    help_cancelled: "도움 요청을 그만뒀어요",
+  },
+  loadFailed: "기록을 불러오지 못했어요",
+  retry: "다시 불러오기",
+} as const;
+
+/** 고치면 좋은 단계(규칙만으로 만든 제안, 유료 모델 없이 동작). */
+export const coaching = {
+  heading: "고치면 좋은 단계",
+  description: "지난 7일 기록에서 근로자가 오래 머물거나 다시 들은 단계예요.",
+  empty: "지금은 고칠 단계가 없어요",
+  emptyBody: "근로자가 일을 하면 기록을 보고 제안을 보여 드려요.",
+  suggestion: {
+    photo: "사진으로 바꾸기",
+    split: "두 단계로 나누기",
+    easy_words: "쉬운 말로 바꾸기",
+  },
+  suggestionLabel: "제안",
+  replay: (n: number) => `다시 듣기 평균 ${oneDecimal(n)}번`,
+  avg: (sec: number) => `평균 ${durationText(sec)}`,
+  help: (n: number) => `도움 ${n}번`,
+  runs: (n: number) => `${n}번 함`,
+  fix: "이 단계 고치기",
+  fixLabel: (title: string, sentence: string) => `이 단계 고치기 · ${title} '${sentence}'`,
+  after: (v: number) => `${v}번째 보낸 뒤`,
+  afterAvg: (sec: number) => `평균 ${durationText(sec)}`,
+  removed: "편집 화면에서 지운 단계예요",
+  loadFailed: "제안을 불러오지 못했어요",
+} as const;
+
+/** 새 사업장 빈 상태: 시작 점검표 3단계 + [바로 하기]. */
+export const homeEmpty = {
+  title: "시작해 볼까요?",
+  description: "세 가지만 하면 근로자가 그림 카드로 일을 시작해요.",
+  steps: [
+    { title: "근로자 추가", body: "근로자 이름을 적으면 4자리 번호가 생겨요." },
+    { title: "기기 연결", body: "근로자 휴대폰에서 사업장 코드와 번호를 넣어요." },
+    { title: "첫 직무 보내기", body: "하는 일을 말로 적고 근로자에게 보내요." },
+  ],
+  go: "바로 하기",
+  goLabel: (title: string) => `${title} 바로 하기`,
+  done: "했어요",
+} as const;
+
+/** 상단 바 사용자 메뉴의 웹 푸시 스위치. */
+export const pushToggle = {
+  label: "도움 알림 받기",
+  on: "켜짐",
+  off: "꺼짐",
+  turnedOn: "도움 알림을 켰어요. 이 화면을 안 보고 있어도 알려 드려요.",
+  turnedOff: "도움 알림을 껐어요",
+  denied: "브라우저가 알림을 막고 있어요. 브라우저 설정에서 알림을 허용해 주세요.",
+  failed: "알림을 켜지 못했어요. 잠시 뒤 다시 눌러 주세요.",
+} as const;

@@ -24,10 +24,12 @@ export interface WorkerButtonProps {
   ariaLabel?: string;
 }
 
+// 누른 시각은 이벤트가 생긴 시각(event.timeStamp)으로 잰다. 처리한 시각(Date.now())으로 재면 화면이 다음 단계를
+// 그리느라 잠깐 바쁠 때 두 번째 누름이 늦게 처리되어 600ms를 넘긴 것으로 보이고 한 단계를 건너뛰었다(느린 휴대폰, 2c).
 function useDebouncedPress(onPress: () => void) {
-  const last = useRef(0);
-  return () => {
-    const now = Date.now();
+  const last = useRef(Number.NEGATIVE_INFINITY);
+  return (e?: { timeStamp?: number }) => {
+    const now = e && typeof e.timeStamp === "number" && e.timeStamp > 0 ? e.timeStamp : performance.now();
     if (now - last.current < TAP_DEBOUNCE_MS) return;
     last.current = now;
     onPress();

@@ -65,12 +65,48 @@ export function makeHelp() {
     id: "h1", state: "open", created_at: ago(1), acknowledged_at: null,
     worker_id: "w1", worker_name: "김민지", assignment_id: "a1", task_id: "t3", task_title: "택배 상자 포장하고 운송장 붙이기",
     step_id: "s3", step_order: 3, step_sentence: "운송장을 붙여요", step_symbol_url: null,
+    source_step_id: "src3", step_thumb_url: null,
   };
+}
+
+/** (2c) 오늘 현황 표의 근로자(GET /api/employer/live workers). */
+export function makeLiveWorkers() {
+  const cur = (done: number, order: number, sentence: string) => ({
+    assignment_id: "a1", task_id: "t3", task_title: "택배 상자 포장하고 운송장 붙이기", version_no: 2, done, total: 7,
+    step: { id: "s" + order, source_step_id: "src" + order, order, sentence, thumb_url: API + "/media/s" + order + ".png" },
+  });
+  const today = (id: string, title: string, status: string) => [{ assignment_id: id, task_title: title, status, is_next: status !== "done" }];
+  return [
+    { worker_id: "w1", display_name: "김민지", initials: "김", badge: "help", last_activity_at: ago(1), last_signal_at: ago(0),
+      current: cur(2, 3, "운송장을 붙여요"), today: today("a1", "택배 상자 포장하고 운송장 붙이기", "in_progress") },
+    { worker_id: "w2", display_name: "이수진", initials: "이", badge: "stuck_suspect", last_activity_at: ago(4), last_signal_at: ago(0),
+      current: cur(4, 5, "상자를 테이프로 붙여요"), today: today("a2", "택배 상자 포장하고 운송장 붙이기", "in_progress") },
+    { worker_id: "w3", display_name: "박하늘", initials: "박", badge: "offline", last_activity_at: ago(6), last_signal_at: ago(6),
+      current: cur(1, 2, "상자를 펼쳐요"), today: today("a3", "택배 상자 포장하고 운송장 붙이기", "in_progress") },
+    { worker_id: "w4", display_name: "최다온", initials: "최", badge: "done", last_activity_at: ago(30), last_signal_at: ago(30),
+      current: null, today: today("a4", "매장 바닥 청소", "done") },
+  ];
+}
+
+/** (2c) 고치면 좋은 단계 카드. */
+export function makeCoaching() {
+  return [
+    { task_id: "t3", task_title: "택배 상자 포장하고 운송장 붙이기", source_step_id: "src5", step_id: "s5", sentence: "상자를 테이프로 붙여요",
+      thumb_url: API + "/media/s5.png", signals: { replay_avg: 3.4, duration_avg_sec: 150, help_count: 2, runs: 5 }, suggestion: "photo", after: null },
+    { task_id: "t4", task_title: "매장 바닥 청소", source_step_id: "src9", step_id: "s9", sentence: "대걸레를 물에 적시고 꼭 짜서 바닥을 닦아요",
+      thumb_url: null, signals: { replay_avg: 1.2, duration_avg_sec: 200, help_count: 0, runs: 4 }, suggestion: "split", after: null },
+  ];
 }
 
 export interface EmployerMock {
   tasks: MockTask[];
-  help: ReturnType<typeof makeHelp>[];
+  help: (Omit<ReturnType<typeof makeHelp>, "state"> & { state: string })[];
+  workers: ReturnType<typeof makeLiveWorkers>;
+  coaching: ReturnType<typeof makeCoaching>;
+  /** GET /api/employer/live를 부른 수. */
+  liveCalls: number;
+  /** true면 /api/employer/live가 닿지 않는다(연결 끊김). */
+  liveDown: boolean;
   calls: string[];
   /** 이 경로를 부르면 500을 준다(오류 토스트 시험). */
   failPaths: Set<string>;
@@ -95,10 +131,17 @@ function summarize(tasks: MockTask[], filter: string, q: string) {
   return { items, counts };
 }
 
-export async function mockEmployer(page: Page, opts: { tasks?: MockTask[]; help?: boolean } = {}): Promise<EmployerMock> {
+export async function mockEmployer(
+  page: Page,
+  opts: { tasks?: MockTask[]; help?: boolean; workers?: boolean; coaching?: boolean } = {},
+): Promise<EmployerMock> {
   const m: EmployerMock = {
     tasks: opts.tasks ?? makeTasks(),
     help: opts.help === false ? [] : [makeHelp()],
+    workers: opts.workers === false ? [] : makeLiveWorkers(),
+    coaching: opts.coaching === false ? [] : makeCoaching(),
+    liveCalls: 0,
+    liveDown: false,
     calls: [],
     failPaths: new Set(),
   };
@@ -122,6 +165,55 @@ export async function mockEmployer(page: Page, opts: { tasks?: MockTask[]; help?
       return json({ token: "e2e-employer-token", role: "employer", display_name: "테스트사장" });
     }
     if (path === "/api/employer/help") return json(m.help);
+    // (2c) 오늘 현황 하나로 띠·종·홈이 함께 쓴다.
+    if (path === "/api/employer/live" && method === "GET") {
+      m.liveCalls += 1;
+      if (m.liveDown) return route.abort("internetdisconnected");
+      const active = m.help.filter((h) => h.state === "open" || h.state === "acknowledged");
+      const ws = m.workers;
+      return json({
+        server_now: ago(0),
+        summary: {
+          working: ws.filter((w) => ["help", "help_acked", "stuck_suspect", "offline", "in_progress"].includes(w.badge)).length,
+          total_workers: ws.length,
+          open_help: active.filter((h) => h.state === "open").length,
+          stuck_steps: ws.filter((w) => w.badge === "stuck_suspect").length,
+          needs_check_tasks: m.tasks.filter((t) => t.state !== "archived" && t.needs_check_count > 0).length,
+        },
+        workers: ws,
+        help: active,
+      });
+    }
+    const helpAct = path.match(/^\/api\/employer\/help\/([^/]+)\/(acknowledge|resolve)$/);
+    if (helpAct && method === "POST") {
+      const h = m.help.find((x) => x.id === decodeURIComponent(helpAct[1]));
+      if (!h) return json({ detail: "도움 요청을 찾을 수 없어요." }, 404);
+      h.state = helpAct[2] === "resolve" ? "resolved" : "acknowledged";
+      return json({ id: h.id, state: h.state, step_id: h.step_id, created_at: h.created_at, acknowledged_at: null, resolved_at: null });
+    }
+    if (path === "/api/employer/coaching" && method === "GET") return json(m.coaching);
+    const tl = path.match(/^\/api\/employer\/workers\/([^/]+)\/timeline$/);
+    if (tl && method === "GET") {
+      const w = m.workers.find((x) => x.worker_id === decodeURIComponent(tl[1]));
+      const step = (order: number, sentence: string, done: boolean, sec: number | null, replay: number, prev: number, help: number) => ({
+        step_id: "s" + order, source_step_id: "src" + order, order, sentence, thumb_url: null, completed: done,
+        completed_at: done ? ago(40 - order * 5) : null, duration_sec: sec, replay_count: replay, prev_count: prev, help_count: help,
+      });
+      return json({
+        worker_id: tl[1], display_name: w?.display_name ?? "김민지", date: "2026-11-10",
+        assignments: [{
+          assignment_id: "a1", task_id: "t3", task_title: "택배 상자 포장하고 운송장 붙이기", version_no: 2, status: "in_progress", assigned_at: ago(90),
+          steps: [step(1, "상자를 꺼내요", true, 35, 0, 0, 0), step(2, "상자를 펼쳐요", true, 150, 2, 1, 0), step(3, "운송장을 붙여요", false, null, 1, 0, 1)],
+        }],
+        events: [
+          { at: ago(35), kind: "step_done", assignment_id: "a1", step_order: 1 },
+          { at: ago(30), kind: "step_done", assignment_id: "a1", step_order: 2 },
+          { at: ago(1), kind: "help_open", assignment_id: "a1", step_order: 3 },
+        ],
+      });
+    }
+    if (path === "/api/employer/push-config") return json({ enabled: false, public_key: null });
+    if (path === "/api/events" && method === "POST") return route.fulfill({ status: 204, headers: CORS });
     if (path === "/api/employer/tasks" && method === "GET") {
       return json(summarize(m.tasks, url.searchParams.get("filter") ?? "all", url.searchParams.get("q") ?? ""));
     }
