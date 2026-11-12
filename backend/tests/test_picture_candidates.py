@@ -215,3 +215,79 @@ def test_input_screen_edited_row_keeps_ai_query(client, employer_token, monkeypa
     assert seen == [QUERY]
     with SessionLocal() as db:
         assert db.get(Step, task["steps"][0]["id"]).symbol_query == "제품,앞면,같은 방향"
+
+
+# --- ③ 2차: 문장 뜻이 바뀌면 옛 검색어·후보를 비운다 ----------------------------------------------
+
+TAPE_QUERY = ["상자를 테이프로 붙이다"]
+
+
+@pytest.mark.parametrize("defer", [True, False])
+def test_edit_to_other_meaning_drops_old_query_and_cards(client, employer_token, monkeypatch, defer):
+    """검증 재현: 검색어 '상자를 테이프로 붙이다' 단계를 '바닥을 빗자루로 쓸어요.'로 고치면 옛 포장 그림 3장이 남아
+    그림 없음 단계에서 한 번 누르면 틀린 그림이 붙었다. 이제 검색어·후보를 비우고 새 문장 낱말로 다시 찾는다."""
+    monkeypatch.setattr(ai_client, "map_symbols", _low_margin(GPT_ORDER))
+    task = _create(client, employer_token, [_row("상자를 테이프로 붙여요.", TAPE_QUERY)])
+    sid = task["steps"][0]["id"]
+    r = client.patch(f"/api/tasks/{task['id']}/steps/{sid}", headers=auth(employer_token),
+                     json={"sentence": "바닥을 빗자루로 쓸어요.", "defer_media": defer})
+    assert r.status_code == 200, r.text
+    with SessionLocal() as db:
+        step = db.get(Step, sid)
+        assert step.symbol_query == "" and step.symbol_candidates == ""
+        assert step_context._step_search_terms(step) == ["바닥을", "빗자루로", "쓸어요"]
+    seen = []
+    monkeypatch.setattr(ai_client, "map_symbols",
+                        lambda k, context=None: seen.append(list(k)) or _low_margin(["CLEANING_001"])(k))
+    out = _candidates(client, employer_token, task["id"])
+    assert seen == [["바닥을", "빗자루로", "쓸어요"]]
+    assert out[sid] == ["CLEANING_001"]
+    seen.clear()
+    r = client.get(f"/api/tasks/{task['id']}/steps/{sid}/symbol-candidates", headers=auth(employer_token))
+    assert r.status_code == 200, r.text
+    assert [c["asset_id"] for c in r.json()["candidates"]] == ["CLEANING_001"]
+    assert seen == [["바닥을", "빗자루로", "쓸어요"]]
+
+
+def test_edit_same_topic_keeps_query_and_cards(client, employer_token, monkeypatch):
+    """대상·동작 낱말을 하나라도 같이 쓰면('테이프를 꼼꼼히 붙여요') 검색어와 생성 때 후보를 그대로 둔다."""
+    monkeypatch.setattr(ai_client, "map_symbols", _low_margin(GPT_ORDER))
+    task = _create(client, employer_token, [_row("상자를 테이프로 붙여요.", TAPE_QUERY)])
+    sid = task["steps"][0]["id"]
+    client.patch(f"/api/tasks/{task['id']}/steps/{sid}", headers=auth(employer_token),
+                 json={"sentence": "테이프를 꼼꼼히 붙여요.", "defer_media": True})
+    with SessionLocal() as db:
+        step = db.get(Step, sid)
+        assert step.symbol_query == "상자를 테이프로 붙이다"
+        assert len(json.loads(step.symbol_candidates)) == 3
+
+
+@pytest.mark.parametrize("new, terms", [("바닥을 쓸어요", ["바닥을", "쓸어요"]),
+                                        ("상자를 들어서 옮겨요", ["상자를", "들어서", "옮겨요"])])
+def test_old_sentence_word_query_cleared_on_edit(client, employer_token, monkeypatch, new, terms):
+    """0011 이전 직접 쓴 줄은 문장 낱말을 검색어로 남겼다(re.findall). 검색어가 모두 옛 문장 낱말이면 예전처럼 문장을
+    고칠 때 비워 새 문장 낱말로 찾는다(검증 재현: '상자를,옮겨요' → '바닥을 쓸어요'인데 옛 낱말로 찾았다)."""
+    monkeypatch.setattr(ai_client, "map_symbols", _low_margin([]))
+    task = _create(client, employer_token, [{"sentence": "상자를 옮겨요"}])
+    sid = task["steps"][0]["id"]
+    with SessionLocal() as db:
+        step = db.get(Step, sid)
+        step.symbol_query, step.symbol_candidates = "상자를,옮겨요", ""
+        db.commit()
+    r = client.patch(f"/api/tasks/{task['id']}/steps/{sid}", headers=auth(employer_token),
+                     json={"sentence": new, "defer_media": True})
+    assert r.status_code == 200, r.text
+    with SessionLocal() as db:
+        step = db.get(Step, sid)
+        assert step.symbol_query == ""
+        assert step_context._step_search_terms(step) == terms
+
+
+def test_shares_topic_rules():
+    f = step_context.shares_topic
+    assert not f("바닥을 빗자루로 쓸어요.", TAPE_QUERY)
+    assert f("상자를 들어서 옮겨요.", ["상자", "box"])          # 토씨를 뗀다
+    assert f("제품의 앞면을 정리해요.", QUERY)
+    assert f("붙여요.", TAPE_QUERY)                              # 풀이씨는 첫 음절('붙이다'='붙여요')
+    assert not f("바닥을 쓸어요", ["상자를", "옮겨요"])
+    assert not f("같은 곳에 놓아요", ["같은 방향"])               # 뜻 없는 낱말('같은')만 겹치면 아니다

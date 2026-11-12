@@ -70,7 +70,7 @@ import send
 import task_list
 import versions
 from step_context import _OWN_IMAGE_PATHS, _is_own_image_url, _step_search_terms, _task_context  # noqa: F401
-from step_context import creation_candidates
+from step_context import creation_candidates, refresh_picture_query
 from codes import normalize_workplace_code
 from deps import current_worker
 from database import get_db
@@ -1596,6 +1596,8 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
         step_sentence_before = step.sentence
         changed = payload.sentence != step_sentence_before
         if changed or step.tts_stale:
+            # (그림 정확도 ③ 2차) 문장 뜻이 바뀌면 옛 검색어·후보를 비운다(자동 저장·칸 벗어나기 모두 여기를 지난다).
+            refresh_picture_query(step, step_sentence_before, payload.sentence)
             step.sentence = payload.sentence
             # 문장을 고쳐 저장하면 나눈 문장 확인은 끝난 것이다(옛 데이터 방어 칸, contract §3.2).
             step.split_needs_review = False
@@ -1611,8 +1613,8 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
                     released.append(step.tts_media_id)
                 step.tts_media_id = _tts_media_id(db, user["sub"], pre_tts_key)
                 step.tts_stale = False
-                # (그림 정확도 ③) symbol_query(생성 때 AI 그림 검색어)와 생성 때 후보 순서는 그대로 둔다. 비우면 후보가
-                # 고친 문장 낱말로만 찾아져 엉뚱해졌다('정리해요' → 옷·책 정리). 다른 그림은 사업주가 [다른 그림 찾기]로 찾는다.
+                # (그림 정확도 ③) 고친 문장이 검색어·후보와 낱말을 같이 쓰면 symbol_query(생성 때 AI 그림 검색어)와 후보 순서는
+                # 그대로 둔다(위 refresh_picture_query). 비우면 '정리해요' → 옷·책 정리처럼 엉뚱해졌다.
                 step.action_type = pre_action or "other"
     if payload.safety_flag is not None:
         step.safety_flag = payload.safety_flag

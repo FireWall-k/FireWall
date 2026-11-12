@@ -74,6 +74,81 @@ def stored_candidates(step: "Step") -> list[tuple[str, str, str]]:
     return out[:STORED_CANDIDATES]
 
 
+_WORD = re.compile(r"[가-힣A-Za-z]+")
+# 낱말 끝 토씨(긴 것부터). 이름씨 뒤에서만 뗀다.
+_PARTICLES = ("에서는", "에게서", "으로", "에서", "에게", "까지", "부터", "처럼", "하고", "이랑",
+              "을", "를", "이", "가", "은", "는", "의", "에", "로", "와", "과", "도", "만")
+# 풀이씨 끝(긴 것부터). '붙여요'·'붙이다'·'붙이세요'처럼 끝이 달라도 앞 음절이 같으면 같은 동작으로 본다.
+_ENDINGS = ("해주세요", "하십시오", "하세요", "합니다", "습니다", "십시오", "주세요", "해요", "하다", "하기",
+            "세요", "어요", "아요", "여요", "워요", "니다", "는다", "ㄴ다", "요", "다", "기")
+_STOP = {"하", "해", "주", "것", "수", "잘", "꼭", "안", "같", "다시", "먼저", "그리고", "그다음", "다음", "모두", "같이"}
+
+
+def _stems(text: str) -> list[tuple[str, bool]]:
+    """대상·동작 낱말의 줄기 → (줄기, 풀이씨인가). 토씨·말끝을 떼고 뜻 없는 낱말은 뺀다."""
+    out: list[tuple[str, bool]] = []
+    for word in _WORD.findall(text or ""):
+        w = word.lower()
+        verb = False
+        for end in _ENDINGS:
+            if len(w) > len(end) and w.endswith(end):
+                w, verb = w[: -len(end)], True
+                break
+        if not verb:
+            for par in _PARTICLES:
+                if len(w) > len(par) and w.endswith(par):
+                    w = w[: -len(par)]
+                    break
+        if w and w not in _STOP:
+            out.append((w, verb))
+    return out
+
+
+def shares_topic(sentence: str, topic: list[str]) -> bool:
+    """(그림 정확도 ③ 2차) 고친 문장이 검색어·후보 이름과 대상·동작 낱말을 하나라도 같이 쓰나.
+
+    이름씨는 앞 두 글자(한 글자 낱말은 그 글자)가 같으면, 풀이씨끼리는 첫 음절이 같으면 같은 낱말로 본다
+    ('상자를'='상자', '붙여요'='붙이다'). 같이 쓰는 낱말이 하나도 없으면 문장 뜻이 바뀐 것이다."""
+    mine = _stems(sentence)
+    theirs = [st for t in topic for st in _stems(t)]
+    for a, av in mine:
+        for b, bv in theirs:
+            n = min(len(a), len(b), 2)
+            if a[:n] == b[:n] and (n >= 2 or len(a) == len(b) == 1 or (av and bv)):
+                return True
+    return False
+
+
+def _sentence_words(sentence: str) -> set[str]:
+    return set(_WORD.findall(sentence or ""))
+
+
+def refresh_picture_query(step: "Step", old_sentence: str, new_sentence: str) -> None:
+    """(그림 정확도 ③ 2차) 단계 문장을 고칠 때 옛 그림 검색어·생성 때 후보를 남길지 정한다.
+
+    - 검색어가 모두 옛 문장 낱말 그대로면(0011 이전 직접 쓴 줄은 문장 낱말을 검색어로 남겼다) 예전처럼 비운다 —
+      AI 검색어가 아니라 옛 문장의 흔적이다.
+    - 남은 AI 검색어와 생성 때 후보 이름 중 어느 것과도 고친 문장이 대상·동작 낱말을 같이 쓰지 않으면 문장 뜻이 바뀐
+      것이다. 검색어와 후보를 둘 다 비워 새 문장으로 찾게 한다. 그대로 두면 '상자를 테이프로 붙이다' 후보 3장이
+      '바닥을 빗자루로 쓸어요' 단계에 남아, 그림 없음 단계에서 한 번 누르면 틀린 그림이 붙었다.
+    - 같이 쓰는 낱말이 있으면 둘 다 둔다('정리해요'로 고쳐도 '제품·앞면' 검색어로 찾는다)."""
+    if old_sentence == new_sentence:
+        return
+    terms = [t.strip() for t in (step.symbol_query or "").split(",") if t.strip()]
+    if terms and all(t in _sentence_words(old_sentence) for t in terms):
+        terms = []
+        step.symbol_query = ""
+    labels = [label for _, _, label in stored_candidates(step) if label]
+    topic = terms + labels
+    if not topic:
+        # 비교할 것이 없다(옛 단계·후보 없음). 남은 후보도 이름을 모르니 새 문장으로 찾게 비운다.
+        step.symbol_candidates = ""
+        return
+    if not shares_topic(new_sentence, topic):
+        step.symbol_query = ""
+        step.symbol_candidates = ""
+
+
 def _task_context(task: Task, sentence: str, action_type: str) -> dict:
     """AAC 검색용 맥락. 직무 생성 시와 같은 조건을 재현한다.
 
