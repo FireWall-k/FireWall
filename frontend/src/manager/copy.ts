@@ -927,3 +927,22 @@ export const preview = {
   failed: "미리보기를 불러오지 못했어요",
   empty: "단계가 없어요",
 } as const;
+
+/** 편집기 단축키(2b-2, 명세 5.5·7.3). 입력칸·창 안에서는 꺼져요. */
+export const shortcuts = {
+  help: "단축키 안내",
+  helpButton: "단축키 안내 열기",
+  helpBody: "글을 쓰는 칸이나 창이 열려 있을 때는 단축키가 꺼져요.",
+  close: "닫기",
+  rows: [
+    { keys: ["↑", "↓"], alt: ["J", "K"], label: "단계 옮겨 다니기" },
+    { keys: ["엔터"], label: "고른 단계 자세히 보기" },
+    { keys: ["1", "2", "3"], label: "다른 그림 1~3번 고르기" },
+    { keys: ["N"], label: "새 단계 쓰기" },
+    { keys: ["E"], label: "문장 고치기" },
+    { keys: ["P"], label: "휴대폰 미리보기" },
+    { keys: ["?"], label: "이 안내 열기" },
+  ],
+  or: "또는",
+  noCandidate: (n: number) => `${n}번 그림이 없어요`,
+} as const;
