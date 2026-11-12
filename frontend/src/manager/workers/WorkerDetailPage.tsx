@@ -80,7 +80,7 @@ export default function WorkerDetailPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <Link to="/m/workers" className="inline-flex w-fit items-center gap-1 text-ui-sm font-semibold text-ink-700 hover:text-ink-900">
+      <Link to="/m/workers" className="inline-flex w-fit items-center gap-1 text-ui-sm font-semibold text-ink-700 hover:text-ink-900 coarse:min-h-control-coarse">
         <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
         {workerDetail.back}
       </Link>

@@ -116,14 +116,23 @@ describe("근로자 상세", () => {
     await waitFor(() => expect(within(group).getByRole("radio", { name: "오른손" })).toBeChecked());
   });
 
-  it("접속 코드: [새 번호 만들기] 확인 → 새 번호를 크게", async () => {
+  it("접속 코드: [새 번호 만들기] 확인 → 새 번호는 결과 창에만 크게, 닫으면 다시 가림(명세 5.7)", async () => {
     api.reissueAccessCode.mockResolvedValue({ ...workerRow(), access_code: "5590" });
     const user = userEvent.setup();
     renderAt("/m/workers/w1?tab=code");
-    await user.click(await screen.findByRole("button", { name: "새 번호 만들기" }));
+    const opener = await screen.findByRole("button", { name: "새 번호 만들기" });
+    await user.click(opener);
     const dialog = screen.getByRole("dialog", { name: "김민지 님 번호를 새로 만들까요?" });
     await user.click(within(dialog).getByRole("button", { name: "새 번호 만들기" }));
-    expect(await screen.findByTestId("fresh-code")).toHaveTextContent("5590");
+    const fresh = await screen.findByRole("dialog", { name: "김민지 님 새 번호예요" });
+    expect(within(fresh).getByTestId("fresh-code")).toHaveTextContent("5590");
+    expect(within(fresh).getByRole("button", { name: "복사하기" })).toHaveFocus();
+    // 탭 화면 자체는 가린 채다.
+    expect(screen.getByTestId("access-code")).toHaveTextContent("●●●●");
+    await user.click(within(fresh).getByRole("button", { name: "다 봤어요" }));
+    await waitFor(() => expect(screen.queryByTestId("fresh-code")).not.toBeInTheDocument());
+    expect(document.body.textContent).not.toContain("5590");
+    expect(opener).toHaveFocus();
   });
 
   it("동의: 배지는 '자동 처리 동의', 기록 창 제목은 '자동 처리·국외 이전 동의'(AI 없음)", async () => {

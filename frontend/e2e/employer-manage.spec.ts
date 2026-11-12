@@ -176,3 +176,97 @@ test("근로자 상세: 말 속도 '느리게 0.8'을 고르면 바로 저장된
   await expect(page.getByText("저장했어요")).toBeVisible();
   expect(m.workers.find((w) => w.id === "w1")!.a11y_prefs.tts_rate).toBe(0.8);
 });
+
+// (2d 검증 1회차) 인쇄용 카드가 Dialog 패널(최대 높이·스크롤) 안에서 잘리고, 고정 오버레이라 쪽마다 반복되던 문제.
+// 인쇄 모드에서 카드 전체(번호·사업장 코드·안내문)가 1쪽 맨 위에 한 번만 나오고, PDF가 1쪽인지 본다.
+async function expectOnePagePrint(page: Page, mustShow: string[]) {
+  await page.waitForTimeout(400); // 등장 애니메이션
+  await page.emulateMedia({ media: "print" });
+  const info = await page.evaluate(() => {
+    const a = document.querySelector("[data-print-area]") as HTMLElement;
+    const r = a.getBoundingClientRect();
+    const all = Array.from(a.querySelectorAll<HTMLElement>("*"));
+    // 카드 안 요소가 조상의 스크롤 상자에 잘리지 않았는지(보이는 높이 = 원래 높이).
+    const clipped = all.filter((el) => {
+      const er = el.getBoundingClientRect();
+      return er.bottom > r.bottom + 1 || er.right > r.right + 1;
+    }).length;
+    const visibleOutside = Array.from(document.body.querySelectorAll<HTMLElement>("body *")).filter(
+      (el) => !a.contains(el) && !el.contains(a) && el.getClientRects().length > 0,
+    ).length;
+    return { top: r.top, bottom: r.bottom, docH: document.documentElement.scrollHeight, clipped, visibleOutside, text: a.innerText };
+  });
+  expect(info.top, "카드가 쪽 맨 위").toBeLessThan(40);
+  expect(info.clipped, "카드 안에서 잘린 요소").toBe(0);
+  expect(info.visibleOutside, "카드 밖에 자리를 차지하는 요소").toBe(0);
+  for (const t of mustShow) expect(info.text).toContain(t);
+  const pdf = (await page.pdf({ format: "A4" })).toString("latin1");
+  const pages = pdf.match(/\/Type\s*\/Page(?![s\w])/g) ?? [];
+  expect(pages.length, "인쇄 쪽 수").toBe(1);
+  await page.emulateMedia({ media: "screen" });
+}
+
+test("인쇄용 카드: 근로자 카드는 이름·QR·번호가 1쪽에 온전히 인쇄된다", async ({ page }) => {
+  await mockEmployer(page);
+  await mockWorkers(page);
+  await loginEmployer(page, "/m/workers");
+  await page.getByRole("button", { name: "근로자 추가하기" }).click();
+  await page.getByRole("dialog").getByLabel(/이름/).fill("한별");
+  await page.getByRole("dialog").getByRole("button", { name: "추가하기" }).click();
+  await page.getByRole("button", { name: "인쇄용 카드 만들기" }).click();
+  await expect(page.getByTestId("qr-code")).toBeVisible();
+  await expectOnePagePrint(page, ["햇살카페", "0712"]);
+  await expect(page.getByTestId("print-code")).toBeVisible();
+});
+
+test("인쇄용 카드: 기기 연결 카드는 사업장 코드까지 1쪽에 한 번만 인쇄된다", async ({ page }) => {
+  await mockEmployer(page);
+  await mockWorkers(page);
+  await loginEmployer(page, "/m/settings");
+  await expect(page.getByTestId("qr-code")).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 400));
+  await page.getByRole("button", { name: "인쇄용 카드 만들기" }).click();
+  await expect(page.getByRole("dialog", { name: "기기 연결 카드" })).toBeVisible();
+  await expectOnePagePrint(page, ["AB12CD"]);
+});
+
+// (2d 검증 1회차) 터치 화면(pointer: coarse)에서 따로 놓인 이동 링크와 스위치도 44px 이상(명세 6.3).
+test.describe("390 터치 화면 누를 곳", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  async function sizes(page: Page, selector: string) {
+    return page.locator(selector).evaluateAll((els) =>
+      els.filter((e) => e.getClientRects().length > 0).map((e) => {
+        const r = e.getBoundingClientRect();
+        return { name: (e.textContent ?? "").trim() || e.getAttribute("aria-labelledby") || "", w: Math.round(r.width), h: Math.round(r.height) };
+      }),
+    );
+  }
+  const small = (xs: { w: number; h: number }[]) => xs.filter((x) => x.w < 44 || x.h < 44);
+
+  test("근로자 상세: 뒤로 링크·위 경로 링크·스위치가 44px 이상", async ({ page }) => {
+    await mockEmployer(page);
+    await mockWorkers(page);
+    await loginEmployer(page, "/m/workers/w1?tab=prefs");
+    expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true);
+    await expect(page.getByRole("group", { name: "말 속도" })).toBeVisible();
+    const back = await sizes(page, "main a[href='/m/workers']");
+    expect(back.length).toBeGreaterThan(0);
+    expect(back.filter((x) => x.h < 44)).toEqual([]);
+    const crumbs = await sizes(page, "header nav a");
+    expect(crumbs.filter((x) => x.h < 44)).toEqual([]);
+    const sw = await sizes(page, "[role=switch]");
+    expect(sw.length).toBeGreaterThan(0);
+    expect(small(sw)).toEqual([]);
+  });
+
+  test("설정: 스위치가 44px 이상", async ({ page }) => {
+    await mockEmployer(page);
+    await mockWorkers(page);
+    await loginEmployer(page, "/m/settings");
+    await expect(page.getByRole("heading", { level: 1, name: "설정" })).toBeVisible();
+    const sw = await sizes(page, "[role=switch]");
+    expect(sw.length).toBeGreaterThan(0);
+    expect(small(sw)).toEqual([]);
+  });
+});

@@ -566,13 +566,17 @@ export default function ManagerPage() {
   }
 
   async function handleDeleteWorker(workerId: string, name: string) {
-    if (!window.confirm(`근로자 '${name}'을(를) 삭제할까요?\n이 근로자의 배정·수행 기록도 함께 삭제됩니다.`)) {
-      return;
-    }
+    // (2d) 서버는 이름을 그대로 다시 적어야 지운다(POST /delete, contract §6.2). 옛 화면은 2b-1이 지울 때까지
+    // 확인 창 대신 이름을 적는 창을 띄워 그 이름을 함께 보낸다(이름 없이 보내면 늘 422였다 — 2d 검증 1회차).
+    const typed = window.prompt(
+      `근로자 '${name}'을(를) 지우려면 이름을 그대로 적어 주세요.\n이 근로자의 배정·수행 기록도 함께 지워져요.`,
+      "",
+    );
+    if (typed === null) return;
     setError(null);
     setNotice(null);
     try {
-      await api.deleteWorker(workerId);
+      await api.deleteWorker(workerId, typed);
       const remaining = workers.filter((w) => w.id !== workerId);
       setWorkers(remaining);
       setSelectedWorkerIds((prev) => {

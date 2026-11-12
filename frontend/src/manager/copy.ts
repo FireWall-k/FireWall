@@ -268,6 +268,9 @@ export const accessCode = {
   reissueTitle: (name: string) => `${name} 님 번호를 새로 만들까요?`,
   reissueBody: "예전 번호로는 더 들어갈 수 없어요. 새 번호를 근로자에게 알려 주세요.",
   reissued: (name: string) => `${name} 님 새 번호를 만들었어요`,
+  freshTitle: (name: string) => `${name} 님 새 번호예요`,
+  freshBody: "이 번호를 근로자에게 알려 주세요. 창을 닫으면 번호는 다시 가려져요.",
+  freshClose: "다 봤어요",
   current: "지금 번호",
   shortCode: "예전에 만든 긴 번호예요. 새 번호를 만들면 4자리가 돼요.",
 } as const;
@@ -323,7 +326,7 @@ export const printCard = {
 /** 근로자 지우기(이름 다시 적기, contract §6.2). */
 export const workerDelete = {
   title: (name: string) => `${name} 님을 지울까요?`,
-  description: "지우면 되돌릴 수 없어요. 필요하면 먼저 '동의·개인정보'에서 기록을 내려받아 두세요.",
+  description: "지우면 되돌릴 수 없어요. 필요하면 '동의·개인정보'에서 기록을 먼저 내려받아 주세요.",
   items: ["근로자 정보와 메모", "받은 배정과 수행 기록", "도움 요청 기록", "동의 기록"],
   done: (name: string) => `${name} 님을 지웠어요`,
   mentions: (n: number) => `직무 ${n}개에 이름이 남아 있어요 · 직무 문장을 고쳐 주세요`,
