@@ -88,6 +88,53 @@ describe("그림 4상태", () => {
     expect(within(detail()).queryByRole("button", { name: "이 그림이 맞아요" })).toBeNull();
   });
 
+  it("none + 후보: 비슷한 후보 3장을 서버 순서 그대로 바로 펼치고, 한 번 누르면 붙어 확인함(그림 정확도 ②)", async () => {
+    const t = FOUR();
+    const cands = candidatesFor(t);
+    // 서버가 정한 순서(직무를 만들 때 순서가 맨 앞)를 화면이 다시 섞지 않는다.
+    cands.steps[3].candidates = [
+      { card_id: "PACKAGING_015", url: "http://x/api/aac/images/packaging/PACKAGING_015.webp", label: "제품의 앞면을 맞춘다" },
+      { card_id: "PACKAGING_028", url: "http://x/api/aac/images/packaging/PACKAGING_028.webp", label: "정상 제품을 포장 위치에 놓는다" },
+      { card_id: "PACKAGING_030", url: "http://x/api/aac/images/packaging/PACKAGING_030.webp", label: "제품을 봉투 안에 넣는다" },
+    ];
+    m.getTask.mockResolvedValue(t);
+    m.candidates.mockResolvedValue(cands);
+    const user = userEvent.setup();
+    await renderAt(`/m/tasks/${t.id}`);
+    await screen.findByTestId("step-detail");
+    await user.click(pick(4));
+    const group = await within(detail()).findByRole("group", { name: "비슷한 그림을 찾았어요. 맞는 그림을 눌러 붙여요" });
+    const buttons = within(group).getAllByRole("button");
+    expect(buttons.map((b) => b.getAttribute("data-candidate"))).toEqual(["PACKAGING_015", "PACKAGING_028", "PACKAGING_030"]);
+    expect(buttons[0]).toHaveAccessibleName("후보 1 제품의 앞면을 맞춘다");
+    // 빈 그림 칸 대신 후보를 보인다. 찾기·사진 단추는 그대로 있다.
+    expect(within(detail()).queryByTestId("none-box")).toBeNull();
+    expect(within(detail()).getByRole("button", { name: "다른 그림 찾기" })).toBeInTheDocument();
+    m.applyPicture.mockImplementation(async () => confirmed({
+      ...t.steps[3], symbol_url: cands.steps[3].candidates[0].url,
+      picture: { ...cands.steps[3].candidates[0], source: "manual" },
+    }));
+    // 키보드로도: Tab으로 첫 후보에 초점을 두고 Enter.
+    buttons[0].focus();
+    await user.keyboard("{Enter}");
+    expect(m.applyPicture).toHaveBeenCalledWith("task-1", "s4", cands.steps[3].candidates[0]);
+    await waitFor(() => expect(row(4)).toHaveTextContent("확인함"));
+  });
+
+  it("none + 후보 없음·찾는 중: 빈 그림 칸만(후보 묶음 없음)", async () => {
+    const t = FOUR();
+    const cands = candidatesFor(t);
+    cands.steps[3].candidates = [];
+    m.getTask.mockResolvedValue(t);
+    m.candidates.mockResolvedValue(cands);
+    const user = userEvent.setup();
+    await renderAt(`/m/tasks/${t.id}`);
+    await screen.findByTestId("step-detail");
+    await user.click(pick(4));
+    expect(within(detail()).getByTestId("none-box")).toBeInTheDocument();
+    expect(within(detail()).queryByTestId("none-candidates")).toBeNull();
+  });
+
   it("confirmed: 확인 단추 없이 바꾸기만(다른 후보 보기·다른 그림 찾기)", async () => {
     const { user } = await open();
     await user.click(pick(1));

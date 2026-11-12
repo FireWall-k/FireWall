@@ -614,6 +614,9 @@ export const editor = {
   confirmFailed: "그림을 확인하지 못했어요 · 잠시 뒤 다시 눌러 주세요",
   otherCandidates: "다른 후보 보기",
   chooseHeading: "맞는 그림을 골라 주세요",
+  /** (그림 정확도 ②) '그림 없음' 단계에 바로 펼친 비슷한 후보 3장. */
+  noneChooseHeading: "비슷한 그림을 찾았어요. 맞는 그림을 눌러 붙여요",
+  noneChooseHint: "맞는 그림이 없으면 [다른 그림 찾기]로 찾거나 [현장 사진 올리기]를 써요.",
   candidateNo: (n: number) => `후보 ${n}`,
   candidatesLoading: "후보를 찾고 있어요",
   candidatesFailed: "후보를 불러오지 못했어요. [다른 그림 찾기]나 [현장 사진 올리기]를 써 주세요.",

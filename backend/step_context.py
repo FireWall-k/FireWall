@@ -5,22 +5,73 @@ main.py(직무 생성·단계 추가·후보 조회)와 editor.py(모든 단계 
 """
 from __future__ import annotations
 
+import json
 import os
 import posixpath
 import re
 from urllib.parse import unquote
 
+from aac_assets import _labels, asset_label, card_id_from_url
 from models import Step, Task
+
+# 생성 때 정한 후보를 몇 장까지 단계에 남기나(편집기가 펼치는 후보 수와 같다).
+STORED_CANDIDATES = 3
 
 
 def _step_search_terms(step: "Step") -> list[str]:
     """단계의 AAC 검색어. 저장된 symbol_query가 있으면 그걸 쓴다(생성 때와 같은 질의),
-    없으면 문장에서 뽑는다(사업주가 직접 추가했거나 문장을 수정한 경우)."""
+    없으면 문장에서 뽑는다(사업주가 직접 쓴 단계). 문장을 고쳐도 symbol_query는 지우지 않는다 —
+    '제품의 앞면을 정리해요'로 고친 뒤 문장 낱말만으로 찾으면 옷·책 정리 그림이 후보로 나왔다(그림 정확도 조사 ③)."""
     stored = [t.strip() for t in (step.symbol_query or "").split(",") if t.strip()]
     if stored:
         return stored[:4]
     terms = re.findall(r"[가-힣A-Za-z]+", step.sentence) or [step.sentence[:12]]
     return terms[:4]
+
+
+def _relative_aac(url: str) -> str:
+    base = os.getenv("PUBLIC_BACKEND_URL", "http://localhost:8000").rstrip("/")
+    return url[len(base):] if url.startswith(base + "/") else url
+
+
+def creation_candidates(sym: dict) -> str:
+    """(그림 정확도 ②) 생성 때 그림 검색이 준 순서(GPT 재순위가 앞으로 올린 그림이 맨 앞)를 단계에 남길 값.
+
+    자동 채택이면 채택한 그림, 아니면 후보 상위 3장의 그림 주소(서버 상대 경로)를 JSON 목록으로 둔다. 편집기는 그때그때
+    규칙만으로 다시 찾으므로(유료 모델 없음) 이 값이 없으면 GPT가 고른 순서가 사라진다. 사진·그림 없음이면 빈 글."""
+    urls: list[str] = []
+    if sym.get("image_url") and not sym.get("needs_fallback"):
+        urls.append(str(sym["image_url"]))
+    urls += [str(c.get("image_url") or "") for c in sym.get("candidates") or [] if isinstance(c, dict)]
+    out: list[str] = []
+    seen: set[str] = set()
+    for url in urls:
+        rel = _relative_aac(url)
+        card_id = card_id_from_url(rel)
+        if not card_id or card_id in seen or not _is_own_image_url(rel):
+            continue
+        seen.add(card_id)
+        out.append(rel)
+        if len(out) >= STORED_CANDIDATES:
+            break
+    return json.dumps(out) if out else ""
+
+
+def stored_candidates(step: "Step") -> list[tuple[str, str, str]]:
+    """단계에 남긴 생성 때 후보 → (card_id, 서버 상대 경로, 이름). 깨졌거나 지금 자산 목록에 없는 그림은 뺀다."""
+    try:
+        raw = json.loads(step.symbol_candidates or "[]")
+    except ValueError:
+        return []
+    out: list[tuple[str, str, str]] = []
+    for rel in raw if isinstance(raw, list) else []:
+        if not isinstance(rel, str) or not _is_own_image_url(rel):
+            continue
+        card_id = card_id_from_url(rel)
+        if not card_id or (_labels() and not asset_label(card_id)):
+            continue
+        out.append((card_id, rel, asset_label(card_id)))
+    return out[:STORED_CANDIDATES]
 
 
 def _task_context(task: Task, sentence: str, action_type: str) -> dict:

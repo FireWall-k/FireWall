@@ -287,7 +287,8 @@ def duplicate_task(task_id: str, db: Session = Depends(get_db),
     for s in sorted(src.steps, key=lambda x: x.order_index):
         db.add(Step(
             task_id=copy.id, order_index=s.order_index, sentence=s.sentence, action_type=s.action_type,
-            symbol_query=s.symbol_query, symbol_url=s.symbol_url, symbol_source=s.symbol_source,
+            symbol_query=s.symbol_query, symbol_candidates=s.symbol_candidates,
+            symbol_url=s.symbol_url, symbol_source=s.symbol_source,
             needs_fallback=s.needs_fallback, picture_confirmed=s.picture_confirmed,
             symbol_media_id=_copy_media(db, src.employer_id, s.symbol_media_id),
             tts_media_id=_copy_media(db, src.employer_id, s.tts_media_id),

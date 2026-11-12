@@ -4,7 +4,8 @@
   아무것도 바꾸지 않는다(원자성). 이미 확인한 단계는 그대로 둔다(다시 눌러도 같은 결과).
 - POST /api/tasks/{id}/steps/{sid}/picture: 후보·검색 결과 적용 → 확인함(confirmed).
 - GET  /api/tasks/{id}/candidates: 모든 단계의 그림 후보(최대 3)를 한 번에. **유료 모델 없이** — ai_service에
-  context.rerank=false를 넘겨 GPT 재순위를 끈다(contract §3.3).
+  context.rerank=false를 넘겨 GPT 재순위를 끈다(contract §3.3). 생성 때 후보 순서(GPT가 앞으로 올린 그림이 맨 앞,
+  steps.symbol_candidates)를 먼저 두고 규칙 검색 결과로 채운다(그림 정확도 ②).
 - POST /api/tasks/{id}/steps/{sid}/tts: [목소리 듣기]. 음성이 없거나 옛 문장이면 그때 합성한다(트랜잭션 밖, step_audio).
 - GET  /api/tasks/{id}/preview: 미리보기(근로자 Step 모양 + 조심·묶음 경계). 기록·감사를 남기지 않는다.
 이 모듈은 main을 import하지 않는다.
@@ -37,7 +38,7 @@ from schemas import (
     TtsOut,
 )
 from send import ApiError, _owned_task
-from step_context import _is_own_image_url, _step_search_terms, _task_context
+from step_context import _is_own_image_url, _step_search_terms, _task_context, stored_candidates
 
 router = APIRouter()
 
@@ -122,19 +123,27 @@ def _is_accepted(result: dict) -> bool:
     return bool(symbols) and symbols[0].get("reason") == "accepted" and bool(symbols[0].get("image_url"))
 
 
-def candidates_from_symbols(result: dict, extra: list[dict] | None = None) -> list[CandidateOut]:
+def stored_as_matches(step: Step) -> list[dict]:
+    """생성 때 후보(steps.symbol_candidates)를 ai_service 후보 모양으로. 점수는 없다(화면에 숫자를 보이지 않는다)."""
+    return [{"asset_id": cid, "group_id": cid, "job": "", "asset_type": "action", "label": label,
+             "image_url": rel, "score": 0.0} for cid, rel, label in stored_candidates(step)]
+
+
+def candidates_from_symbols(result: dict, extra: list[dict] | None = None,
+                            first: list[dict] | None = None) -> list[CandidateOut]:
     """ai_service map-symbols 결과 → 후보 최대 3장. 자동 채택이면 채택한 그림이 맨 앞이다.
 
-    자동 채택한 단계는 map-symbols가 후보 목록을 주지 않으므로(채택 그림 하나), 그 뒤를 같은 맥락의 그림 검색
-    결과(extra, /ai/aac/search — 규칙 검색, GPT 없음)로 채운다."""
+    first(생성 때 후보 순서)가 있으면 그것을 맨 앞에 둔다 — 지금 검색은 규칙만이라 생성 때 GPT가 앞으로 올린 그림이
+    뒤로 밀리거나 빠진다. 자동 채택한 단계는 map-symbols가 후보 목록을 주지 않으므로(채택 그림 하나), 그 뒤를 같은
+    맥락의 그림 검색 결과(extra, /ai/aac/search — 규칙 검색, GPT 없음)로 채운다."""
     symbols = result.get("symbols") or []
     sym = symbols[0] if symbols else {}
-    raw = list(sym.get("candidates") or []) + list(extra or [])
+    raw = list(first or []) + list(sym.get("candidates") or []) + list(extra or [])
     if sym.get("reason") == "accepted" and sym.get("image_url"):
         accepted_id = sym.get("external_id") or card_id_from_url(sym.get("image_url"))
         if not any((c.get("asset_id") or card_id_from_url(c.get("image_url"))) == accepted_id for c in raw):
-            raw.insert(0, {"asset_id": accepted_id, "label": sym.get("resolved_keyword", ""),
-                           "image_url": sym.get("image_url")})
+            raw.insert(len(first or []), {"asset_id": accepted_id, "label": sym.get("resolved_keyword", ""),
+                                          "image_url": sym.get("image_url")})
     out: list[CandidateOut] = []
     seen: set[str] = set()
     for c in raw:
@@ -164,14 +173,17 @@ def symbol_query(task: Task, step: Step, masker) -> tuple[list, dict]:
 @router.get("/api/tasks/{task_id}/candidates", response_model=TaskCandidatesOut)
 def task_candidates(task_id: str, db: Session = Depends(get_db),
                     user: dict = Depends(require_employer)) -> TaskCandidatesOut:
-    """모든 단계(확인한 단계 포함)의 그림 후보. 저장하지 않고 그때그때 찾는다(문장을 고치면 후보도 바뀐다)."""
+    """모든 단계(확인한 단계 포함)의 그림 후보. 생성 때 후보 순서를 앞에 두고, 모자라면 그때그때 규칙으로 찾아 채운다.
+    생성 때 후보가 3장이면 다시 찾지 않는다."""
     task = _owned_task(task_id, user["sub"], db)
     steps = sorted(task.steps, key=lambda s: s.order_index)
     masker = employer_pseudonymizer(db, user["sub"])
-    queries = [(s.id, *symbol_query(task, s, masker)) for s in steps]
+    queries = [(s.id, *symbol_query(task, s, masker), stored_as_matches(s)) for s in steps]
     db.commit()  # 그림 검색(네트워크) 동안 읽기 트랜잭션도 쥐지 않는다
 
     def run(q):
+        if len(q[3]) >= MAX_CANDIDATES:
+            return {}, None
         result = ai_client.map_symbols(q[1], context=q[2])
         extra = None
         if _is_accepted(result):
@@ -186,7 +198,7 @@ def task_candidates(task_id: str, db: Session = Depends(get_db),
             results = list(pool.map(run, queries))
     else:
         results = [run(q) for q in queries]
-    return TaskCandidatesOut(steps=[StepCandidatesOut(step_id=q[0], candidates=candidates_from_symbols(r, extra))
+    return TaskCandidatesOut(steps=[StepCandidatesOut(step_id=q[0], candidates=candidates_from_symbols(r, extra, q[3]))
                                     for q, (r, extra) in zip(queries, results)])
 
 

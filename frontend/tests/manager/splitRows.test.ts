@@ -99,14 +99,22 @@ describe("splitRows — 입력 화면 나눈 줄", () => {
     expect(added.focus).toBe(1);
   });
 
-  it("확인 목록: 고치지 않은 줄만 AI 검색어·동작 종류를 보낸다", () => {
+  it("확인 목록: 고치지 않은 줄만 동작 종류를, AI 줄은 고쳐도 그림 검색어를 보낸다", () => {
     let rows = rowsFromPreview(PREVIEW);
     rows = editRow(rows, 1, "컵을 깨끗이 씻어요.");
+    rows = editRow(rows, 2, "컵을 건조대에 엎어요.");
     expect(toConfirmed(rows)).toEqual([
       { sentence: "앞치마를 입어요.", action_type: "wear", symbol_query: ["앞치마"] },
-      { sentence: "컵을 깨끗이 씻어요." },
-      { sentence: "컵을 건조대에 올려요.", action_type: "other", symbol_query: null },
+      // (그림 정확도 ③) 문장만 고친 AI 줄은 AI 그림 검색어를 그대로 보낸다. 동작 종류는 서버가 다시 매긴다.
+      { sentence: "컵을 깨끗이 씻어요.", symbol_query: ["컵"] },
+      // AI 검색어가 없던 줄은 고쳐도 문장만 간다.
+      { sentence: "컵을 건조대에 엎어요." },
     ]);
+  });
+
+  it("더 나눈 줄은 AI 검색어를 보내지 않는다(사업주가 만든 줄)", () => {
+    const out = splitRow(rowsFromPreview(PREVIEW), 1, 3);
+    expect(toConfirmed(out.rows).slice(1, 3)).toEqual([{ sentence: "컵을" }, { sentence: "씻어요." }]);
   });
 });
 
