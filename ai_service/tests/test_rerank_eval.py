@@ -30,7 +30,7 @@ def _isolate(monkeypatch):
 def _seed(cache_dir, case, choice, confident):
     kw, ctx = _case_inputs(case, "full")
     top = search_for_step_detailed(kw, ctx, limit=aac_rerank.TOP_N)["candidates"][:aac_rerank.TOP_N]
-    user = aac_rerank.build_user_prompt(ctx["sentence"], ctx["business_type"], top)
+    user = aac_rerank.build_user_prompt(ctx["sentence"], ctx["business_type"], top, kw)
     key = R.cache_key(llm.OPENAI_MODEL, aac_rerank.RERANK_SYSTEM, user)
     body = {"choices": [{"message": {"content": json.dumps({"choice": choice, "confident": confident})}}]}
     (cache_dir / f"{key}.json").write_text(json.dumps(body), encoding="utf-8")
@@ -51,7 +51,7 @@ def test_scores_from_cache(tmp_path, monkeypatch, capsys):
     assert row["rule"]["accepted"] and row["rule"]["correct"]
     assert not row["top1"]["accepted"]
     assert row["top1"]["top3"]  # 정답(규칙 1순위)은 후보 3장 안에 남는다
-    assert row["llm"] == {"choice": 2, "confident": True, "policy": "top1"}
+    assert row["llm"] == {"choice": 2, "confident": True, "policy": "top1", "applied": "top1", "query": True}
 
 
 def test_missing_cache_counts_as_rule_without_calling(tmp_path, monkeypatch, capsys):

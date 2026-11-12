@@ -194,7 +194,7 @@ def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dataset", default="dev", help="golden | dev | JSON 파일 경로({'cases': [...]})")
     ap.add_argument("--mode", default="full", choices=["full", "sentence"], help="검색어 모드(run_match_eval과 같다)")
-    ap.add_argument("--policy", default="both", choices=["top1", "top3", "both"])
+    ap.add_argument("--policy", default="both", choices=["top1", "top3", "top3q", "both"])
     ap.add_argument("--cache-dir", default=os.getenv("AAC_RERANK_EVAL_CACHE", str(HERE / ".rerank_cache")))
     ap.add_argument("--live", action="store_true", help="캐시에 없는 문항을 실제로 부른다(비용 발생)")
     ap.add_argument("--ledger", default=None, help="--live 비용 장부(jsonl). 합계가 --cap에 닿으면 멈춘다")

@@ -143,6 +143,74 @@ def test_policy_env_falls_back_to_top1(monkeypatch):
     assert aac_rerank.policy() == "top1"
     monkeypatch.setenv("AAC_LLM_RERANK_POLICY", "TOP3")
     assert aac_rerank.policy() == "top3"
+    monkeypatch.setenv("AAC_LLM_RERANK_POLICY", " top3q ")
+    assert aac_rerank.policy() == "top3q"
+    monkeypatch.delenv("AAC_LLM_RERANK_POLICY")
+    assert aac_rerank.policy() == "top1"  # 코드 기본(Docker 기본은 docker-compose.yml의 top3q)
+
+
+# ---------- top3q: 그림 검색어를 함께 보낸 단계만 top3 ----------
+
+def test_top3q_with_query_accepts_confident_pick_within_top3():
+    out = aac_rerank.apply_policy(_decision("accepted"), 3, True, "top3q", with_query=True)
+    assert out["reason"] == "accepted" and out["match"]["asset_id"] == "A3"
+    assert out["llm"]["applied"] == "top3" and out["llm"]["query"] is True
+    # 상위 3장 밖은 top3처럼 받지 않는다
+    out = aac_rerank.apply_policy(_decision("low_margin"), 4, True, "top3q", with_query=True)
+    assert out["match"] is None
+    # 확신 없으면 받지 않는다
+    out = aac_rerank.apply_policy(_decision("low_margin"), 2, False, "top3q", with_query=True)
+    assert out["match"] is None
+
+
+def test_top3q_without_query_behaves_like_top1():
+    for choice, confident in ((2, True), (3, True), (1, True), (1, False), (0, True)):
+        for reason in ("accepted", "low_margin"):
+            q = aac_rerank.apply_policy(_decision(reason), choice, confident, "top3q", with_query=False)
+            t1 = aac_rerank.apply_policy(_decision(reason), choice, confident, "top1")
+            assert (q["match"], q["reason"], q["candidates"]) == (t1["match"], t1["reason"], t1["candidates"])
+            assert q["llm"]["applied"] == "top1"
+
+
+@pytest.mark.parametrize("sentence,keywords,expected", [
+    ("상자를 여세요.", ["커터칼로 상자를 열다"], "커터칼로 상자를 열다"),
+    ("제품의 앞면을 정리하세요.", ["제품의 앞면을 같은 방향으로 정리하다"], "제품의 앞면을 같은 방향으로 정리하다"),
+    ("손을 씻으세요.", ["손을 씻다"], "손을 씻다"),  # 어미가 달라 문장 안에 그대로 없다 → 보낸다
+    ("볼펜 몸통에 심을 넣으세요.", ["볼펜", "심 넣기"], "볼펜 / 심 넣기"),
+    # 백엔드가 문장 낱말을 뽑은 검색어(사업주가 고친 줄)·문장 앞부분 — 새 정보가 없어 보내지 않는다
+    ("제품의 앞면을 정리해요.", ["제품의", "앞면을", "정리해요"], ""),
+    ("상자를 지정된 위치에 놓으세요.", ["상자를 지정된 위"], ""),
+    ("문장", [], ""),
+    ("문장", ["  ", ""], ""),
+])
+def test_search_phrase(sentence, keywords, expected):
+    assert aac_rerank.search_phrase(sentence, keywords) == expected
+
+
+def test_prompt_without_new_query_keeps_old_shape():
+    user = aac_rerank.build_user_prompt("상품을 선반에 놓으세요", "마트", [_cand(1)], ["상품을", "선반에"])
+    assert user == "지시문: 상품을 선반에 놓으세요\n업종: 마트\n후보:\n1. 카드1"
+
+
+def test_rerank_sends_search_phrase_and_applies_top3q(gpt, monkeypatch):
+    monkeypatch.setenv("AAC_LLM_RERANK_POLICY", "top3q")
+    fake = gpt({"choice": 2, "confident": True}, {"choice": 2, "confident": True})
+    out = aac_rerank.rerank(_decision("accepted"), keywords=["커터칼로 상자를 열다"],
+                            context={"sentence": "상자를 여세요."})
+    assert "그림 검색어: 커터칼로 상자를 열다\n" in fake.calls[0]["json"]["messages"][1]["content"]
+    assert out["reason"] == "accepted" and out["match"]["asset_id"] == "A2"
+    # 검색어가 문장 낱말뿐이면 보내지 않고 top1로 판정한다(2번을 골랐으니 사람에게 넘긴다)
+    out = aac_rerank.rerank(_decision("accepted"), keywords=["상자를", "여세요"], context={"sentence": "상자를 여세요."})
+    assert "그림 검색어" not in fake.calls[1]["json"]["messages"][1]["content"]
+    assert out["match"] is None and out["reason"] == "llm_disagree"
+    assert out["candidates"][0]["asset_id"] == "A2"
+
+
+def test_system_prompt_mentions_search_phrase():
+    # 프롬프트가 바뀌면 판정 파일 키도 바뀐다 — 검색어 없이 받은 예전 판정을 다시 쓰지 않는다.
+    assert "picture search phrase" in aac_rerank.RERANK_SYSTEM
+    key = ("문장", ("k",), "", ("A1",))
+    assert aac_rerank._db_key(key) != aac_rerank._db_key(("문장", ("k2",), "", ("A1",)))
 
 
 # ---------- 호출·폴백 ----------
@@ -156,7 +224,7 @@ def test_rerank_sends_numbered_labels_with_short_timeout(gpt):
     assert call["timeout"] == 4.0
     assert call["json"]["max_tokens"] == aac_rerank.MAX_TOKENS
     user = call["json"]["messages"][1]["content"]
-    assert user.startswith("지시문: 상품을 선반에 놓으세요\n업종: 마트\n후보:\n1. 카드1\n")
+    assert user.startswith("지시문: 상품을 선반에 놓으세요\n그림 검색어: 상품 놓기\n업종: 마트\n후보:\n1. 카드1\n")
     assert "10. 카드10" in user
     assert call["json"]["messages"][0]["content"] == aac_rerank.RERANK_SYSTEM
 
