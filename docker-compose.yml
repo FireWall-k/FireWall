@@ -58,8 +58,10 @@ services:
       # 키가 없거나 오류·시간 초과면 규칙만 쓴다. 끄려면 .env에 AAC_LLM_RERANK=off.
       AAC_LLM_RERANK: "${AAC_LLM_RERANK:-auto}"
       # 자동 채택 기준(2026-11-13 top1 → top3q): 그림 검색어를 함께 보낸 단계는 GPT가 확신한 상위 3장 안 카드를
-      # 붙이고, 검색어가 없으면 top1. GPT가 줄인 문장 266단계 재측정에서 틀린 자동 그림 19→19, 맞음 97→107
-      # (검색어 없는 top3은 틀림 19→39라 쓰지 않는다). 예전 기준으로 돌리려면 .env에 AAC_LLM_RERANK_POLICY=top1.
+      # 붙이고, 검색어가 없으면 top1. 운영에서는 GPT로 나눈 단계에 모두 검색어가 붙어(A 62/62, 실제 직무 18/18) 사실상
+      # top3와 같다. 검색어가 있는 조건으로 잰 것은 A 62단계뿐 — 틀린 자동 그림 3→4, 맞음 26→38, 빈칸 33→20.
+      # B(쪼개기 정답셋 204단계)는 검색어 없이 재서 이 조건 숫자가 없다(검색어 없는 top3은 틀림 16→35). 그래서 틀린 그림은
+      # 늘 수 있고 얼마나인지는 아직 모른다(B에 GPT 검색어를 붙인 재측정은 유료라 승인 필요). 예전 기준: AAC_LLM_RERANK_POLICY=top1.
       AAC_LLM_RERANK_POLICY: "${AAC_LLM_RERANK_POLICY:-top3q}"
       AAC_LLM_RERANK_TIMEOUT: "${AAC_LLM_RERANK_TIMEOUT:-4}"
       AAC_LLM_RERANK_COOLDOWN: "${AAC_LLM_RERANK_COOLDOWN:-60}"
