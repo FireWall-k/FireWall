@@ -10,7 +10,7 @@
 // 서명 URL 만료 시 다시 받기(useMediaRefresh).
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Images, Send } from "lucide-react";
+import { Images, PanelRight, Send } from "lucide-react";
 import { ApiError } from "../../../apiErrors";
 import { Badge, Button, Dialog, EmptyState, Tooltip, useToast } from "../../../components/ui";
 import { cn } from "../../../cn";
@@ -18,7 +18,7 @@ import { mergeStepMedia, useMediaRefresh } from "../../../media";
 import { editorApi } from "../../api/editor";
 import { renameTask } from "../../api/tasks";
 import type { EditorStep, EditorTask, PictureCandidate, SendResult } from "../../api/types";
-import { editor as copy, errors, overview as overviewCopy, reviewQueue, sendSheet, taskRow, taskState } from "../../copy";
+import { editor as copy, errors, overview as overviewCopy, previewDrawer as previewCopy, reviewQueue, sendSheet, taskRow, taskState } from "../../copy";
 import { errorMessage } from "../listHelpers";
 import { relativeDate } from "../relativeDate";
 import EditorSkeleton from "./EditorSkeleton";
@@ -30,7 +30,10 @@ import SendSheet from "./SendSheet";
 import StepDetail, { type CandidateState } from "./StepDetail";
 import StepList from "./StepList";
 import TitleEditor from "./TitleEditor";
-import { TWO_PANE_QUERY, useMedia } from "./useMedia";
+import { THREE_PANE_QUERY, TWO_PANE_QUERY, useMedia } from "./useMedia";
+import { useFixParam } from "./fixParam";
+import PreviewDrawer from "./PreviewDrawer";
+import { usePreviewDrawer } from "./usePreviewDrawer";
 
 export interface TaskEditorPageProps {
   taskId: string;
@@ -55,6 +58,9 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
   const [params] = useSearchParams();
   const toast = useToast();
   const wide = useMedia(TWO_PANE_QUERY);
+  // 2b-2 넓은 화면: 1280 이상은 세 칸(목록 · 상세 · 미리보기 서랍), 768~1279는 두 칸 + 미리보기 아래 시트.
+  const xl = useMedia(THREE_PANE_QUERY, false);
+  const preview = usePreviewDrawer();
 
   const [task, setTask] = useState<EditorTask | null>(initialTask);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -94,6 +100,12 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
     params.get("step") ? "detail" : null,
   );
   const listHeading = useRef<HTMLHeadingElement | null>(null);
+
+  // ?fix=(코칭 카드·도움 띠): 불러온 뒤 그 단계의 그림 고르기·사진 올리기 창을 바로 연다(fixParam.ts).
+  const stepIds = useMemo(() => new Set(task?.steps.map((s) => s.id) ?? []), [task]);
+  const hasStep = useCallback((id: string) => stepIds.has(id), [stepIds]);
+  const openFixPicker = useCallback((stepId: string, mode: "search" | "photo") => setPicker({ stepId, mode }), []);
+  useFixParam({ ready: !!task, hasStep, onPicker: openFixPicker });
 
   // ── 불러오기 ── 처음 받은 초안은 마운트 때 한 번만 쓴다(부모가 넘긴 뒤 비워도 다시 불러오지 않게 값을 붙잡아 둔다).
   const [initial] = useState(initialTask);
@@ -621,7 +633,7 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
         <EmptyState kind="error" title={loadError} onRetry={() => setLoadNonce((n) => n + 1)} />
       </div>
     ) : (
-      <div className="flex flex-col gap-4">
+      <div className="flex min-w-0 max-w-full flex-col gap-4 overflow-x-clip">
         <h1 className="sr-only">{copy.stepsHeading}</h1>
         <EditorSkeleton mode="loading" />
       </div>
@@ -674,7 +686,7 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
     );
 
   return (
-    <div className="flex flex-col gap-4 pb-32 md:pb-0" data-testid="task-editor">
+    <div className="flex min-w-0 max-w-full flex-col gap-4 overflow-x-clip pb-32 md:pb-0" data-testid="task-editor">
       <header className="flex min-h-16 flex-wrap items-center gap-x-4 gap-y-2 rounded-card border border-paper-200 bg-white px-4 py-3 shadow-ui-sm">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
           <TitleEditor title={task.title} onSave={rename} />
@@ -698,6 +710,16 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
           <Button variant="secondary" onClick={openOverview} icon={<Images size={16} strokeWidth={2} aria-hidden="true" />}>
             {copy.overview}
           </Button>
+          <Button
+            variant="secondary"
+            onClick={preview.toggle}
+            aria-expanded={preview.open}
+            aria-controls="editor-preview-drawer"
+            data-testid="preview-toggle"
+            icon={<PanelRight size={16} strokeWidth={2} aria-hidden="true" />}
+          >
+            {previewCopy.toggle}
+          </Button>
           {sendBtn(sendButton, "editor-send")}
         </div>
       </header>
@@ -718,7 +740,16 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
           onMediaError={onMediaError}
         />
       ) : (
-        <div className={cn("grid items-start gap-4", wide && "grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]")}>
+        <div
+          data-testid="editor-panes"
+          data-panes={xl && preview.open ? 3 : wide ? 2 : 1}
+          className={cn(
+            "grid min-w-0 items-start gap-4",
+            wide && "grid-cols-[280px_minmax(0,1fr)]",
+            // 두 xl 변형을 함께 붙이면 CSS 순서로 하나만 이긴다 — 서랍이 열렸을 때는 세 칸만 붙인다.
+            wide && (xl && preview.open ? "xl:grid-cols-[300px_minmax(0,1fr)_400px]" : "xl:grid-cols-[320px_minmax(0,1fr)]"),
+          )}
+        >
           {showList && (
             <StepList
               steps={steps}
@@ -768,8 +799,10 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
               }
             />
           )}
+          {xl && <PreviewDrawer open={preview.open} layout="side" onClose={preview.close} />}
         </div>
       )}
+      {!xl && <PreviewDrawer open={preview.open} layout={wide ? "sheet" : "full"} onClose={preview.close} />}
 
       {/* 390: 아래 고정 줄(아래 탭바 위) */}
       {!wide && (

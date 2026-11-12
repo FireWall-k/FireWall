@@ -16,3 +16,6 @@ export function useMedia(query: string, fallback = true): boolean {
 
 /** 목록과 상세를 나란히 두는 폭(명세 5.5 반응형: 820은 두 칸, 390은 목록 → 상세 전체 화면). tailwind md와 같다. */
 export const TWO_PANE_QUERY = "(min-width: 768px)";
+
+/** 세 칸(목록 · 상세 · 오른쪽 미리보기 서랍)을 두는 폭(명세 5.5 반응형 1280). tailwind xl과 같다. */
+export const THREE_PANE_QUERY = "(min-width: 1280px)";

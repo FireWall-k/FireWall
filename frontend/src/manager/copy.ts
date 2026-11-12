@@ -896,3 +896,11 @@ export const pushToggle = {
   denied: "브라우저가 알림을 막고 있어요. 브라우저 설정에서 알림을 허용해 주세요.",
   failed: "알림을 켜지 못했어요. 잠시 뒤 다시 눌러 주세요.",
 } as const;
+
+/** 편집기 미리보기 자리(2b-2 넓은 화면: 1280 오른쪽 서랍, 820 아래 시트). */
+export const previewDrawer = {
+  toggle: "미리보기",
+  label: "휴대폰 미리보기",
+  title: "근로자 휴대폰에서 이렇게 보여요",
+  close: "미리보기 닫기",
+};
