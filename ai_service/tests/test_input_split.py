@@ -405,3 +405,35 @@ def test_split_hint_endpoint(monkeypatch):
         r = c.post("/ai/split-hint", json={"sentence": "냉장고 문을 닫으세요"})
         assert r.status_code == 200 and r.json() == {"may_split": False, "actions": 1}
         assert c.post("/ai/split-hint", json={"sentence": "컵을 씻고 선반에 올리세요"}).json()["may_split"] is True
+
+
+def test_gpt_seyo_is_turned_back_to_the_employers_haeyo_tone(monkeypatch):
+    # 2026-11-13: 사업주가 '~해요'로 쓴 지시문을 GPT가 '~세요'로 바꿨다(정답셋 '~요' 문장 단계 100개 중 96개).
+    _gpt(monkeypatch, [_step("컵을 씻으세요.", "컵을 씻다", src=1, action="clean"),
+                       _step("컵을 건조대에 올리세요.", "컵을 건조대에 올리다", src=1)])
+    steps = run("컵을 씻어서 건조대에 올려요.", {}).steps
+    assert [s.sentence for s in steps] == ["컵을 씻어요.", "컵을 건조대에 올려요."]
+
+
+def test_seyo_input_keeps_seyo_and_unsure_words_stay():
+    import step_split
+    assert step_split.text_style("컵을 건조대에 올리세요.") == "seyo"
+    assert step_split.text_style("컵을 건조대에 올려요.") == "yo"
+    assert step_split.text_style("컵을 올렸어요.") is None          # 지시가 아니다
+    assert step_split.restyle("컵을 올리세요.", "seyo") == "컵을 올리세요."
+    assert step_split.restyle("컵을 올리세요.", None) == "컵을 올리세요."
+    assert step_split.restyle("내용을 살펴보세요.", "yo") == "내용을 살펴봐요."
+    assert step_split.restyle("영수증을 손님께 드리세요!", "yo") == "영수증을 손님께 드려요!"
+    assert step_split.restyle("카드로 결제하세요.", "yo") == "카드로 결제해요."
+    # 읽기가 둘이면(쓰다/쓸다, 끄다/끌다) 뜻이 바뀔 수 있어 그대로 둔다.
+    assert step_split.restyle("바닥을 쓰세요.", "yo") == "바닥을 쓰세요."
+    assert step_split.restyle("불을 끄세요.", "yo") == "불을 끄세요."
+    # 따옴표 속 말은 건드리지 않는다.
+    assert step_split.restyle('손님께 "안녕히 가세요', "yo") == '손님께 "안녕히 가세요'
+
+
+def test_mixed_tone_input_is_left_as_gpt_wrote_it(monkeypatch):
+    _gpt(monkeypatch, [_step("컵을 씻으세요.", "컵을 씻다", src=1, action="clean"),
+                       _step("컵을 선반에 올리세요.", "컵을 선반에 올리다", src=2)])
+    steps = run("컵을 씻으세요. 컵을 선반에 올려요.", {}).steps
+    assert [s.sentence for s in steps] == ["컵을 씻으세요.", "컵을 선반에 올리세요."]
