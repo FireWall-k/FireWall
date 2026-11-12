@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -25,6 +26,7 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
+from urllib3.util import parse_url
 
 import clock
 from auth import require_employer
@@ -207,6 +209,10 @@ PUSH_HOST_SUFFIXES = (
 )
 
 
+_BAD_URL_CHARS = re.compile(r"[\\\s\x00-\x1f\x7f-\x9f]")  # 백슬래시·공백·제어 문자
+_HOST_RE = re.compile(r"[A-Za-z0-9.-]+")
+
+
 def _allowed_host(host: str) -> bool:
     host = host.lower().rstrip(".")
     return any(host == suf or host.endswith("." + suf) for suf in PUSH_HOST_SUFFIXES)
@@ -220,8 +226,19 @@ def _check_endpoint(endpoint: str) -> str:
     except ValueError:
         raise HTTPException(status_code=422, detail=_MSG_ENDPOINT) from None
     host = u.hostname or ""
+    # 백슬래시·공백·제어 문자가 있으면 urlparse와 실제로 보내는 urllib3가 호스트를 서로 다르게 읽을 수 있다
+    # (예: 'https://127.0.0.1\.fcm.googleapis.com/x' → urllib3는 127.0.0.1에 연결). 그래서 아예 받지 않는다.
+    if _BAD_URL_CHARS.search(endpoint) or not _HOST_RE.fullmatch(host):
+        raise HTTPException(status_code=422, detail=_MSG_ENDPOINT)
     if (u.scheme != "https" or not host or u.username is not None or u.password is not None
             or port not in (None, 443) or not _allowed_host(host)):
+        raise HTTPException(status_code=422, detail=_MSG_ENDPOINT)
+    # 실제로 연결할 호스트(urllib3 기준)도 같아야 한다
+    try:
+        real = parse_url(endpoint)
+    except Exception:  # noqa: BLE001 - urllib3 LocationParseError 등
+        raise HTTPException(status_code=422, detail=_MSG_ENDPOINT) from None
+    if (real.host or "").lower() != host.lower() or real.port not in (None, 443) or real.auth is not None:
         raise HTTPException(status_code=422, detail=_MSG_ENDPOINT)
     return endpoint
 

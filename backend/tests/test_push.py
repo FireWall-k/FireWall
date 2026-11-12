@@ -206,7 +206,11 @@ def test_endpoint_only_known_push_hosts(client):
                 "https://localhost/x", "https://10.0.0.5/admin", "https://[::1]/x",
                 "https://fcm.googleapis.com.evil.example/x", "https://evilfcm.googleapis.com/x",
                 "https://fcm.googleapis.com:8443/x", "https://user@fcm.googleapis.com/x",
-                "https://fcm.googleapis.com:99999/x", "http://fcm.googleapis.com/x"):
+                "https://fcm.googleapis.com:99999/x", "http://fcm.googleapis.com/x",
+                # 백슬래시: urlparse는 '...fcm.googleapis.com'으로 읽지만 urllib3는 127.0.0.1·evil.com에 연결한다
+                "https://127.0.0.1\\.fcm.googleapis.com/x", "https://evil.com\\.fcm.googleapis.com/",
+                "https://127.0.0.1\\@fcm.googleapis.com/x", "https://fcm.googleapis.com\t.evil/x",
+                "https://127.0.0.1%2f.fcm.googleapis.com/x", "https://fcm.googleapis.com/x\x00y"):
         r = client.post("/api/employer/push-subscriptions", headers=site.h, json={"endpoint": bad, "keys": keys})
         assert r.status_code == 422, bad
         assert r.json()["detail"].startswith("알림 주소가 올바르지 않아요")
@@ -249,14 +253,18 @@ def test_one_slow_tenant_does_not_starve_others(client, keys, monkeypatch):
     a_calls = []
     lock = threading.Lock()
 
+    a_done_at_b: list[int] = []
+
     def fake_webpush(subscription_info, data, vapid_private_key, vapid_claims, ttl, timeout):
         ep = subscription_info["endpoint"]
         if "/slow" in ep:
             with lock:
                 a_calls.append(ep)
-            time.sleep(0.05)
+            time.sleep(0.1)
         else:
             sent_at[ep] = time.monotonic()
+            with lock:
+                a_done_at_b.append(len(a_calls))
 
     monkeypatch.setattr(push, "webpush", fake_webpush)
     a = Site(client, n_workers=3)
@@ -272,7 +280,11 @@ def test_one_slow_tenant_does_not_starve_others(client, keys, monkeypatch):
     deadline = time.monotonic() + 10
     while "https://fcm.googleapis.com/fcm/send/fast" not in sent_at and time.monotonic() < deadline:
         time.sleep(0.01)
-    assert sent_at["https://fcm.googleapis.com/fcm/send/fast"] - t0 < 0.5
+    # 시간 대신 순서로 단언한다(SQLite 잠금 대기로 가끔 1초 안팎 늦어도 흔들리지 않게).
+    # A는 40번 x 0.1초 = 4초 걸린다. B는 A가 첫 바퀴(20번)를 다 끝내기 전에 받아야 한다.
+    assert "https://fcm.googleapis.com/fcm/send/fast" in sent_at
+    assert a_done_at_b and a_done_at_b[0] < 20, a_done_at_b
+    assert sent_at["https://fcm.googleapis.com/fcm/send/fast"] - t0 < 2.0
     pool.shutdown(wait=True)
     # 사업장 A는 한 번 + 합친 한 번 더 = 40번(도움 3건마다 20번씩 60번이 아니다). 요청을 잃지는 않는다.
     assert len(a_calls) == 40
