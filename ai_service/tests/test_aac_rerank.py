@@ -146,7 +146,7 @@ def test_policy_env_falls_back_to_top1(monkeypatch):
     monkeypatch.setenv("AAC_LLM_RERANK_POLICY", " top3q ")
     assert aac_rerank.policy() == "top3q"
     monkeypatch.delenv("AAC_LLM_RERANK_POLICY")
-    assert aac_rerank.policy() == "top1"  # 코드 기본(Docker 기본은 docker-compose.yml의 top3q)
+    assert aac_rerank.policy() == "top1"  # 코드 기본(Docker 기본도 top1, top3q는 보류)
 
 
 # ---------- top3q: 그림 검색어를 함께 보낸 단계만 top3 ----------
