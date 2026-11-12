@@ -10,15 +10,15 @@
 // 서명 URL 만료 시 다시 받기(useMediaRefresh).
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Images, Send } from "lucide-react";
+import { Images, Keyboard, Send } from "lucide-react";
 import { ApiError } from "../../../apiErrors";
-import { Badge, Button, Dialog, EmptyState, Tooltip, useToast } from "../../../components/ui";
+import { Badge, Button, Dialog, EmptyState, IconButton, Tooltip, useToast } from "../../../components/ui";
 import { cn } from "../../../cn";
 import { mergeStepMedia, useMediaRefresh } from "../../../media";
 import { editorApi } from "../../api/editor";
 import { renameTask } from "../../api/tasks";
 import type { EditorStep, EditorTask, PictureCandidate, SendResult } from "../../api/types";
-import { editor as copy, errors, overview as overviewCopy, reviewQueue, sendSheet, taskRow, taskState } from "../../copy";
+import { editor as copy, errors, shortcuts as shortcutCopy, overview as overviewCopy, reviewQueue, sendSheet, taskRow, taskState } from "../../copy";
 import { errorMessage } from "../listHelpers";
 import { relativeDate } from "../relativeDate";
 import EditorSkeleton from "./EditorSkeleton";
@@ -27,6 +27,8 @@ import PicturePicker from "./PicturePicker";
 import PictureOverview from "./PictureOverview";
 import { fromMatches, latestUpdatedAt, needsReview, nextReviewId, reviewSteps } from "./review";
 import SendSheet from "./SendSheet";
+import ShortcutHelpDialog from "./ShortcutHelpDialog";
+import { useEditorShortcuts, type ShortcutAction } from "./useEditorShortcuts";
 import StepDetail, { type CandidateState } from "./StepDetail";
 import StepList from "./StepList";
 import TitleEditor from "./TitleEditor";
@@ -38,6 +40,8 @@ export interface TaskEditorPageProps {
   initialTask: EditorTask | null;
   /** 초안을 받은 뒤 한 번 부른다 — 부모가 초안을 비워, 다시 만들어진 편집기가 옛 초안을 받지 않게(1회차 검증). */
   onInitialUsed?: () => void;
+  /** P 단축키·미리보기(2b-2). 없으면 window에 'jobcard:editor-preview' 이벤트를 보낸다. */
+  onPreview?: () => void;
 }
 
 interface SplitUndo {
@@ -50,7 +54,7 @@ function nowIso() {
   return new Date().toISOString().replace("Z", "");
 }
 
-export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: TaskEditorPageProps) {
+export default function TaskEditorPage({ taskId, initialTask, onInitialUsed, onPreview }: TaskEditorPageProps) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const toast = useToast();
@@ -613,6 +617,44 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
     focusWant.current = "overview";
   }
 
+  // ── 단축키(2b-2, 넓은 화면에서만) ──
+  const [helpOpen, setHelpOpen] = useState(false);
+  function onShortcut(a: ShortcutAction): boolean {
+    if (a.type === "help") return setHelpOpen(true), true;
+    if (a.type === "preview") {
+      if (onPreview) onPreview();
+      else window.dispatchEvent(new CustomEvent("jobcard:editor-preview", { detail: { taskId } }));
+      return true;
+    }
+    if (a.type === "new") {
+      const el = document.getElementById("add-step-input");
+      el?.scrollIntoView({ block: "nearest" });
+      el?.focus();
+      return !!el;
+    }
+    if (!selected) return false;
+    if (a.type === "move") {
+      const next = steps[selectedIndex + a.dir];
+      if (!next) return true;
+      select(next.id);
+      document.querySelector(`[data-step-id="${next.id}"]`)?.scrollIntoView?.({ block: "nearest" });
+      return true;
+    }
+    if (a.type === "open") return select(selected.id, "detail"), true;
+    if (a.type === "edit") {
+      const el = document.getElementById(`sentence-${selected.id}`);
+      el?.focus();
+      return !!el;
+    }
+    const items = candidates[selected.id]?.items ?? [];
+    const list = selected.picture_state === "choose" ? items.slice(0, 3) : items.filter((c) => c.card_id !== selected.picture?.card_id).slice(0, 3);
+    const pick = list[a.n];
+    if (pick) void applyCandidate(selected.id, pick);
+    else toast.show({ tone: "info", message: shortcutCopy.noCandidate(a.n + 1) });
+    return true;
+  }
+  useEditorShortcuts({ enabled: !!task && wide && view === "edit" && rewritingId === null, onAction: onShortcut });
+
   // ── 그리기 ──
   if (!task) {
     return loadError ? (
@@ -699,6 +741,14 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
             {copy.overview}
           </Button>
           {sendBtn(sendButton, "editor-send")}
+          {wide && (
+            <IconButton
+              aria-label={shortcutCopy.helpButton}
+              icon={<Keyboard size={16} strokeWidth={2} aria-hidden="true" />}
+              onClick={() => setHelpOpen(true)}
+              data-testid="shortcut-help-button"
+            />
+          )}
         </div>
       </header>
 
@@ -823,6 +873,8 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
         onConfirm={() => void confirmDelete()}
         busy={deleting}
       />
+
+      <ShortcutHelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
 
       <SendSheet
         open={sendOpen}
