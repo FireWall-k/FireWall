@@ -70,6 +70,7 @@ import send
 import task_list
 import versions
 from step_context import _OWN_IMAGE_PATHS, _is_own_image_url, _step_search_terms, _task_context  # noqa: F401
+from step_context import creation_candidates
 from codes import normalize_workplace_code
 from deps import current_worker
 from database import get_db
@@ -1030,6 +1031,9 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
                     "action_type": cs.action_type or ai_client.classify_action(masker.mask(cs.sentence)),
                     "symbol_query": masker.mask_obj(
                         cs.symbol_query or re.findall(r"[가-힣A-Za-z]+", cs.sentence)[:4]),
+                    # AI 검색어가 온 줄만 검색어를 단계에 남긴다. 문장에서 뽑은 낱말을 남기면 나중에 문장을 고쳐도
+                    # 옛 낱말로 찾게 된다(그림 정확도 ③: 문장을 고쳐도 남는 것은 AI 검색어뿐이다).
+                    "store_query": bool(cs.symbol_query),
                     # (2b-1) 나누기 출처·원래 지시문 조각(저장은 사업주가 쓴 그대로)과 미리보기의 자동 조심 제안.
                     "split_source": cs.split.source if cs.split is not None else "",
                     "original_span": ((cs.split.original_span or "").strip() if cs.split is not None else ""),
@@ -1128,7 +1132,8 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db),
                             str(term).strip()
                             for term in p["symbol_terms"]
                             if str(term).strip()
-                        ),
+                        ) if step.get("store_query", True) else "",
+                symbol_candidates=creation_candidates(sym),
                 symbol_url=sym.get("image_url"),
                 symbol_source=sym.get("source", "fallback"),
                 needs_fallback=sym.get("needs_fallback", True),
@@ -1268,6 +1273,7 @@ def _insert_step(db: Session, task: Task, employer_id: str, prepared: dict, orde
         task_id=task.id, order_index=order_index, sentence=prepared["sentence"],
         action_type=prepared["action_type"],
         symbol_query=prepared.get("symbol_query") or "",
+        symbol_candidates="" if sym.get("photo_media_id") else creation_candidates(sym),
         symbol_url=None if sym.get("photo_media_id") else sym.get("image_url"),
         symbol_media_id=sym.get("photo_media_id"),
         symbol_source=sym.get("source", "fallback"),
@@ -1600,16 +1606,13 @@ def update_step(task_id: str, step_id: str, payload: StepUpdate,
                     released.append(step.tts_media_id)
                 step.tts_media_id = None
                 step.tts_stale = True
-                if changed:
-                    step.symbol_query = ""
             else:
                 if step.tts_media_id:
                     released.append(step.tts_media_id)
                 step.tts_media_id = _tts_media_id(db, user["sub"], pre_tts_key)
                 step.tts_stale = False
-                # 저장된 symbol_query는 옛 문장에 묶여 있다. 비우면 후보 조회가 새 문장에서
-                # 검색어를 다시 뽑는다.
-                step.symbol_query = ""
+                # (그림 정확도 ③) symbol_query(생성 때 AI 그림 검색어)와 생성 때 후보 순서는 그대로 둔다. 비우면 후보가
+                # 고친 문장 낱말로만 찾아져 엉뚱해졌다('정리해요' → 옷·책 정리). 다른 그림은 사업주가 [다른 그림 찾기]로 찾는다.
                 step.action_type = pre_action or "other"
     if payload.safety_flag is not None:
         step.safety_flag = payload.safety_flag
@@ -1668,6 +1671,8 @@ def step_symbol_candidates(task_id: str, step_id: str, db: Session = Depends(get
     sym = symbols[0] if symbols else {}
     reason = sym.get("reason", "no_candidate")
 
+    # (그림 정확도 ②) 생성 때 후보 순서(GPT가 앞으로 올린 그림이 맨 앞)를 먼저 두고 지금 규칙 검색 결과로 채운다.
+    first = editor.stored_as_matches(step)
     raw = list(sym.get("candidates", []))
     if reason == "accepted" and sym.get("image_url") and not raw:
         # 채택된 매칭은 candidates에 안 실려 온다. 단일 후보로 만들어 준다.
@@ -1680,10 +1685,13 @@ def step_symbol_candidates(task_id: str, step_id: str, db: Session = Depends(get
             "score": sym.get("confidence", 0.0),
         }]
 
-    candidates = [
-        AacMatch(**{**c, "image_url": public_aac_url(c.get("image_url"))})
-        for c in raw
-    ]
+    seen: set[str] = set()
+    candidates = []
+    for c in first + raw:
+        if c.get("asset_id") in seen:
+            continue
+        seen.add(c.get("asset_id"))
+        candidates.append(AacMatch(**{**c, "image_url": public_aac_url(c.get("image_url"))}))
     return StepSymbolCandidates(step_id=step.id, reason=reason, candidates=candidates)
 
 

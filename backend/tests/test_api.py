@@ -374,8 +374,9 @@ def test_candidate_lookup_reuses_stored_symbol_query(client, employer_token, mon
     assert seen[0] == ["상자", "box"]
 
 
-def test_editing_sentence_clears_stale_symbol_query(client, employer_token):
-    """문장을 고치면 옛 symbol_query는 무의미하다 — 비워서 새 문장에서 다시 뽑게 한다."""
+def test_editing_sentence_keeps_symbol_query(client, employer_token):
+    """(그림 정확도 ③, 2026-11-13) 문장을 고쳐도 생성 때 AI 그림 검색어는 남긴다. 예전에는 비워서 고친 문장 낱말로만
+    찾았고, '제품의 앞면을 정리해요'로 고치자 후보가 옷·책 정리 그림으로 바뀌었다."""
     from database import SessionLocal
     from models import Step
 
@@ -385,9 +386,9 @@ def test_editing_sentence_clears_stale_symbol_query(client, employer_token):
     step_id = task["steps"][0]["id"]
 
     client.patch(f"/api/tasks/{task['id']}/steps/{step_id}",
-                 json={"sentence": "바닥을 쓸어주세요."}, headers=auth(employer_token))
+                 json={"sentence": "상자를 들어서 옮겨요."}, headers=auth(employer_token))
     with SessionLocal() as db:
-        assert db.get(Step, step_id).symbol_query == ""
+        assert db.get(Step, step_id).symbol_query == "상자,box"
 
 
 def test_editing_sentence_reclassifies_action_type(client, employer_token):

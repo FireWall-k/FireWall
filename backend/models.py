@@ -167,8 +167,12 @@ class Step(Base):
     # LLM 분해가 준 구체 명사(["바닥","floor"] 등). 직무 생성 시 AAC 검색에 쓴 질의를
     # 그대로 저장한다. 검토 화면에서 후보를 다시 조회할 때 같은 질의를 써야 판정이
     # 어긋나지 않는다(안 그러면 "생성 땐 그림 없음, 후보 조회 땐 매칭 있음"이 된다).
-    # 문장을 수정하면 이 값은 무의미해지므로 update_step 에서 비운다.
+    # (그림 정확도 ③) 문장을 고쳐도 지우지 않는다 — 고친 문장 낱말만으로 찾으면 엉뚱한 후보가 나왔다.
+    # 빈 값 = AI 검색어가 없는 단계(사업주가 직접 쓴 단계)라 그때그때 문장에서 뽑는다.
     symbol_query: Mapped[str] = mapped_column(Text, default="")  # "," 로 이은 문자열
+    # (0011, 그림 정확도 ②) 생성 때 그림 검색이 준 후보 순서(GPT 재순위가 앞으로 올린 그림이 맨 앞) — 그림 주소(상대
+    # 경로) JSON 목록, 최대 3장. 편집기 후보는 규칙만으로 다시 찾으므로 이 순서를 앞에 둔다(step_context.stored_candidates).
+    symbol_candidates: Mapped[str] = mapped_column(Text, default="", server_default="")
     # 자체 AAC 그림(공개 자산)의 URL. 사업주가 올린 사진은 여기 두지 않고 symbol_media_id로 가리킨다.
     symbol_url: Mapped[str | None] = mapped_column(String, nullable=True)
     symbol_source: Mapped[str] = mapped_column(String, default="fallback")

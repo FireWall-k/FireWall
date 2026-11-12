@@ -1162,12 +1162,13 @@ def test_0008_resumes_when_some_columns_already_added():
     db_migrate.upgrade_to_head(engine)
     assert db_migrate.is_at_head(engine)
     assert _diff_against_models(engine) == []
-    assert db_migrate.head_revision() == _V10  # 0008 → 0009(2c) → 0010(2d)
+    assert db_migrate.head_revision() == _V11  # 0008 → 0009(2c) → 0010(2d) → 0011(그림 후보 순서)
 
 
 # --- 0010 사업장 설정 (2d) --------------------------------------------------------------
 
 _V10 = "0010_workplace_settings"
+_V11 = "0011_step_symbol_candidates"
 
 
 def test_0010_adds_settings_with_defaults_and_roundtrips():
@@ -1214,7 +1215,23 @@ def _script_down_revision(rev: str) -> str:
 def test_phase2_revisions_form_one_line():
     """2b-1·2c·2d가 모두 0007에서 갈라졌던 것을 병합 때 0007 → 0008 → 0009 → 0010 한 줄로 이었다(head 하나)."""
     script = db_migrate._script()
-    assert script.get_heads() == [_V10]
+    assert script.get_heads() == [_V11]
+    assert _script_down_revision(_V11) == _V10
     assert _script_down_revision(_V10) == "0009_live_push"
     assert _script_down_revision("0009_live_push") == _V8
     assert _script_down_revision(_V8) == _V7
+
+
+# --- 0011 생성 때 그림 후보 순서 (그림 정확도 ②) ------------------------------------------------
+
+def test_0011_resumes_when_column_already_added():
+    engine = _new_engine("v11_resume")
+    db_migrate.upgrade_to_head(engine)
+    db_migrate.downgrade(engine, _V10)
+    with engine.connect() as conn:
+        assert "symbol_candidates" not in {c["name"] for c in inspect(conn).get_columns("steps")}
+    with engine.begin() as conn:  # 중간에 멈춘 모양: 칸은 붙었는데 리비전은 0010
+        conn.execute(text("ALTER TABLE steps ADD COLUMN symbol_candidates TEXT NOT NULL DEFAULT ''"))
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []

@@ -1,6 +1,7 @@
 // 편집기 단계 상세(명세 5.5 '단계 상세', tasks §4.3 StepDetail).
 // - 그림 4상태: 확인함(바꾸기만) / ✦ 자동 · 확인 필요([이 그림이 맞아요], Enter) / 골라 주세요(후보 3장 크게) /
-//   그림 없음([다른 그림 찾기]·[현장 사진 올리기]).
+//   그림 없음(비슷한 후보 3장을 바로 펼쳐 한 번 눌러 붙인다. 후보가 없으면 [다른 그림 찾기]·[현장 사진 올리기]).
+//   후보 순서는 서버가 정한다(직무를 만들 때 순서가 맨 앞, 그림 정확도 ②).
 // - 문장: 고치면 600ms 뒤 자동 저장(defer_media — 문장만), 칸을 벗어나면 rewrite로 마무리(목소리·나누기). 동작이 둘이면
 //   서버가 경고 없이 두 단계로 나누고 여기서 [되돌리기]를 보인다('동작이 2개예요' 알림은 없다).
 // - 문장 점검 칩, 원래 지시문 인용, [목소리 듣기], 조심 스위치('✦ 자동 제안'이면 보라 표시), [이 단계 지우기](Dialog는 부모).
@@ -159,10 +160,7 @@ const StepDetail = forwardRef<HTMLHeadingElement, StepDetailProps>(function Step
             onPick={onApplyCandidate}
           />
         ) : state === "none" ? (
-          <div className="flex aspect-square w-full max-w-[280px] flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-danger-700/40 bg-danger-50 text-danger-700">
-            <ImageOff size={32} strokeWidth={2} aria-hidden="true" />
-            <span className="text-ui-base font-semibold">{pictureStatus.none}</span>
-          </div>
+          <NoneCandidates stepId={step.id} candidates={candidates} onPick={onApplyCandidate} />
         ) : (
           <figure className="m-0 flex flex-col gap-2">
             <div
@@ -373,6 +371,51 @@ function CandidateRow({
   );
 }
 
+/**
+ * '그림 없음' 단계: 비슷한 후보가 있으면 3장을 바로 펼친다(예전 검토 화면처럼, 한 번 눌러 붙인다). 찾는 중이거나 후보가
+ * 없으면 빈 그림 칸만 보인다. 후보 단추 이름은 '후보 n 그림 이름'이라 화면 읽기 프로그램도 무엇을 붙이는지 안다.
+ */
+function NoneCandidates({
+  stepId,
+  candidates,
+  onPick,
+}: {
+  stepId: string;
+  candidates: CandidateState | undefined;
+  onPick: (c: PictureCandidate) => void;
+}) {
+  const items = (candidates?.items ?? []).slice(0, 3);
+  if (!items.length) {
+    return (
+      <div className="flex flex-col gap-2">
+        <div data-testid="none-box" className="flex aspect-square w-full max-w-[280px] flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-danger-700/40 bg-danger-50 text-danger-700">
+          <ImageOff size={32} strokeWidth={2} aria-hidden="true" />
+          <span className="text-ui-base font-semibold">{pictureStatus.none}</span>
+        </div>
+        {!candidates ? (
+          <p role="status" className="text-ui-sm text-ink-700">{copy.candidatesLoading}</p>
+        ) : candidates.status === "failed" ? (
+          <p className="text-ui-sm text-ink-700">{copy.candidatesFailed}</p>
+        ) : null}
+      </div>
+    );
+  }
+  const headingId = `none-candidates-${stepId}`;
+  return (
+    <div className="flex flex-col gap-2" data-testid="none-candidates" role="group" aria-labelledby={headingId}>
+      <p id={headingId} className="text-ui-md font-semibold text-ink-900">{copy.noneChooseHeading}</p>
+      <p className="text-ui-sm text-ink-700">{copy.noneChooseHint}</p>
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {items.map((c, i) => (
+          <li key={c.card_id}>
+            <CandidateButton c={c} n={i + 1} onPick={onPick} size="lg" />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function ChooseGrid({
   candidates,
   fallback,
@@ -423,6 +466,8 @@ function CandidateButton({ c, n, onPick, size }: { c: PictureCandidate; n: numbe
       className="flex w-full flex-col items-center gap-1 rounded-card border border-paper-200 bg-white p-2 text-ui-sm text-ink-900 hover:border-moss-600 hover:bg-paper-50"
     >
       <span className="self-start text-ui-xs font-bold tabular-nums text-ink-700">{copy.candidateNo(n)}</span>
+      {/* 단추 이름이 '후보 1 그림 이름'으로 띄어 읽히게(세로 flex 안의 빈칸은 그려지지 않는다). */}
+      {" "}
       <img src={c.url} alt="" className={cn("aspect-square w-full object-contain", size === "lg" ? "max-w-[140px]" : "max-w-[88px]")} />
       <span className="line-clamp-2 text-center">{c.label || copy.useCurrent}</span>
     </button>

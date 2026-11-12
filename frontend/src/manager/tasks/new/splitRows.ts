@@ -13,7 +13,7 @@ export interface SplitRow {
   check: boolean;
   /** 이 줄이 나온 원래 절(사업주가 판단할 때 보도록 노란 줄에 보여 준다). */
   source: string | null;
-  /** AI가 준 문장. 사업주가 고치지 않았을 때만 AI 검색어(symbolQuery)를 그대로 보낸다. */
+  /** AI가 준 문장. 사업주가 고치지 않았을 때만 동작 종류를 그대로 보낸다. 고친 줄도 AI 그림 검색어(symbolQuery)는 보낸다. */
   original: string;
   actionType: string;
   symbolQuery: string[] | null;
@@ -128,14 +128,19 @@ export function emptyRows(rows: SplitRow[]): number[] {
   return rows.flatMap((r, i) => (r.text.trim() ? [] : [i]));
 }
 
-/** 서버로 보낼 확인한 단계 목록. 고치지 않은 줄만 AI 검색어·동작 종류를 함께 보낸다. */
+/**
+ * 서버로 보낼 확인한 단계 목록. 고치지 않은 줄은 AI 검색어·동작 종류를 함께 보낸다.
+ * AI 줄의 문장만 고친 줄(editRow)은 AI 그림 검색어를 그대로 보낸다(동작 종류는 서버가 새 문장으로 다시 매긴다).
+ * 고친 문장 낱말만으로 찾으면 '정리해요' → 옷·책 정리 그림처럼 엉뚱한 후보가 나왔다(그림 정확도 ③).
+ * 사업주가 만든 줄(더 나누기·합치기·새 줄)은 AI 검색어가 없다 — 서버가 문장에서 뽑는다.
+ */
 export function toConfirmed(rows: SplitRow[]): ConfirmedStep[] {
   return rows.map((r) => {
     const sentence = r.text.trim();
-    const untouched = sentence === r.original.trim() && r.original !== "";
-    return untouched
-      ? { sentence, action_type: r.actionType, symbol_query: r.symbolQuery }
-      : { sentence };
+    const fromAi = r.original !== "";
+    const untouched = sentence === r.original.trim() && fromAi;
+    if (untouched) return { sentence, action_type: r.actionType, symbol_query: r.symbolQuery };
+    return fromAi && r.symbolQuery?.length ? { sentence, symbol_query: r.symbolQuery } : { sentence };
   });
 }
 

@@ -25,6 +25,7 @@ import pytest  # noqa: E402
 from sqlalchemy import func, select  # noqa: E402
 
 import ai_client  # noqa: E402
+from aac_assets import asset_label  # noqa: E402
 import main  # noqa: E402
 import safety_rules  # noqa: E402
 import sentence_lint  # noqa: E402
@@ -136,9 +137,6 @@ def test_picture_source_photo_and_none(client, employer_token):
 
 def test_candidates_no_paid_model(client, employer_token, monkeypatch):
     """모든 단계(확인한 단계 포함) 후보를 한 번에 주고, ai_client 호출마다 context.rerank=false다."""
-    monkeypatch.setattr(ai_client, "map_symbols", _accepted)
-    task = _create(client, employer_token, ["상품을 놓아요", "같은 상품끼리 모아요", "바닥을 쓸어요"])
-    _confirm_all(client, employer_token, task["id"])  # 확인한 단계도 후보를 준다
     calls, searches = [], []
 
     def record_map(keywords, context=None):
@@ -162,11 +160,15 @@ def test_candidates_no_paid_model(client, employer_token, monkeypatch):
 
     monkeypatch.setattr(ai_client, "map_symbols", record_map)
     monkeypatch.setattr(ai_client, "search_aac", record_search)
+    task = _create(client, employer_token, ["상품을 놓아요", "같은 상품끼리 모아요", "바닥을 쓸어요"])
+    _confirm_all(client, employer_token, task["id"])  # 확인한 단계도 후보를 준다
+    calls.clear()
     r = client.get(f"/api/tasks/{task['id']}/candidates", headers=auth(employer_token))
     assert r.status_code == 200, r.text
     out = {s["step_id"]: s["candidates"] for s in r.json()["steps"]}
     assert list(out) == [s["id"] for s in task["steps"]]
-    assert len(calls) == 3 and all(c["rerank"] is False for c in calls)
+    # 생성 때 후보가 3장 남은 단계(바닥)는 다시 찾지 않는다(그림 정확도 ②).
+    assert len(calls) == 2 and all(c["rerank"] is False for c in calls)
     # 그림 검색(규칙)에는 rerank 칸을 넘기지 않는다.
     assert len(searches) == 2 and all("rerank" not in c for _, c, _ in searches)
     first = out[task["steps"][0]["id"]]
@@ -174,7 +176,8 @@ def test_candidates_no_paid_model(client, employer_token, monkeypatch):
     third = out[task["steps"][2]["id"]]
     assert len(third) == 3 and third[0] == {"card_id": "CAFE_001",
                                             "url": "http://localhost:8000/api/aac/images/cafe/CAFE_001.webp",
-                                            "label": "후보1"}
+                                            # 생성 때 후보에서 오므로 이름은 자산 목록에서 찾는다.
+                                            "label": asset_label("CAFE_001")}
 
 
 def test_symbol_candidates_also_rerank_off(client, employer_token, monkeypatch):
