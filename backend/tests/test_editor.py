@@ -848,3 +848,35 @@ def test_split_without_manual_choice_stays_auto(client, employer_token, monkeypa
                     json={"sentence": "칼을 들고 상자를 놓아요"})
     assert r.status_code == 200, r.text
     assert [(f, src) for _, f, src, _, _ in _review_state(client, employer_token, tid)] == [(True, "auto"), (False, "")]
+
+
+def test_safety_keywords_round3_fire_false_positives_and_compounds():
+    """3회차 검증: '때문에'·'불과 N분'을 불로 보지 않고, 불 합성어 + '가'(모닥불가)는 놓치지 않는다."""
+    for sentence in ("불만 때문에 전화해요", "출입 불가 때문에 돌아가요", "불과 5분만 기다려요", "불과 3개만 남았어요",
+                     "출입 불가", "불가능해요", "불가피해요", "불만족해요"):
+        assert safety_rules.matched_keyword(sentence) is None, sentence
+    for sentence in ("불만 때면 돼요", "불을 때요", "모닥불가에 앉지 않아요", "숯불가에서 기다려요", "장작불가로 가지 않아요",
+                     "화롯불가에 앉아요", "난롯불을 꺼요", "불끄고 나가요", "불만 끄고 나가요", "가스불만 꺼요"):
+        assert safety_rules.matched_keyword(sentence) == "불", sentence
+
+
+def test_rewrite_split_uses_ai_safety_flags(client, employer_token, monkeypatch):
+    """3회차 검증: 저장하며 나눌 때 AI 분해가 준 safety_flags를 직무 만들기처럼 자동 조심 제안에 쓴다."""
+    task = _create(client, employer_token, ["선반 위 상자를 내려요"])
+    tid, s1 = task["id"], task["steps"][0]["id"]
+    monkeypatch.setattr(ai_client, "split_hint", lambda s: True)
+    monkeypatch.setattr(ai_client, "decompose", lambda raw, ctx=None, **k: {"steps": [
+        {"sentence": "발판에 올라가요", "action_type": "move", "symbol_query": ["발판"], "safety_flags": ["높은 곳"]},
+        {"sentence": "상자를 내려요", "action_type": "move", "symbol_query": ["상자"], "safety_flags": ["높은 곳"]}]})
+    r = client.post(f"/api/tasks/{tid}/steps/{s1}/rewrite", headers=auth(employer_token),
+                    json={"sentence": "발판에 올라가서 상자를 내려요"})
+    assert r.status_code == 200, r.text
+    assert len(r.json()["split_step_ids"]) == 2
+    assert [(s[1], s[2]) for s in _review_state(client, employer_token, tid)] == [(True, "auto"), (True, "auto")]
+    check = client.get(f"/api/tasks/{tid}/send-check", headers=auth(employer_token)).json()
+    assert {w["code"]: w["count"] for w in check["warnings"]}["auto_caution"] == 2
+    # 단계 추가로 나눌 때도 같다.
+    r = client.post(f"/api/tasks/{tid}/steps", headers=auth(employer_token),
+                    json={"sentence": "발판에 올라가서 상자를 내려요"})
+    assert r.status_code == 201, r.text
+    assert [(s[1], s[2]) for s in _review_state(client, employer_token, tid)][2:] == [(True, "auto"), (True, "auto")]

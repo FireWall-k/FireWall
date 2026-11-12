@@ -1276,7 +1276,8 @@ def add_step(task_id: str, payload: StepCreate, db: Session = Depends(get_db),
     next_order = max((s.order_index for s in task.steps), default=0) + 1
     parts = _detect_split(db, task, user["sub"], sentence) if task.status != "published" else []
     prepared = (_mark_split([_prepare_new_step(db, task, user["sub"], part["sentence"], part["action_type"],
-                                               part["terms"]) for part in parts], "model", sentence)
+                                               part["terms"], ai_flags=part.get("safety_flags"))
+                                for part in parts], "model", sentence)
                 or _mark_split([_prepare_new_step(db, task, user["sub"], sentence, action_type)], "manual", ""))
     new_steps = [_insert_step(db, task, user["sub"], prep, next_order + i) for i, prep in enumerate(prepared)]
     db.commit()
@@ -1288,7 +1289,7 @@ def add_step(task_id: str, payload: StepCreate, db: Session = Depends(get_db),
 
 def _prepare_new_step(db: Session, task: Task, employer_id: str, sentence: str,
                       action_type: str = "other", terms: list[str] | None = None,
-                      photo_media_id: str | None = None) -> dict:
+                      photo_media_id: str | None = None, ai_flags: list[str] | None = None) -> dict:
     """사업주가 쓴 문장의 그림·음성을 준비한다(네트워크 호출만, DB는 건드리지 않는다).
 
     직무 생성 때와 같은 맥락으로 검색해야 나중에 만든 단계만 다른 그림이 붙지 않는다.
@@ -1297,6 +1298,7 @@ def _prepare_new_step(db: Session, task: Task, employer_id: str, sentence: str,
     add_step·rewrite_step·merge_steps가 함께 쓴다.
     photo_media_id: 원래 단계에 사업주가 올린 사진 — 그림을 새로 찾지 않고 그 사진을 그대로 붙인다
     (나누거나 되돌릴 때 사진이 사라지지 않게).
+    ai_flags: AI 분해가 그 단계에 준 safety_flags — 조심 자동 제안에 낱말 규칙보다 먼저 쓴다(contract §3.3, 3회차 검증).
     """
     query = [t for t in (terms or []) if str(t).strip()][:4]
     if photo_media_id:
@@ -1308,7 +1310,7 @@ def _prepare_new_step(db: Session, task: Task, employer_id: str, sentence: str,
                            context=masker.mask_obj(_task_context(task, sentence, action_type)))
     return {"sentence": sentence, "action_type": action_type, "sym": sym,
             "symbol_query": ",".join(str(t).strip() for t in query),
-            "tts": synthesize_tts(sentence, employer_id)}
+            "tts": synthesize_tts(sentence, employer_id), "ai_flags": list(ai_flags or [])}
 
 
 def _mark_split(prepared: list[dict], source: str, original: str) -> list[dict]:
@@ -1343,7 +1345,7 @@ def _insert_step(db: Session, task: Task, employer_id: str, prepared: dict, orde
         step.safety_flag = bool(carry.get("safety_flag"))
         step.safety_source = safety_rules.SOURCE_MANUAL
     else:
-        safety_rules.apply_auto(step, prepared["sentence"])
+        safety_rules.apply_auto(step, prepared["sentence"], prepared.get("ai_flags"))
     step.safety_note = (carry.get("safety_note") or "")[:200]  # StepUpdate.safety_note max_length
     step.group_break = bool(carry.get("group_break"))
     db.add(step)
@@ -1458,6 +1460,9 @@ def _detect_split(db: Session, task: Task, employer_id: str, sentence: str) -> l
         "sentence": masker.unmask(str(st["sentence"]).strip())[:500],
         "action_type": str(st.get("action_type") or "other")[:20],
         "terms": [masker.unmask(t) for t in _step_terms(st)][:4],
+        # (3회차 검증) 직무 만들기 미리보기처럼 AI가 준 위험 요소를 조심 자동 제안에 쓴다.
+        "safety_flags": [masker.unmask(str(f).strip())[:100] for f in (st.get("safety_flags") or [])
+                         if isinstance(f, str) and f.strip()][:5],
     } for st in steps]
 
 
@@ -1490,7 +1495,8 @@ def rewrite_step(task_id: str, step_id: str, payload: StepRewrite, db: Session =
     # 사업주가 올린 사진은 첫 단계로 넘긴다(지우지 않는다) — [되돌리기]하면 합친 단계로 다시 돌아온다.
     photo = step.symbol_media_id if step.symbol_source == "photo" else None
     prepared = _mark_split([_prepare_new_step(db, task, user["sub"], part["sentence"], part["action_type"],
-                                              part["terms"], photo_media_id=photo if i == 0 else None)
+                                              part["terms"], photo_media_id=photo if i == 0 else None,
+                                              ai_flags=part.get("safety_flags"))
                             for i, part in enumerate(parts)], "model", sentence)
     _lock_not_stale(db, task, expected, step.id)
     new_steps, media_ids = _replace_steps(db, task, user["sub"], [step], prepared)
