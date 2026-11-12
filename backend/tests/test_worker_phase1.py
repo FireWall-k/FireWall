@@ -27,7 +27,7 @@ import main  # noqa: E402
 import ratelimit  # noqa: E402
 import retention  # noqa: E402
 from auth import hash_password, make_token  # noqa: E402
-from conftest import TEST_AAC_IMAGE, auth, give_pictures, publish, delete_task  # noqa: E402
+from conftest import TEST_AAC_IMAGE, auth, give_pictures, publish, delete_task, delete_worker  # noqa: E402
 from database import SessionLocal  # noqa: E402
 from models import (  # noqa: E402
     AccessAuditLog,
@@ -55,7 +55,7 @@ def worker(client, employer_token):
     assert login.status_code == 200, login.text
     w["token"] = login.json()["token"]
     yield w
-    client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+    delete_worker(client, w['id'], auth(employer_token))
 
 
 @pytest.fixture()
@@ -593,7 +593,7 @@ def test_auto_codes_are_four_digits_and_unique(client, employer_token):
         assert len(set(codes)) == len(codes) and "1234" not in codes  # 데모 근로자 코드와도 겹치지 않는다
     finally:
         for w in made:
-            client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+            delete_worker(client, w['id'], auth(employer_token))
 
 
 def test_auto_code_retries_on_collision(client, employer_token, monkeypatch):
@@ -602,7 +602,7 @@ def test_auto_code_retries_on_collision(client, employer_token, monkeypatch):
     monkeypatch.setattr(main.secrets, "choice", lambda seq: next(digits))
     r = client.post("/api/workers", json={"display_name": "충돌"}, headers=auth(employer_token))
     assert r.status_code == 201 and r.json()["access_code"] == "5678"
-    client.delete(f"/api/workers/{r.json()['id']}", headers=auth(employer_token))
+    delete_worker(client, r.json()['id'], auth(employer_token))
 
 
 def test_legacy_six_digit_code_still_logs_in(client, employer_token):
@@ -613,7 +613,7 @@ def test_legacy_six_digit_code_still_logs_in(client, employer_token):
         login = client.post("/api/auth/worker-login", json={"workplace_code": "DEMO01", "access_code": "135790"})
         assert login.status_code == 200
     finally:
-        client.delete(f"/api/workers/{r.json()['id']}", headers=auth(employer_token))
+        delete_worker(client, r.json()['id'], auth(employer_token))
 
 
 def test_worker_login_returns_workplace_name(client):
@@ -736,7 +736,7 @@ def test_delete_worker_removes_help_requests(client, employer_token):
                       json={"workplace_code": "DEMO01", "access_code": w["access_code"]}).json()["token"]
     _, aid, (s1, _) = _assigned(client, employer_token, w["id"])
     _help(client, tok, aid, s1)
-    assert client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token)).status_code == 200
+    assert delete_worker(client, w['id'], auth(employer_token)).status_code == 200
     with SessionLocal() as db:
         assert db.scalars(select(HelpRequest).where(HelpRequest.worker_id == w["id"])).all() == []
         assert db.get(Assignment, aid) is None
@@ -1096,7 +1096,7 @@ def test_trusted_device_wrong_codes_use_shared_budget_and_cannot_chain(client, e
     assert r.status_code == 401 and "device_token" not in r.json()
     # 주인 A는 사업장이 잠겨도 들어간다.
     assert _login(client, "1234", "10.11.0.4", dev_a).status_code == 200
-    client.delete(f"/api/workers/{b['id']}", headers=auth(employer_token))
+    delete_worker(client, b['id'], auth(employer_token))
 
 
 def test_trusted_device_other_worker_success_goes_through_shared_checks(client, employer_token, monkeypatch):
@@ -1112,7 +1112,7 @@ def test_trusted_device_other_worker_success_goes_through_shared_checks(client, 
         _login(client, f"3{i:03d}", "10.12.0.9")
     assert _login(client, "8642", "10.12.0.9", dev_a).status_code == 401
     assert _login(client, "1234", "10.12.0.9", dev_a).status_code == 200  # 주인은 들어간다
-    client.delete(f"/api/workers/{b['id']}", headers=auth(employer_token))
+    delete_worker(client, b['id'], auth(employer_token))
 
 
 def test_device_token_of_deleted_or_reissued_worker_is_not_trusted(client, employer_token, monkeypatch):
@@ -1124,7 +1124,7 @@ def test_device_token_of_deleted_or_reissued_worker_is_not_trusted(client, emplo
                     headers=auth(employer_token)).json()
     dev_b = _login(client, "8642", "10.13.0.1").json()["device_token"]
     dev_c = _login(client, "8643", "10.13.0.2").json()["device_token"]
-    assert client.delete(f"/api/workers/{b['id']}", headers=auth(employer_token)).status_code in (200, 204)
+    assert delete_worker(client, b['id'], auth(employer_token)).status_code in (200, 204)
     r = client.post(f"/api/workers/{c['id']}/access-code", headers=auth(employer_token))
     assert r.status_code == 200, r.text
     new_c = r.json()["access_code"]
@@ -1133,7 +1133,7 @@ def test_device_token_of_deleted_or_reissued_worker_is_not_trusted(client, emplo
     assert _login(client, "1234", "10.13.0.4").status_code == 429  # 사업장 공용 잠김
     assert _login(client, "1234", "10.13.0.5", dev_b).status_code == 429
     assert _login(client, new_c, "10.13.0.6", dev_c).status_code == 429
-    client.delete(f"/api/workers/{c['id']}", headers=auth(employer_token))
+    delete_worker(client, c['id'], auth(employer_token))
 
 
 def test_device_token_for_other_workplace_or_forged_is_ignored(client, other_employer, monkeypatch):
@@ -1174,7 +1174,7 @@ def test_four_digit_code_cannot_be_prefix_of_longer_code(client, employer_token,
         with SessionLocal() as db:
             assert main._new_access_code(db, "emp-demo", exclude_worker_id=long.json()["id"]) == "9876"
     finally:
-        client.delete(f"/api/workers/{long.json()['id']}", headers=auth(employer_token))
+        delete_worker(client, long.json()['id'], auth(employer_token))
 
 
 def test_late_completion_does_not_close_help_called_after_it(client, employer_token, worker):

@@ -22,6 +22,7 @@ from sqlalchemy import event, func, inspect, select, text  # noqa: E402
 
 import live  # noqa: E402
 from database import SessionLocal, engine  # noqa: E402
+from conftest import delete_worker  # noqa: E402
 from live_site import FakeClock, Site  # noqa: E402
 from models import (  # noqa: E402
     AccessAuditLog,
@@ -477,7 +478,8 @@ def test_delete_worker_removes_presence(client):
     card = site.card(w)
     site.presence(w, card["assignment_id"], card["steps"][0]["id"])
     assert _stored(w["id"]) is not None
-    assert client.delete(f"/api/workers/{w['id']}", headers=site.h).status_code == 200
+    # (2d) 근로자 지우기는 이름을 다시 적는 POST /delete(workers_admin.delete_worker)가 presence도 지운다.
+    assert delete_worker(client, w["id"], site.h).status_code == 200
     assert _stored(w["id"]) is None
 
 

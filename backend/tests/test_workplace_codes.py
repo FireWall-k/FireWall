@@ -10,7 +10,7 @@ import pytest
 
 import ratelimit
 from auth import hash_password, make_token
-from conftest import auth, publish
+from conftest import auth, publish, delete_worker
 from database import SessionLocal
 from models import Employer, Worker
 
@@ -88,7 +88,7 @@ def test_two_tenants_can_use_the_same_code(client, employer_token, other_tenant)
         assert ra.json()["display_name"] == "A근로"
         assert rb.json()["display_name"] == "B근로"
     finally:
-        client.delete(f"/api/workers/{a.json()['id']}", headers=auth(employer_token))
+        delete_worker(client, a.json()['id'], auth(employer_token))
 
 
 def test_custom_code_does_not_reveal_other_tenant(client, other_tenant):
@@ -142,12 +142,14 @@ def test_owner_employer_sees_full_code(client, employer_token):
                                json={"worker_ids": [w["id"]]}, headers=auth(employer_token))
         assert assigned.status_code == 200
 
-        listed = next(x for x in client.get("/api/workers", headers=auth(employer_token)).json()
-                      if x["id"] == w["id"])
-        assert listed["access_code"] == "97531864"
+        # (2d) 목록에는 전체 코드가 없고(●●●●), 눈 단추(reveal)로만 받는다.
+        listed = client.get("/api/workers", headers=auth(employer_token))
+        assert "97531864" not in listed.text
+        assert _reveal(client, employer_token, w["id"]).json()["code"] == "97531864"
         dash = next(x for x in client.get(f"/api/dashboard/tasks/{task['id']}/workers",
                                           headers=auth(employer_token)).json() if x["worker_id"] == w["id"])
-        assert dash["access_code"] == "97531864"
+        # (2d) 대시보드 근로자 목록에도 전체 코드가 없다(reveal 한도·감사를 건너뛰는 길이 되지 않게).
+        assert "access_code" not in dash and dash["access_code_hint"] == "64"
 
         # 코드 표시가 필요 없는 응답에는 여전히 싣지 않는다.
         for path in (f"/api/dashboard/tasks/{task['id']}?worker_id={w['id']}",
@@ -166,11 +168,13 @@ def test_owner_employer_sees_full_code(client, employer_token):
         reissued = client.post(f"/api/workers/{w['id']}/access-code", headers=auth(employer_token))
         new_code = reissued.json()["access_code"]
         assert len(new_code) == 4 and new_code.isdigit()
-        relisted = next(x for x in client.get("/api/workers", headers=auth(employer_token)).json()
-                        if x["id"] == w["id"])
-        assert relisted["access_code"] == new_code
+        assert _reveal(client, employer_token, w["id"]).json()["code"] == new_code
     finally:
-        client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+        delete_worker(client, w['id'], auth(employer_token))
+
+
+def _reveal(client, token, worker_id):
+    return client.post(f"/api/workers/{worker_id}/access-code/reveal", headers=auth(token))
 
 
 def test_other_tenant_never_sees_code(client, employer_token, other_tenant):
@@ -180,7 +184,7 @@ def test_other_tenant_never_sees_code(client, employer_token, other_tenant):
             r = client.get(path, headers=auth(other_tenant["token"]))
             assert "86421357" not in r.text, path
     finally:
-        client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+        delete_worker(client, w['id'], auth(employer_token))
 
 
 def test_db_stores_no_plaintext_code(client, employer_token):
@@ -197,7 +201,7 @@ def test_db_stores_no_plaintext_code(client, employer_token):
         assert "access_code" not in Worker.__table__.columns
         db.close()
     finally:
-        client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+        delete_worker(client, w['id'], auth(employer_token))
 
 
 def test_cipher_moved_to_other_tenant_row_does_not_decrypt(client, employer_token, other_tenant):
@@ -209,11 +213,11 @@ def test_cipher_moved_to_other_tenant_row_does_not_decrypt(client, employer_toke
         db.get(Worker, b["id"]).access_code_cipher = db.get(Worker, a["id"]).access_code_cipher
         db.commit()
         db.close()
-        listed = next(x for x in client.get("/api/workers", headers=auth(other_tenant["token"])).json()
-                      if x["id"] == b["id"])
-        assert listed["access_code"] is None
+        r = _reveal(client, other_tenant["token"], b["id"])
+        assert r.status_code == 409 and "75319864" not in r.text
     finally:
-        client.delete(f"/api/workers/{a['id']}", headers=auth(employer_token))
+        delete_worker(client, a['id'], auth(employer_token))
+        delete_worker(client, b['id'], auth(other_tenant["token"]))
 
 
 def test_legacy_worker_code_filled_on_next_login(client, employer_token):
@@ -226,13 +230,12 @@ def test_legacy_worker_code_filled_on_next_login(client, employer_token):
         db.close()
         before = next(x for x in client.get("/api/workers", headers=auth(employer_token)).json()
                       if x["id"] == w["id"])
-        assert before["access_code"] is None and before["access_code_hint"] == "57"
+        assert before["access_code_hint"] == "57"
+        assert _reveal(client, employer_token, w["id"]).status_code == 409
         assert _login(client, DEMO_WP, "24681357").status_code == 200
-        after = next(x for x in client.get("/api/workers", headers=auth(employer_token)).json()
-                     if x["id"] == w["id"])
-        assert after["access_code"] == "24681357"
+        assert _reveal(client, employer_token, w["id"]).json()["code"] == "24681357"
     finally:
-        client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+        delete_worker(client, w['id'], auth(employer_token))
 
 
 def test_reissue_invalidates_old_token_with_workplace_login(client, employer_token):
@@ -244,7 +247,7 @@ def test_reissue_invalidates_old_token_with_workplace_login(client, employer_tok
         assert client.get("/api/worker/me/today", headers=auth(tok)).status_code == 401
         assert _login(client, DEMO_WP, w["access_code"]).status_code == 401
     finally:
-        client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+        delete_worker(client, w['id'], auth(employer_token))
 
 
 # --- 동시 요청으로 확인과 저장 사이에 코드가 겹친 경우 ----------------------------------------
@@ -275,7 +278,7 @@ def test_generated_code_race_retries_with_new_code(client, employer_token, monke
         assert r.json()["access_code"] == "864213"
         assert _login(client, DEMO_WP, "864213").status_code == 200
     finally:
-        client.delete(f"/api/workers/{r.json()['id']}", headers=auth(employer_token))
+        delete_worker(client, r.json()['id'], auth(employer_token))
 
 
 def test_reissue_race_retries_with_new_code(client, employer_token, monkeypatch):
@@ -291,7 +294,7 @@ def test_reissue_race_retries_with_new_code(client, employer_token, monkeypatch)
         # 겹친 코드의 원래 주인(데모 근로자)은 그대로다.
         assert _login(client, DEMO_WP, "1234").status_code == 200
     finally:
-        client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+        delete_worker(client, w['id'], auth(employer_token))
 
 
 def test_unknown_workplace_does_same_work_as_wrong_code(client, monkeypatch):

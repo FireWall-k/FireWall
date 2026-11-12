@@ -17,6 +17,8 @@ for (const width of WIDTHS) {
     test.use({ viewport: { width, height: width === 390 ? 844 : 900 } });
 
     test("모든 /m 화면: 가로 스크롤 0, 도움 띠 보임, 이모지 0", async ({ page }) => {
+      // 화면 5개를 차례로 연다(2d: 근로자·설정이 실제 화면이 됨). 병렬로 돌 때 30초를 넘는 일이 있어 60초로 둔다.
+      test.setTimeout(60_000);
       await mockEmployer(page);
       await loginEmployer(page, "/m");
       for (const path of ROUTES) {

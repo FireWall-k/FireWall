@@ -76,7 +76,8 @@ describe("Field(보이는 라벨·도움말·오류)", () => {
     expect(hit.className).toMatch(/coarse:before:-inset-3/); // 20px 상자 + 12px*2 = 44px
     expect(screen.getByText("김민지 님").className).toMatch(/coarse:min-h-control-coarse/);
     const sw = screen.getByRole("switch", { name: "조심 표시" });
-    expect(sw.className).toMatch(/coarse:before:-inset-y-3/); // 22px + 12px*2 = 46px
+    // (2d와 병합) 스위치 단추 자체가 누를 곳: 터치 화면 44px(coarse:min-h-control-coarse), 보이는 막대는 안쪽 24px.
+    expect(sw.className).toMatch(/coarse:min-h-control-coarse/);
     expect(screen.getByText("조심 표시").className).toMatch(/coarse:min-h-control-coarse/);
   });
 });

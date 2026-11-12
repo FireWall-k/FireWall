@@ -19,10 +19,10 @@ const NO_CLASSNAME_PLUS = {
   message: 'className은 + 로 이어붙이지 말고 cn(...)(src/cn.ts)을 쓰세요 — 이어붙인 클래스는 tailwind 린트가 검사하지 못합니다.',
 }
 
-// 새 사업주 폴더에서 막는 Tailwind 기본 팔레트(명세 6.1 R2: blue-700·green-700·emerald·sky·violet·slate·amber 등).
-// 색은 tailwind.config.js의 사업주 토큰(ink·paper·moss·ok·warn·danger·info·auto·line)만 쓴다.
-// 옛 화면(ManagerPage 등 197곳)은 그 화면을 새로 쓸 때 함께 없앤다(명세 9) — 그래서 팔레트 자체를 줄이지 않고
-// 새 폴더에만 이 규칙을 건다.
+// src/** 전체에서 막는 Tailwind 기본 팔레트(명세 6.1 R2: blue-700·green-700·emerald·sky·violet·slate·amber 등).
+// 색은 tailwind.config.js의 토큰(ink·paper·moss·ok·warn·danger·info·auto·line·worker)만 쓴다.
+// (2d 팔레트 잠금) tailwind.config.js가 theme.colors를 덮어써 기본 팔레트를 아예 만들지 않으므로, 기본 팔레트 클래스는
+// no-custom-classname에도 걸린다. 이 규칙은 cn(...) 밖 문자열(META 표 등)까지 잡는 두 번째 그물이다.
 const DEFAULT_PALETTE =
   'slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose'
 const COLOR_UTIL =
@@ -95,8 +95,8 @@ export default defineConfig([
     },
   },
   {
-    // 2차 새 폴더(사업주 기본 부품·새 사업주 화면·새 로그인)에만 거는 규칙(tasks §3.2). 옛 화면은 지울 때 함께 정리한다.
-    files: ['src/components/ui/**/*.{ts,tsx}', 'src/manager/**/*.{ts,tsx}', 'src/pages/LoginPage.tsx'],
+    // (2d) 팔레트·10~11px·window.confirm 금지를 src/** 전체로 넓혔다(tasks §7 FOUNDATION). 옛 새 직무 화면 예외는 2b-1 병합 때 없앴다.
+    files: ['src/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': ['error', ...NEW_FOLDER_RULES],
     },

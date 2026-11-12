@@ -29,7 +29,7 @@ import main  # noqa: E402
 import safety_rules  # noqa: E402
 import sentence_lint  # noqa: E402
 import step_audio  # noqa: E402
-from conftest import TEST_AAC_IMAGE, auth, give_pictures  # noqa: E402
+from conftest import TEST_AAC_IMAGE, auth, delete_worker, give_pictures  # noqa: E402
 from database import SessionLocal  # noqa: E402
 from models import (  # noqa: E402
     AccessAuditLog,
@@ -62,7 +62,7 @@ def worker(client, employer_token):
                         json={"workplace_code": "DEMO01", "access_code": w["access_code"]})
     w["token"] = login.json()["token"]
     yield w
-    client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+    delete_worker(client, w["id"], auth(employer_token))
 
 
 def _create(client, token, sentences, **extra):

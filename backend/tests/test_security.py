@@ -4,7 +4,7 @@ import pytest
 import auth as auth_mod
 import main
 import ratelimit
-from conftest import auth
+from conftest import auth, delete_worker
 
 
 def _create_worker(client, token, **body):
@@ -12,7 +12,7 @@ def _create_worker(client, token, **body):
 
 
 def _cleanup(client, token, worker_id):
-    client.delete(f"/api/workers/{worker_id}", headers=auth(token))
+    delete_worker(client, worker_id, auth(token))
 
 
 # --- 접속 코드 ---------------------------------------------------------------

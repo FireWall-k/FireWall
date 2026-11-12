@@ -19,7 +19,7 @@ from sqlalchemy import func, select  # noqa: E402
 
 import clock  # noqa: E402
 from auth import hash_password, make_token  # noqa: E402
-from conftest import TEST_AAC_IMAGE, auth, give_pictures, delete_task  # noqa: E402
+from conftest import TEST_AAC_IMAGE, auth, give_pictures, delete_task, delete_worker  # noqa: E402
 from database import SessionLocal  # noqa: E402
 from models import AccessAuditLog, Assignment, Employer, Step, Task, TaskVersion, Worker  # noqa: E402
 
@@ -38,7 +38,7 @@ def workers(client, employer_token):
         made.append(w)
     yield made
     for w in made:
-        client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+        delete_worker(client, w['id'], auth(employer_token))
 
 
 def _task(client, token, pictures=True):

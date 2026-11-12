@@ -195,6 +195,7 @@ export function Switch({ label, checked, onChange, hint, disabled = false, id, c
           </span>
         )}
       </span>
+      {/* 누를 곳은 단추 전체(36, 터치 화면 44 — 명세 6.3), 보이는 손잡이는 안쪽 24px 막대. */}
       <button
         id={switchId}
         type="button"
@@ -204,21 +205,23 @@ export function Switch({ label, checked, onChange, hint, disabled = false, id, c
         aria-describedby={hintId}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={cn(
-          "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors duration-hover",
-          // (2회차 검증) 휴대폰에서 누를 곳 44px: 위아래로 12px씩 투명한 영역(테두리 안쪽 기준)을 더한다(스위치 모양은 그대로).
-          "coarse:my-2.5 coarse:before:absolute coarse:before:-inset-x-px coarse:before:-inset-y-3 coarse:before:content-['']",
-          "disabled:cursor-not-allowed disabled:opacity-50",
-          checked ? "border-moss-600 bg-moss-600" : "border-line-strong bg-paper-200",
-        )}
+        className="group inline-flex min-h-control min-w-control shrink-0 items-center justify-center rounded-full disabled:cursor-not-allowed coarse:min-h-control-coarse coarse:min-w-control-coarse"
       >
         <span
           aria-hidden="true"
           className={cn(
-            "inline-block size-4 rounded-full bg-white shadow-ui-sm transition-transform duration-hover",
-            checked ? "translate-x-6" : "translate-x-1",
+            "relative inline-flex h-6 w-11 items-center rounded-full border transition-colors duration-hover",
+            "group-disabled:opacity-50",
+            checked ? "border-moss-600 bg-moss-600" : "border-line-strong bg-paper-200",
           )}
-        />
+        >
+          <span
+            className={cn(
+              "inline-block size-4 rounded-full bg-white shadow-ui-sm transition-transform duration-hover",
+              checked ? "translate-x-6" : "translate-x-1",
+            )}
+          />
+        </span>
       </button>
     </div>
   );

@@ -25,7 +25,7 @@ from sqlalchemy import func, select  # noqa: E402
 import clock  # noqa: E402
 import media  # noqa: E402
 import schemas  # noqa: E402
-from conftest import auth, give_pictures, delete_task  # noqa: E402
+from conftest import auth, give_pictures, delete_task, delete_worker  # noqa: E402
 from database import SessionLocal  # noqa: E402
 from models import (  # noqa: E402
     Assignment,
@@ -54,7 +54,7 @@ def worker(client, employer_token):
     assert login.status_code == 200, login.text
     w["token"] = login.json()["token"]
     yield w
-    client.delete(f"/api/workers/{w['id']}", headers=auth(employer_token))
+    delete_worker(client, w['id'], auth(employer_token))
 
 
 def _task(client, token):

@@ -28,13 +28,13 @@ describe("tailwind 미정의 클래스 린트", () => {
 
   it("대조군: 정의된 클래스만 쓴 cn(...)은 통과한다", async () => {
     const code = header +
-      'export const A = ({ on }: { on: boolean }) => <b className={cn("min-h-touch text-worker", on ? "bg-green-700" : "bg-slate-100", on && "font-bold")} />;\n';
+      'export const A = ({ on }: { on: boolean }) => <b className={cn("min-h-touch text-worker", on ? "bg-moss-600" : "bg-paper-100", on && "font-bold")} />;\n';
     expect(await ruleIds(code)).toEqual([]);
   });
 
   it("cn(...)의 삼항 안에 숨은 미정의 클래스도 잡는다", async () => {
     const code = header +
-      'export const A = ({ on }: { on: boolean }) => <b className={cn("min-h-touch", on ? "bg-green-700" : "min-h-tuch")} />;\n';
+      'export const A = ({ on }: { on: boolean }) => <b className={cn("min-h-touch", on ? "bg-moss-600" : "min-h-tuch")} />;\n';
     expect(await ruleIds(code)).toContain("tailwindcss/no-custom-classname");
   });
 
@@ -55,8 +55,8 @@ describe("tailwind 미정의 클래스 린트", () => {
   });
 }, 60_000);
 
-// 2차 새 폴더(components/ui·manager·LoginPage)에만 거는 규칙(tasks §3.2): 기본 팔레트·10~11px 글자·window.confirm.
-// 옛 화면(src/pages/ManagerPage 등)에는 걸지 않는다 — 그 화면을 새로 쓸 때 함께 없앤다.
+// 기본 팔레트·10~11px 글자·window.confirm 금지. 2a-1은 새 폴더에만 걸었고, 2d부터 src/** 전체에 건다.
+// 예외 없음(옛 새 직무 화면 두 파일은 2b-1 병합으로 지웠다).
 const uiProbe = path.join(root, "src", "components", "ui", "__lint_probe__.tsx");
 const managerProbe = path.join(root, "src", "manager", "__lint_probe__.tsx");
 const loginProbe = path.join(root, "src", "pages", "LoginPage.tsx");
@@ -113,9 +113,52 @@ describe("새 사업주 폴더 lint(팔레트·작은 글자·confirm)", () => {
     expect(await ruleIds(code, managerProbe)).toContain("no-restricted-syntax");
   });
 
-  it("옛 화면 폴더에는 걸지 않는다(지울 때 함께 정리)", async () => {
+  it("(2d) src/** 전체에 건다: 옛 화면 폴더·근로자 폴더도 팔레트·confirm이 실패한다", async () => {
     const code =
       mHeader + 'export const A = () => <b className={cn("bg-blue-700 text-slate-500")} onClick={() => window.confirm("x")} />;\n';
-    expect(await ruleIds(code, oldProbe)).toEqual([]);
+    const ids = await ruleIds(code, oldProbe);
+    expect(ids).toContain("no-restricted-syntax");
+    const workerProbe = path.join(root, "src", "worker", "__lint_probe__.tsx");
+    expect(await ruleIds(code, workerProbe)).toContain("no-restricted-syntax");
   });
+
+  it("(2d 팔레트 잠금) 기본 팔레트 클래스는 만들어지지 않아 no-custom-classname에도 걸린다", async () => {
+    const code = mHeader + 'export const A = () => <b className={cn("p-2 bg-blue-700")} />;\n';
+    expect(await ruleIds(code, managerProbe)).toContain("tailwindcss/no-custom-classname");
+  });
+
+  it("(2d) 남겨 두는 색 white·black·transparent·current·inherit는 통과한다", async () => {
+    const code =
+      mHeader +
+      'export const A = () => <b className={cn("bg-white text-black border-transparent fill-current text-inherit hc:text-black hc:bg-white")} />;\n';
+    expect(await ruleIds(code, path.join(root, "src", "worker", "__lint_probe__.tsx"))).toEqual([]);
+  });
+
 }, 60_000);
+
+// (2d 완료 기준 4) 실제 src/** 파일 전체에서 기본 팔레트·10~11px·window.confirm 0건(예외 없음).
+describe("src/** 전체 검사(완료 기준 4)", () => {
+  it("기본 팔레트·text-[10px|11px]·confirm( 이 0건", async () => {
+    const fs = await import("node:fs");
+    const PALETTE =
+      /(^|[\s:!"'`])(bg|text|border|border-[xytrbl]|ring|ring-offset|outline|fill|stroke|from|via|to|divide|placeholder|decoration|accent|caret|shadow)-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]/;
+    const bad: string[] = [];
+    const walk = (dir: string) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) walk(full);
+        else if (/\.(ts|tsx)$/.test(e.name)) {
+          const rel = path.relative(root, full).split(path.sep).join("/");
+          const text = fs.readFileSync(full, "utf8");
+          text.split("\n").forEach((line, i) => {
+            if (PALETTE.test(line) || /text-\[1[01]px\]/.test(line) || /(^|[^.\w])confirm\(|window\.confirm\(/.test(line)) {
+              bad.push(`${rel}:${i + 1}: ${line.trim()}`);
+            }
+          });
+        }
+      }
+    };
+    walk(path.join(root, "src"));
+    expect(bad).toEqual([]);
+  });
+});

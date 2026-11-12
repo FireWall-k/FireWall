@@ -553,7 +553,8 @@ test.describe("실제 백엔드 — 사업주", () => {
       expect(r.off, label).toEqual([]);
     };
     await page.goto("/m/workers");
-    await page.getByRole("button", { name: "삭제" }).first().waitFor();
+    // (2d) 새 근로자 목록: 행마다 [… 메뉴]가 있다(옛 [삭제] 단추는 이름 다시 적기 창으로 옮김).
+    await page.getByRole("button", { name: /님 메뉴$/ }).first().waitFor();
     await noSideScroll("근로자 목록");
     await shot(page, "21-employer-workers-390");
     await page.goto("/m/tasks/new");

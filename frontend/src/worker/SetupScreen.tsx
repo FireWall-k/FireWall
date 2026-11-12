@@ -1,4 +1,4 @@
-// 기기 연결(/w/setup, 명세 3.2). 선생님이 근로자 기기에 가게 코드를 한 번 넣어 둔다 — 그 뒤 근로자는
+// 기기 연결(/w/setup, 명세 3.2). 사업주(호칭은 사업장 설정)가 근로자 기기에 가게 코드를 한 번 넣어 둔다 — 그 뒤 근로자는
 // 자기 번호 4자리만 누른다. 로그인 전에 가게 코드가 맞는지 알려 주는 공개 API는 없다(코드 엿보기 방지):
 // 저장만 하고, 맞는지는 근로자가 처음 들어갈 때 알 수 있다.
 // 이 화면도 근로자 기기에 뜨므로 근로자 화면 말투(금지어 없음)를 지킨다.
@@ -8,15 +8,9 @@ import { clearSavedWorkplaceCode, getSavedWorkplaceCode, normalizeWorkplaceCode,
 import { IconDone, IconExit } from "../ui/icons";
 import { PrimaryAction, SecondaryAction } from "./ui/WorkerButton";
 import { BottomBar, TopBar, WorkerScreen } from "./WorkerScreen";
+import { COPY } from "./copy";
 
-const SETUP_COPY = {
-  title: "기기 연결하기",
-  body: "선생님이 하는 곳이에요. 가게 코드를 넣어 주세요.",
-  label: "가게 코드",
-  save: "연결하기",
-  back: "돌아가기",
-  empty: "가게 코드를 넣어 주세요.",
-} as const;
+const SETUP_COPY = COPY.setup;
 
 export default function SetupScreen() {
   const navigate = useNavigate();

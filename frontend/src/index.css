@@ -118,3 +118,39 @@ body {
     display: block;
   }
 }
+
+/* (2d) 인쇄용 카드: 인쇄할 때는 data-print-area 안만 보인다(근로자 카드·기기 연결 카드).
+   카드는 Dialog 패널(최대 높이·스크롤·애니메이션) 안, 고정 오버레이 안에 있다. 그대로 두면 패널 높이에서 잘리고
+   고정 요소라 쪽마다 반복되며, 숨긴 본문이 자리를 차지해 빈 쪽이 생긴다. 그래서 인쇄할 때는
+   (1) 카드와 그 조상이 아닌 것은 모두 display:none으로 빼고, (2) 카드의 조상은 위치·높이·스크롤·변형을 풀어
+   카드가 1쪽 맨 위에 온전히 한 번만 나오게 한다. */
+@media print {
+  body:has([data-print-area]) *:not(:has([data-print-area])):not([data-print-area]):not([data-print-area] *) {
+    display: none !important;
+  }
+  body:has([data-print-area]) *:has([data-print-area]) {
+    position: static !important;
+    display: block !important;
+    inset: auto !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+  [data-print-area] {
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    border: 0 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

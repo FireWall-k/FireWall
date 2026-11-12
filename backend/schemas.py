@@ -123,7 +123,7 @@ class WorkerMeOut(BaseModel):
     id: str
     display_name: str
     workplace_name: str
-    # 근로자 화면에서 사업주를 부르는 호칭(창업자 결정 1). 사업장별 설정은 2차.
+    # 근로자 화면에서 사업주를 부르는 호칭(창업자 결정 1). (2d) 사업장 설정 employers.teacher_title.
     teacher_title: str = "선생님"
     a11y_prefs: A11yPrefs
 
@@ -609,12 +609,12 @@ class WorkerOut(BaseModel):
     """사업주용 근로자 목록 항목. 그 근로자를 소유한 사업주에게만 나가는 응답이다."""
     id: str
     display_name: str
-    # 전체 접속 코드(사업주가 근로자에게 알려 주는 용도). 서버는 암호문으로 들고 있다가 응답 때 푼다.
-    # 0005 이전에 만든 근로자는 평문을 몰라 None — 그 근로자가 한 번 로그인하거나 재발급하면 채워진다.
-    access_code: str | None = None
+    # (2d) 목록·수정 응답에는 전체 접속 코드를 싣지 않는다(화면은 ●●●●로 가리고, 눈 단추를 누를 때만
+    # POST /api/workers/{id}/access-code/reveal로 받는다). 만들기·재발급 응답(WorkerWithCodeOut)에만 있다.
     access_code_hint: str
-    # 4~5자리 예전 코드를 "짧은 코드" 경고로 보여 주는 데 쓴다.
+    # 4~5자리 예전 코드를 "짧은 코드" 경고로 보여 주는 데 쓴다. code_length는 같은 값(계약 이름, ●의 개수).
     access_code_length: int
+    code_length: int = 0
     note: str = ""
     ai_note_allowed: bool = False
     # AI 처리(국외 이전) 동의가 살아 있는지. 없으면 AI 코칭은 규칙 기반 제안만 쓴다.
@@ -626,6 +626,15 @@ class WorkerOut(BaseModel):
     name_ambiguous: bool = False
     # 근로자 화면 설정(8개 키 모두).
     a11y_prefs: A11yPrefs = Field(default_factory=A11yPrefs)
+    # (2d) 목록 열. 오늘 상태 배지: "help"(도움 요청 열림) | "help_coming"(확인함, 도움 가는 중) |
+    # "in_progress" | "done" | "not_started" | "none"(오늘 받은 일 없음). 목록에만 채운다(수정 응답은 "none").
+    today_badge: Literal["help", "help_coming", "in_progress", "done", "not_started", "none"] = "none"
+    # 최근 7일(현지 날짜, 6일 전 → 오늘) 날마다 다 한 배정 수.
+    done_7d: list[int] = Field(default_factory=lambda: [0] * 7)
+    # 최근 7일(6일 전 0시부터) 도움 요청 수(취소한 것도 센다).
+    help_7d: int = 0
+    # "complete"(개인정보·자동 처리 동의 모두) | "ai_missing"(개인정보만) | "missing"(개인정보 동의 없음).
+    consent_state: Literal["complete", "ai_missing", "missing"] = "missing"
 
 
 class WorkerWithCodeOut(WorkerOut):
@@ -647,13 +656,66 @@ class WorkplaceOut(BaseModel):
     """사업주 화면에 보여 줄 사업장 코드(근로자 기기에 한 번 입력해 둔다)."""
     workplace_code: str
     org_name: str
+    # (2d) 기기 연결 QR·주소: PUBLIC_FRONTEND_URL + /w?site=CODE. /w가 기기에 사업장 코드를 저장한다.
+    device_link: str = ""
+    # (2d) 근로자 화면에서 사업주를 부르는 호칭(기본 '선생님').
+    teacher_title: str = "선생님"
+    # (2d) 새 근로자의 화면 설정 기본값(8개 키 모두).
+    worker_defaults: A11yPrefs = Field(default_factory=A11yPrefs)
+
+
+class WorkplaceUpdate(BaseModel):
+    """(2d) 설정 화면. 보낸 필드만 바꾼다. 호칭·이름 검사는 라우트가 해서 정해진 문구로 422를 준다."""
+    model_config = ConfigDict(extra="forbid")
+    org_name: str | None = None
+    teacher_title: str | None = None
+    # 보낸 키만 기본값에 병합한다(A11yPrefsPatch와 같은 엄격한 검사). 이미 있는 근로자는 바뀌지 않는다.
+    worker_defaults: A11yPrefsPatch | None = None
+
+
+class WorkerDeleteRequest(BaseModel):
+    """(2d) 근로자 지우기. 지울 근로자 이름을 그대로 다시 적어야 한다."""
+    confirm_name: str = Field(default="", max_length=100)
+
+
+class AccessCodeRevealOut(BaseModel):
+    code: str
+
+
+class WorkerDayStat(BaseModel):
+    day: str  # 현지 날짜 YYYY-MM-DD
+    assigned: int  # 그날 받은 배정 수
+    done: int  # 그중 다 한 배정 수
+    steps_done: int  # 그날 배정에서 완료한 단계 수
+    help: int  # 그날(현지) 도움 요청 수
+    work_sec: float  # 그날 배정의 완료 단계 시간 합(초)
+
+
+class WorkerStepStat(BaseModel):
+    """기간 안의 기록을 직무 단계(버전을 넘어 같은 단계면 하나)로 모은 값. 차트는 avg_duration_sec를 '2분 28초'로."""
+    task_id: str
+    task_title: str
+    order: int
+    sentence: str
+    samples: int  # 완료 기록 수
+    avg_duration_sec: float
+    replay_count: int  # 다시 듣기 합
+    help_count: int
+
+
+class WorkerStatsOut(BaseModel):
+    worker_id: str
+    days: int
+    daily: list[WorkerDayStat]
+    steps: list[WorkerStepStat]
+    avg_step_sec: float  # 기간 안 완료 단계 평균(초), 기록 없으면 0
 
 
 class DashboardWorkerOut(BaseModel):
     """대시보드에서 직무별로 어떤 근로자를 볼지 고르기 위한 목록 항목."""
     worker_id: str
     display_name: str
-    access_code: str | None = None  # WorkerOut.access_code와 같은 규칙
+    # (2d) 전체 접속 코드는 싣지 않는다. 코드는 POST /api/workers/{id}/access-code/reveal로만(감사·분당 10번).
     access_code_hint: str
     status: str
 

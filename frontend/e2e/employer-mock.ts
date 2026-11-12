@@ -241,9 +241,18 @@ export async function mockEmployer(
       m.tasks = m.tasks.filter((x) => x !== t);
       return json({ ok: true });
     }
-    // 옛 화면(대시보드·근로자·새 직무)이 처음 부르는 것들.
+    // 근로자·설정·새 직무 화면이 처음 부르는 것들.
     if (path === "/api/workers" && method === "GET") return json([]);
-    if (path === "/api/workplace") return json({ workplace_code: "AB12CD", org_name: "테스트 사업장" });
+    // (2d) GET /api/workplace는 device_link·teacher_title·worker_defaults를 함께 준다(contract §6.2).
+    if (path === "/api/workplace") {
+      return json({
+        workplace_code: "AB12CD",
+        org_name: "테스트 사업장",
+        device_link: "http://localhost:5173/w?site=AB12CD",
+        teacher_title: "선생님",
+        worker_defaults: {},
+      });
+    }
     if (path === "/api/tasks" && method === "GET") return json([]);
     // 새 직무 화면: 나누기 미리보기 → 초안 만들기(1단계는 확인할 자동 그림, 2단계는 그림 없음).
     if (path === "/api/tasks/split-preview" && method === "POST") {

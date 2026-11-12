@@ -3,8 +3,9 @@ import { render, screen } from "@testing-library/react";
 
 // App.tsx 주소표(contract §2.2): 옛 주소 replace, /m/login, 로그인 보호. 화면 본체는 가벼운 대역으로 바꾼다.
 vi.mock("../../src/manager/tasks/TaskWorkspace", () => ({ default: () => <p>새 직무·편집기 화면</p> }));
-vi.mock("../../src/pages/DashboardPage", () => ({ default: () => <p>옛 대시보드</p> }));
-vi.mock("../../src/pages/WorkersPage", () => ({ default: () => <p>옛 근로자 관리</p> }));
+vi.mock("../../src/manager/workers/WorkerListPage", () => ({ default: () => <p>근로자 목록 화면</p> }));
+vi.mock("../../src/manager/workers/WorkerDetailPage", () => ({ default: () => <p>근로자 상세 화면</p> }));
+vi.mock("../../src/manager/settings/SettingsPage", () => ({ default: () => <h1>설정</h1> }));
 vi.mock("../../src/manager/tasks/TaskListPage", () => ({ default: () => <p>직무 목록 화면</p> }));
 // (2c) 홈은 오늘 현황 화면. 틀의 현황 폴링(getLive)은 빈 현황을 준다.
 vi.mock("../../src/manager/home/HomePage", () => ({ default: () => <p>오늘 현황 화면</p> }));
@@ -51,7 +52,7 @@ describe("사업주 주소(2a-1)", () => {
   it.each([
     ["/manager", "/m/tasks/new", "새 직무·편집기 화면"],
     ["/dashboard", "/m", "오늘 현황 화면"],
-    ["/workers", "/m/workers", "옛 근로자 관리"],
+    ["/workers", "/m/workers", "근로자 목록 화면"],
     ["/admin/tasks", "/m/tasks/new", "새 직무·편집기 화면"],
     ["/admin/dashboard", "/m", "오늘 현황 화면"],
   ])("옛 주소 %s → %s (replace)", async (from, to, text) => {
@@ -73,17 +74,28 @@ describe("사업주 주소(2a-1)", () => {
   it("모든 /m 화면이 새 틀 안에 있다(사이드바·상단 바)", async () => {
     loginAsEmployer();
     go("/m/workers");
-    expect(await screen.findByText("옛 근로자 관리")).toBeInTheDocument();
+    expect(await screen.findByText("근로자 목록 화면")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "주 메뉴" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "이동 경로" })).toHaveTextContent("근로자");
   });
 
-  it("/m/settings는 '준비 중'", async () => {
+  it("(2d) /m/settings는 설정 화면", async () => {
     loginAsEmployer();
     go("/m/settings");
-    expect(await screen.findByText("설정은 준비 중이에요")).toBeInTheDocument();
-    // 준비 중 화면에도 화면 이름 h1(axe page-has-heading-one)
-    expect(screen.getByRole("heading", { level: 1, name: "설정" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "설정" })).toBeInTheDocument();
+  });
+
+  it("(2d) /m/workers/:id → 근로자 상세", async () => {
+    loginAsEmployer();
+    go("/m/workers/w1");
+    expect(await screen.findByText("근로자 상세 화면")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "이동 경로" })).toHaveTextContent("근로자 상세");
+  });
+
+  it("(2c) /m은 홈·오늘 현황 화면", async () => {
+    loginAsEmployer();
+    go("/m");
+    expect(await screen.findByText("오늘 현황 화면")).toBeInTheDocument();
   });
 
   it("(2b-1) /m/tasks/new와 /m/tasks/:id는 같은 화면(새 직무·편집기)을 연다(2c 링크의 ?step=은 그대로)", async () => {
@@ -93,10 +105,11 @@ describe("사업주 주소(2a-1)", () => {
     expect(window.location.pathname + window.location.search).toBe("/m/tasks/abc?step=s1");
   });
 
-  it("(2c) 옛 대시보드는 /m/legacy-dashboard", async () => {
+  it("(2d) 옛 대시보드 주소 /m/legacy-dashboard는 지웠다 — 홈(/m)으로", async () => {
     loginAsEmployer();
     go("/m/legacy-dashboard");
-    expect(await screen.findByText("옛 대시보드")).toBeInTheDocument();
+    expect(await screen.findByText("오늘 현황 화면")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/m");
   });
 
   it("로그인하지 않고 /m에 오면 /m/login 로그인 화면", async () => {
