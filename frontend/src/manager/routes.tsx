@@ -15,6 +15,7 @@ import WorkerListPage from "./workers/WorkerListPage";
 import AppShell from "./shell/AppShell";
 import TaskListPage from "./tasks/TaskListPage";
 import TaskWorkspace from "./tasks/TaskWorkspace";
+import PhonePreviewPage from "./preview/PhonePreviewPage";
 
 export interface ManagerRoutesProps {
   displayName: string;
@@ -32,6 +33,8 @@ function ShellLayout({ displayName, onLogout }: ManagerRoutesProps) {
 export default function ManagerRoutes(props: ManagerRoutesProps) {
   return (
     <Routes>
+      {/* (2b-2) 편집기 미리보기 iframe. AppShell(도움 폴링) 밖에 그린다 — 미리보기는 서버에 아무 기록도 남기지 않는다. */}
+      <Route path="preview/:taskId" element={<PhonePreviewPage />} />
       <Route element={<ShellLayout {...props} />}>
         <Route index element={<HomePage />} />
         <Route path="tasks" element={<TaskListPage />} />

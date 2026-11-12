@@ -34,6 +34,7 @@ import { THREE_PANE_QUERY, TWO_PANE_QUERY, useMedia } from "./useMedia";
 import { useFixParam } from "./fixParam";
 import PreviewDrawer from "./PreviewDrawer";
 import { usePreviewDrawer } from "./usePreviewDrawer";
+import PreviewPanel from "../../preview/PreviewPanel";
 
 export interface TaskEditorPageProps {
   taskId: string;
@@ -799,10 +800,18 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
               }
             />
           )}
-          {xl && <PreviewDrawer open={preview.open} layout="side" onClose={preview.close} />}
+          {xl && (
+            <PreviewDrawer open={preview.open} layout="side" onClose={preview.close}>
+              {preview.open && <PreviewPanel bare taskId={task.id} version={savedAt} onClose={preview.close} />}
+            </PreviewDrawer>
+          )}
         </div>
       )}
-      {!xl && <PreviewDrawer open={preview.open} layout={wide ? "sheet" : "full"} onClose={preview.close} />}
+      {!xl && (
+        <PreviewDrawer open={preview.open} layout={wide ? "sheet" : "full"} onClose={preview.close}>
+          {preview.open && <PreviewPanel bare taskId={task.id} version={savedAt} onClose={preview.close} />}
+        </PreviewDrawer>
+      )}
 
       {/* 390: 아래 고정 줄(아래 탭바 위) */}
       {!wide && (

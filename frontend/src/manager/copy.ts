@@ -904,3 +904,26 @@ export const previewDrawer = {
   title: "근로자 휴대폰에서 이렇게 보여요",
   close: "미리보기 닫기",
 };
+
+/** (2b-2) 편집기 휴대폰 미리보기. 근로자 화면을 그대로 보이고, 기록은 남기지 않는다. */
+export const preview = {
+  open: "미리보기",
+  close: "미리보기 닫기",
+  heading: "근로자 화면 미리보기",
+  frameTitle: "근로자 휴대폰 미리보기",
+  prev: "‹ 이전",
+  next: "다음 ›",
+  restart: "처음부터 재생",
+  position: (i: number, n: number) => `${i}/${n}단계`,
+  noLog: "미리보기는 기록을 남기지 않아요",
+  warningsLabel: "이 단계에서 볼 것",
+  warn: {
+    long: "문장이 2줄을 넘어요",
+    no_picture: "그림이 없어요",
+    group: "여기서 묶음이 나뉘어요",
+  },
+  noWarn: "고칠 것이 없어요",
+  loading: "미리보기를 불러오고 있어요",
+  failed: "미리보기를 불러오지 못했어요",
+  empty: "단계가 없어요",
+} as const;
