@@ -137,6 +137,35 @@ def test_reveal_limited_to_10_per_minute(client):
     assert _reveal(client, emp2, w2["id"]).status_code == 200
 
 
+def test_no_employer_read_route_carries_full_code(client):
+    """전체 코드는 reveal로만 나간다. 다른 읽기 경로(옛 대시보드 근로자 목록 포함)가 한도·감사를 건너뛰는 길이 되면 안 된다."""
+    emp = _employer(client)
+    code = "86421357"
+    w = _worker(client, emp, "김민지", code)
+    task = _sent_task(client, emp, w["id"])
+    tid, wid = task["id"], w["id"]
+    paths = ("/api/workers", f"/api/dashboard/tasks/{tid}/workers", f"/api/dashboard/tasks/{tid}?worker_id={wid}",
+             f"/api/tasks/{tid}/recipients", "/api/employer/tasks", f"/api/tasks/{tid}",
+             f"/api/workers/{wid}/export", f"/api/workers/{wid}/tasks", "/api/workplace")
+
+    def check():
+        for path in paths:
+            r = client.get(path, headers=emp)
+            assert r.status_code == 200, (path, r.text)
+            assert code not in r.text, path
+
+    check()
+    dash = client.get(f"/api/dashboard/tasks/{tid}/workers", headers=emp).json()
+    assert dash and all("access_code" not in x for x in dash)
+    assert dash[0]["access_code_hint"] == code[-2:]
+    # reveal 한도를 다 쓴 뒤에도 다른 길로 코드가 나오지 않는다.
+    for _ in range(10):
+        assert _reveal(client, emp, wid).status_code == 200
+    assert _reveal(client, emp, wid).status_code == 429
+    check()
+    assert _audits("worker.code.reveal", wid) == 10
+
+
 def test_reveal_other_tenant_is_404_without_audit(client):
     emp, other = _employer(client), _employer(client)
     w = _worker(client, emp, "김민지", "75319864")

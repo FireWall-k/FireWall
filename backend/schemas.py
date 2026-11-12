@@ -579,7 +579,7 @@ class DashboardWorkerOut(BaseModel):
     """대시보드에서 직무별로 어떤 근로자를 볼지 고르기 위한 목록 항목."""
     worker_id: str
     display_name: str
-    access_code: str | None = None  # WorkerOut.access_code와 같은 규칙
+    # (2d) 전체 접속 코드는 싣지 않는다. 코드는 POST /api/workers/{id}/access-code/reveal로만(감사·분당 10번).
     access_code_hint: str
     status: str
 

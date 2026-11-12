@@ -2465,7 +2465,6 @@ def dashboard_workers(task_id: str, request: Request, db: Session = Depends(get_
             continue
         out.append(DashboardWorkerOut(
             worker_id=worker.id, display_name=worker.display_name,
-            access_code=decrypt_access_code(worker.employer_id, worker.access_code_cipher),
             access_code_hint=worker.access_code_hint, status=a.status,
         ))
     # 이 목록에는 여러 근로자의 이름·진행 상태가 실린다. 누구의 정보가 보였는지 남기려고 근로자마다 기록한다.

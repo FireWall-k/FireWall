@@ -148,7 +148,8 @@ def test_owner_employer_sees_full_code(client, employer_token):
         assert _reveal(client, employer_token, w["id"]).json()["code"] == "97531864"
         dash = next(x for x in client.get(f"/api/dashboard/tasks/{task['id']}/workers",
                                           headers=auth(employer_token)).json() if x["worker_id"] == w["id"])
-        assert dash["access_code"] == "97531864"
+        # (2d) 대시보드 근로자 목록에도 전체 코드가 없다(reveal 한도·감사를 건너뛰는 길이 되지 않게).
+        assert "access_code" not in dash and dash["access_code_hint"] == "64"
 
         # 코드 표시가 필요 없는 응답에는 여전히 싣지 않는다.
         for path in (f"/api/dashboard/tasks/{task['id']}?worker_id={w['id']}",
