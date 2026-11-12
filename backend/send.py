@@ -4,6 +4,10 @@
   화면 문구는 사업주 화면 copy.ts가 code와 숫자로 만든다(서버는 label을 보내지 않는다).
 - send: 한 트랜잭션에서 검사 → 같은 내용이 아니면 새 버전 → 근로자마다 배정(규칙 5가지) → 감사 task.assign(근로자마다).
 - publish(POST …/publish)와 옛 배정(POST …/assignments)도 같은 검사(ensure_sendable)·같은 배정 함수(send_to_workers)를 쓴다.
+- (2b-1) send-check 경고: 긴 문장(too_long)·~하세요 체(command_tone)·자동으로 켠 조심 표시(auto_caution). 막지 않는다.
+  자동 조심 표시는 사업주 확인 없이 근로자에게 간다(창업자 결정) — 시트가 경고 줄로 알리고 그 단계로 데려간다.
+- (2b-1) send 처리 순서 1: 자동 저장으로 음성이 옛 문장인 단계(tts_stale)의 음성을 **트랜잭션 밖에서** 먼저 만든다
+  (step_audio.refresh). 실패해도 보내고, 근로자 기기 음성이 대신 읽는다. 막히는 보내기(422)에는 합성하지 않는다.
 - 이 모듈은 main을 import하지 않는다(main이 이 라우터를 include한다).
 """
 from __future__ import annotations
@@ -17,6 +21,9 @@ from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 import clock
+import safety_rules
+import sentence_lint
+import step_audio
 import versions
 from auth import require_employer
 from database import get_db
@@ -95,9 +102,16 @@ def send_check(task: Task) -> SendCheckOut:
                                  step_ids=no_picture))
     blocking.append(SendBlockOut(code="unconfirmed_auto", done=len(with_picture) - len(unconfirmed),
                                  total=len(with_picture), step_ids=unconfirmed))
-    # 나누기 검토(2b-1)는 아직 없다. total=0이라 화면에 보이지 않는다.
-    blocking.append(SendBlockOut(code="unreviewed_split", done=0, total=0))
-    warnings = [SendWarnOut(code=c, count=0) for c in ("too_long", "command_tone", "auto_caution")]
+    # 나눈 문장 확인은 입력 화면이 끝낸다(contract §3.2) — 새로 만든 단계는 늘 needs_review=0이라 total=0(화면에서 숨김).
+    # 서버 검사는 옛 데이터 방어로 남긴다(문장을 고쳐 저장하면 풀린다).
+    unreviewed = [s.id for s in steps if s.split_needs_review]
+    blocking.append(SendBlockOut(code="unreviewed_split", done=0, total=len(unreviewed), step_ids=unreviewed))
+    long_ids = [s.id for s in steps if sentence_lint.is_too_long(s.sentence)]
+    tone_ids = [s.id for s in steps if sentence_lint.is_command_tone(s.sentence)]
+    caution_ids = [s.id for s in steps if safety_rules.is_unconfirmed_auto(s)]
+    warnings = [SendWarnOut(code="too_long", count=len(long_ids), step_ids=long_ids),
+                SendWarnOut(code="command_tone", count=len(tone_ids), step_ids=tone_ids),
+                SendWarnOut(code="auto_caution", count=len(caution_ids), step_ids=caution_ids)]
     ok = all(b.done >= b.total for b in blocking)
     return SendCheckOut(ok=ok, blocking=blocking, warnings=warnings)
 
@@ -127,6 +141,11 @@ def ensure_sendable(task: Task) -> None:
         raise ApiError(422, f"{_orders_text([s.order_index for s in unconfirmed])}의 그림을 아직 확인하지 "
                             "않았어요. 확인한 뒤 다시 보내 주세요.",
                        code="send_blocked", step_ids=[s.id for s in unconfirmed])
+    unreviewed = [s for s in steps if s.split_needs_review]
+    if unreviewed:
+        raise ApiError(422, f"{_orders_text([s.order_index for s in unreviewed])}의 나눈 문장을 아직 확인하지 "
+                            "않았어요. 문장을 확인해 저장한 뒤 다시 보내 주세요.",
+                       code="send_blocked", step_ids=[s.id for s in unreviewed])
 
 
 # --- 날짜 ------------------------------------------------------------------------------------
@@ -227,6 +246,11 @@ def send_to_workers(db: Session, request: Request, user: dict, task: Task, worke
         raise ApiError(409, MSG_ARCHIVED, code="archived", step_ids=[])
     picked = resolve_day(day)
     workers = _resolve_workers(db, user["sub"], worker_ids)
+    # (2b-1) 음성이 옛 문장인 단계를 잠금 없이 먼저 합성한다. 막히는 보내기에는 돈을 쓰지 않으려고 검사를 먼저 한 번 한다
+    # (잠근 뒤 아래에서 다시 검사한다).
+    if any(step_audio.needs_audio(s) for s in task.steps):
+        ensure_sendable(task)
+        step_audio.refresh(db, user["sub"], list(task.steps))
     # 쓰기 잠금을 먼저 잡고(값을 바꾸지 않는 UPDATE) 그 뒤에 읽는다. 근로자 기기의 /me/today가 first_seen_at을 쓰는
     # 것과 겹쳐도, 판정에 쓰는 값이 커밋까지 바뀌지 않는다(받은 배정을 모르고 옮기는 일을 막는다).
     db.execute(update(Task).where(Task.id == task.id).values(status=Task.status)

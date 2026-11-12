@@ -462,11 +462,20 @@ def _baseline():
         return json.load(f)
 
 
+_SAFETY_FLAG = {"default": False, "title": "Safety Flag", "type": "boolean"}
+
+
 def _without_version_no(schema: dict) -> dict:
+    """cfa5396 뒤에 더한 칸만 뺀다: 카드의 task_version_no(2a-0), 단계의 safety_flag(2b-1 조심 띠, 기본 false).
+    그 밖의 칸은 하나도 바뀌지 않아야 한다."""
     schema = json.loads(json.dumps(schema))
     props = schema["properties"]
     assert props.pop("task_version_no") == {"anyOf": [{"type": "integer"}, {"type": "null"}],
                                             "default": None, "title": "Task Version No"}
+    for name in ("StepOut", "HistoryStepOut"):
+        step = schema["$defs"].get(name)
+        if step is not None:
+            assert step["properties"].pop("safety_flag") == _SAFETY_FLAG
     return schema
 
 
@@ -477,7 +486,7 @@ def test_worker_today_schema_snapshot(client, employer_token, worker):
     props = set(_baseline()["TodayCardOut"]["properties"])
     assert set(card) == props | {"task_version_no"}
     step_props = set(_baseline()["TodayCardOut"]["$defs"]["StepOut"]["properties"])
-    assert all(set(s) == step_props for s in card["steps"])
+    assert all(set(s) == step_props | {"safety_flag"} for s in card["steps"])
     assert all(s["picture_state"] == "confirmed" and s["needs_fallback"] is False for s in card["steps"])
 
 
@@ -488,7 +497,7 @@ def test_history_schema_snapshot(client, employer_token, worker):
     h = next(x for x in hist if x["assignment_id"] == card["assignment_id"])
     assert set(h) == set(_baseline()["HistoryCardOut"]["properties"]) | {"task_version_no"}
     step_props = set(_baseline()["HistoryCardOut"]["$defs"]["HistoryStepOut"]["properties"])
-    assert all(set(s) == step_props for s in h["steps"])
+    assert all(set(s) == step_props | {"safety_flag"} for s in h["steps"])
 
 
 # --- 버전 없는 옛 배정(대체 경로) ------------------------------------------------------------

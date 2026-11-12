@@ -73,8 +73,11 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, active: boolean
     root.addEventListener("keydown", onKeyDown);
     return () => {
       root.removeEventListener("keydown", onKeyDown);
-      // 닫힌 뒤 열었던 버튼으로 돌아간다(그 버튼이 아직 화면에 있을 때만).
-      if (opener && opener.isConnected) opener.focus();
+      // 닫힌 뒤 열었던 버튼으로 돌아간다(그 버튼이 아직 화면에 있을 때만). 닫으면서 다른 곳(예: 보내기 시트의
+      // '그 단계로 가기' → 단계 상세)으로 초점을 이미 옮겼으면 그대로 둔다 — 초점이 판 안에 있었거나 사라졌을 때만 돌린다.
+      const a = document.activeElement;
+      const lost = !a || a === document.body || !a.isConnected || root.contains(a);
+      if (lost && opener && opener.isConnected) opener.focus();
     };
   }, [active, ref]);
 }

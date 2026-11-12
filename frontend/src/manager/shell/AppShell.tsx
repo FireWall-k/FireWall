@@ -15,6 +15,7 @@ import { nav, shell } from "../copy";
 import HelpFeedProvider from "./HelpFeedProvider";
 import TopBar from "./TopBar";
 import { NAV_ITEMS, TAB_ITEMS, isFullWidth } from "./navItems";
+import { guardLeave } from "../tasks/new/useLeaveGuard";
 
 export interface AppShellProps {
   displayName: string;
@@ -155,8 +156,8 @@ function MobileTabBar({ onLogout }: { onLogout: () => void }) {
             align="right"
             className="flex-1"
             items={[
-              { id: "settings", label: nav.settings, icon: <Settings size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => navigate("/m/settings") },
-              { id: "logout", label: shell.logout, icon: <LogOut size={16} strokeWidth={2} aria-hidden="true" />, onSelect: onLogout },
+              { id: "settings", label: nav.settings, icon: <Settings size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(() => navigate("/m/settings")) },
+              { id: "logout", label: shell.logout, icon: <LogOut size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(onLogout) },
             ]}
             trigger={(p) => (
               <button {...p} type="button" className={cn(TAB_CLASS, "w-full text-ink-500 hover:text-ink-900")}>

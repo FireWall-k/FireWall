@@ -18,6 +18,8 @@
 - (0007) 버전 고정: TaskVersion·TaskVersionStep(보낼 때 steps를 복사한 스냅샷). 배정은 task_version_id로 버전을
   가리키고, 근로자 화면·완료 판정·도움·대시보드·내보내기는 그 버전 단계를 읽는다. steps는 사업주 편집 작업면이다.
   수행 로그·도움 요청의 step_id는 버전 단계 id다(편집으로 지워지지 않는다). 배정의 '그 날'은 scheduled_day(현지 날짜).
+- (0008) 2b-1: 단계의 조심 표시(safety_*), 나누기 출처·원문 조각(split_*·original_span), 음성 다시 만들기 표시(tts_stale),
+  묶음 경계(group_break). 버전 단계에도 safety_flag·group_break를 고정한다.
 """
 from __future__ import annotations
 
@@ -174,6 +176,20 @@ class Step(Base):
     # (0006) 사업주가 이 그림을 직접 고르거나 올리거나 확인했는지. 그림 4상태(main.picture_state)의 '확인함'.
     # 문장만 고치면 그대로 두고, 사진을 지우거나 사진이 사라지면 False로 되돌린다.
     picture_confirmed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    # (0008) 근로자 화면 '조심해요' 띠. safety_source: 'auto'(칼·뜨거운 같은 말을 보고 서버가 켬 = ✦ 자동 제안) |
+    # 'manual'(사업주가 스위치를 바꿈) | ''(정한 적 없음). 근로자에게는 flag만 간다(safety_rules.py).
+    safety_flag: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    safety_source: Mapped[str] = mapped_column(String, default="", server_default="")
+    safety_note: Mapped[str] = mapped_column(Text, default="", server_default="")
+    # (0008) 어떻게 나눈 단계인지('rule'|'model'|'manual'|'')와 원래 지시문 조각(편집기 원문 인용).
+    # 나눈 문장 확인은 입력 화면이 끝내므로 split_needs_review는 늘 False로 저장한다(contract §3.2, 옛 데이터 방어용).
+    split_source: Mapped[str] = mapped_column(String, default="", server_default="")
+    split_needs_review: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    original_span: Mapped[str] = mapped_column(Text, default="", server_default="")
+    # (0008) 자동 저장(defer_media)으로 문장만 바꿔 음성이 옛 문장이거나 없음. 칸을 벗어날 때·보낼 때 다시 만든다.
+    tts_stale: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    # (0008) 이 단계 앞에서 묶음을 나눈다(9단계가 넘는 직무, 데이터만 — 근로자 쉼 화면은 3차).
+    group_break: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
 
     task: Mapped["Task"] = relationship(back_populates="steps")
     # 레코드가 GC로 지워졌으면 None이 된다 — 응답은 그림/음성 없음으로 나가고,
@@ -223,6 +239,9 @@ class TaskVersionStep(Base):
                                                         index=True)
     tts_media_id: Mapped[str | None] = mapped_column(ForeignKey("media_files.id"), nullable=True,
                                                      index=True)
+    # (0008) 보낸 때의 조심 표시·묶음 경계. 근로자 응답은 safety_flag만 싣는다(group_break는 3차 쉼 화면용 데이터).
+    safety_flag: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    group_break: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
 
     version: Mapped["TaskVersion"] = relationship(back_populates="steps")
     symbol_media: Mapped["MediaFile | None"] = relationship(foreign_keys=[symbol_media_id], lazy="selectin")
@@ -374,6 +393,19 @@ event.listen(AccessAuditLog, "before_update", _reject_audit_mutation)
 event.listen(AccessAuditLog, "before_delete", _reject_audit_mutation)
 
 
+# (2b-1) 음성만 다시 만든 것(보낼 때 미리 합성, 목소리 듣기)은 사업주가 고친 것이 아니다. updated_at을 올리면
+# 다른 창의 자동 저장(expected_updated_at)이 이유 없이 409가 된다.
+# 보낼 때·목소리 듣기 때 자동 저장한 문장으로 동작 종류(action_type)를 다시 매기는 것도 같다 — 문장을 고친 순간에 이미
+# updated_at이 올랐고, 동작 종류는 그 문장에서 정해지는 값이다(step_audio.refresh).
+_MEDIA_ONLY_ATTRS = frozenset({"tts_media_id", "tts_stale", "tts_media", "action_type"})
+
+
+def _only_media_changed(step: "Step") -> bool:
+    state = sa_inspect(step)
+    changed = {a.key for a in state.attrs if a.history.has_changes()}
+    return bool(changed) and changed <= _MEDIA_ONLY_ATTRS
+
+
 def _touch_task_updated_at(session: Session, _flush_context, _instances) -> None:
     """단계를 더하거나 고치거나 지우면, 또는 제목을 바꾸면 그 직무의 updated_at(목록의 '고친 날')을 갱신한다.
 
@@ -382,7 +414,7 @@ def _touch_task_updated_at(session: Session, _flush_context, _instances) -> None
     task_ids: set[str] = set()
     for obj in list(session.new) + list(session.dirty) + list(session.deleted):
         if isinstance(obj, Step) and obj.task_id:
-            if obj in session.dirty and not session.is_modified(obj):
+            if obj in session.dirty and (not session.is_modified(obj) or _only_media_changed(obj)):
                 continue
             task_ids.add(obj.task_id)
         elif isinstance(obj, Task) and obj in session.dirty and obj not in session.new:

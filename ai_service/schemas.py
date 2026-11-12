@@ -104,6 +104,8 @@ class SymbolContext(BaseModel):
     sentence: str | None = None
     action_type: str | None = None
     raw_input: str | None = None
+    # (2b-1) false면 GPT 재순위를 부르지 않는다(백엔드 후보 조회). 없으면 예전처럼 aac_rerank 설정을 따른다.
+    rerank: bool | None = None
 
 
 class MapSymbolsRequest(BaseModel):

@@ -86,3 +86,35 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* 근로자 '조심해요' 띠(2b-1, contract §3.5). 띠 높이는 40px로 고정이라 글자는 늘 한 줄이어야 한다 — 도움 띠와 함께 떠
+   그림 상자가 좁아지면(92~150px) '조심해요'가 2~4줄로 꺾여 띠 밖으로 넘쳤다(1회차 검증). cqmin은 그림 칸(container-type:size)
+   기준이고 그림 상자 한 변이 100cqmin이라, 글자는 상자 폭의 16%를 넘지 않되 20px 아래로는 줄지 않는다. 세모는 상자가 190px 이상일 때만 보인다. */
+.caution-band {
+  padding-inline: 0.75rem;
+}
+.caution-band-text {
+  white-space: nowrap;
+  word-break: keep-all;
+  /* (2회차 검증) 근로자 가장 작은 글씨 20px(명세 worker-caption)보다 작아지지 않는다. 글자 130%에서 상자가 줄어도
+     20px은 지킨다. '조심해요' 4글자는 20px 굵게 약 80px라 상자가 96px까지 좁아져도 좌우 여백을 줄여 한 줄에 든다. */
+  font-size: max(20px, min(1.25rem, 16cqmin));
+}
+@container (max-width: 139px) {
+  .caution-band {
+    padding-inline: 0.25rem;
+  }
+}
+@container (max-height: 139px) {
+  .caution-band {
+    padding-inline: 0.25rem;
+  }
+}
+.caution-band-icon {
+  display: none;
+}
+@container (min-width: 190px) and (min-height: 190px) {
+  .caution-band-icon {
+    display: block;
+  }
+}

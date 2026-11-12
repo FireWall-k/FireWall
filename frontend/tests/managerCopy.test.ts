@@ -67,6 +67,7 @@ describe("contract §3.7 문구(글자 그대로)", () => {
     expect(copy.sendSheet.disabledTooltip(3)).toBe("확인할 것 3개가 남았어요. 확인하면 보낼 수 있어요");
     expect(copy.sendSheet.prefilled).toBe("지난번 받은 사람을 골라 두었어요");
     expect(copy.versionNotice.working(5, 2)).toBe("이 직무를 받은 5명 중 2명이 지금 하고 있어요");
+    expect(copy.versionNotice.working(2, 0)).toBe("이 직무를 받은 사람이 2명 있어요");
     expect(copy.versionNotice.nextTime).toBe("다음에 보낼 때부터 바뀌어요");
   });
 
@@ -75,7 +76,7 @@ describe("contract §3.7 문구(글자 그대로)", () => {
     expect(Object.values(copy.taskFilter)).toEqual(["전체", "초안", "확인 필요", "보냄", "보관"]);
     expect(copy.taskRow.needsCheck(3)).toBe("확인 필요 3");
     expect(copy.taskRow.unsentChanges).toBe("고친 내용 안 보냄");
-    expect(copy.taskMenu.editLater).toBe("새 편집기에서 열려요");
+    expect(copy.taskMenu.resendBlocked(2)).toBe("확인할 것 2개가 남았어요");
   });
 });
 

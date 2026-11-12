@@ -7,6 +7,7 @@ import { cn } from "../../cn";
 import { nav, shell } from "../copy";
 import { crumbsFor } from "./navItems";
 import { useHelpFeed } from "./useHelpFeed";
+import { guardLeave } from "../tasks/new/useLeaveGuard";
 
 export interface TopBarProps {
   displayName: string;
@@ -37,7 +38,10 @@ export default function TopBar({ displayName, onLogout }: TopBarProps) {
             return (
               <li key={c.label} className={cn("flex min-w-0 items-center gap-1", !last && "shrink-0")}>
                 {c.to && !last ? (
-                  <Link to={c.to} className="whitespace-nowrap text-ink-500 hover:text-ink-900 hover:underline">
+                  <Link
+                    to={c.to}
+                    className="inline-flex items-center whitespace-nowrap text-ink-500 hover:text-ink-900 hover:underline coarse:-mx-2 coarse:min-h-control-coarse coarse:min-w-control-coarse coarse:justify-center coarse:px-2"
+                  >
                     {c.label}
                   </Link>
                 ) : (
@@ -69,8 +73,8 @@ export default function TopBar({ displayName, onLogout }: TopBarProps) {
       <Menu
         label={shell.userMenu}
         items={[
-          { id: "settings", label: nav.settings, icon: <Settings size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => navigate("/m/settings") },
-          { id: "logout", label: shell.logout, icon: <LogOut size={16} strokeWidth={2} aria-hidden="true" />, onSelect: onLogout },
+          { id: "settings", label: nav.settings, icon: <Settings size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(() => navigate("/m/settings")) },
+          { id: "logout", label: shell.logout, icon: <LogOut size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(onLogout) },
         ]}
         trigger={(p) => (
           <button

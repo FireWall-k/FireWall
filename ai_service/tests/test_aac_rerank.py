@@ -439,3 +439,46 @@ def test_map_symbols_checks_availability_once(gpt, monkeypatch):
     s = symbols.map_symbols(*_STEP).symbols[0]
     assert s.decided_by == "rule" and fake.calls == []
     assert len(seen) == 1
+
+
+# ---------- (2b-1) 후보 조회는 유료 모델을 부르지 않는다: context.rerank=false ----------
+
+def _count_chat_json(monkeypatch):
+    calls = []
+    real = llm.chat_json
+
+    def counting(*a, **kw):
+        calls.append(a)
+        return real(*a, **kw)
+
+    monkeypatch.setattr(llm, "chat_json", counting)
+    return calls
+
+
+def test_map_symbols_rerank_false_never_calls_gpt(gpt, monkeypatch):
+    """키가 있고 재순위가 켜져 있어도(gpt) rerank=false면 chat_json 0번, 규칙 판정 그대로."""
+    fake = gpt({"choice": 2, "confident": True})
+    calls = _count_chat_json(monkeypatch)
+    keywords, context = _STEP
+    s = symbols.map_symbols(keywords, {**context, "rerank": False}).symbols[0]
+    assert calls == [] and fake.calls == []
+    assert s.decided_by == "rule" and s.external_id == "RETAIL_029" and s.reason == "accepted"
+    # 같은 입력에서 rerank를 끄지 않으면 GPT를 부른다(위 단언이 우연이 아님).
+    symbols.map_symbols(keywords, dict(context))
+    assert len(calls) == 1
+
+
+def test_map_symbols_http_passes_rerank_false(gpt, monkeypatch):
+    """/ai/map-symbols가 context.rerank를 버리지 않고 map_symbols까지 넘긴다(SymbolContext)."""
+    from fastapi.testclient import TestClient
+
+    import main as ai_main
+
+    fake = gpt({"choice": 2, "confident": True})
+    calls = _count_chat_json(monkeypatch)
+    keywords, context = _STEP
+    r = TestClient(ai_main.app).post("/ai/map-symbols",
+                                     json={"keywords": keywords, "context": {**context, "rerank": False}})
+    assert r.status_code == 200, r.text
+    assert calls == [] and fake.calls == []
+    assert r.json()["symbols"][0]["decided_by"] == "rule"

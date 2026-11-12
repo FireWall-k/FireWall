@@ -62,4 +62,21 @@ describe("Field(보이는 라벨·도움말·오류)", () => {
     await user.click(sw);
     expect(onChange).toHaveBeenCalledWith(true);
   });
+
+  it("휴대폰(pointer:coarse)에서 Checkbox·Switch의 누를 곳은 44px(2회차 검증), 상자는 화면 읽기에서 숨지 않는다", () => {
+    render(
+      <>
+        <Checkbox label="김민지 님" />
+        <Switch label="조심 표시" checked={false} onChange={() => {}} />
+      </>,
+    );
+    const box = screen.getByRole("checkbox", { name: "김민지 님" });
+    expect(box.closest("[aria-hidden='true']")).toBeNull();
+    const hit = box.closest("label")!;
+    expect(hit.className).toMatch(/coarse:before:-inset-3/); // 20px 상자 + 12px*2 = 44px
+    expect(screen.getByText("김민지 님").className).toMatch(/coarse:min-h-control-coarse/);
+    const sw = screen.getByRole("switch", { name: "조심 표시" });
+    expect(sw.className).toMatch(/coarse:before:-inset-y-3/); // 22px + 12px*2 = 46px
+    expect(screen.getByText("조심 표시").className).toMatch(/coarse:min-h-control-coarse/);
+  });
 });

@@ -1,5 +1,6 @@
 // 토스트(명세 5.0, 7.3, 8.2): 오른쪽 아래(휴대폰은 아래 탭바 위), role=status, 150ms로 나타남.
 // 성공·안내는 5초 뒤 저절로 닫히고(마우스·초점이 올라가 있으면 기다림), 오류는 저절로 닫히지 않는다.
+// 휴대폰에서 화면 아래에 고정 줄이 더 있으면(편집기) 그 화면이 --toast-bottom을 올려 토스트가 그 줄을 덮지 않게 한다.
 // [실행 취소]가 있는 토스트는 누르면 되돌리고 닫힌다. 한 번에 3개까지 보인다.
 // [닫기](X)로 닫을 때 초점이 토스트 안에 있었으면 다른 토스트의 단추 → 띄우기 직전 자리 → 본문(#main) 순으로
 // 옮긴다(초점이 body로 사라지지 않게, WCAG 2.4.3). 모달(Dialog·Sheet)이 열려 있는 동안 토스트 층은 모달 아래(z-40)로
@@ -47,7 +48,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         data-toast-layer=""
         inert={modalOpen}
         className={cn(
-          "pointer-events-none fixed bottom-20 right-4 flex w-[calc(100%-2rem)] max-w-sm flex-col items-end gap-2 md:bottom-6 md:right-6",
+          "pointer-events-none fixed bottom-[var(--toast-bottom,5rem)] right-4 flex w-[calc(100%-2rem)] max-w-sm flex-col items-end gap-2 md:bottom-6 md:right-6",
           modalOpen ? "z-40" : "z-[60]",
         )}
       >

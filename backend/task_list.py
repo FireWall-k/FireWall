@@ -53,9 +53,9 @@ AUDIT_ACTION = "task.list"
 def needs_check_count(task: Task) -> int:
     """보내기 전에 봐야 할 단계 수: 그림 없음(none) + 확인 안 한 자동 그림(auto_high·choose).
 
-    send.send_check가 막는 단계(no_picture·unconfirmed_auto의 step_ids)와 같은 집합이다. 2b-1에서 나눈 문장 확인
-    (unreviewed_split)이 생기면 그것도 더한다."""
-    return sum(1 for s in task.steps if versions.picture_state(s) != "confirmed")
+    send.send_check가 막는 단계(no_picture·unconfirmed_auto·unreviewed_split의 step_ids)와 같은 집합이다. 나눈 문장
+    확인(unreviewed_split)은 2b-1부터 늘 0이다(입력 화면이 끝냄) — 옛 데이터 방어로 같이 센다."""
+    return sum(1 for s in task.steps if versions.picture_state(s) != "confirmed" or s.split_needs_review)
 
 
 def _initials(name: str | None) -> str:
@@ -313,6 +313,10 @@ def duplicate_task(task_id: str, db: Session = Depends(get_db),
             needs_fallback=s.needs_fallback, picture_confirmed=s.picture_confirmed,
             symbol_media_id=_copy_media(db, src.employer_id, s.symbol_media_id),
             tts_media_id=_copy_media(db, src.employer_id, s.tts_media_id),
+            # (2b-1) 조심 표시·나누기 정보·묶음 경계도 그대로 옮긴다(음성이 옛 문장이면 그 표시도).
+            safety_flag=s.safety_flag, safety_source=s.safety_source, safety_note=s.safety_note,
+            split_source=s.split_source, split_needs_review=s.split_needs_review, original_span=s.original_span,
+            tts_stale=s.tts_stale, group_break=s.group_break,
         ))
     db.commit()
     db.refresh(copy)

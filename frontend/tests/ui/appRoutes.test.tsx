@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 // App.tsx 주소표(contract §2.2): 옛 주소 replace, /m/login, 로그인 보호. 화면 본체는 가벼운 대역으로 바꾼다.
-vi.mock("../../src/pages/ManagerPage", () => ({ default: () => <p>옛 직무 만들기</p> }));
+vi.mock("../../src/manager/tasks/TaskWorkspace", () => ({ default: () => <p>새 직무·편집기 화면</p> }));
 vi.mock("../../src/pages/DashboardPage", () => ({ default: () => <p>옛 대시보드</p> }));
 vi.mock("../../src/pages/WorkersPage", () => ({ default: () => <p>옛 근로자 관리</p> }));
 vi.mock("../../src/manager/tasks/TaskListPage", () => ({ default: () => <p>직무 목록 화면</p> }));
@@ -38,10 +38,10 @@ afterEach(() => {
 
 describe("사업주 주소(2a-1)", () => {
   it.each([
-    ["/manager", "/m/tasks/new", "옛 직무 만들기"],
+    ["/manager", "/m/tasks/new", "새 직무·편집기 화면"],
     ["/dashboard", "/m", "옛 대시보드"],
     ["/workers", "/m/workers", "옛 근로자 관리"],
-    ["/admin/tasks", "/m/tasks/new", "옛 직무 만들기"],
+    ["/admin/tasks", "/m/tasks/new", "새 직무·편집기 화면"],
     ["/admin/dashboard", "/m", "옛 대시보드"],
   ])("옛 주소 %s → %s (replace)", async (from, to, text) => {
     loginAsEmployer();
@@ -55,7 +55,7 @@ describe("사업주 주소(2a-1)", () => {
   it("옛 주소의 ?쿼리는 그대로 넘긴다", async () => {
     loginAsEmployer();
     go("/manager?from=bookmark");
-    await screen.findByText("옛 직무 만들기");
+    await screen.findByText("새 직무·편집기 화면");
     expect(window.location.pathname + window.location.search).toBe("/m/tasks/new?from=bookmark");
   });
 
@@ -67,7 +67,7 @@ describe("사업주 주소(2a-1)", () => {
     expect(screen.getByRole("navigation", { name: "이동 경로" })).toHaveTextContent("근로자");
   });
 
-  it("/m/settings는 '준비 중', /m/tasks/:id는 아직 열지 않고 목록으로", async () => {
+  it("/m/settings는 '준비 중'", async () => {
     loginAsEmployer();
     go("/m/settings");
     expect(await screen.findByText("설정은 준비 중이에요")).toBeInTheDocument();
@@ -75,11 +75,11 @@ describe("사업주 주소(2a-1)", () => {
     expect(screen.getByRole("heading", { level: 1, name: "설정" })).toBeInTheDocument();
   });
 
-  it("/m/tasks/:id → /m/tasks", async () => {
+  it("(2b-1) /m/tasks/new와 /m/tasks/:id는 같은 화면(새 직무·편집기)을 연다", async () => {
     loginAsEmployer();
     go("/m/tasks/abc");
-    expect(await screen.findByText("직무 목록 화면")).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/m/tasks");
+    expect(await screen.findByText("새 직무·편집기 화면")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/m/tasks/abc");
   });
 
   it("로그인하지 않고 /m에 오면 /m/login 로그인 화면", async () => {

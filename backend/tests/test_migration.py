@@ -1113,3 +1113,53 @@ def test_manage_migrate_stops_when_backup_fails(monkeypatch, tmp_path):
         manage.main(["migrate"])
     assert "백업" in str(exc.value)
     assert _current_revision(engine) == _V6  # upgrade를 하지 않았다
+
+
+# --- 0008 단계 조심·나누기·음성 표시 (2b-1) -------------------------------------------------------
+
+_V8 = "0008_step_review"
+_STEP_COLS_0008 = {"safety_flag", "safety_source", "safety_note", "split_source", "split_needs_review",
+                   "original_span", "tts_stale", "group_break"}
+
+
+def _cols(engine, table):
+    return {c["name"] for c in inspect(engine).get_columns(table)}
+
+
+def test_0008_upgrade_downgrade_upgrade_again():
+    engine = _at_0006("v8_roundtrip")
+    _seed_0006_rows(engine)
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _STEP_COLS_0008 <= _cols(engine, "steps")
+    assert {"safety_flag", "group_break"} <= _cols(engine, "task_version_steps")
+    with engine.connect() as conn:
+        # 옛 행은 기본값(조심 없음·나누기 정보 없음·음성 최신·묶음 경계 없음)이다.
+        row = conn.execute(text("SELECT safety_flag, safety_source, safety_note, split_source, split_needs_review, "
+                                "original_span, tts_stale, group_break FROM steps WHERE id='sp1'")).one()
+        assert tuple(row) == (0, "", "", "", 0, "", 0, 0)
+        vrow = conn.execute(text("SELECT safety_flag, group_break FROM task_version_steps WHERE id='sp1'")).one()
+        assert tuple(vrow) == (0, 0)
+    db_migrate.downgrade(engine, _V7)
+    assert not (_STEP_COLS_0008 & _cols(engine, "steps"))
+    assert not ({"safety_flag", "group_break"} & _cols(engine, "task_version_steps"))
+    with engine.connect() as conn:
+        # 단계·버전 단계·로그는 그대로 남는다.
+        assert conn.execute(text("SELECT COUNT(*) FROM steps")).scalar() == 3
+        assert conn.execute(text("SELECT step_id FROM performance_logs")).scalars().all() == ["sp1"]
+    assert {i["name"] for i in inspect(engine).get_indexes("steps")} >= {"ix_steps_task_id"}
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []
+
+
+def test_0008_resumes_when_some_columns_already_added():
+    engine = _new_engine("v8_resume")
+    db_migrate.upgrade_to_head(engine)
+    db_migrate.downgrade(engine, _V7)
+    with engine.begin() as conn:  # 중간에 멈춘 모양: 칸 하나만 붙음
+        conn.execute(text("ALTER TABLE steps ADD COLUMN safety_flag BOOLEAN NOT NULL DEFAULT 0"))
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []
+    assert db_migrate.head_revision() == _V8

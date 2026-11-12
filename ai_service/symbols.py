@@ -13,8 +13,12 @@ _SHORTLIST = 3
 
 
 def map_symbols(keywords: list[str], context: dict) -> MapSymbolsResult:
+    # (2b-1) 백엔드의 후보 조회(편집기 모든 단계 후보·symbol-candidates)는 context.rerank=false를 넘긴다 — 사업주가
+    # 편집기를 열 때마다 단계마다 유료 GPT 재순위를 부르지 않게(contract §3.3). 이 값은 검색 맥락이 아니라 빼고 넘긴다.
+    context = dict(context or {})
+    rerank_allowed = context.pop("rerank", None) is not False
     # available()은 한 번만 본다 — 검색 limit을 고른 뒤 쉬는 시간이 끝나 기본 개수 후보로 GPT를 부르지 않게.
-    rerank_on = aac_rerank.available()
+    rerank_on = rerank_allowed and aac_rerank.available()
     if rerank_on:
         # GPT에 규칙 상위 10장을 보여 준다. limit은 후보 길이만 바꾸고 판정은 그대로다(1,006건 대조에서
         # limit 5/10/20 판정이 모두 같았다). 꺼져 있으면 예전과 똑같이 기본 limit으로 부른다.

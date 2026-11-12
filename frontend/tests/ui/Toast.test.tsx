@@ -167,3 +167,12 @@ describe("Toast(오른쪽 아래, role=status)", () => {
     expect(layer).not.toHaveAttribute("inert");
   });
 });
+
+describe("토스트 층 위치(2회차 검증)", () => {
+  it("휴대폰 아래 자리는 --toast-bottom으로 올릴 수 있다(편집기 아래 고정 줄을 덮지 않게)", () => {
+    render(<ToastProvider>{null}</ToastProvider>);
+    const layer = document.querySelector("[data-toast-layer]")!;
+    expect(layer.className).toMatch(/bottom-\[var\(--toast-bottom,5rem\)\]/);
+  });
+});
+

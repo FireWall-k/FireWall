@@ -8,10 +8,12 @@ export interface TooltipProps {
   content: ReactNode;
   children: ReactElement<{ "aria-describedby"?: string }>;
   side?: "top" | "bottom";
+  /** center: 가운데 맞춤. end: 오른쪽 끝을 맞춤(화면 오른쪽 끝 단추 — 풍선이 화면 밖으로 잘리지 않게). */
+  align?: "center" | "end";
   className?: string;
 }
 
-export default function Tooltip({ content, children, side = "top", className }: TooltipProps) {
+export default function Tooltip({ content, children, side = "top", align = "center", className }: TooltipProps) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const child = isValidElement(children)
@@ -39,8 +41,9 @@ export default function Tooltip({ content, children, side = "top", className }: 
         role="tooltip"
         hidden={!open}
         className={cn(
-          "pointer-events-none absolute left-1/2 z-40 w-max max-w-64 -translate-x-1/2 animate-pop-in rounded-control bg-ink-900 px-2.5 py-1.5 text-ui-sm text-white shadow-ui-md",
+          "pointer-events-none absolute z-40 w-max max-w-64 animate-pop-in rounded-control bg-ink-900 px-2.5 py-1.5 text-ui-sm text-white shadow-ui-md",
           side === "top" ? "bottom-full mb-2" : "top-full mt-2",
+          align === "end" ? "right-0" : "left-1/2 -translate-x-1/2",
         )}
       >
         {content}
