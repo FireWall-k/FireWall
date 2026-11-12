@@ -1336,10 +1336,44 @@ def _insert_step(db: Session, task: Task, employer_id: str, prepared: dict, orde
         split_source=prepared.get("split_source") or "",
         original_span=(prepared.get("original_span") or "")[:1000],
     )
-    # (2b-1) 조심 표시 자동 제안(문장 낱말 규칙).
-    safety_rules.apply_auto(step, prepared["sentence"])
+    # (2b-1) 조심 표시 자동 제안(문장 낱말 규칙). 나누기·합치기로 옛 단계에서 넘어온 사업주 결정(manual)이 있으면
+    # 그것을 그대로 쓰고 자동으로 다시 정하지 않는다(contract §3.3, 2회차 검증).
+    carry = prepared.get("carry") or {}
+    if carry.get("safety_source") == safety_rules.SOURCE_MANUAL:
+        step.safety_flag = bool(carry.get("safety_flag"))
+        step.safety_source = safety_rules.SOURCE_MANUAL
+    else:
+        safety_rules.apply_auto(step, prepared["sentence"])
+    step.safety_note = (carry.get("safety_note") or "")[:200]  # StepUpdate.safety_note max_length
+    step.group_break = bool(carry.get("group_break"))
     db.add(step)
     return step
+
+
+def _carry_review(old: list[Step], prepared: list[dict]) -> None:
+    """(2b-1, 2회차 검증) 나누기(옛 1 → 새 여럿)·되돌리기(옛 여럿 → 새 1)에서 사업주가 정한 값을 새 단계로 옮긴다.
+
+    - 조심 스위치: 옛 단계 중 하나라도 사업주가 켰으면(manual True) 새 단계 모두 manual True. 옛 단계가 모두 사업주가
+      정한 것이고 모두 껐으면 manual False. 그 밖(자동이 섞임)은 새 문장으로 자동 제안을 다시 매긴다.
+    - 조심 메모: 옛 단계 메모를 순서대로 이어 붙여 모든 새 단계에 둔다(같은 메모는 한 번만).
+    - 묶음 경계: 첫 옛 단계의 값을 첫 새 단계에만 둔다(가운데 경계는 합치면 없어진다).
+    """
+    old = sorted(old, key=lambda s: s.order_index)
+    manual = [s for s in old if (s.safety_source or "") == safety_rules.SOURCE_MANUAL]
+    if any(s.safety_flag for s in manual):
+        safety = {"safety_flag": True, "safety_source": safety_rules.SOURCE_MANUAL}
+    elif manual and len(manual) == len(old):
+        safety = {"safety_flag": False, "safety_source": safety_rules.SOURCE_MANUAL}
+    else:
+        safety = {}
+    notes: list[str] = []
+    for s in old:
+        n = (s.safety_note or "").strip()
+        if n and n not in notes:
+            notes.append(n)
+    for i, p in enumerate(prepared):
+        p["carry"] = {**safety, "safety_note": " ".join(notes),
+                      "group_break": bool(old[0].group_break) if i == 0 and old else False}
 
 
 def _replace_steps(db: Session, task: Task, employer_id: str, old: list[Step],
@@ -1352,6 +1386,7 @@ def _replace_steps(db: Session, task: Task, employer_id: str, old: list[Step],
     others = sorted((s for s in task.steps if s.id not in ids), key=lambda s: s.order_index)
     kept = {p["sym"].get("photo_media_id") for p in prepared} - {None}
     media_ids = [m for m in _step_media_ids(old) if m not in kept]
+    _carry_review(old, prepared)
     for s in old:
         db.delete(s)
     db.flush()

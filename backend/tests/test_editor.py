@@ -249,6 +249,15 @@ def test_safety_keywords_inflections_and_compounds():
     for sentence in ("냄비가 뜨겁습니다 조심해요", "물을 뜨겁게 데워요", "팬이 뜨겁다", "가스불을 켜요",
                      "가스불이 꺼졌는지 봐요", "숯불에 고기를 올려요", "촛불을 꺼요"):
         assert safety_rules.matched_keyword(sentence) in ("뜨거운", "불"), sentence
+    # 2회차 검증: 조사 '에는·에도·엔·보다·이에요'와 불조심·불씨·불붙-, 조사 '만'이 붙은 불 낱말('불만' 회귀).
+    for sentence in ("불조심해요", "불조심하세요", "불에는 손을 대지 않아요", "불에도 조심해요", "불엔 가까이 가지 않아요",
+                     "불보다 멀리 서요", "불이에요", "불씨를 확인해요", "불붙은 종이를 버려요", "가스불만 꺼요",
+                     "촛불만 켜 두어요", "숯불만 남겨요", "불만 끄고 나가요"):
+        assert safety_rules.matched_keyword(sentence) == "불", sentence
+    assert safety_rules.matched_keyword("전기세탁기를 돌려요") == "전기"
+    for sentence in ("노래를 불러요", "바람이 불어요", "불편해요", "불안해요", "이불을 개요", "불량품을 빼요",
+                     "전기세를 내요", "출입 불가", "불가능해요", "고칼슘우유를 진열해요"):
+        assert safety_rules.matched_keyword(sentence) is None, sentence
 
 
 def test_safety_keywords_false_positives():
@@ -777,3 +786,65 @@ def test_fixed_sentence_six_auto_high(client, employer_token, worker, monkeypatc
     card = next(c for c in client.get("/api/worker/me/today", headers=auth(worker["token"])).json()
                 if c["task_id"] == task["id"])
     assert [s["safety_flag"] for s in card["steps"]] == [True] + [False] * 5
+
+
+def _review_state(client, token, task_id):
+    return [(s["sentence"], s["safety"]["flag"], s["safety"]["source"], s["safety"]["note"], s["group_break"])
+            for s in _get(client, token, task_id)["steps"]]
+
+
+def _fake_split(monkeypatch, parts):
+    monkeypatch.setattr(ai_client, "split_hint", lambda s: True)
+    monkeypatch.setattr(ai_client, "decompose", lambda raw, ctx=None, **k: {"steps": [
+        {"sentence": p, "action_type": "move", "symbol_query": ["상자"]} for p in parts]})
+
+
+def test_split_and_undo_keep_manual_safety_note_and_group_break(client, employer_token, monkeypatch):
+    """2회차 검증: 저장하며 나누기와 [되돌리기]가 사업주가 정한 조심 스위치(켬)·메모·묶음 경계를 지우지 않는다."""
+    task = _create(client, employer_token, ["상자를 옮겨요", "선반을 정리해요"])
+    tid = task["id"]
+    s1 = task["steps"][0]["id"]
+    assert _patch(client, employer_token, tid, s1, safety_flag=True, safety_note="허리를 펴요",
+                  group_break=True).status_code == 200
+    _fake_split(monkeypatch, ["상자를 들어요", "상자를 선반에 놓아요"])
+    r = client.post(f"/api/tasks/{tid}/steps/{s1}/rewrite", headers=auth(employer_token),
+                    json={"sentence": "상자를 들고 선반에 놓아요"})
+    assert r.status_code == 200, r.text
+    ids = r.json()["split_step_ids"]
+    assert len(ids) == 2
+    assert _review_state(client, employer_token, tid)[:2] == [
+        ("상자를 들어요", True, "manual", "허리를 펴요", True),
+        ("상자를 선반에 놓아요", True, "manual", "허리를 펴요", False)]
+    r = client.post(f"/api/tasks/{tid}/steps/merge", headers=auth(employer_token),
+                    json={"step_ids": ids, "sentence": "상자를 들고 선반에 놓아요", "action_type": "move"})
+    assert r.status_code == 200, r.text
+    assert _review_state(client, employer_token, tid)[0] == (
+        "상자를 들고 선반에 놓아요", True, "manual", "허리를 펴요", True)
+
+
+def test_split_and_undo_keep_manual_off(client, employer_token, monkeypatch):
+    """2회차 검증: 사업주가 끈 조심 스위치는 나눈 뒤에도, 되돌린 뒤에도 자동으로 다시 켜지지 않는다."""
+    task = _create(client, employer_token, ["칼을 씻어요"])
+    tid, s1 = task["id"], task["steps"][0]["id"]
+    assert _patch(client, employer_token, tid, s1, safety_flag=False).status_code == 200
+    _fake_split(monkeypatch, ["칼을 씻어요", "칼을 말려요"])
+    r = client.post(f"/api/tasks/{tid}/steps/{s1}/rewrite", headers=auth(employer_token),
+                    json={"sentence": "칼을 씻고 말려요"})
+    ids = r.json()["split_step_ids"]
+    assert [(f, src) for _, f, src, _, _ in _review_state(client, employer_token, tid)] == [
+        (False, "manual"), (False, "manual")]
+    r = client.post(f"/api/tasks/{tid}/steps/merge", headers=auth(employer_token),
+                    json={"step_ids": ids, "sentence": "칼을 씻고 말려요", "action_type": "clean"})
+    assert r.status_code == 200, r.text
+    assert [(f, src) for _, f, src, _, _ in _review_state(client, employer_token, tid)] == [(False, "manual")]
+
+
+def test_split_without_manual_choice_stays_auto(client, employer_token, monkeypatch):
+    """사업주가 손대지 않은 단계는 나눈 뒤 새 문장마다 자동 제안을 다시 매긴다."""
+    task = _create(client, employer_token, ["상자를 옮겨요"])
+    tid, s1 = task["id"], task["steps"][0]["id"]
+    _fake_split(monkeypatch, ["칼을 들어요", "상자를 놓아요"])
+    r = client.post(f"/api/tasks/{tid}/steps/{s1}/rewrite", headers=auth(employer_token),
+                    json={"sentence": "칼을 들고 상자를 놓아요"})
+    assert r.status_code == 200, r.text
+    assert [(f, src) for _, f, src, _, _ in _review_state(client, employer_token, tid)] == [(True, "auto"), (False, "")]
