@@ -99,11 +99,12 @@ for (const width of [1440, 390] as const) {
       await check(page, "기기 연결 카드");
     });
 
-    test("홈 자리(2c 전까지)·빈 근로자 목록", async ({ page }) => {
+    test("홈(2c 오늘 현황)·빈 근로자 목록", async ({ page }) => {
       await mockEmployer(page);
       await mockWorkers(page, { empty: true });
       await loginEmployer(page, "/m");
-      await expect(page.getByRole("heading", { level: 1, name: "홈" })).toBeVisible();
+      // (병합) 홈은 2c 오늘 현황 화면이다(2d의 '준비 중' 자리 화면은 지웠다).
+      await expect(page.getByRole("heading", { level: 1, name: "오늘 현황" })).toBeVisible();
       await check(page, "홈");
       await page.goto("/m/workers");
       await expect(page.getByText("아직 근로자가 없어요")).toBeVisible();

@@ -215,14 +215,6 @@ export const login = {
   examples: ["손을 깨끗이 씻어요", "앞치마를 입어요", "컵을 물에 넣어요"],
 } as const;
 
-/** 아직 열지 않은 화면(contract §2.2). 홈 '오늘 현황'은 2c에서 열린다. */
-export const placeholder = {
-  homeHeading: "홈",
-  homeTitle: "오늘 현황은 준비 중이에요",
-  homeBody: "근로자별 수행 기록은 근로자 화면의 '현황'에서 볼 수 있어요.",
-  homeWorkers: "근로자 보기",
-} as const;
-
 /** 직무 목록 화면(명세 5.3, tasks §3.3). */
 export const taskList = {
   title: "직무",
