@@ -5,7 +5,7 @@
 //   (근로자 화면에 '선생님이 확인했어요'가 뜬다). 확인했지만 아직 해결 전이면 '도움 가는 중'.
 // - 최대 3건, 나머지는 '그 외 N건'. 768 미만에서는 [이 단계 고치기]·[확인했어요]가 … 메뉴로 들어간다.
 // 웹 푸시(화면을 안 보고 있을 때)는 서버가 따로 보낸다. 이 띠는 화면을 보고 있을 때의 알림이다.
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Ellipsis } from "lucide-react";
 import { api, type EmployerHelp } from "../../api";
@@ -26,6 +26,21 @@ export default function HelpBand() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [drawer, setDrawer] = useState<{ id: string; name: string } | null>(null);
+  // [확인했어요]·[도와줬어요]를 누른 뒤 한 번: 누른 버튼이 화면에서 사라졌으면 초점을 옮긴다.
+  // 값은 '앞으로 몇 번 더 본다'(화면이 붙는 횟수). 띠가 지워지는 화면이 따로 붙어도(묶이지 않은 갱신) 놓치지 않게
+  // 몇 번 더 본다.
+  const refocusLeft = useRef(0);
+
+  // rAF로는 늦거나 이르다: 마지막 요청이면 React가 띠를 지우기 전에 rAF가 돌아 버튼이 아직 붙어 있다고 보고,
+  // 그 뒤 띠가 사라지며 초점이 body로 빠졌다. 그래서 요청 목록이 바뀐 화면이 붙은 직후(useLayoutEffect)에 본다.
+  useLayoutEffect(() => {
+    if (refocusLeft.current <= 0) return;
+    refocusLeft.current -= 1;
+    const a = document.activeElement;
+    if (a && a !== document.body && a.isConnected) return;
+    refocusLeft.current = 0;
+    (document.getElementById("help") ?? document.getElementById("main"))?.focus({ preventScroll: true });
+  });
 
   async function act(h: EmployerHelp, kind: "ack" | "resolve") {
     setBusyId(h.id);
@@ -33,14 +48,10 @@ export default function HelpBand() {
     try {
       if (kind === "ack") await api.ackHelp(h.id);
       else await api.resolveHelp(h.id);
+      // 누른 버튼이 사라지면(도와줬어요·확인했어요) 초점이 body로 빠진다: 띠(남은 요청) 또는 본문(마지막 요청)으로 옮긴다.
+      refocusLeft.current = 3;
       markHelp(h.id, kind === "ack" ? "acknowledged" : "resolved");
       void reload();
-      // 누른 버튼이 사라지면(도와줬어요) 초점이 body로 빠진다: 띠(남은 요청) 또는 본문으로 옮긴다.
-      requestAnimationFrame(() => {
-        const a = document.activeElement;
-        if (a && a !== document.body && a.isConnected) return;
-        (document.getElementById("help") ?? document.getElementById("main"))?.focus({ preventScroll: true });
-      });
     } catch (e) {
       // 근로자가 이미 취소한 요청(409) 같은 서버 문장은 그대로 보여 준다.
       setError(e instanceof Error && e.message ? e.message : copy.actionFailed);

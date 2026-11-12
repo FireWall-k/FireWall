@@ -206,3 +206,71 @@ test.describe("390 도움 띠", () => {
     await expect(page).toHaveURL(/\/m\/tasks\/t3\?step=src3$/);
   });
 });
+
+test("오늘 기록 서랍: Tab을 여러 번 눌러도 초점이 서랍 안에 있고, 그 뒤 Esc로 닫힌다(비활성 탭 tabindex=-1을 마지막으로 세지 않음)", async ({ page }) => {
+  await mockEmployer(page);
+  await loginEmployer(page, "/m");
+  const name = page.getByRole("table", { name: "근로자 실시간 현황" }).getByRole("button", { name: "이수진", exact: true });
+  await name.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: "이수진 님 오늘 기록" });
+  await expect(dialog).toBeVisible();
+  await settled(page);
+  const inDialog = () => dialog.evaluate((el) => el.contains(document.activeElement));
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press("Tab");
+    expect(await inDialog()).toBe(true);
+  }
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press("Shift+Tab");
+    expect(await inDialog()).toBe(true);
+  }
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(name).toBeFocused();
+});
+
+test("마지막 도움 요청에서 [도와줬어요]를 누르면 초점이 body가 아니라 본문(main)으로 간다", async ({ page }) => {
+  const m = await mockEmployer(page);
+  m.help.push({ ...makeHelp(), id: "h2", worker_id: "w2", worker_name: "이수진", created_at: new Date(Date.now() - 120_000).toISOString() });
+  await loginEmployer(page, "/m");
+  const band = page.getByTestId("help-band");
+  await expect(band.getByRole("button", { name: "도와줬어요" })).toHaveCount(2);
+  await band.getByRole("button", { name: "도와줬어요" }).first().click();
+  await expect(band.getByRole("button", { name: "도와줬어요" })).toHaveCount(1);
+  await page.waitForTimeout(600);
+  expect(await page.evaluate(() => document.activeElement?.id)).toBe("help");
+  await band.getByRole("button", { name: "도와줬어요" }).click();
+  await expect(band).toBeHidden();
+  await page.waitForTimeout(600);
+  expect(await page.evaluate(() => document.activeElement?.id)).toBe("main");
+});
+
+for (const width of [390, 360] as const) {
+  test.describe(`${width}폭 근로자 표`, () => {
+    test.use({ viewport: { width, height: 844 }, hasTouch: true, isMobile: true });
+    test("표가 상자 안에 다 들어가고 상태 배지·… 메뉴가 화면 안에 있다", async ({ page }) => {
+      await mockEmployer(page);
+      await loginEmployer(page, "/m");
+      const table = page.getByRole("table", { name: "근로자 실시간 현황" });
+      await expect(table.getByText("김민지")).toBeVisible();
+      const m = await page.getByTestId("live-table").evaluate((root) => {
+        const box = root.firstElementChild as HTMLElement;
+        const menus = Array.from(root.querySelectorAll<HTMLElement>("button[aria-haspopup]")).map((b) => b.getBoundingClientRect().right);
+        const badges = Array.from(root.querySelectorAll<HTMLElement>(".badge")).map((b) => {
+          const r = b.getBoundingClientRect();
+          return { right: r.right, clipped: b.scrollWidth > b.clientWidth };
+        });
+        return { scroll: box.scrollWidth, client: box.clientWidth, boxRight: box.getBoundingClientRect().right, menus, badges, inner: window.innerWidth };
+      });
+      expect(m.scroll).toBeLessThanOrEqual(m.client);
+      expect(m.menus.length).toBe(4);
+      for (const r of m.menus) expect(r).toBeLessThanOrEqual(Math.min(m.inner, m.boxRight));
+      for (const b of m.badges) {
+        expect(b.right).toBeLessThanOrEqual(m.boxRight);
+        expect(b.clipped).toBe(false);
+      }
+      expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    });
+  });
+}

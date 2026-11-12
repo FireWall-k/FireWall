@@ -2,6 +2,9 @@
 // 지금 단계(썸네일 40 + 문장 1줄) · 상태 배지 · 마지막 활동 · … 메뉴.
 // 행(또는 이름 버튼)을 누르면 오른쪽 서랍에 오늘 기록이 열린다. 상태는 서버가 판정한 배지를 그대로 보인다.
 // 휴대폰(768 미만)에서는 하는 일·진행을 이름 아래 한 줄로 줄이고 열은 숨긴다.
+// 표 자동 배치는 칸 안 글의 '가장 좁게 줄일 수 있는 폭'을 열의 최소 폭으로 잡는다. 이름 아래 줄이 nowrap(truncate)이면
+// 그 글 길이 전체가 최소 폭이 되어 390·360에서 표가 상자보다 넓어지고 상태 배지·… 메뉴가 잘린다. 그래서 768 미만에서는
+// 이름·하는 일 줄을 아무 글자에서나 줄을 바꿀 수 있게(break-all) 하고 한 줄(line-clamp-1)로 자른다.
 import { useNavigate } from "react-router-dom";
 import { Ellipsis } from "lucide-react";
 import { Avatar, Menu, Table, iconButtonClasses, type Column } from "../../components/ui";
@@ -59,11 +62,11 @@ export default function LiveTable({ workers, now, onOpen, empty }: LiveTableProp
                 e.stopPropagation();
                 onOpen(w);
               }}
-              className="max-w-full truncate rounded-control text-left font-semibold text-ink-900 hover:underline"
+              className="max-w-full rounded-control text-left font-semibold text-ink-900 hover:underline max-md:line-clamp-1 max-md:break-all md:truncate"
             >
               {w.display_name}
             </button>
-            <span className="truncate text-ui-sm text-ink-700 md:hidden">
+            <span className="line-clamp-1 break-all text-ui-sm text-ink-700 md:hidden">
               {taskText(w)}
               {w.current && ` · ${copy.progress(w.current.done, w.current.total)}`}
             </span>
@@ -105,7 +108,7 @@ export default function LiveTable({ workers, now, onOpen, empty }: LiveTableProp
         <span className="flex flex-col items-start gap-0.5">
           <LiveStatusBadge badge={w.badge} />
           {w.badge === "offline" && (
-            <span className="whitespace-nowrap text-ui-xs text-ink-700">{copy.offlineSince(minutesSince(w.last_signal_at, now))}</span>
+            <span className="break-keep text-ui-xs text-ink-700 md:whitespace-nowrap">{copy.offlineSince(minutesSince(w.last_signal_at, now))}</span>
           )}
         </span>
       ),
