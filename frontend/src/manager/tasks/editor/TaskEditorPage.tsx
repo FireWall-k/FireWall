@@ -10,7 +10,7 @@
 // 서명 URL 만료 시 다시 받기(useMediaRefresh).
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Images, Send } from "lucide-react";
+import { Images, Send, Smartphone } from "lucide-react";
 import { ApiError } from "../../../apiErrors";
 import { Badge, Button, Dialog, EmptyState, Tooltip, useToast } from "../../../components/ui";
 import { cn } from "../../../cn";
@@ -30,6 +30,8 @@ import SendSheet from "./SendSheet";
 import StepDetail, { type CandidateState } from "./StepDetail";
 import StepList from "./StepList";
 import TitleEditor from "./TitleEditor";
+import PreviewPanel from "../../preview/PreviewPanel";
+import { preview as previewCopy } from "../../copy";
 import { TWO_PANE_QUERY, useMedia } from "./useMedia";
 
 export interface TaskEditorPageProps {
@@ -62,6 +64,8 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
   /** 다시 불러오면 문장 칸을 새로 만든다(다른 창에서 고친 문장이 보이게). */
   const [reloadCount, setReloadCount] = useState(0);
   const [view, setView] = useState<"edit" | "overview">("edit");
+  // (2b-2) 휴대폰 미리보기 칸.
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(() => params.get("step"));
   const [pickFirstReview, setPickFirstReview] = useState(() => params.get("review") === "1");
   const [candidates, setCandidates] = useState<Record<string, CandidateState>>({});
@@ -698,9 +702,24 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed }: T
           <Button variant="secondary" onClick={openOverview} icon={<Images size={16} strokeWidth={2} aria-hidden="true" />}>
             {copy.overview}
           </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setPreviewOpen((o) => !o)}
+            aria-pressed={previewOpen}
+            icon={<Smartphone size={16} strokeWidth={2} aria-hidden="true" />}
+            data-testid="editor-preview"
+          >
+            {previewCopy.open}
+          </Button>
           {sendBtn(sendButton, "editor-send")}
         </div>
       </header>
+
+      {previewOpen && (
+        <div className="z-30 md:fixed md:right-6 md:top-24">
+          <PreviewPanel taskId={task.id} version={savedAt} onClose={() => setPreviewOpen(false)} />
+        </div>
+      )}
 
       {published && <VersionNotice recipients={task.recipients_count ?? 0} working={task.in_progress_count ?? 0} changed={!!task.version?.has_unsent_changes} />}
 
