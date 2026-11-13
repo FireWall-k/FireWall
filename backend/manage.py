@@ -12,11 +12,14 @@
     docker compose exec backend python manage.py gc-media [--dry-run]  # 고아 사진·TTS만 정리(purge도 함께 한다)
     python manage.py schedule    # 하루 한 번 purge를 도는 루프(compose의 scheduler 서비스가 실행한다)
     python manage.py vapid-keys --out secrets/vapid_private.pem   # 웹 푸시 키 만들기(공개 키만 화면에 보인다)
+    python manage.py usability-report [--since 2026-11-20] [--until 2026-11-21] [--workplace CODE] [--json]
+                                 # 사용성 테스트 지표(명세 8.4). 합계만 — 배정 id·근로자·이름은 내지 않는다
 """
 from __future__ import annotations
 
 import argparse
 import getpass
+import json
 import signal
 import sys
 import threading
@@ -32,6 +35,7 @@ import maintenance
 import media
 from models import Employer
 import retention
+import usability
 
 MIN_PASSWORD_LEN = 8
 # 사업장 코드(약 10억 가지)가 기존 사업장과 겹칠 때 다시 뽑는 횟수. 실제로는 거의 한 번에 끝난다.
@@ -214,6 +218,27 @@ def vapid_keys(out: str, force: bool = False) -> str:
     return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
 
 
+def usability_report(since: str | None, until: str | None, workplace: str | None, as_json: bool) -> None:
+    """사용성 테스트 지표(usability.py, 명세 8.4)를 출력한다. 출력에는 합계만 있다."""
+    from datetime import date
+
+    def _day(v: str | None):
+        if not v:
+            return None
+        try:
+            return date.fromisoformat(v)
+        except ValueError:
+            raise SystemExit(f"날짜는 YYYY-MM-DD로 적어 주세요: {v}") from None
+
+    db_migrate.ensure_schema_ready()
+    with SessionLocal() as db:
+        try:
+            report = usability.compute(db, since=_day(since), until=_day(until), workplace_code=workplace)
+        except ValueError as e:
+            raise SystemExit(str(e)) from None
+    print(json.dumps(report, ensure_ascii=False, indent=2) if as_json else usability.format_report(report))
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="manage.py", description="JOB CARD 운영 관리")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -242,7 +267,16 @@ def main(argv: list[str] | None = None) -> None:
     v.add_argument("--out", required=True, help="개인 키 PEM을 쓸 파일(VAPID_PRIVATE_KEY_FILE)")
     v.add_argument("--force", action="store_true", help="있는 파일을 덮어쓰기")
 
+    u = sub.add_parser("usability-report", help="사용성 테스트 지표(명세 8.4) — 합계만, 개인 식별 정보 없음")
+    u.add_argument("--since", help="이 날짜부터(YYYY-MM-DD, UTC)")
+    u.add_argument("--until", help="이 날짜까지(포함, YYYY-MM-DD, UTC)")
+    u.add_argument("--workplace", help="사업장 코드 하나로 좁히기(테스트 사업장)")
+    u.add_argument("--json", action="store_true", help="JSON으로 출력")
+
     args = parser.parse_args(argv)
+    if args.cmd == "usability-report":
+        usability_report(args.since, args.until, args.workplace, args.json)
+        return
     if args.cmd == "vapid-keys":
         pub = vapid_keys(args.out, args.force)
         print(f"개인 키를 썼습니다: {args.out}")
