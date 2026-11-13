@@ -167,9 +167,26 @@ describe("StepPlayer review", () => {
     const onNext = vi.fn();
     setup({ mode: "review", onDone: undefined, onNext });
     expect(screen.queryByRole("button", { name: "도와주세요" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "다 했어요" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "다 했어요" })).toBeNull(); // 첫 단계에서는 없다
     expect(playSpy).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
     expect(onNext).toHaveBeenCalled();
+  });
+
+  it("마지막 단계: 꺼진 [다음] 대신 [다 했어요] — 누르면 했던 일로 돌아간다", () => {
+    const onExit = vi.fn();
+    setup({ mode: "review", onDone: undefined, index: steps.length - 1, onExit });
+    expect(screen.queryByRole("button", { name: "다음" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "다 했어요" }));
+    expect(onExit).toHaveBeenCalled();
+  });
+
+  it("다시 보기: 하지 않은 단계는 '안 함'(missed), 일하는 중에는 '남음'(todo)", () => {
+    const { unmount } = setup({ mode: "review", onDone: undefined, index: 1, doneIds: new Set() });
+    expect(screen.getByTestId("progress-dots").children[0]).toHaveAttribute("data-state", "missed");
+    expect(screen.getByTestId("progress-dots").children[1]).toHaveAttribute("data-state", "current");
+    unmount();
+    setup({ index: 0, doneIds: new Set() });
+    expect(screen.getByTestId("progress-dots").children[1]).toHaveAttribute("data-state", "todo");
   });
 });

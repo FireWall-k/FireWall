@@ -96,6 +96,8 @@ export const COPY = {
     reenter: "번호 다시 넣기",
     prev: "이전",
     next: "다음",
+    /** 다시 보기 마지막 단계: 꺼진 [다음] 대신 '했던 일'로 돌아간다(2026-11-13). */
+    reviewEnd: "다 했어요",
     exit: "나가기",
     listen: "듣기",
     stop: "멈춤",

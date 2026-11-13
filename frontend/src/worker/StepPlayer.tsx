@@ -2,7 +2,7 @@
 // 버튼은 늘 같은 자리: 위 띠 [나가기]·[도와주세요], 아래 막대 [이전]·[다 했어요]. [다 했어요]는 어떤 화면
 // 크기·글자 크기에서도 화면 안에 있다(넘치면 가운데만 스크롤, 명세 4.0 넘침 규칙).
 // - live: 일하는 중. [다 했어요] → 0.4초 '잘했어요' → 다음 단계. 자동 넘김 없음.
-// - review: 했던 일 다시 보기. 도와주세요 없음, [이전][다음], 소리 자동 재생 끔.
+// - review: 했던 일 다시 보기. 도와주세요 없음, [이전][다음](마지막 단계는 [다 했어요] → 했던 일), 소리 자동 재생 끔.
 // 배치: 세로 화면은 위에서 아래로(진행 점 → 그림 → 문장·듣기). 가로로 넓은 화면(wide)은 왼쪽 그림,
 // 오른쪽에 점·문장·버튼 두 칸(휴대폰 가로 844×390, 태블릿 가로 1180×820).
 import {
@@ -454,6 +454,7 @@ export function StepPlayer({
       current={index}
       done={(i) => doneIds.has(steps[i].id)}
       fit={dotsInTop}
+      missed={!live}
     />
   );
   const speak = <SpeakButton playing={audio.playing} blocked={audio.blocked} onPress={audio.toggle} compact={dotsInTop} />;
@@ -615,11 +616,19 @@ export function StepPlayer({
                 COPY.btn.done
               )}
             </PrimaryAction>
+          ) : index >= steps.length - 1 ? (
+            // 다시 보기 마지막 단계: 눌러도 아무 일 없는 꺼진 [다음] 대신 '했던 일'로 돌아가는 [다 했어요](2026-11-13).
+            <PrimaryAction
+              icon={IconDone}
+              onPress={onExit}
+              className="min-w-0 flex-1 !px-3 tablet:min-h-[96px]"
+            >
+              {COPY.btn.reviewEnd}
+            </PrimaryAction>
           ) : (
             <PrimaryAction
               icon={IconNext}
               onPress={() => onNext?.()}
-              disabled={index >= steps.length - 1}
               className="min-w-0 flex-1 !px-3 tablet:min-h-[96px]"
             >
               {COPY.btn.next}
