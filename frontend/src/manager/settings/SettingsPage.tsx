@@ -2,7 +2,8 @@
 // - 사업장: 이름(저장), 사업장 코드 + [코드 복사하기].
 // - 기기 연결: QR, /worker?site=… 주소 + [주소 복사하기], [인쇄용 카드 만들기].
 // - 근로자 화면 기본값(명세 4.12, 새 근로자에게만), 호칭(한글 1~6자, 근로자 화면 미리보기).
-// - 알림: '도움 알림 받기'(웹 푸시는 2c에서 연결). 계정: 이름·로그아웃. 선생님 모드 PIN은 3차라 숨긴다.
+// - 알림: '도움 알림 받기' — 상단 바 메뉴와 같은 웹 푸시 스위치(usePushToggle, 3-0 M11). 서버에 키가 없거나
+//   브라우저가 웹 푸시를 못 하면 꺼진 채 '켤 수 없어요'를 보인다. 계정: 이름·로그아웃. 선생님 모드 PIN은 3차라 숨긴다.
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Copy, LogOut, Printer } from "lucide-react";
 import type { A11yPrefs } from "../../api";
@@ -11,6 +12,7 @@ import { teacherCopy } from "../../worker/copy";
 import { prefs as prefsCopy, settings as copy } from "../copy";
 import { getWorkplace, updateWorkplace } from "../api/workers";
 import type { WorkplaceSettings } from "../api/workerTypes";
+import { pushToast, usePushToggle } from "../shell/pushToggle";
 import { errorMessage } from "../tasks/listHelpers";
 import PrefsForm from "../workers/PrefsForm";
 import PrintCardDialog from "../workers/PrintCardDialog";
@@ -41,6 +43,11 @@ export default function SettingsPage({ displayName, onLogout }: SettingsPageProp
   const [titleError, setTitleError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"org" | "title" | null>(null);
   const [printing, setPrinting] = useState(false);
+  const push = usePushToggle();
+
+  async function togglePush() {
+    toast.show(pushToast(await push.toggle()));
+  }
 
   const load = useCallback(() => {
     getWorkplace()
@@ -201,7 +208,13 @@ export default function SettingsPage({ displayName, onLogout }: SettingsPageProp
       </Section>
 
       <Section title={copy.notifyHeading}>
-        <Switch label={copy.notifyLabel} hint={`${copy.notifyHint} ${copy.notifyLater}`} checked={false} disabled onChange={() => undefined} />
+        <Switch
+          label={copy.notifyLabel}
+          hint={push.available ? copy.notifyHint : `${copy.notifyHint} ${copy.notifyUnavailable}`}
+          checked={push.on}
+          disabled={!push.available || push.busy}
+          onChange={() => void togglePush()}
+        />
       </Section>
 
       <Section title={copy.accountHeading}>

@@ -10,6 +10,7 @@
 | OpenAI API 키 | ai_service | `secrets/openai_api_key.txt` | `/run/secrets/openai_api_key` | `OPENAI_API_KEY_FILE` |
 | 토큰·접속 코드 해시·서명 URL 키 | backend, migrate, purge | `secrets/jobcard_secret.txt` | `/run/secrets/jobcard_secret` | `JOBCARD_SECRET_FILE` |
 | Google 서비스 계정 JSON(선택) | backend | `secrets/google-tts.json` | `/run/secrets/google_tts_credentials` | `GOOGLE_APPLICATION_CREDENTIALS` |
+| 웹 푸시 VAPID 개인 키 PEM(선택, 3-0) | backend | `secrets/vapid_private.pem` | `/run/secrets/vapid_private_key` | `VAPID_PRIVATE_KEY_FILE` (공개 키는 비밀이 아니라 `.env`의 `VAPID_PUBLIC_KEY`) |
 
 - `docker-compose.yml`의 top-level `secrets:`가 원본 파일을 정의하고, 각 서비스에는 **필요한 것만** 연결한다
   (OpenAI 키는 backend에 없고, Google 자격증명은 ai_service에 없다).
@@ -46,7 +47,9 @@ sh scripts/init-secrets.sh
 # Windows: powershell -ExecutionPolicy Bypass -File scripts\init-secrets.ps1
 ```
 
-세 원본 파일을 **없을 때만** 만든다(이미 값이 있는 파일은 건드리지 않는다, 권한은 소유자만).
+네 원본 파일을 **없을 때만** 만든다(이미 값이 있는 파일은 건드리지 않는다, 권한은 소유자만).
+`vapid_private.pem`은 3-0에서 더했다 — 그 전에 설치했으면 **다음 `docker compose up` 전에 한 번 다시 실행**한다
+(없으면 compose가 기동을 거부한다).
 compose는 원본 파일이 없으면 `up`을 거부하므로 이 단계가 필요하다. 빈 파일이면 앱은 예전 동작을 한다.
 `.env`에 `OPENAI_API_KEY`·`JOBCARD_SECRET` 값이 있고 대응하는 파일이 없거나 비어 있으면(공백·개행만 포함),
 빈 파일 대신 **그 값을 그대로 옮긴다**. 값은 화면에 출력하지 않고 "옮김"과 경로만 알린다. `.env` 위치는
@@ -62,6 +65,18 @@ chmod 600 secrets/*.txt secrets/google-tts.json
 ```
 
 PowerShell 5에서 `>`/`Out-File`은 UTF-16으로 저장해 앱이 읽지 못한다. `Set-Content -NoNewline -Encoding ascii`를 쓴다.
+
+### 웹 푸시 키(VAPID, 선택)
+
+빈 `secrets/vapid_private.pem`이면 웹 푸시가 꺼진 채로 뜬다(설정·메뉴의 '도움 알림 받기'가 '켤 수 없어요'). 켜려면:
+
+```bash
+docker compose run --rm -v "$PWD/secrets:/out" backend python manage.py vapid-keys --out /out/vapid_private.pem
+# 화면의 VAPID_PUBLIC_KEY=... 한 줄을 .env에 넣는다(공개 키라 비밀 아님). VAPID_SUBJECT=mailto:<운영 연락처>도 .env에.
+docker compose up -d backend
+```
+
+빈 자리 파일은 `--force` 없이 덮어쓴다. 키가 든 파일을 바꾸면 사업주 기기의 알림 구독을 모두 다시 켜야 한다.
 
 ### 기존 설치본 옮기기(`.env`에 키를 두던 경우)
 

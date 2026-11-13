@@ -639,3 +639,8 @@ def test_manage_vapid_keys(tmp_path, capsys):
     with pytest.raises(SystemExit):
         manage.main(["vapid-keys", "--out", str(out)])
     manage.main(["vapid-keys", "--out", str(out), "--force"])
+    # (3-0) init-secrets가 만든 빈 자리 파일은 --force 없이 채운다.
+    slot = tmp_path / "vapid_private.pem"
+    slot.write_bytes(b"")
+    manage.main(["vapid-keys", "--out", str(slot)])
+    assert slot.read_text().startswith("-----BEGIN PRIVATE KEY-----")

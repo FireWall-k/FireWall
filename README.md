@@ -141,8 +141,8 @@ SQLite는 `ALTER TABLE`로 컬럼 변경·삭제를 못 하므로 `render_as_bat
 **자동 백업(2a-0부터)**: `manage.py migrate`는 바꿀 리비전이 있을 때 upgrade 전에 DB 전체를
 `<DB 폴더>/backups/jobcard-<시각>-<리비전>.db`로 복사합니다(compose에서는 `jobcard-data` 볼륨의
 `/app/data/backups`, `JOBCARD_BACKUP_DIR`로 바꿀 수 있음). 이 파일에는 근로자 이름·메모·수행 기록이 그대로
-들어 있고, 근로자를 지워도 이 사본에는 남습니다. 지우는 기능은 아직 없으므로 **마이그레이션이 성공하고 서비스가
-정상인 것을 확인한 뒤 30일 안에 운영자가 지웁니다**(`docker compose exec backend ls /app/data/backups`로
+들어 있고, 근로자를 지워도 이 사본에는 남습니다. 그래서 **scheduler의 매일 `purge`가 30일 지난 사본을 지웁니다**
+(`BACKUP_RETENTION_DAYS`, 기본 30. 더 일찍 지워도 됩니다 — `docker compose exec backend ls /app/data/backups`로
 확인). 정책: [docs/privacy/data-map.md](docs/privacy/data-map.md) 5절 "백업".
 명령은 추가한 컬럼과 **NOT NULL로 바꾼 컬럼**(기존 NULL은 빈 문자열로 채움)을 출력하므로 백업과 대조할 수 있습니다.
 
@@ -525,8 +525,10 @@ mp3 기록·해시 캐시·URL 반환·예외 폴백까지 실제 코드를 실�
    감사 로그 + 고아 사진·TTS 정리)를 돌린다. crontab 등록은 필요 없다. 마지막 성공은 `GET /health`의
    `purge.last_success_at`·`age_hours`·`stale`로 확인한다(정책: [docs/privacy/data-map.md](docs/privacy/data-map.md) 5절).
 6. **백업**: DB는 named volume `jobcard-data`의 `jobcard.db`(SQLite, WAL 모드). 예:
-   `docker compose exec backend python -c "import sqlite3; s=sqlite3.connect('/app/data/jobcard.db'); d=sqlite3.connect('/app/data/backup.db'); s.backup(d)"`
-   `manage.py migrate`가 만드는 자동 백업은 `/app/data/backups/jobcard-*.db`다(위 "자동 백업", 성공 확인 뒤 30일 안에 지운다).
+   `docker compose exec backend python -c "import os, sqlite3; os.makedirs('/app/data/backups', exist_ok=True); s=sqlite3.connect('/app/data/jobcard.db'); d=sqlite3.connect('/app/data/backups/jobcard-manual.db'); s.backup(d)"`
+   백업 사본은 백업 폴더(`/app/data/backups`)에 `jobcard-`로 시작하는 `.db`(또는 `.db.gz`) 이름으로 둔다 — 그래야
+   매일 `purge`가 30일(`BACKUP_RETENTION_DAYS`) 지난 사본을 지운다. 야간 백업도 같은 규칙을 따른다. `manage.py migrate`가
+   만드는 자동 백업 `/app/data/backups/jobcard-<시각>-<리비전>.db`도 같은 규칙으로 지워진다(위 "자동 백업").
 
 알려진 한계: DB는 SQLite만 지원한다(날짜 집계가 SQLite 전용 문법). 로그인 시도 제한이 프로세스
 메모리 기반이라 uvicorn 워커를 늘리려면 Redis 같은 공유 저장소로 바꿔야 한다.

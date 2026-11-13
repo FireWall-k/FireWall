@@ -42,7 +42,8 @@ is_blank() {
   [ ! -s "$1" ] || ! grep -q '[^[:space:]]' "$1"
 }
 
-for name in openai_api_key.txt jobcard_secret.txt google-tts.json; do
+# vapid_private.pem(3-0): 웹 푸시 개인 키 자리. .env에서 옮기지 않는다(키는 manage.py vapid-keys로 만든다).
+for name in openai_api_key.txt jobcard_secret.txt google-tts.json vapid_private.pem; do
   path="$DIR/$name"
   case "$name" in
     openai_api_key.txt) key=OPENAI_API_KEY ;;

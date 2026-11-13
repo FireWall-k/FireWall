@@ -1,5 +1,13 @@
 name: jobcard
 
+# 서비스별 로그 크기 제한(3-0 ops-1). Docker 기본(json-file)은 로그를 끝없이 쌓아 디스크를 채운다 — 파일 하나 10MB,
+# 5개까지(서비스마다 최대 50MB) 돌려 쓴다. 로그에는 요청 경로·오류가 남으므로 오래 두지 않는 편이 개인정보에도 낫다.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   ai_service:
     build:
@@ -84,6 +92,7 @@ services:
     volumes:
       - ./data/aac:/app/aac:ro
       - ai-cache:/app/cache
+    logging: *default-logging
 
   # 일회성 스키마 마이그레이션. backend와 같은 이미지로 `manage.py migrate`를 한 번 돌리고 끝난다.
   # 요청을 받는 backend 프로세스(lifespan)에서 돌리지 않는 이유: 인스턴스가 여럿이면 마이그레이션이
@@ -99,6 +108,7 @@ services:
     pull_policy: never
     command: ["python", "manage.py", "migrate"]
     restart: "no"
+    logging: *default-logging
     environment:
       PYTHONUNBUFFERED: "1"
       DATABASE_URL: "sqlite:////app/data/jobcard.db"
@@ -129,6 +139,7 @@ services:
     profiles: ["maintenance"]
     command: ["python", "manage.py", "purge"]
     restart: "no"
+    logging: *default-logging
     environment: &purge-env
       PYTHONUNBUFFERED: "1"
       DATABASE_URL: "sqlite:////app/data/jobcard.db"
@@ -145,6 +156,9 @@ services:
       TTS_ORPHAN_GRACE_HOURS: "${TTS_ORPHAN_GRACE_HOURS:-24}"
       # 사진·TTS 공통 유예시간. 비우면 예전 TTS_ORPHAN_GRACE_HOURS 값을 그대로 쓴다.
       MEDIA_ORPHAN_GRACE_HOURS: "${MEDIA_ORPHAN_GRACE_HOURS:-${TTS_ORPHAN_GRACE_HOURS:-24}}"
+      # DB 백업 사본 보존(일). /app/data/backups의 jobcard-*.db(.gz) — 마이그레이션 직전 자동 백업·야간 백업 —
+      # 중 이보다 오래된 것을 purge가 지운다(근로자를 지워도 사본에는 남기 때문, 3-0 M8).
+      BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-30}"
       # 마지막 성공 시각 기록(maintenance.py). backend가 같은 볼륨의 같은 파일을 읽어 /health의 purge에 싣는다.
       PURGE_STATUS_FILE: "/app/data/maintenance/purge_status.json"
     secrets:
@@ -164,6 +178,7 @@ services:
     container_name: jobcard-scheduler
     command: ["python", "manage.py", "schedule"]
     restart: unless-stopped
+    logging: *default-logging
     environment:
       <<: *purge-env
       PURGE_INTERVAL_HOURS: "${PURGE_INTERVAL_HOURS:-24}"
@@ -211,6 +226,14 @@ services:
       CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}"
       # ports를 127.0.0.1로 고정했으니(위 ai_service 주석) localhost가 정상 동작한다.
       PUBLIC_BACKEND_URL: "${PUBLIC_BACKEND_URL:-http://localhost:8000}"
+      # 근로자 기기가 여는 화면 주소. 설정의 기기 연결 QR·주소(<이 주소>/worker?site=코드)가 이 값을 따른다.
+      # 예전에는 이 줄이 없어 운영에서도 QR이 늘 http://localhost:5173이었다(3-0 ops-1). 비우면 그 로컬 주소.
+      PUBLIC_FRONTEND_URL: "${PUBLIC_FRONTEND_URL:-http://localhost:5173}"
+      # 웹 푸시(사업주 도움 알림, 2c). 셋 다 있어야 켜진다 — 공개 키가 비었거나 개인 키 파일이 비어 있으면
+      # 알림 스위치를 숨기고 보내지 않는다(예전 동작). 키 만들기와 넣는 곳: docs/security/secrets.md "웹 푸시 키".
+      VAPID_PUBLIC_KEY: "${VAPID_PUBLIC_KEY:-}"
+      VAPID_PRIVATE_KEY_FILE: "/run/secrets/vapid_private_key"
+      VAPID_SUBJECT: "${VAPID_SUBJECT:-mailto:jobcard@example.com}"
       # Google Cloud Text-to-Speech 기본 사용 설정
       # 서비스 계정 JSON은 Docker secret으로 이 파일 하나만 넘긴다. 예전에는 ./secrets 디렉터리 전체를
       # 바인드 마운트해 backend가 쓰지 않는 다른 비밀값 파일(OpenAI 키 등)까지 읽을 수 있었다.
@@ -239,6 +262,7 @@ services:
     secrets:
       - jobcard_secret
       - google_tts_credentials
+      - vapid_private_key
     depends_on:
       ai_service:
         condition: service_healthy
@@ -250,6 +274,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    logging: *default-logging
 
   frontend:
     build:
@@ -260,6 +285,7 @@ services:
     container_name: jobcard-web
     ports:
       - "127.0.0.1:5173:80"  # 위 ai_service 주석 참고
+    logging: *default-logging
     depends_on:
       backend:
         condition: service_healthy
@@ -280,3 +306,6 @@ secrets:
     file: ./secrets/jobcard_secret.txt
   google_tts_credentials:
     file: ./secrets/google-tts.json
+  # 웹 푸시 VAPID 개인 키(PEM). 빈 파일이면 웹 푸시가 꺼진 채로 뜬다. init-secrets가 빈 파일을 만든다.
+  vapid_private_key:
+    file: ./secrets/vapid_private.pem

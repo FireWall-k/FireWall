@@ -56,6 +56,7 @@ def test_sh_moves_env_values_without_printing(tmp_path):
     assert (secrets_dir / "openai_api_key.txt").read_text(encoding="utf-8") == FAKE_OPENAI
     assert (secrets_dir / "jobcard_secret.txt").read_text(encoding="utf-8") == FAKE_SECRET
     assert (secrets_dir / "google-tts.json").read_bytes() == b""
+    assert (secrets_dir / "vapid_private.pem").read_bytes() == b""  # (3-0) 웹 푸시 개인 키 자리
     assert "옮김" in proc.stdout
 
 
@@ -71,7 +72,7 @@ def test_sh_never_overwrites_existing_value(tmp_path):
 def test_sh_without_env_file_creates_empty_files(tmp_path):
     secrets_dir = tmp_path / "secrets"
     _run_sh(tmp_path, secrets_dir, tmp_path / "missing.env")
-    for name in ("openai_api_key.txt", "jobcard_secret.txt", "google-tts.json"):
+    for name in ("openai_api_key.txt", "jobcard_secret.txt", "google-tts.json", "vapid_private.pem"):
         assert (secrets_dir / name).read_bytes() == b""
 
 
@@ -88,6 +89,7 @@ def test_ps1_moves_env_values_without_printing(tmp_path):
     assert (secrets_dir / "openai_api_key.txt").read_bytes() == FAKE_OPENAI.encode()
     assert (secrets_dir / "jobcard_secret.txt").read_bytes() == FAKE_SECRET.encode()
     assert (secrets_dir / "google-tts.json").read_bytes() == b""
+    assert (secrets_dir / "vapid_private.pem").read_bytes() == b""
 
 
 def test_sh_strips_inline_comment_like_compose(tmp_path):

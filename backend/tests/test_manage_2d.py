@@ -219,6 +219,10 @@ def test_workplace_shape_and_device_link(client, monkeypatch):
     monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://jobcard.example.kr/")
     assert client.get("/api/workplace", headers=emp).json()["device_link"] == \
         f"https://jobcard.example.kr/worker?site={code}"
+    # (3-0 ops-1) 빈 값이 넘어와도 '/worker?site=…'만 남지 않고 로컬 주소로.
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "  ")
+    assert client.get("/api/workplace", headers=emp).json()["device_link"] == \
+        f"http://localhost:5173/worker?site={code}"
 
 
 @pytest.mark.parametrize("title", ["코치", "반장님", "선생님", "가나다라마바", " 팀장 "])
