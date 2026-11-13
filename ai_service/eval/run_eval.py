@@ -21,6 +21,13 @@
     symbol_query_quality 각 단계 symbol_query에 한글+영어가 함께 있는 비율(LLM 지표)
     action_typed        action_type이 'other'가 아닌(구체 분류된) 비율
     keyword_coverage    기대 키워드가 결과에 등장하는 비율
+
+정확도 검사(3a, 2026-11-14) — 점수와 따로 센다(총점은 예전 지표 그대로). expect에 적은 것만 본다:
+    steps         단계 수가 min_steps~max_steps 안(두 동작 문장은 2단계, 한 동작은 1단계 — 한 단계 = 그림 1장)
+    tone          haeyo=true: 어느 단계 문장도 명령조('~세요·~십시오·~시오·~해라')로 끝나지 않음
+    keep_words    keep_in_sentence의 낱말('행주로'·'부르면')이 모두 단계 문장 어딘가에 남음(검색어 말고 문장)
+    negation      keep_negation=true: 원문의 금지·부정이 단계 문장에 남고 새로 생기지 않음(llm.check_negation)
+규칙 모드(키 없음)는 사업주 원문 말투를 그대로 두므로 '~세요' 원문의 tone은 실패로 나온다 — GPT 경로의 목표치다.
 """
 from __future__ import annotations
 
@@ -43,6 +50,9 @@ DATASET_PATH = Path(__file__).with_name("dataset.json")
 _HANGUL = re.compile(r"[가-힣]")
 _ENGLISH = re.compile(r"[A-Za-z]")
 _IMPERATIVE_END = ("요", "요.", "세요", "세요.", "다", "다.")
+# 보내기 점검(backend/sentence_lint.py)의 command_tone과 같은 끝맺음 + 반말 명령 '~해라'.
+_COMMAND_END = ("세요", "십시오", "하시오", "시오", "해라")
+_TAIL_PUNCT = re.compile(r"[\s.!?~…。·,]+$")
 
 
 # --- 개별 지표(각 0.0~1.0) --------------------------------------------------
@@ -100,6 +110,32 @@ def _m_keyword_coverage(result: DecomposeResult, expect: dict) -> float:
     return found / len(must)
 
 
+def is_command_tone(sentence: str) -> bool:
+    return _TAIL_PUNCT.sub("", sentence or "").endswith(_COMMAND_END)
+
+
+def accuracy_checks(result: DecomposeResult, case: dict) -> dict:
+    """3a 정확도 검사. expect에 적힌 항목만 {이름: 통과 여부}로 돌려준다(없으면 빈 dict)."""
+    expect = case.get("expect", {})
+    sentences = [s.sentence for s in result.steps]
+    out: dict = {}
+    if not any(k in expect for k in ("haeyo", "keep_in_sentence", "keep_negation")):
+        return out
+    out["steps"] = bool(_m_steps_in_range(result, expect))
+    if expect.get("haeyo"):
+        out["tone"] = not any(is_command_tone(s) for s in sentences)
+    if expect.get("keep_in_sentence"):
+        blob = " ".join(sentences)
+        out["keep_words"] = all(w in blob for w in expect["keep_in_sentence"])
+    if expect.get("keep_negation"):
+        try:
+            llm.check_negation(case["raw_input"], {"steps": [{"sentence": s} for s in sentences]})
+            out["negation"] = True
+        except ValueError:
+            out["negation"] = False
+    return out
+
+
 def score_case(result: DecomposeResult, case: dict, weights: dict, max_chars: int) -> dict:
     metrics = {
         "steps_in_range": _m_steps_in_range(result, case["expect"]),
@@ -112,7 +148,12 @@ def score_case(result: DecomposeResult, case: dict, weights: dict, max_chars: in
     total_w = sum(weights.get(k, 1.0) for k in metrics)
     weighted = sum(metrics[k] * weights.get(k, 1.0) for k in metrics)
     score = round(100 * weighted / total_w, 1) if total_w else 0.0
-    return {"id": case["id"], "score": score, "n_steps": len(result.steps), "metrics": metrics}
+    row = {"id": case["id"], "score": score, "n_steps": len(result.steps), "metrics": metrics}
+    checks = accuracy_checks(result, case)
+    if checks:
+        row["checks"] = checks
+        row["sentences"] = [s.sentence for s in result.steps]
+    return row
 
 
 # --- 실행 --------------------------------------------------------------------
@@ -134,7 +175,11 @@ def run(only_case: str | None = None) -> dict:
         rows.append(score_case(result, case, weights, max_chars))
 
     total = round(sum(r["score"] for r in rows) / len(rows), 1) if rows else 0.0
-    return {"mode": mode, "total": total, "cases": rows}
+    checked = [r for r in rows if r.get("checks")]
+    names = ("steps", "tone", "keep_words", "negation")
+    acc = {n: [sum(r["checks"][n] for r in checked if n in r["checks"]),
+               sum(1 for r in checked if n in r["checks"])] for n in names}
+    return {"mode": mode, "total": total, "cases": rows, "accuracy": acc}
 
 
 def _print_report(report: dict) -> None:
@@ -151,6 +196,15 @@ def _print_report(report: dict) -> None:
     print("-" * 72)
     print(f"{'총점(평균)':<20}{report['total']:>6.1f}")
     print("=" * 72)
+    checked = [r for r in report["cases"] if r.get("checks")]
+    if checked:
+        print("정확도 검사(3a) — 통과/문항: " + ", ".join(
+            f"{n} {v[0]}/{v[1]}" for n, v in report["accuracy"].items() if v[1]))
+        for r in checked:
+            bad = [n for n, ok in r["checks"].items() if not ok]
+            if bad:
+                print(f"  {r['id']:<28} 실패 {','.join(bad):<22} {' / '.join(r['sentences'])}")
+        print("=" * 72)
 
 
 def main() -> None:
