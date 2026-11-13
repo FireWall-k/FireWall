@@ -3,8 +3,10 @@
 // 크기·글자 크기에서도 화면 안에 있다(넘치면 가운데만 스크롤, 명세 4.0 넘침 규칙).
 // - live: 일하는 중. [다 했어요] → 0.4초 '잘했어요' → 다음 단계. 자동 넘김 없음.
 // - review: 했던 일 다시 보기. 도와주세요 없음, [이전][다음](마지막 단계는 [다 했어요] → 했던 일), 소리 자동 재생 끔.
-// 배치: 세로 화면은 위에서 아래로(진행 점 → 그림 → 문장·듣기). 가로로 넓은 화면(wide)은 왼쪽 그림,
-// 오른쪽에 점·문장·버튼 두 칸(휴대폰 가로 844×390, 태블릿 가로 1180×820).
+// 배치: 세로 화면은 위에서 아래로(진행 점 → 그림 → 문장·듣기). 가로로 넓은 화면(wide)은 진행 점을 위 띠 가운데로
+// 올리고, 왼쪽 그림· 오른쪽 문장과 [듣기](세로 가운데) · 오른쪽 아래 버튼(휴대폰 가로 844×390, 태블릿 가로
+// 1180×820). 시안 A(2026-11-13): 가운데가 비지 않게 문장을 그림 옆에 붙인다. 위 띠 버튼은 80px 그대로(명세 4.0).
+// 오른쪽 칸은 424px까지, 좁은 가로 화면(640 등)에서는 화면 절반까지만 — 그림은 남는 폭을 다 갖는다.
 import {
   useCallback,
   useEffect,
@@ -107,9 +109,10 @@ function useMedia(query: string): boolean {
   );
 }
 
-/** 문장 기본 글자(px): 휴대폰 32 / 휴대폰 가로 28 / 태블릿 세로 44 / 태블릿 가로 40. 크게(+4). */
-function baseSentencePx(tablet: boolean, wide: boolean, large: boolean): number {
-  const base = tablet ? (wide ? 40 : 44) : wide ? 28 : 32;
+/** 문장 기본 글자(px): 휴대폰 32 / 휴대폰 가로 32 / 태블릿 세로 44 / 태블릿 가로 44. 크게(+4).
+ *  가로 화면은 진행 점이 위 띠로 올라가 오른쪽 칸이 문장 전용이라 세로와 같은 크기에서 시작한다(시안 A). */
+function baseSentencePx(tablet: boolean, large: boolean): number {
+  const base = tablet ? 44 : 32;
   return base + (large ? 4 : 0);
 }
 
@@ -326,7 +329,7 @@ export function StepPlayer({
   const tablet = useMedia(TABLET_QUERY);
   const wide = useMedia(WIDE_QUERY);
   const land = useMedia(LAND_QUERY);
-  const { h1Ref, scrollRef, cellRef, px: sentencePx, level: fitLevel } = useSentenceFit(step?.id ?? "", baseSentencePx(tablet, wide, prefs.font_size === "large"), layoutKey);
+  const { h1Ref, scrollRef, cellRef, px: sentencePx, level: fitLevel } = useSentenceFit(step?.id ?? "", baseSentencePx(tablet, prefs.font_size === "large"), layoutKey);
   const captionMore = useMoreBelow(cellRef, `${step?.id ?? ""}|${sentencePx}|${layoutKey}|${wide}`);
   // 세로 화면은 가운데 칸 전체가 스크롤한다. 넘치면 아래쪽을 흐리게 해 "더 있다"를 보인다(2차 검증: 작은 휴대폰에서
   // 도움·끊김 띠가 뜨면 문장과 [듣기]가 줄 가운데서 말없이 잘렸다).
@@ -448,6 +451,12 @@ export function StepPlayer({
   // 110px을 먹어 오른쪽 칸에 점·문장·[듣기]가 다 들어가지 못했고 [듣기]/[멈춤] 글자가 흐림에 가려졌다. 640×360에서는
   // 위 띠 82 + 도움 띠 110 + 아래 막대 106이라 문장 칸이 62px뿐이라 80px [듣기]가 들어갈 수 없다). 오른쪽 칸은 문장만.
   const dotsInTop = wide && land && !!shownBand;
+  // 가로로 넓은 화면은 띠가 없어도 진행 점을 위 띠 가운데에 둔다(시안 A). 띠가 뜬 가로 휴대폰(dotsInTop)은 [듣기]까지 올린다.
+  const dotsTop = wide;
+  // 가로 화면에서 문장이 짧아(글자를 줄이지 않아도 들어감) [듣기]를 문장 아래에 쌓고 둘을 세로 가운데에 둔다. 문장이 길어
+  // 글자를 줄였으면 예전처럼 [듣기]를 문장 오른쪽에 둔다 — 쌓으면 글자 130%에서 문장이 한 줄만 보였다(시안 A 검증).
+  // fitLevel은 단계·화면 크기로만 다시 재므로 이 전환이 측정을 다시 부르지 않는다.
+  const stack = wide && fitLevel === 0;
   const dots = (
     <ProgressDots
       total={steps.length}
@@ -472,7 +481,7 @@ export function StepPlayer({
       data-mode={mode}
       className={cn(
         "flex h-dvh flex-col overflow-hidden bg-worker-bg font-worker text-worker-ink hc:bg-white hc:text-black",
-        "wide:grid wide:grid-cols-[minmax(0,1fr)_minmax(288px,424px)] wide:grid-rows-[auto_auto_auto_minmax(0,1fr)_auto] wide:gap-x-6 tablet:wide:gap-x-8",
+        "wide:grid wide:grid-cols-[minmax(0,1fr)_minmax(288px,min(424px,50%))] wide:grid-rows-[auto_auto_auto_minmax(0,1fr)_auto] wide:gap-x-6 tablet:wide:gap-x-8",
       )}
     >
       <div className="wide:col-span-2 wide:row-start-1">
@@ -496,6 +505,11 @@ export function StepPlayer({
                 {dots}
                 {speak}
               </div>
+            ) : dotsTop ? (
+              <div className="flex w-full min-w-0 items-center justify-center gap-3 px-2" data-testid="top-dots">
+                {offlineMark && <OfflineMark />}
+                {dots}
+              </div>
             ) : offlineMark ? (
               <OfflineMark />
             ) : undefined
@@ -518,10 +532,10 @@ export function StepPlayer({
         <div
           className={cn(
             "flex h-10 shrink-0 items-center small:h-8 tablet:h-12 wide:col-start-2 wide:row-start-3 wide:px-0 wide:pt-4",
-            dotsInTop && "wide:hidden",
+            dotsTop && "!h-0 !pt-0",
           )}
         >
-          {!dotsInTop && dots}
+          {!dotsTop && dots}
           <p className="sr-only" aria-live="polite">{`${title}, ${COPY.step.srProgress(index + 1, steps.length)}`}</p>
         </div>
 
@@ -535,7 +549,7 @@ export function StepPlayer({
               // 작은 휴대폰(small)만 낮춰서 390×740·390×844에서는 240px 바닥을 지키느라 문장·[듣기]가 흐림 아래로 밀렸다.
               // 그래도 넘치면 가운데 칸 아래를 흐리게 한다(data-more).
               shownBand ? "min-h-[96px]" : "min-h-[240px] small:min-h-[180px]",
-              "wide:col-start-1 wide:row-span-3 wide:row-start-3 wide:my-4 wide:ml-4 wide:min-h-0 tablet:wide:ml-8",
+              "wide:col-start-1 wide:row-span-3 wide:row-start-3 wide:my-3 wide:ml-4 wide:min-h-0 tablet:wide:ml-8",
               "animate-step-in motion-reduce:animate-none",
             )}
             data-testid="step-picture-cell"
@@ -558,13 +572,15 @@ export function StepPlayer({
               "animate-step-in motion-reduce:animate-none",
             )}
           >
-            <div className="flex items-start gap-3 wide:min-h-0 wide:flex-1">
+            {/* 가로로 넓은 화면 + 짧은 문장(stack): 문장과 [듣기]를 위아래로 쌓아 칸의 세로 가운데에 둔다(auto 여백). */}
+            <div className={cn("flex items-start gap-3 wide:min-h-0 wide:flex-1", stack && "flex-col gap-4")}>
               <div
                 ref={cellRef}
                 data-more={captionMore ? "true" : undefined}
                 data-testid="step-caption"
                 className={cn(
                   "min-w-0 flex-1 wide:max-h-full wide:self-stretch wide:overflow-y-auto",
+                  stack && cn("min-h-0 flex-initial", dotsInTop ? "my-auto" : "mt-auto"),
                   // 흐림은 2rem이되 칸 높이의 35%를 넘지 않는다(4차 검증 2회: 가로 휴대폰 130% + '못 불렀어요' 띠에서 문장 칸이
                   // 한 줄(42px)뿐이라 2rem 흐림이 그 한 줄을 통째로 회색으로 덮었다).
                   "wide:data-[more=true]:[mask-image:linear-gradient(to_bottom,#000_calc(100%_-_min(2rem,35%)),transparent)]",
@@ -581,7 +597,7 @@ export function StepPlayer({
                   {step.sentence}
                 </h1>
               </div>
-              {!dotsInTop && speak}
+              {!dotsInTop && (stack ? <div className="mb-auto shrink-0">{speak}</div> : speak)}
             </div>
             {audio.blocked && (
               <p className="text-right text-worker-caption text-worker-sound-ink hc:text-black">{COPY.step.tapToListen}</p>
