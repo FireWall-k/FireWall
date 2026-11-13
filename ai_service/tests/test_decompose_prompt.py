@@ -54,7 +54,8 @@ def test_prompt_title_covers_all_groups():
     assert "10) task_title" in P
     assert "제목에는 모든 묶음의 이름이 들어갑니다" in P
     assert "첫 문장부터 마지막 문장까지 빠지는 묶음이 없어야" in P
-    assert "'박스 접기·라벨 붙이기·바닥 청소'" in P        # 세 부분 예시
+    assert "'박스 뜯기·컵 진열·청소'" in P        # 세 부분 예시(단계를 늘어놓지 않음)
+    assert "단계 하나하나가 묶음이 아닙니다" in P and "묶음 수는 단계 수의 절반 이하" in P
     assert "짧게 하려고 묶음을 빼지 않습니다" in P
     assert "task_title이 모든 일 묶음을 담았는지" in P
     assert "20자 안팎)입니다" not in P                       # 제목을 두 부분으로 줄이게 하던 글자 수 지시가 없다
@@ -207,9 +208,15 @@ def test_accuracy_checks_catch_command_tone_dropped_tool_and_merged_actions(monk
         {"sentence": "복도를 닦으세요.", "symbol_query": ["걸레로 복도를 닦다"], "action_type": "clean", "src": 1}]})
     result = dec.decompose(case["raw_input"], case["context"])
     checks = run_eval.accuracy_checks(result, case)
-    assert checks["keep_words"] is False
-    # 규칙 검산(_reconcile)이 원문 한 줄로 되돌리면 말투는 사업주 것이 되지만 단계 수가 틀린다.
-    assert checks["steps"] is False or checks["tone"] is False
+    # 도구 말은 코드 가드(_keep_tool)가 되살리고 말투는 restyle이 되돌린다 — 남는 잘못은 두 동작을 한 단계로 둔 것.
+    assert checks["keep_words"] is True and checks["tone"] is True
+    assert checks["steps"] is False
+    # 검사 자체는 도구가 빠진 결과·명령조를 잡는다(가드 없이 만든 결과).
+    from schemas import DecomposeResult, Step
+    raw = DecomposeResult(task_title="t", job="cleaning", steps=[
+        Step(order=1, sentence="복도를 닦으세요.", keywords=[], action_type="clean"),
+        Step(order=2, sentence="쓰레기통을 비워요.", keywords=[], action_type="clean")])
+    assert run_eval.accuracy_checks(raw, case) == {"steps": True, "tone": False, "keep_words": False}
 
 
 def test_accuracy_checks_catch_flipped_negation():
@@ -269,3 +276,93 @@ def test_decompose_fixes_broken_irregular_in_gpt_sentence_and_title(monkeypatch)
     result = dec.decompose("바닥에 떨어진 영수증을 주워서 버려요.", {})
     assert [s.sentence for s in result.steps] == ["영수증을 주워요.", "영수증을 버려요."]
     assert result.task_title == "영수증 주워 버리기"
+
+
+# ---------- 3a run3 뒤: 도구 말 지키기·제목 가드·'주우기' ----------
+
+def test_prompt_rule7_keeps_tool_word_while_flagging_hazard():
+    assert "위험한 도구도 sentence의 도구 낱말은 그대로 남깁니다" in P
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("커터칼로 상자를 열어요.", ["커터칼로"]),
+    ("테이블을 행주로 닦고 바닥을 빗자루로 쓸어요.", ["행주로", "빗자루로"]),
+    ("마른 천으로 닦아요. 마른행주로 닦아요.", ["천으로", "마른행주로"]),
+    ("집게로 빵을 집어요.", ["집게로"]),
+    ("상자를 창고로 옮겨요.", []),       # 장소·방향은 도구가 아니다
+    ("앞으로 가요. 바로 해요. 따로 모아요.", []),
+    ("상자로 담아요. 손으로 집어요.", []),
+])
+def test_tool_words(text, expected):
+    assert dec.tool_words(text) == expected
+
+
+def _one(sentence, query, src=1, action="other"):
+    return {"sentence": sentence, "symbol_query": [query], "action_type": action, "safety_flags": [], "src": src}
+
+
+def test_dropped_tool_word_is_restored_to_the_single_step(monkeypatch):
+    _gpt(monkeypatch, {"task_title": "빵 담기", "job": "cafe", "steps": [_one("빵을 쟁반에 담아요.", "빵을 쟁반에 담다")]})
+    st = dec.decompose("집게로 빵을 쟁반에 담아요.", {}).steps
+    assert [s.sentence for s in st] == ["집게로 빵을 쟁반에 담아요."]
+    assert st[0].symbol_query == ["집게로 빵을 쟁반에 담다"] and st[0].split_check is False
+
+
+def test_tool_word_goes_after_condition_clause(monkeypatch):
+    _gpt(monkeypatch, {"task_title": "t", "job": "serving", "steps": [
+        _one("손님이 나가면 테이블을 닦아요.", "행주로 테이블을 닦다")]})
+    st = dec.decompose("손님이 나가면 행주로 테이블을 닦아요.", {}).steps
+    assert st[0].sentence == "손님이 나가면 행주로 테이블을 닦아요."
+    assert st[0].symbol_query == ["행주로 테이블을 닦다"]   # 검색어에 이미 있으면 그대로
+
+
+def test_tool_word_in_two_step_fragment_goes_to_its_action_and_is_flagged(monkeypatch):
+    _gpt(monkeypatch, {"task_title": "t", "job": "cleaning", "steps": [
+        _one("복도를 닦아요.", "복도를 닦다", action="clean"), _one("쓰레기통을 비워요.", "쓰레기통을 비우다", action="clean")]})
+    st = dec.decompose("걸레로 복도를 닦고 쓰레기통을 비워요.", {}).steps
+    assert [s.sentence for s in st] == ["걸레로 복도를 닦아요.", "쓰레기통을 비워요."]
+    assert st[0].split_check is True                       # 어느 동작의 도구인지 사람이 한 번 본다
+
+
+def test_kept_tool_word_is_not_duplicated_and_places_are_not_tools(monkeypatch):
+    _gpt(monkeypatch, {"task_title": "t", "job": "cleaning", "steps": [_one("테이블을 행주로 닦아요.", "테이블을 행주로 닦다")]})
+    assert [s.sentence for s in dec.decompose("행주로 테이블을 닦아요.", {}).steps] == ["테이블을 행주로 닦아요."]
+    _gpt(monkeypatch, {"task_title": "t", "job": "retail", "steps": [_one("상자를 옮겨요.", "상자를 옮기다")]})
+    assert [s.sentence for s in dec.decompose("상자를 창고로 옮겨요.", {}).steps] == ["상자를 옮겨요."]
+
+
+@pytest.mark.parametrize("title,n,expected", [
+    ("물 붓기·테이블 닦기", 2, "물 붓기·테이블 닦기"),            # 멀쩡하면 그대로
+    ("박스 뜯기·컵 진열·청소", 6, "박스 뜯기·컵 진열·청소"),
+    ("포장 준비", 1, "포장 준비"),
+    # 단계를 모두 늘어놓은 제목(35자, 6부분) → 앞 부분 + 마지막 부분(단계 6개면 3부분)
+    ("상자 열기·상품 놓기·상품 모으기·테이블 닦기·바닥 쓸기·손 씻기", 6, "상자 열기·상품 놓기·손 씻기"),
+    ("컵 씻기·컵 올리기·영수증 줍기·영수증 버리기", 4, "컵 씻기·영수증 버리기"),
+    ("아주 아주 긴 제목 하나로 된 이름이 스물다섯 자를 넘어요", 3, "아주 아주 긴 제목 하나로 된 이름이"),
+])
+def test_guard_title(title, n, expected):
+    out = dec.guard_title(title, n)
+    assert out == expected and len(out) <= 25
+
+
+def test_overlong_gpt_title_is_guarded_in_decompose(monkeypatch):
+    _gpt(monkeypatch, {"task_title": "컵 씻기·컵 올리기·영수증 줍기·영수증 버리기", "job": "cleaning", "steps": [
+        _one("컵을 씻어요.", "컵을 씻다", 1), _one("컵을 건조대에 올려요.", "컵을 건조대에 올리다", 1),
+        _one("영수증을 주워요.", "영수증을 줍다", 2), _one("영수증을 버려요.", "영수증을 버리다", 2)]})
+    r = dec.decompose("컵을 씻어서 건조대에 올려요. 떨어진 영수증을 주워서 버려요.", {})
+    assert r.task_title == "컵 씻기·영수증 버리기"
+
+
+@pytest.mark.parametrize("broken,fixed", [
+    ("컵 씻기·영수증 주우기", "컵 씻기·영수증 줍기"), ("친구 도우기", "친구 돕기"), ("물 부으기", "물 붓기"),
+    ("짐 실으기", "짐 싣기"), ("방송 들으기", "방송 듣기"), ("줄 이으기를 해요", "줄 잇기를 해요"),
+])
+def test_fix_irregular_wrong_nominal(broken, fixed):
+    assert step_split.broken_irregular(broken)
+    assert step_split.fix_irregular(broken) == fixed
+
+
+@pytest.mark.parametrize("text", ["줍기", "돕기", "눕기", "붓기", "젓기", "긋기", "잇기", "싣기", "듣기",
+                                  "영수증 줍기", "주우세요", "주우면", "들으면", "도우미", "누우세요"])
+def test_fix_irregular_never_touches_correct_nominal_or_verb_forms(text):
+    assert step_split.fix_irregular(text) == text and step_split.broken_irregular(text) == []

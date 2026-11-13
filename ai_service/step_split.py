@@ -1449,6 +1449,12 @@ _IRREGULAR_RE = re.compile(
     r"(?<![가-힣])(" + "|".join(_IRREGULAR_FIX) + r")(어|아|었|았|으(?=[세시면며니러려]))")
 
 
+# GPT가 명사형을 '-으기'처럼 잘못 만든 꼴('영수증 주우기' — 3a run3 제목). 명사형은 어간 + 기('줍기')다.
+# '주우'·'도우'처럼 활용 어간 뒤에 '기'가 오는 말은 국어에 없어(다른 낱말로 읽히지 않아) 바로 되돌린다.
+_NOMINAL_FIX = {v[2]: k for k, v in _IRREGULAR_FIX.items()}   # '주우' → '줍'
+_NOMINAL_RE = re.compile(r"(?<![가-힣])(" + "|".join(_NOMINAL_FIX) + r")기")
+
+
 def _irregular_sub(m: re.Match) -> str:
     a, past, eu = _IRREGULAR_FIX[m.group(1)]
     tail = m.group(2)
@@ -1458,12 +1464,14 @@ def _irregular_sub(m: re.Match) -> str:
 def fix_irregular(text: str) -> str:
     """GPT 단계 문장·제목의 깨진 불규칙 활용을 고친다('줍어요' → '주워요', '붓으세요' → '부으세요').
     표(_IRREGULAR_FIX)에 있는 어간만, 낱말 첫머리에서만 바꾼다. 따옴표 속도 바꾼다(근로자가 그대로 듣는다)."""
-    return _IRREGULAR_RE.sub(_irregular_sub, text or "")
+    text = _NOMINAL_RE.sub(lambda m: _NOMINAL_FIX[m.group(1)] + "기", text or "")
+    return _IRREGULAR_RE.sub(_irregular_sub, text)
 
 
 def broken_irregular(text: str) -> list[str]:
     """fix_irregular가 고칠 깨진 꼴 목록(검사·보고용)."""
-    return [m.group(0) for m in _IRREGULAR_RE.finditer(text or "")]
+    return ([m.group(0) for m in _NOMINAL_RE.finditer(text or "")]
+            + [m.group(0) for m in _IRREGULAR_RE.finditer(text or "")])
 
 
 def fix_polite(sentence: str) -> tuple[str, bool]:

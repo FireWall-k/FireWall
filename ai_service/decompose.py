@@ -526,6 +526,8 @@ def _build_from_llm(raw: dict, clauses: list[Clause] | None = None) -> Decompose
         if id(st) in bad_form and not step_split.fix_polite(st.sentence)[1]:
             st.split_check = True
     title = step_split.fix_irregular(str(raw.get("task_title") or steps[0].sentence))[:40]
+    if raw.get("task_title"):
+        title = guard_title(title, len(steps))
     job = str(raw.get("job") or "unknown")
     if job not in VALID_JOBS:
         job = "unknown"
@@ -646,6 +648,93 @@ def _keep_condition(mine: list[Step], clause: Clause, one: bool) -> None:
         first.sentence = f"{prefix} {first.sentence}"[:_MAX_SENTENCE]
 
 
+# 손에 드는 도구(이름 끝 글자로 본다: '마른행주'·'청소용걸레'도 도구). '-로'가 이 말로 끝나면 도구·수단으로 본다.
+# '창고로'·'앞으로'·'상자로'처럼 방향·장소·재료일 수 있는 말은 넣지 않는다(AAC frame.instrument에는 상자·컵·통도 있어
+# 그대로 쓰지 않았다). 3a 실제 GPT 확인 run3: temperature 0에서 '커터칼로 상자를 열어요' → '상자를 열어요.'.
+_HAND_TOOLS = (
+    "커터칼", "칼", "가위", "행주", "걸레", "대걸레", "밀대", "빗자루", "쓰레받기", "집게", "수세미", "스펀지",
+    "스폰지", "솔", "브러시", "먼지털이", "청소기", "분무기", "스퀴지", "천", "타월", "타올", "수건", "휴지",
+    "물티슈", "테이프", "드라이버", "망치", "렌치", "스패너", "드릴", "펜", "볼펜", "국자", "주걱", "숟가락",
+    "젓가락", "포크", "스캐너", "저울", "장갑", "손수레", "카트", "대차", "트롤리",
+)
+_TOOL_WORD_RE = re.compile(r"(?<![가-힣])([가-힣]+?)(으로|로)(?![가-힣])")
+
+
+def tool_words(text: str) -> list[str]:
+    """글 속 도구·수단 말('커터칼로', '마른 천으로'의 '천으로'). 순서대로, 겹침 없이."""
+    out: list[str] = []
+    for m in _TOOL_WORD_RE.finditer(text or ""):
+        noun, word = m.group(1), m.group(0)
+        if m.group(2) == "로" and noun.endswith("으"):
+            continue
+        if noun.endswith(_HAND_TOOLS) and word not in out:
+            out.append(word)
+    return out
+
+
+def _tool_noun(word: str) -> str:
+    return word[:-2] if word.endswith("으로") else word[:-1]
+
+
+def _put_tool(st: Step, word: str) -> None:
+    """도구 말을 단계 문장 앞(조건·때 절이 있으면 그 뒤)에 붙이고, 그림 검색어에도 없으면 첫 검색어 앞에 붙인다."""
+    prefix = step_split.condition_prefix(st.sentence.rstrip(".!?"))
+    if prefix and st.sentence.startswith(prefix):
+        rest = st.sentence[len(prefix):].lstrip()
+        st.sentence = f"{prefix} {word} {rest}"[:_MAX_SENTENCE]
+    else:
+        st.sentence = f"{word} {st.sentence}"[:_MAX_SENTENCE]
+    noun = _tool_noun(word)
+    if st.symbol_query and not any(noun in q for q in st.symbol_query):
+        old = st.symbol_query[0]
+        st.symbol_query = [f"{word} {old}"] + st.symbol_query[1:]
+        st.keywords = [Keyword(term=st.symbol_query[0], pos=k.pos) if k.term == old else k for k in st.keywords]
+
+
+def _keep_tool(mine: list[Step], clause: Clause) -> None:
+    """원문 조각의 도구 말('커터칼로')을 그 조각에서 나온 GPT 단계 문장이 모두 잃었으면 되살린다 — 근로자는 무엇으로
+    하는지 문장에서 봐야 한다(그림은 도구를 못 보여 줄 수 있다). 단계가 하나면 그 단계에, 여럿이면 원문에서 도구 말
+    뒤 그 동작까지의 글과 가장 많이 겹치는 단계에 붙이고 노란 줄을 켠다(어느 동작의 도구인지 규칙이 확실하지 않다)."""
+    for word in tool_words(clause.text):
+        noun = _tool_noun(word)
+        if any(noun in st.sentence for st in mine):
+            continue
+        if len(mine) == 1:
+            _put_tool(mine[0], word)
+            continue
+        after = clause.text[clause.text.index(word):]
+        cut = re.search(r"[가-힣]+(?:고|서|며|면서|뒤에|다음에)(?![가-힣])", after[len(word):])
+        segment = after[: len(word) + cut.end()] if cut else after
+        best = max(range(len(mine)), key=lambda i: (_overlap(mine[i], segment), -i))
+        _put_tool(mine[best], word)
+        mine[best].split_check = True
+
+
+# 직무 제목 가드(3a run3: 단계 6개가 모두 제목 부분이 되어 35자 — '상자 열기·상품 놓기·…·손 씻기').
+_MAX_TITLE = 25
+_TITLE_SPLIT_RE = re.compile(r"\s*[·,]\s*")
+
+
+def guard_title(title: str, n_steps: int) -> str:
+    """GPT 제목이 25자를 넘거나 부분('·'·','로 나눈 것)이 단계 수의 절반(최소 2)보다 많으면 줄인다.
+    앞 부분들과 마지막 부분을 남긴다(일의 시작과 끝) — 한도까지 앞에서부터, 마지막 부분은 늘 넣는다.
+    그래도 25자를 넘으면 25자 안의 낱말 경계에서 자른다. 멀쩡한 제목은 그대로다."""
+    title = (title or "").strip()
+    parts = [p for p in _TITLE_SPLIT_RE.split(title) if p]
+    limit = max(2, n_steps // 2)
+    if len(title) <= _MAX_TITLE and len(parts) <= limit:
+        return title
+    if len(parts) >= 2:
+        keep = parts[: max(1, min(limit, len(parts)) - 1)] + [parts[-1]]
+        while len(keep) > 2 and len("·".join(keep)) > _MAX_TITLE:
+            keep.pop(-2)
+        title = "·".join(keep)
+    if len(title) > _MAX_TITLE:
+        cut = title[:_MAX_TITLE]
+        title = cut[: cut.rfind(" ")] if " " in cut else cut
+    return title.strip(" ·,")
+
+
 def _reconcile(steps: list[Step], where: list[int], clauses: list[Clause]) -> list[Step]:
     """원문 조각마다 GPT 단계 수(g)와 규칙 동작 수(r)를 맞춰 본다.
 
@@ -681,6 +770,7 @@ def _reconcile(steps: list[Step], where: list[int], clauses: list[Clause]) -> li
             for st in mine:
                 st.split_check = not sure or not _grounded(st, clause.text)
             _keep_condition(mine, clause, g == r == 1)
+            _keep_tool(mine, clause)
         out.extend(mine)
         sentence_of.extend([clause.sentence] * len(mine))
     for st, si in zip(out, sentence_of):
