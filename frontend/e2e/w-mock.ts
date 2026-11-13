@@ -1,6 +1,6 @@
 import type { Page, Route } from "@playwright/test";
 
-// 새 근로자 화면(/w) e2e용 가짜 백엔드. 실제 백엔드·DB 없이 page.route로 API를 흉내 낸다.
+// 새 근로자 화면(/worker) e2e용 가짜 백엔드. 실제 백엔드·DB 없이 page.route로 API를 흉내 낸다.
 // 상태(MockState)를 테스트가 바꿔 '인터넷 끊김'·'선생님 확인' 같은 상황을 만든다.
 // 목 데이터 글자는 근로자 화면 금지어 검사(FORBIDDEN_PATTERNS)에 걸리지 않게 한국어 '~해요' 체만 쓴다.
 

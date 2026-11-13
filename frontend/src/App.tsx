@@ -6,10 +6,10 @@ import LoginPage from "./pages/LoginPage";
 import ManagerRoutes from "./manager/routes";
 import WorkerApp from "./worker/WorkerApp";
 
-/** 근로자 화면 첫 자리. 새 근로자 화면(/w)의 홈이다. */
-const WORKER_HOME = "/w/today";
+/** 근로자 화면 첫 자리. 새 근로자 화면(/worker)의 홈이다. */
+const WORKER_HOME = "/worker/today";
 /** 사업주 화면 첫 자리(2c 전까지는 옛 대시보드, contract §2.2). */
-const EMPLOYER_HOME = "/m";
+const EMPLOYER_HOME = "/manager";
 
 function RequireAuth({
   auth,
@@ -20,7 +20,7 @@ function RequireAuth({
   role?: Role;
   children: ReactNode;
 }) {
-  if (!auth) return <Navigate to={role === "employer" ? "/m/login" : "/"} replace />;
+  if (!auth) return <Navigate to={role === "employer" ? "/manager/login" : "/"} replace />;
   if (role && auth.role !== role) {
     return <Navigate to={auth.role === "worker" ? WORKER_HOME : EMPLOYER_HOME} replace />;
   }
@@ -31,6 +31,13 @@ function RequireAuth({
 function LegacyRedirect({ to }: { to: string }) {
   const { search, hash } = useLocation();
   return <Navigate to={`${to}${search}${hash}`} replace />;
+}
+
+/** 앞부분만 바뀐 주소 → 새 주소. '/w/job/1/step/2?x#y' → '/worker/job/1/step/2?x#y'. */
+function PrefixRedirect({ from, to }: { from: string; to: string }) {
+  const { pathname, search, hash } = useLocation();
+  const rest = pathname.startsWith(from) ? pathname.slice(from.length) : "";
+  return <Navigate to={`${to}${rest}${search}${hash}`} replace />;
 }
 
 function AppRoutes() {
@@ -60,7 +67,7 @@ function AppRoutes() {
 
   return (
     <Routes>
-      {/* 첫 화면: 로그인돼 있으면 각자 홈으로. 아니면 근로자 기기(사업장 코드가 저장된 기기)는 번호 키패드(/w)로,
+      {/* 첫 화면: 로그인돼 있으면 각자 홈으로. 아니면 근로자 기기(사업장 코드가 저장된 기기)는 번호 키패드(/worker)로,
           그 밖은 로그인 화면으로 간다. */}
       <Route
         path="/"
@@ -68,38 +75,37 @@ function AppRoutes() {
           auth ? (
             <Navigate to={home} replace />
           ) : getSavedWorkplaceCode() ? (
-            <Navigate to="/w" replace />
+            <Navigate to="/worker" replace />
           ) : (
             <LoginPage onLogin={setAuth} />
           )
         }
       />
       {/* 늘 로그인 화면을 보이는 주소. 근로자 기기에서 사업주가 로그인할 때, 키패드로 못 넣는 예전 긴 번호
-          (5자리 이상)로 들어갈 때 쓴다(/w의 [선생님용: 긴 번호로 들어가기] → /login?tab=worker). */}
+          (5자리 이상)로 들어갈 때 쓴다(/worker의 [선생님용: 긴 번호로 들어가기] → /login?tab=worker). */}
       <Route path="/login" element={auth ? <Navigate to={home} replace /> : <LoginPage onLogin={setAuth} />} />
       {/* 새 근로자 화면. 위 띠를 근로자 화면이 직접 그리므로 Shell로 감싸지 않는다. */}
-      <Route path="/w/*" element={<WorkerApp auth={auth} onLogin={setAuth} onLogout={handleLogout} />} />
+      <Route path="/worker/*" element={<WorkerApp auth={auth} onLogin={setAuth} onLogout={handleLogout} />} />
       {/* 새 사업주 로그인(명세 5.1). 로그인하면 사업주 홈으로 간다. */}
-      <Route path="/m/login" element={auth ? <Navigate to={home} replace /> : <LoginPage onLogin={setAuth} />} />
+      <Route path="/manager/login" element={auth ? <Navigate to={home} replace /> : <LoginPage onLogin={setAuth} />} />
       {/* 사업주 화면 전체. 주소는 manager/routes.tsx에만 더한다(contract §2.2). */}
       <Route
-        path="/m/*"
+        path="/manager/*"
         element={
           <RequireAuth auth={auth} role="employer">
             {auth && <ManagerRoutes displayName={auth.displayName} onLogout={handleLogout} />}
           </RequireAuth>
         }
       />
-      {/* 옛 사업주 주소는 새 주소로 넘긴다(2a-1). */}
-      <Route path="/manager" element={<LegacyRedirect to="/m/tasks/new" />} />
-      <Route path="/dashboard" element={<LegacyRedirect to="/m" />} />
-      <Route path="/workers" element={<LegacyRedirect to="/m/workers" />} />
-      {/* 옛 근로자 화면(/worker, WorkerPage)은 없앴다. 즐겨찾기한 기기도 새 근로자 화면으로 보낸다 — 옛 화면은
-          [도움]을 단계 기록(stuck)으로 보내 마지막 단계에서 도움만 눌러도 직무가 '다 함'이 됐다(명세 4.5, 1차 검증). */}
-      <Route path="/worker" element={<Navigate to="/w" replace />} />
-      <Route path="/admin/tasks" element={<LegacyRedirect to="/m/tasks/new" />} />
-      <Route path="/admin/dashboard" element={<LegacyRedirect to="/m" />} />
-      <Route path="/worker/*" element={<Navigate to="/w" replace />} />
+      {/* 짧은 옛 주소(/w, /m — 2026-11-13에 /worker, /manager로 바꿈)는 뒤 주소·?쿼리·#을 그대로 붙여 새 주소로 넘긴다.
+          이미 인쇄한 근로자 QR(/w?site=…)과 즐겨찾기, 예전 알림(/m#help)이 계속 열린다. */}
+      <Route path="/w/*" element={<PrefixRedirect from="/w" to="/worker" />} />
+      <Route path="/m/*" element={<PrefixRedirect from="/m" to="/manager" />} />
+      {/* 더 옛 사업주 주소도 새 주소로 넘긴다(2a-1). */}
+      <Route path="/dashboard" element={<LegacyRedirect to="/manager" />} />
+      <Route path="/workers" element={<LegacyRedirect to="/manager/workers" />} />
+      <Route path="/admin/tasks" element={<LegacyRedirect to="/manager/tasks/new" />} />
+      <Route path="/admin/dashboard" element={<LegacyRedirect to="/manager" />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

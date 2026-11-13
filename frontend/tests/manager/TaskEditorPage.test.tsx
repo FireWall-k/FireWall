@@ -25,7 +25,7 @@ function confirmed(s: EditorStep): EditorStep {
   return { ...s, picture_state: "confirmed", picture: s.picture ? { ...s.picture, source: "manual" } : null, task_updated_at: "2026-11-10T01:05:00" };
 }
 
-async function open(t = FOUR(), path = `/m/tasks/${t.id}`) {
+async function open(t = FOUR(), path = `/manager/tasks/${t.id}`) {
   m.getTask.mockResolvedValue(t);
   m.candidates.mockResolvedValue(candidatesFor(t));
   const user = userEvent.setup();
@@ -100,7 +100,7 @@ describe("그림 4상태", () => {
     m.getTask.mockResolvedValue(t);
     m.candidates.mockResolvedValue(cands);
     const user = userEvent.setup();
-    await renderAt(`/m/tasks/${t.id}`);
+    await renderAt(`/manager/tasks/${t.id}`);
     await screen.findByTestId("step-detail");
     await user.click(pick(4));
     const group = await within(detail()).findByRole("group", { name: "비슷한 그림을 찾았어요. 맞는 그림을 눌러 붙여요" });
@@ -128,7 +128,7 @@ describe("그림 4상태", () => {
     m.getTask.mockResolvedValue(t);
     m.candidates.mockResolvedValue(cands);
     const user = userEvent.setup();
-    await renderAt(`/m/tasks/${t.id}`);
+    await renderAt(`/manager/tasks/${t.id}`);
     await screen.findByTestId("step-detail");
     await user.click(pick(4));
     expect(within(detail()).getByTestId("none-box")).toBeInTheDocument();
@@ -148,7 +148,7 @@ describe("그림 4상태", () => {
     const t = FOUR();
     m.getTask.mockResolvedValue(t);
     const user = userEvent.setup();
-    await renderAt(`/m/tasks/${t.id}`);
+    await renderAt(`/manager/tasks/${t.id}`);
     await screen.findByTestId("step-detail");
     await user.click(pick(3));
     expect(await within(detail()).findByText(/후보를 불러오지 못했어요/)).toBeInTheDocument();
@@ -267,7 +267,7 @@ describe("확인 대기열 · 보내기 단추", () => {
   });
 
   it("?review=1이면 첫 확인 단계, ?step=이면 그 단계를 연다(목록 [다시 보내기]·홈 딥링크)", async () => {
-    await open(FOUR(), "/m/tasks/task-1?step=s4");
+    await open(FOUR(), "/manager/tasks/task-1?step=s4");
     expect(detail()).toHaveAttribute("data-step-id", "s4");
   });
 });

@@ -1,7 +1,7 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
 // 2d 시연 대본(tasks §7)을 실제 서버로 돈다(목킹 없음).
-// ① [근로자 추가] → 4자리 번호·인쇄 카드 ② 설정에서 QR ③ 휴대폰으로 /w?site= 열기 → 번호만 넣으면 들어감
+// ① [근로자 추가] → 4자리 번호·인쇄 카드 ② 설정에서 QR ③ 휴대폰으로 /worker?site= 열기 → 번호만 넣으면 들어감
 // ④ 화면 설정에서 말 속도 0.8 ⑤ 근로자 화면 목소리가 0.8로 느려짐(오디오 playbackRate 또는 브라우저 음성 rate).
 
 const API = process.env.REAL_API_BASE ?? "http://127.0.0.1:8100";
@@ -15,7 +15,7 @@ async function ok<T>(res: Awaited<ReturnType<APIRequestContext["get"]>>): Promis
 const auth = (t: string) => ({ Authorization: `Bearer ${t}` });
 
 test.describe("2d 관리 화면(실제 서버)", () => {
-  test("시연 대본: 근로자 추가 → QR 주소 → /w?site=로 번호만 넣고 들어감 → 말 속도 0.8 → 느려진 목소리", async ({
+  test("시연 대본: 근로자 추가 → QR 주소 → /worker?site=로 번호만 넣고 들어감 → 말 속도 0.8 → 느려진 목소리", async ({
     page,
     request,
     browser,
@@ -28,15 +28,15 @@ test.describe("2d 관리 화면(실제 서버)", () => {
     const employer = tok.token;
 
     // ① 사업주 로그인(화면) → 근로자 → [근로자 추가하기]
-    await page.goto("/m/login");
+    await page.goto("/manager/login");
     await page.getByLabel("아이디").fill(LOGIN);
     await page.getByLabel("비밀번호").fill(PASSWORD);
     await page.getByLabel("비밀번호").press("Enter");
-    await expect(page).toHaveURL(/\/m(\?|$)/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/manager(\?|$)/, { timeout: 15_000 });
     // 메뉴 '근로자'(390은 아래 탭바)
     const nav = (page.viewportSize()?.width ?? 0) < 768 ? page.getByTestId("mobile-tabbar") : page.getByTestId("sidebar");
     await nav.getByRole("link", { name: "근로자" }).click();
-    await expect(page).toHaveURL(/\/m\/workers$/);
+    await expect(page).toHaveURL(/\/manager\/workers$/);
     await page.getByRole("button", { name: "근로자 추가하기" }).click();
     await page.getByRole("dialog").getByLabel(/이름/).fill(name);
     await page.getByRole("dialog").getByRole("button", { name: "추가하기" }).click();
@@ -54,14 +54,14 @@ test.describe("2d 관리 화면(실제 서버)", () => {
     const workerId = workers.find((w) => w.display_name === name)!.id;
 
     // ② 설정 → 기기 연결 주소·QR
-    await page.goto("/m/settings");
+    await page.goto("/manager/settings");
     await expect(page.getByTestId("qr-code").first()).toBeVisible();
     const link = (await page.getByTestId("device-link").textContent())!.trim();
     const wp = await ok<{ workplace_code: string; device_link: string }>(
       await request.get(`${API}/api/workplace`, { headers: auth(employer) }),
     );
     expect(link).toBe(wp.device_link);
-    expect(link.endsWith(`/w?site=${wp.workplace_code}`)).toBe(true);
+    expect(link.endsWith(`/worker?site=${wp.workplace_code}`)).toBe(true);
 
     // 그림 붙인 2단계 직무를 만들어 보낸다(API).
     const task = await ok<{ id: string; steps: { id: string; sentence: string; symbol_url: string | null; picture_state?: string }[] }>(
@@ -92,7 +92,7 @@ test.describe("2d 관리 화면(실제 서버)", () => {
     );
 
     // ④ 근로자 상세 → 화면 설정 → 말 속도 '느리게 0.8'
-    await page.goto(`/m/workers/${workerId}`);
+    await page.goto(`/manager/workers/${workerId}`);
     await page.getByRole("tab", { name: "화면 설정" }).click();
     await page.getByText("느리게 0.8").click();
     await expect(page.getByText("저장했어요").first()).toBeVisible();
@@ -105,7 +105,7 @@ test.describe("2d 관리 화면(실제 서버)", () => {
       })
       .toBe(0.8);
 
-    // ③ 새 기기(휴대폰)에서 /w?site=CODE → 가게 코드 입력 없이 번호만
+    // ③ 새 기기(휴대폰)에서 /worker?site=CODE → 가게 코드 입력 없이 번호만
     const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ko-KR", isMobile: true, hasTouch: true });
     const w = await phone.newPage();
     await w.addInitScript(() => {
@@ -128,19 +128,19 @@ test.describe("2d 관리 화면(실제 서버)", () => {
       }
     });
     const base = new URL(page.url()).origin;
-    await w.goto(`${base}/w?site=${wp.workplace_code}`);
+    await w.goto(`${base}/worker?site=${wp.workplace_code}`);
     await w.getByTestId("keypad").waitFor();
     expect(new URL(w.url()).search).toBe("");
     for (const d of code) await w.getByRole("button", { name: d, exact: true }).click();
-    await expect(w).toHaveURL(/\/w\/today$/, { timeout: 15_000 });
+    await expect(w).toHaveURL(/\/worker\/today$/, { timeout: 15_000 });
     // 로그인 전 화면(번호 넣기 등)은 아직 근로자 설정을 모르므로 기본 0.9로 읽는다. 로그인해 오늘 할 일에 온 뒤부터 센다.
     await w.evaluate(() => {
       (window as unknown as { __rates: number[] }).__rates.length = 0;
     });
     await w.getByTestId("job-card").first().click();
-    await expect(w).toHaveURL(new RegExp(`/w/job/${asg[0].id}$`), { timeout: 15_000 });
+    await expect(w).toHaveURL(new RegExp(`/worker/job/${asg[0].id}$`), { timeout: 15_000 });
     await w.getByRole("button", { name: "시작하기" }).click();
-    await expect(w).toHaveURL(new RegExp(`/w/job/${asg[0].id}/step/1$`), { timeout: 15_000 });
+    await expect(w).toHaveURL(new RegExp(`/worker/job/${asg[0].id}/step/1$`), { timeout: 15_000 });
     // ⑤ 목소리 속도: 자동 읽기가 막히면 [듣기]를 누른다.
     await w.waitForTimeout(800);
     let rates = await w.evaluate(() => (window as unknown as { __rates: number[] }).__rates);

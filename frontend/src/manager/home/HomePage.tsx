@@ -1,6 +1,6 @@
-// 홈 · 오늘 현황(/m, 명세 5.2). 위에서 아래로:
+// 홈 · 오늘 현황(/manager, 명세 5.2). 위에서 아래로:
 // 1) 제목 줄: '오늘 현황' + '11월 8일 일요일 · 마지막 갱신 14:02:31'(끊기면 '연결이 잠시 끊겼어요 · 마지막 갱신 …') + [새 직무]
-// 2) 도움 요청 띠는 틀(AppShell)이 모든 /m 화면 맨 위에 그린다(HelpBand).
+// 2) 도움 요청 띠는 틀(AppShell)이 모든 /manager 화면 맨 위에 그린다(HelpBand).
 // 3) 요약 카드 4칸(누르면 아래 표를 걸러 봄) 4) 근로자 실시간 표(행을 누르면 오늘 기록 서랍) 5) 고치면 좋은 단계
 // 6) 새 사업장이면 시작 점검표.
 // 현황은 LiveProvider(5초 폴링 하나)를 읽는다. 이 화면이 따로 부르는 것은 코칭 카드(처음 한 번)와 서랍의 타임라인뿐이다.
@@ -85,7 +85,7 @@ export default function HomePage() {
             {statusLine}
           </p>
         </div>
-        <Link to="/m/tasks/new" className={cn(buttonClasses("primary", "md"), "hidden md:inline-flex")}>
+        <Link to="/manager/tasks/new" className={cn(buttonClasses("primary", "md"), "hidden md:inline-flex")}>
           <Plus size={16} strokeWidth={2} aria-hidden="true" />
           {home.newTask}
         </Link>

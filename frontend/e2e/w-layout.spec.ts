@@ -36,7 +36,7 @@ test.describe("번호 넣기: 작은·가로 휴대폰에서도 키패드 4줄�
     test(name, async ({ page }) => {
       await pairedDevice(page);
       await page.setViewportSize(vp);
-      await page.goto("/w");
+      await page.goto("/worker");
       await page.getByTestId("keypad").waitFor();
       await expectAllKeysVisible(page, `${name} 처음`);
       // 틀린 번호 세 번 → 안내가 세 줄로 늘어도 키패드는 그대로 보인다.
@@ -67,7 +67,7 @@ async function expectNotClippedTop(page: Page, label: string) {
 test.describe("완료 화면: '정말 잘했어요'가 맨 위·가장 크게·근로자 초록", () => {
   test("다음 일이 있을 때와 모두 끝났을 때 둘 다", async ({ page }) => {
     await loginAsWorker(page);
-    await page.goto("/w/job/asg-2/done");
+    await page.goto("/worker/job/asg-2/done");
     const praise = page.getByTestId("done-praise");
     await expect(praise).toHaveText("정말 잘했어요");
     const st = await praise.evaluate((el) => {
@@ -95,10 +95,10 @@ test.describe("완료 화면: '정말 잘했어요'가 맨 위·가장 크게·�
     test(`${name}: 위가 잘리지 않는다(완료·시작 화면)`, async ({ page }) => {
       await loginAsWorker(page);
       await page.setViewportSize(vp);
-      await page.goto("/w/job/asg-2/done");
+      await page.goto("/worker/job/asg-2/done");
       await page.getByTestId("job-done-screen").waitFor();
       await expectNotClippedTop(page, `${name} 완료`);
-      await page.goto("/w/job/asg-1");
+      await page.goto("/worker/job/asg-1");
       await page.getByTestId("job-start-screen").waitFor();
       await expectNotClippedTop(page, `${name} 시작`);
       // 대표 그림은 정사각형(가로 휴대폰에서 300×156 빈 띠가 생기던 문제).
@@ -111,7 +111,7 @@ test.describe("완료 화면: '정말 잘했어요'가 맨 위·가장 크게·�
 test("가로 휴대폰 844×390: 긴 문장 + 도움 띠에서도 문장 글자는 24px 이상", async ({ page }) => {
   await loginAsWorker(page);
   await page.setViewportSize({ width: 844, height: 390 });
-  await page.goto("/w/job/asg-1/step/3");
+  await page.goto("/worker/job/asg-1/step/3");
   const sentence = page.getByTestId("step-sentence");
   await expect(sentence).toBeVisible();
   const fs = () => sentence.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
@@ -128,7 +128,7 @@ test("가로 휴대폰 844×390: 긴 문장 + 도움 띠에서도 문장 글자�
 
 test("도움 띠 [취소]는 소리 [멈춤]과 다른 그림을 쓴다", async ({ page }) => {
   await loginAsWorker(page);
-  await page.goto("/w/job/asg-1/step/1");
+  await page.goto("/worker/job/asg-1/step/1");
   await page.getByTestId("help-button").click();
   const cancel = page.getByTestId("help-band").getByRole("button", { name: "취소" });
   await expect(cancel).toBeVisible();
@@ -140,25 +140,25 @@ test("도움 띠 [취소]는 소리 [멈춤]과 다른 그림을 쓴다", async 
 test("옛 주소 /worker(·/worker/아무거나)는 새 근로자 화면으로 간다", async ({ page }) => {
   await loginAsWorker(page);
   await page.goto("/worker");
-  await expect(page).toHaveURL(/\/w\/today$/);
+  await expect(page).toHaveURL(/\/worker\/today$/);
   await page.goto("/worker/t1");
-  await expect(page).toHaveURL(/\/w\/today$/);
+  await expect(page).toHaveURL(/\/worker\/today$/);
   await expect(page.getByTestId("today-screen")).toBeVisible();
 });
 
 test("보낸 뒤 인터넷이 끊긴 채 새로고침해도, 보낸 단계는 다 한 것으로 남는다", async ({ page }) => {
   await loginAsWorker(page);
-  await page.goto("/w/today");
+  await page.goto("/worker/today");
   await page.getByTestId("today-screen").waitFor();
   // 오늘 할 일을 받아 둔 뒤(기기 저장본: 아직 안 함) 서버에 기록을 보낸다.
-  await page.goto("/w/job/asg-2/step/1");
+  await page.goto("/worker/job/asg-2/step/1");
   await page.getByRole("button", { name: "다 했어요" }).click();
   await expect(page.getByTestId("job-done-screen")).toBeVisible();
   await expect.poll(() => state.logs.length).toBe(1);
   await expect.poll(() => page.evaluate(() => localStorage.getItem("jobcard_outbox_v1:w1"))).toBeNull();
   // 끊긴 채 새로고침: 기기 저장본으로 그린다.
   state.offline = true;
-  await page.goto("/w/today");
+  await page.goto("/worker/today");
   await page.getByTestId("today-screen").waitFor();
   const card = page.getByTestId("job-card").filter({ hasText: "매장 바닥 청소" });
   await expect(card).toContainText("다 했어요");
@@ -167,9 +167,9 @@ test("보낸 뒤 인터넷이 끊긴 채 새로고침해도, 보낸 단계는 �
 
 test("두 단계를 보낸 뒤 끊긴 채 새로고침하면, 시작 화면이 3단계부터 이어서 하자고 한다", async ({ page }) => {
   await loginAsWorker(page);
-  await page.goto("/w/today");
+  await page.goto("/worker/today");
   await page.getByTestId("today-screen").waitFor();
-  await page.goto("/w/job/asg-1/step/1");
+  await page.goto("/worker/job/asg-1/step/1");
   await page.getByRole("button", { name: "다 했어요" }).click();
   await expect(page).toHaveURL(/step\/2$/);
   await page.getByRole("button", { name: "다 했어요" }).click();
@@ -177,14 +177,14 @@ test("두 단계를 보낸 뒤 끊긴 채 새로고침하면, 시작 화면이 3
   await expect.poll(() => state.logs.length).toBe(2);
   await expect.poll(() => page.evaluate(() => localStorage.getItem("jobcard_outbox_v1:w1"))).toBeNull();
   state.offline = true;
-  await page.goto("/w/job/asg-1");
+  await page.goto("/worker/job/asg-1");
   await expect(page.getByTestId("job-start-screen")).toContainText("3단계부터 이어서 해요");
 });
 
 test("홈 인사는 360px에서도 말줄임 없이 보인다", async ({ page }) => {
   await loginAsWorker(page);
   await page.setViewportSize({ width: 360, height: 640 });
-  await page.goto("/w/today");
+  await page.goto("/worker/today");
   const h1 = page.getByTestId("today-screen").getByRole("heading", { level: 1 }).first();
   await expect(h1).toHaveText("김민수 님, 안녕하세요");
   const cut = await h1.evaluate((el) => el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1);
@@ -193,7 +193,7 @@ test("홈 인사는 360px에서도 말줄임 없이 보인다", async ({ page })
 
 test("새 화면 axe: 시작·완료·했던 일에 심각 위반이 없다", async ({ page }) => {
   await loginAsWorker(page);
-  for (const url of ["/w/job/asg-1", "/w/job/asg-2/done", "/w/history"]) {
+  for (const url of ["/worker/job/asg-1", "/worker/job/asg-2/done", "/worker/history"]) {
     await page.goto(url);
     await page.waitForTimeout(300);
     const results = await new AxeBuilder({ page }).analyze();
@@ -229,7 +229,7 @@ test.describe("가로 휴대폰: 단계 화면은 두 칸, 문장 첫 줄과 [�
       await loginAsWorker(page);
       await page.setViewportSize(vp);
       for (const n of [3, 2]) {
-        await page.goto(`/w/job/asg-1/step/${n}`);
+        await page.goto(`/worker/job/asg-1/step/${n}`);
         await page.getByTestId("step-sentence").waitFor();
         await page.waitForTimeout(300); // 단계 넘김 움직임(200ms)이 끝난 뒤 잰다
         // 두 칸: 문장은 그림 오른쪽에 있다.
@@ -270,7 +270,7 @@ test("가로 휴대폰 홈: 강조된 다음 카드의 '시작하기'와 두 번
   await loginAsWorker(page);
   for (const vp of [{ width: 844, height: 390 }, { width: 640, height: 360 }]) {
     await page.setViewportSize(vp);
-    await page.goto("/w/today");
+    await page.goto("/worker/today");
     await page.getByTestId("today-screen").waitFor();
     const footerTop = await page.evaluate(() => document.querySelector('[data-testid="today-screen"] footer')!.getBoundingClientRect().top);
     const cards = page.getByTestId("job-card");
@@ -290,7 +290,7 @@ test("작은 화면에서도 번호 틀림 안내와 도움 띠 글씨는 24px, 
     await mockWorkerBackend(page, state);
     await pairedDevice(page);
     await page.setViewportSize(vp);
-    await page.goto("/w");
+    await page.goto("/worker");
     await page.getByTestId("keypad").waitFor();
     expect(await page.title()).toBe("잡카드");
     for (const d of ["1", "2", "3", "5"]) await page.getByRole("button", { name: d, exact: true }).click();
@@ -302,7 +302,7 @@ test("작은 화면에서도 번호 틀림 안내와 도움 띠 글씨는 24px, 
   }
   await loginAsWorker(page);
   await page.setViewportSize({ width: 360, height: 640 });
-  await page.goto("/w/job/asg-1/step/1");
+  await page.goto("/worker/job/asg-1/step/1");
   await page.getByTestId("help-button").click();
   const fs = await page.getByTestId("help-band-text").evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
   expect(fs).toBe(24);
@@ -334,7 +334,7 @@ test.describe("130% 글자 가로 휴대폰 + 도움 띠: 문장 칸에 한 줄 
       await bigText(page);
       await loginAsWorker(page);
       await page.setViewportSize(vp);
-      await page.goto("/w/job/asg-1/step/1");
+      await page.goto("/worker/job/asg-1/step/1");
       await page.getByTestId("step-sentence").waitFor();
       await page.getByTestId("help-button").click();
       await expect(page.getByTestId("help-band")).toContainText("선생님을 불렀어요");
@@ -366,7 +366,7 @@ test("130% 글자 360·390 폭: 위 띠 [나가기]와 [도와주세요]·[불�
   await loginAsWorker(page);
   for (const vp of [{ width: 360, height: 640 }, { width: 360, height: 560 }, { width: 390, height: 740 }]) {
     await page.setViewportSize(vp);
-    await page.goto("/w/job/asg-1/step/1");
+    await page.goto("/worker/job/asg-1/step/1");
     await page.getByTestId("step-sentence").waitFor();
     const exit = page.getByRole("button", { name: "나가기" });
     const help = page.getByTestId("help-button");
@@ -401,7 +401,7 @@ test("390폭 세로 + 도움 띠(100%·130%): 문장 첫 줄과 [듣기]가 흐�
     for (const vp of [{ width: 390, height: 740 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(vp);
       for (const n of [1, 3]) {
-        await page.goto(`/w/job/asg-1/step/${n}`);
+        await page.goto(`/worker/job/asg-1/step/${n}`);
         await page.getByTestId("step-sentence").waitFor();
         await page.getByTestId("help-button").click();
         await expect(page.getByTestId("help-band")).toContainText("선생님을 불렀어요");
@@ -434,7 +434,7 @@ test("넘치는 시작·완료 화면도 axe 심각 위반이 없다(390×740·�
     await loginAsWorker(page);
     for (const vp of [{ width: 390, height: 740 }, { width: 844, height: 390 }, { width: 640, height: 360 }]) {
       await page.setViewportSize(vp);
-      for (const url of ["/w/job/asg-1", "/w/job/asg-2/done"]) {
+      for (const url of ["/worker/job/asg-1", "/worker/job/asg-2/done"]) {
         await page.goto(url);
         await page.waitForTimeout(400);
         const results = await new AxeBuilder({ page }).analyze();
@@ -449,7 +449,7 @@ test("완료 화면 640×360 130%: 아래 막대 두 버튼이 화면 안에 있
   await bigText(page);
   await loginAsWorker(page);
   await page.setViewportSize({ width: 640, height: 360 });
-  await page.goto("/w/job/asg-2/done");
+  await page.goto("/worker/job/asg-2/done");
   await page.getByTestId("job-done-screen").waitFor();
   const next = (await page.getByRole("button", { name: "다음 일 하기" }).boundingBox())!;
   const replay = (await page.getByRole("button", { name: "방금 일 다시 보기" }).boundingBox())!;
@@ -465,7 +465,7 @@ test("번호 넣기 360×560 130%: 세 번 틀려도 선생님용 링크가 키�
   await bigText(page);
   await pairedDevice(page);
   await page.setViewportSize({ width: 360, height: 560 });
-  await page.goto("/w");
+  await page.goto("/worker");
   await page.getByTestId("keypad").waitFor();
   for (let k = 0; k < 3; k++) {
     for (const d of ["1", "2", "3", "5"]) await page.getByRole("button", { name: d, exact: true }).click();
@@ -517,7 +517,7 @@ test.describe("가로 휴대폰 + 도움 띠: 위 띠의 진행 표시가 잘리
             makeLongJob(n, at - 1);
             state.helpOffline = phase === "failed";
             await page.setViewportSize(vp);
-            await page.goto(`/w/job/asg-1/step/${at}`);
+            await page.goto(`/worker/job/asg-1/step/${at}`);
             await page.getByTestId("step-sentence").waitFor();
             await page.getByTestId("help-button").click();
             await expect(page.getByTestId("help-band")).toContainText(phase === "sent" ? "선생님을 불렀어요" : "아직 못 불렀어요");
@@ -571,7 +571,7 @@ test.describe("세로 좁은 휴대폰 130% + 도움 띠: 띠 글이 좁은 칸�
           state.helpOffline = phase === "failed";
           state.jobs[0].done_step_ids = state.jobs[0].steps.slice(0, at - 1).map((s) => s.id);
           await page.setViewportSize(vp);
-          await page.goto(`/w/job/asg-1/step/${at}`);
+          await page.goto(`/worker/job/asg-1/step/${at}`);
           await page.getByTestId("step-sentence").waitFor();
           await page.getByTestId("help-button").click();
           await expect(page.getByTestId("help-band")).toContainText(phase === "sent" ? "선생님을 불렀어요" : "아직 못 불렀어요");

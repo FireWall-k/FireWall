@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- 시험 틀(목·렌더 도우미)이라 화면 새로고침과 상관없다 */
-// 편집기·새 직무 화면 시험 틀: manager/api/editor·send·tasks를 통째로 목으로 바꾸고 한 Route(/m/tasks/:id)로 그린다.
+// 편집기·새 직무 화면 시험 틀: manager/api/editor·send·tasks를 통째로 목으로 바꾸고 한 Route(/manager/tasks/:id)로 그린다.
 import { vi } from "vitest";
 import { render } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -56,9 +56,9 @@ export async function renderAt(path: string) {
     <ToastProvider>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="/m/tasks/:id" element={<TaskWorkspace key="ws" />} />
-          <Route path="/m/tasks" element={<p>직무 목록</p>} />
-          <Route path="/m" element={<p>홈 화면</p>} />
+          <Route path="/manager/tasks/:id" element={<TaskWorkspace key="ws" />} />
+          <Route path="/manager/tasks" element={<p>직무 목록</p>} />
+          <Route path="/manager" element={<p>홈 화면</p>} />
         </Routes>
         <Where />
       </MemoryRouter>

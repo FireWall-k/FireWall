@@ -29,5 +29,5 @@ export function editorLink(taskId: string, sourceStepId: string | null | undefin
   if (sourceStepId) q.set("step", sourceStepId);
   if (fix) q.set("fix", fix);
   const s = q.toString();
-  return `/m/tasks/${encodeURIComponent(taskId)}${s ? `?${s}` : ""}`;
+  return `/manager/tasks/${encodeURIComponent(taskId)}${s ? `?${s}` : ""}`;
 }

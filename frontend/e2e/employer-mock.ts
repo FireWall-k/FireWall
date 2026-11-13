@@ -1,6 +1,6 @@
 import type { Page, Route } from "@playwright/test";
 
-// 사업주 화면(/m) e2e용 가짜 백엔드(page.route). 실제 백엔드·DB·GPT 없이 contract §2.1 모양을 흉내 낸다.
+// 사업주 화면(/manager) e2e용 가짜 백엔드(page.route). 실제 백엔드·DB·GPT 없이 contract §2.1 모양을 흉내 낸다.
 // GET /api/employer/tasks(backend/task_list.py)와 같은 모양을 준다. 실제 서버 흐름은 e2e-real/task-list.spec.ts가 본다.
 // 목에 없는 요청은 599로 돌려 목 누락이 실패로 드러나게 한다(설정의 e2e-api.invalid와 같은 뜻).
 
@@ -248,7 +248,7 @@ export async function mockEmployer(
       return json({
         workplace_code: "AB12CD",
         org_name: "테스트 사업장",
-        device_link: "http://localhost:5173/w?site=AB12CD",
+        device_link: "http://localhost:5173/worker?site=AB12CD",
         teacher_title: "선생님",
         worker_defaults: {},
       });
@@ -281,8 +281,8 @@ export async function mockEmployer(
 }
 
 /** 저장된 사업주 로그인을 넣고 그 주소로 간다. */
-export async function loginEmployer(page: Page, path = "/m/tasks") {
-  await page.goto("/m/login");
+export async function loginEmployer(page: Page, path = "/manager/tasks") {
+  await page.goto("/manager/login");
   await page.evaluate(() => {
     localStorage.setItem("jobcard_token", "e2e-employer-token");
     localStorage.setItem("jobcard_role", "employer");

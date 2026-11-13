@@ -1,4 +1,4 @@
-// 직무 목록(/m/tasks, 명세 5.3, contract §2.1, tasks §3.3).
+// 직무 목록(/manager/tasks, 명세 5.3, contract §2.1, tasks §3.3).
 // - 걸러보기 5개(전체·초안·확인 필요·보냄·보관)와 개수. 걸러보기는 서로 겹친다(서버가 셈, 화면은 그대로 보임).
 // - 제목 검색(잠깐 멈추면 찾음). 걸러보기와 검색어는 주소(?filter=&q=)에 남아 뒤로 가기·새로고침에도 그대로다.
 // - 열: 대표 그림 32 + 제목, 단계 수, 상태 배지('확인 필요 n'·'고친 내용 안 보냄'), 받은 사람(아바타 3 + '+n'), 고친 날.
@@ -271,7 +271,7 @@ export default function TaskListPage() {
 
   function menuItems(row: TaskSummaryOut): MenuItem[] {
     const icon = (I: typeof Copy) => <I size={16} strokeWidth={2} aria-hidden="true" />;
-    const editPath = `/m/tasks/${encodeURIComponent(row.id)}`;
+    const editPath = `/manager/tasks/${encodeURIComponent(row.id)}`;
     const edit: MenuItem = { id: "edit", label: taskMenu.edit, icon: icon(PencilLine), onSelect: () => navigate(editPath) };
     // 다시 보내기(contract §3.6): 확인할 것이 남았으면 보내기 대신 그 직무 편집기의 첫 확인 단계로 간다.
     const resend: MenuItem | null = row.current_version_no
@@ -317,7 +317,7 @@ export default function TaskListPage() {
               </span>
             ) : (
               <Link
-                to={`/m/tasks/${encodeURIComponent(r.id)}`}
+                to={`/manager/tasks/${encodeURIComponent(r.id)}`}
                 className="truncate font-semibold text-ink-900 underline-offset-2 hover:underline"
                 title={r.title}
               >
@@ -417,13 +417,13 @@ export default function TaskListPage() {
         description={taskList.emptyBody}
         actions={
           <>
-            <Link to="/m/tasks/new" className={buttonClasses("primary", "md")}>
+            <Link to="/manager/tasks/new" className={buttonClasses("primary", "md")}>
               <Plus size={16} strokeWidth={2} aria-hidden="true" />
               {taskList.emptyCreate}
             </Link>
             {/* [예시로 만들어 보기]: 새 직무 화면을 예시 지시문으로 채워 연다(옛 ManagerPage가 ?example=1을 읽음).
                 아이콘은 '✦ 자동'과 헷갈리는 반짝이(Sparkles) 말고 Lightbulb. */}
-            <Link to="/m/tasks/new?example=1" className={buttonClasses("secondary", "md")}>
+            <Link to="/manager/tasks/new?example=1" className={buttonClasses("secondary", "md")}>
               <Lightbulb size={16} strokeWidth={2} aria-hidden="true" />
               {taskList.emptyExample}
             </Link>
@@ -453,7 +453,7 @@ export default function TaskListPage() {
     <div className="flex flex-col gap-5">
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-ui-xl text-ink-900">{taskList.title}</h1>
-        <Link to="/m/tasks/new" className={buttonClasses("primary", "md")}>
+        <Link to="/manager/tasks/new" className={buttonClasses("primary", "md")}>
           <Plus size={16} strokeWidth={2} aria-hidden="true" />
           {taskList.newTask}
         </Link>
@@ -546,14 +546,14 @@ export default function TaskListPage() {
         onGoToStep={(stepId) => {
           const id = sendFor?.id;
           setSendFor(null);
-          if (id) navigate(`/m/tasks/${encodeURIComponent(id)}?step=${encodeURIComponent(stepId)}`);
+          if (id) navigate(`/manager/tasks/${encodeURIComponent(id)}?step=${encodeURIComponent(stepId)}`);
         }}
         onSent={(result: SendResult) => {
           setSendFor(null);
           toast.show({
             tone: "success",
             message: sendSheet.sentMessage(result.results.length),
-            action: { label: sendSheet.viewStatus, onClick: () => navigate("/m") },
+            action: { label: sendSheet.viewStatus, onClick: () => navigate("/manager") },
           });
           reload();
         }}

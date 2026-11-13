@@ -1,4 +1,4 @@
-// (2b-2) 편집기 휴대폰 미리보기 칸(명세 5.6): /m/preview/:taskId를 iframe(폭 360, 0.82 틀)으로 띄우고,
+// (2b-2) 편집기 휴대폰 미리보기 칸(명세 5.6): /manager/preview/:taskId를 iframe(폭 360, 0.82 틀)으로 띄우고,
 // 아래에 [‹ 이전][다음 ›][처음부터 재생]과 지금 단계 경고 배지를 둔다. 단계 이동은 iframe과 메시지로 주고받는다.
 // 편집하면(version이 바뀌면) iframe에 다시 불러오라고 알린다.
 import { useEffect, useRef, useState } from "react";
@@ -68,7 +68,7 @@ export default function PreviewPanel({ taskId, version, onClose, bare = false }:
         <iframe
           ref={frame}
           title={copy.frameTitle}
-          src={`/m/preview/${encodeURIComponent(taskId)}`}
+          src={`/manager/preview/${encodeURIComponent(taskId)}`}
           data-testid="phone-preview-frame"
           width={PREVIEW_WIDTH}
           height={PREVIEW_HEIGHT}

@@ -1,6 +1,6 @@
-// 설정(/m/settings, 명세 5.8, contract §6.2).
+// 설정(/manager/settings, 명세 5.8, contract §6.2).
 // - 사업장: 이름(저장), 사업장 코드 + [코드 복사하기].
-// - 기기 연결: QR, /w?site=… 주소 + [주소 복사하기], [인쇄용 카드 만들기].
+// - 기기 연결: QR, /worker?site=… 주소 + [주소 복사하기], [인쇄용 카드 만들기].
 // - 근로자 화면 기본값(명세 4.12, 새 근로자에게만), 호칭(한글 1~6자, 근로자 화면 미리보기).
 // - 알림: '도움 알림 받기'(웹 푸시는 2c에서 연결). 계정: 이름·로그아웃. 선생님 모드 PIN은 3차라 숨긴다.
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";

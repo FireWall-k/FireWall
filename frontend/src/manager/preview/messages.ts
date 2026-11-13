@@ -1,4 +1,4 @@
-// (2b-2) 편집기(바깥)와 미리보기 iframe(/m/preview/:taskId) 사이 메시지. 같은 출처만 받는다.
+// (2b-2) 편집기(바깥)와 미리보기 iframe(/manager/preview/:taskId) 사이 메시지. 같은 출처만 받는다.
 import type { PreviewWarning } from "./warnings";
 
 export const PREVIEW_MSG = "jobcard-preview";

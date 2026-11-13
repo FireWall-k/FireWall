@@ -1,5 +1,5 @@
-// 했던 일(/w/history, 명세 4.8). 날짜 묶음('오늘'·'어제'·'11월 6일 목요일', ISO 날짜는 쓰지 않음) + 홈의 JobCard.
-// 상태 글: '다 했어요' / '하다가 멈췄어요'. 카드를 누르면 /w/history/:aid — StepPlayer review(도와주세요 없음,
+// 했던 일(/worker/history, 명세 4.8). 날짜 묶음('오늘'·'어제'·'11월 6일 목요일', ISO 날짜는 쓰지 않음) + 홈의 JobCard.
+// 상태 글: '다 했어요' / '하다가 멈췄어요'. 카드를 누르면 /worker/history/:aid — StepPlayer review(도와주세요 없음,
 // [이전][다음], 소리 자동 재생 끔).
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -119,7 +119,7 @@ export function HistoryScreen() {
       top={
         <TopBar
           left={
-            <SecondaryAction icon={IconHome} onPress={() => navigate("/w/today")} className="!gap-2 !px-3">
+            <SecondaryAction icon={IconHome} onPress={() => navigate("/worker/today")} className="!gap-2 !px-3">
               {COPY.btn.home}
             </SecondaryAction>
           }
@@ -132,7 +132,7 @@ export function HistoryScreen() {
         <div role="status" className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
           <Illustration kind="empty" size={200} className="small:size-40" />
           <p className="text-worker-lg font-bold">{COPY.history.empty}</p>
-          <PrimaryAction icon={IconHome} onPress={() => navigate("/w/today")} className="w-full max-w-sm">
+          <PrimaryAction icon={IconHome} onPress={() => navigate("/worker/today")} className="w-full max-w-sm">
             {COPY.btn.home}
           </PrimaryAction>
         </div>
@@ -151,7 +151,7 @@ export function HistoryScreen() {
                   doneIds={doneIds}
                   statusText={statusText}
                   done={done}
-                  onPress={() => navigate(`/w/history/${c.assignment_id}`)}
+                  onPress={() => navigate(`/worker/history/${c.assignment_id}`)}
                 />
               );
             })}
@@ -178,7 +178,7 @@ export function HistoryDetailScreen() {
     return (
       <WorkerScreen top={<TopBar />} mainClassName="items-center gap-4 text-center [justify-content:safe_center]">
         <p className="text-worker-lg font-bold">{COPY.history.empty}</p>
-        <PrimaryAction icon={IconRetry} onPress={() => navigate("/w/history")} className="w-full max-w-sm">
+        <PrimaryAction icon={IconRetry} onPress={() => navigate("/worker/history")} className="w-full max-w-sm">
           {COPY.btn.history}
         </PrimaryAction>
       </WorkerScreen>
@@ -198,7 +198,7 @@ export function HistoryDetailScreen() {
       offline={!online}
       onPrev={() => setIndex(Math.max(0, i - 1))}
       onNext={() => setIndex(Math.min(card.steps.length - 1, i + 1))}
-      onExit={() => navigate("/w/history")}
+      onExit={() => navigate("/worker/history")}
       onMediaError={onMediaError}
     />
   );

@@ -99,8 +99,8 @@ function renderAt(path: string, v: WorkerSessionValue) {
     <MemoryRouter initialEntries={[path]}>
       <SessionContext.Provider value={v}>
         <Routes>
-          <Route path="/w/history" element={<HistoryScreen />} />
-          <Route path="/w/history/:aid" element={<HistoryDetailScreen />} />
+          <Route path="/worker/history" element={<HistoryScreen />} />
+          <Route path="/worker/history/:aid" element={<HistoryDetailScreen />} />
         </Routes>
       </SessionContext.Provider>
     </MemoryRouter>,
@@ -110,7 +110,7 @@ function renderAt(path: string, v: WorkerSessionValue) {
 describe("했던 일 3차: 대기열·이 화면에서 끝낸 단계를 서버 기록과 합친다", () => {
   it("마지막 [다 했어요] 기록이 아직 대기열에 있어도 카드는 '다 했어요'", async () => {
     vi.spyOn(workerApi, "history").mockResolvedValue([card]);
-    renderAt("/w/history", value(["s2"]));
+    renderAt("/worker/history", value(["s2"]));
     expect(await screen.findByText("컵 씻기")).toBeTruthy();
     expect(screen.getByText(COPY.card.done)).toBeTruthy();
     expect(screen.queryByText(COPY.card.stopped)).toBeNull();
@@ -118,14 +118,14 @@ describe("했던 일 3차: 대기열·이 화면에서 끝낸 단계를 서버 �
 
   it("대기열이 비어 있으면 서버 기록대로 '하다가 멈췄어요'", async () => {
     vi.spyOn(workerApi, "history").mockResolvedValue([card]);
-    renderAt("/w/history", value([]));
+    renderAt("/worker/history", value([]));
     expect(await screen.findByText(COPY.card.stopped)).toBeTruthy();
   });
 
   it("인터넷이 끊겨도 받아 둔 오늘 할 일로 방금 끝낸 일을 다시 볼 수 있다", async () => {
     vi.spyOn(workerApi, "history").mockRejectedValue(new NetworkError());
     const job = normalizeJob({ assignment_id: "a1", task_id: "t1", task_title: "컵 씻기", steps, done_step_ids: ["s1"] });
-    renderAt("/w/history/a1", value(["s2"], [job]));
+    renderAt("/worker/history/a1", value(["s2"], [job]));
     expect(await screen.findByText("1단계 문장")).toBeTruthy();
   });
 });

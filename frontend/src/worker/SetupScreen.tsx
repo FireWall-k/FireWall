@@ -1,4 +1,4 @@
-// 기기 연결(/w/setup, 명세 3.2). 사업주(호칭은 사업장 설정)가 근로자 기기에 가게 코드를 한 번 넣어 둔다 — 그 뒤 근로자는
+// 기기 연결(/worker/setup, 명세 3.2). 사업주(호칭은 사업장 설정)가 근로자 기기에 가게 코드를 한 번 넣어 둔다 — 그 뒤 근로자는
 // 자기 번호 4자리만 누른다. 로그인 전에 가게 코드가 맞는지 알려 주는 공개 API는 없다(코드 엿보기 방지):
 // 저장만 하고, 맞는지는 근로자가 처음 들어갈 때 알 수 있다.
 // 이 화면도 근로자 기기에 뜨므로 근로자 화면 말투(금지어 없음)를 지킨다.
@@ -28,7 +28,7 @@ export default function SetupScreen() {
     // 다른 가게로 바꾸면 예전 가게 이름이 남아 보이지 않게 지운다(이름은 첫 로그인 때 다시 받는다).
     if (code !== saved) clearSavedWorkplaceCode();
     saveWorkplaceCode(code);
-    navigate("/w", { replace: true });
+    navigate("/worker", { replace: true });
   }
 
   return (
@@ -38,7 +38,7 @@ export default function SetupScreen() {
         <TopBar
           left={
             saved ? (
-              <SecondaryAction icon={IconExit} onPress={() => navigate("/w")} className="!gap-2 !px-3">
+              <SecondaryAction icon={IconExit} onPress={() => navigate("/worker")} className="!gap-2 !px-3">
                 {SETUP_COPY.back}
               </SecondaryAction>
             ) : undefined

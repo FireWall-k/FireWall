@@ -134,7 +134,7 @@ export default function LiveTable({ workers, now, onOpen, empty }: LiveTableProp
             label={copy.rowMenu(w.display_name)}
             items={[
               { id: "timeline", label: copy.openTimeline, onSelect: () => onOpen(w) },
-              { id: "worker", label: copy.workerInfo, onSelect: () => navigate("/m/workers") },
+              { id: "worker", label: copy.workerInfo, onSelect: () => navigate("/manager/workers") },
             ]}
             trigger={(p) => (
               <button {...p} type="button" aria-label={copy.rowMenu(w.display_name)} className={iconButtonClasses("ghost")}>

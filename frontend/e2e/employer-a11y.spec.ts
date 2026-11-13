@@ -25,7 +25,7 @@ for (const width of [1440, 390] as const) {
 
     test("로그인 화면: axe 심각 0·button-name 0", async ({ page }) => {
       await mockEmployer(page);
-      await page.goto("/m/login");
+      await page.goto("/manager/login");
       await expect(page.getByRole("button", { name: "로그인", exact: true })).toBeVisible();
       const r = await axe(page);
       expect(r.serious).toEqual([]);
@@ -34,7 +34,7 @@ for (const width of [1440, 390] as const) {
 
     test("직무 목록: axe 심각 0·button-name 0(도움 띠·행 메뉴 포함)", async ({ page }) => {
       await mockEmployer(page);
-      await loginEmployer(page, "/m/tasks");
+      await loginEmployer(page, "/manager/tasks");
       await expect(page.getByText("컵 씻기")).toBeVisible();
       await expect(page.getByTestId("help-band")).toBeVisible();
       let r = await axe(page);
@@ -49,9 +49,9 @@ for (const width of [1440, 390] as const) {
     });
 
     // 2b-1: 새 직무 화면(NewTaskPage). 라벨은 '어떤 일을 시킬까요?'(옛 '직무 내용'). 1회차 검증에서 옛 화면 기준으로 늘 실패했다.
-    test("새 직무(/m/tasks/new?example=1): axe 심각 0·button-name 0, 'AI' 글자 0", async ({ page }) => {
+    test("새 직무(/manager/tasks/new?example=1): axe 심각 0·button-name 0, 'AI' 글자 0", async ({ page }) => {
       await mockEmployer(page);
-      await loginEmployer(page, "/m/tasks/new?example=1");
+      await loginEmployer(page, "/manager/tasks/new?example=1");
       await expect(page.getByLabel("어떤 일을 시킬까요?")).toHaveValue(/손을 깨끗이 씻어요/);
       await expect(page.getByTestId("example-note")).toBeVisible();
       await expect(page.getByTestId("help-band")).toBeVisible();
@@ -63,7 +63,7 @@ for (const width of [1440, 390] as const) {
 
     test("새 직무 나눈 뒤('이렇게 나눴어요'): axe 심각 0·button-name 0, 'AI' 글자 0", async ({ page }) => {
       await mockEditor(page);
-      await loginEmployer(page, "/m/tasks/new");
+      await loginEmployer(page, "/manager/tasks/new");
       await page.getByLabel("어떤 일을 시킬까요?").fill(FIXED_SENTENCE);
       await page.getByRole("button", { name: "단계로 나누기" }).click();
       await expect(page.getByRole("heading", { name: /이렇게 나눴어요/ })).toBeVisible();
@@ -79,14 +79,14 @@ for (const width of [1440, 390] as const) {
     test("편집기 상세 4상태: axe 심각 0·button-name 0", async ({ page }) => {
       const t = fourStateDraft();
       await mockEditor(page, { tasks: [t] });
-      await loginEmployer(page, `/m/tasks/${t.id}`);
+      await loginEmployer(page, `/manager/tasks/${t.id}`);
       await expect(page.getByTestId("task-editor")).toBeVisible();
       await page.waitForTimeout(400);
       let r = await axe(page);
       expect(r.serious).toEqual([]);
       for (let n = 1; n <= 4; n++) {
         if (width === 390) {
-          await page.goto(`/m/tasks/${t.id}`);
+          await page.goto(`/manager/tasks/${t.id}`);
           await expect(page.getByTestId("task-editor")).toBeVisible();
         }
         await page.getByTestId(`step-row-${n}`).getByRole("button").first().click();
@@ -101,7 +101,7 @@ for (const width of [1440, 390] as const) {
     test("그림 한눈에(확인 전·후)와 보내기 시트: axe 심각 0", async ({ page }) => {
       const t = fixedDraft();
       await mockEditor(page, { tasks: [t] });
-      await loginEmployer(page, `/m/tasks/${t.id}`);
+      await loginEmployer(page, `/manager/tasks/${t.id}`);
       await expect(page.getByTestId("task-editor")).toBeVisible();
       await page.getByRole("button", { name: "그림 한눈에" }).first().click();
       await expect(page.getByRole("heading", { name: "그림 한눈에 보기" })).toBeVisible();
@@ -121,14 +121,14 @@ for (const width of [1440, 390] as const) {
 
     test("직무 목록 빈 상태: axe 심각 0", async ({ page }) => {
       await mockEmployer(page, { tasks: [] });
-      await loginEmployer(page, "/m/tasks");
+      await loginEmployer(page, "/manager/tasks");
       await expect(page.getByText("아직 만든 직무가 없어요")).toBeVisible();
       expect((await axe(page)).serious).toEqual([]);
       // [예시로 만들어 보기] → 예시로 채운 새 직무 화면
       // 키보드로 누르면 링크가 사라지므로 초점이 body로 빠지지 않고 본문(main)으로 간다(1회차 검증).
       await page.getByRole("link", { name: "예시로 만들어 보기" }).focus();
       await page.keyboard.press("Enter");
-      await expect(page).toHaveURL(/\/m\/tasks\/new\?example=1$/);
+      await expect(page).toHaveURL(/\/manager\/tasks\/new\?example=1$/);
       await expect(page.getByLabel("업종")).toHaveValue("카페");
       await expect.poll(() => page.evaluate(() => document.activeElement?.id ?? "")).toBe("main");
       await page.keyboard.press("Tab");
@@ -140,7 +140,7 @@ for (const width of [1440, 390] as const) {
 test("보관 걸러보기의 완전히 지우기 창: axe 심각 0", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockEmployer(page);
-  await loginEmployer(page, "/m/tasks?filter=archived");
+  await loginEmployer(page, "/manager/tasks?filter=archived");
   await page.getByRole("button", { name: "옛 창고 정리 메뉴" }).click();
   await page.getByRole("menuitem", { name: "완전히 지우기" }).click();
   await expect(page.getByRole("alertdialog")).toBeVisible();
@@ -160,7 +160,7 @@ async function archiveRow(page: Page, title: string) {
 test("토스트 [닫기](X)를 키보드로 누르면 초점이 body로 사라지지 않는다", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockEmployer(page);
-  await loginEmployer(page, "/m/tasks");
+  await loginEmployer(page, "/manager/tasks");
   await archiveRow(page, "앞치마 입기");
   const close = page.locator("[data-toast-layer] [role=status]").first().getByRole("button", { name: "닫기" });
   await close.focus();
@@ -172,7 +172,7 @@ test("토스트 [닫기](X)를 키보드로 누르면 초점이 body로 사라�
 test("키보드로 누른 [실행 취소]가 서버 오류로 실패해도 초점이 body로 빠지지 않는다", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   const m = await mockEmployer(page);
-  await loginEmployer(page, "/m/tasks");
+  await loginEmployer(page, "/manager/tasks");
   await archiveRow(page, "컵 씻기");
   m.failPaths.add("/api/tasks/t1/unarchive");
   await page.getByRole("button", { name: "실행 취소" }).focus();
@@ -190,7 +190,7 @@ test("완전히 지우기를 처리하는 동안에도 초점이 창 안에 있�
     await new Promise((r) => setTimeout(r, 2_000));
     await route.fallback();
   });
-  await loginEmployer(page, "/m/tasks?filter=archived");
+  await loginEmployer(page, "/manager/tasks?filter=archived");
   await page.getByRole("button", { name: "옛 창고 정리 메뉴" }).click();
   await page.getByRole("menuitem", { name: "완전히 지우기" }).click();
   const dialog = page.getByRole("alertdialog");
@@ -208,7 +208,7 @@ test("완전히 지우기를 처리하는 동안에도 초점이 창 안에 있�
 test("390폭: 위험 창이 열린 동안 토스트는 창 아래로 내려가고(inert) 지워지는 것 목록을 가리지 않는다", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await mockEmployer(page);
-  await loginEmployer(page, "/m/tasks");
+  await loginEmployer(page, "/manager/tasks");
   await archiveRow(page, "앞치마 입기");
   await page.getByRole("tab", { name: /보관/ }).click();
   await page.getByRole("button", { name: "옛 창고 정리 메뉴" }).click();
@@ -231,7 +231,7 @@ test("390폭: 위험 창이 열린 동안 토스트는 창 아래로 내려가�
 test("보관 → '보관' 탭 → [실행 취소]: 목록이 불러오는 중에 멈추지 않는다", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockEmployer(page);
-  await loginEmployer(page, "/m/tasks");
+  await loginEmployer(page, "/manager/tasks");
   await archiveRow(page, "앞치마 입기");
   await page.getByRole("tab", { name: /보관/ }).click();
   await expect(page).toHaveURL(/filter=archived/);
@@ -249,7 +249,7 @@ test("보관 요청이 끝나기 전에 '초안' 탭을 누르면 끝난 뒤에�
     await new Promise((r) => setTimeout(r, 1_500));
     await route.fallback();
   });
-  await loginEmployer(page, "/m/tasks");
+  await loginEmployer(page, "/manager/tasks");
   await page.getByRole("button", { name: "앞치마 입기 메뉴" }).click();
   await page.getByRole("menuitem", { name: "보관하기" }).click();
   await page.getByRole("tab", { name: /초안/ }).click();

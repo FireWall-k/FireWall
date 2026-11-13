@@ -52,7 +52,7 @@ export default function TopBar({ displayName, onLogout }: TopBarProps) {
           onSelect: () => void togglePush(),
         }]
       : []),
-    { id: "settings", label: nav.settings, icon: <Settings size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(() => navigate("/m/settings")) },
+    { id: "settings", label: nav.settings, icon: <Settings size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(() => navigate("/manager/settings")) },
     { id: "logout", label: shell.logout, icon: <LogOut size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(onLogout) },
   ];
 
@@ -83,7 +83,7 @@ export default function TopBar({ displayName, onLogout }: TopBarProps) {
         </ol>
       </nav>
 
-      <Link to="/m/tasks/new" className={buttonClasses("primary", "md")}>
+      <Link to="/manager/tasks/new" className={buttonClasses("primary", "md")}>
         <Plus size={16} strokeWidth={2} aria-hidden="true" />
         {nav.newTask}
       </Link>

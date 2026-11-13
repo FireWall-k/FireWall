@@ -1,4 +1,4 @@
-// 직무 시작(/w/job/:aid, 명세 4.3). 대표 그림·'컵 씻기를 시작해요'·'4단계예요'·진행 점 + [시작하기].
+// 직무 시작(/worker/job/:aid, 명세 4.3). 대표 그림·'컵 씻기를 시작해요'·'4단계예요'·진행 점 + [시작하기].
 // [시작하기] 누름이 브라우저의 소리 잠금을 풀고 화면 꺼짐 방지를 켠다(명세 3.5-3).
 // 하다 만 일이면 '3단계부터 이어서 해요' + [이어서 하기](주), 그 위 24px에 [처음부터 하기](보조).
 import { Navigate, useNavigate, useParams } from "react-router-dom";
@@ -18,7 +18,7 @@ export default function JobStartScreen() {
   const { jobs, progressOf } = useWorkerSession();
   const { band } = useBand();
   const job = jobs.find((j) => j.assignment_id === aid);
-  if (!job || job.steps.length === 0) return <Navigate to="/w/today" replace />;
+  if (!job || job.steps.length === 0) return <Navigate to="/worker/today" replace />;
 
   const p = progressOf(job);
   const resuming = p.status === "in_progress" && p.resumeIndex < job.steps.length;
@@ -27,7 +27,7 @@ export default function JobStartScreen() {
     // 이 누름 안에서 소리·화면 꺼짐 방지를 푼다(브라우저는 사용자 누름이 있어야 허락한다).
     unlockAudio();
     void acquireWakeLock();
-    navigate(`/w/job/${job.assignment_id}/step/${n}`);
+    navigate(`/worker/job/${job.assignment_id}/step/${n}`);
   };
 
   return (
@@ -36,7 +36,7 @@ export default function JobStartScreen() {
       top={
         <TopBar
           left={
-            <SecondaryAction icon={IconExit} onPress={() => navigate("/w/today")} className="!gap-2 !px-3">
+            <SecondaryAction icon={IconExit} onPress={() => navigate("/worker/today")} className="!gap-2 !px-3">
               {COPY.btn.exit}
             </SecondaryAction>
           }

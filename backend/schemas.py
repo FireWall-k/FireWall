@@ -594,7 +594,7 @@ class TaskSummaryOut(BaseModel):
     title: str
     status: str
     created_at: datetime
-    # (2a-1) 보관함에 있는지. 옛 대시보드(/m)가 보관한 직무에 [보관하기]를 다시 띄우지 않으려고 더한다(필드 추가만).
+    # (2a-1) 보관함에 있는지. 옛 대시보드(/manager)가 보관한 직무에 [보관하기]를 다시 띄우지 않으려고 더한다(필드 추가만).
     archived: bool = False
 
 
@@ -656,7 +656,7 @@ class WorkplaceOut(BaseModel):
     """사업주 화면에 보여 줄 사업장 코드(근로자 기기에 한 번 입력해 둔다)."""
     workplace_code: str
     org_name: str
-    # (2d) 기기 연결 QR·주소: PUBLIC_FRONTEND_URL + /w?site=CODE. /w가 기기에 사업장 코드를 저장한다.
+    # (2d) 기기 연결 QR·주소: PUBLIC_FRONTEND_URL + /worker?site=CODE. /worker가 기기에 사업장 코드를 저장한다.
     device_link: str = ""
     # (2d) 근로자 화면에서 사업주를 부르는 호칭(기본 '선생님').
     teacher_title: str = "선생님"

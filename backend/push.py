@@ -2,7 +2,7 @@
 
 - 키: VAPID_PUBLIC_KEY(공개 키, base64url), VAPID_PRIVATE_KEY_FILE(개인 키 PEM 파일 경로), VAPID_SUBJECT(연락처,
   기본 mailto). 공개 키나 개인 키 파일이 없으면 enabled=false이고 아무것도 보내지 않는다. 키는 manage.py vapid-keys로 만든다.
-- 내용: 제목 '잡카드', 내용 '도움 요청이 있어요'(근로자 이름 없음 — 잠금 화면에 뜬다), 누르면 /m#help. 문자 메시지는 없다.
+- 내용: 제목 '잡카드', 내용 '도움 요청이 있어요'(근로자 이름 없음 — 잠금 화면에 뜬다), 누르면 /manager#help. 문자 메시지는 없다.
 - 보내기는 요청 처리 밖(작은 스레드 풀)에서 한다. 도움 생성은 푸시 결과와 상관없이 늘 201이다.
   사업장마다 한 번에 하나만 돈다. 도는 중에 또 부르면 '한 번 더'만 표시하고 끝난 뒤 한 번 더 돈다 — 한 사업장의
   느린 구독이 풀을 독차지해 다른 사업장 푸시를 늦추지 못하게 한다. 구독 하나는 연결 3초·읽기 5초, 한 번 도는 데
@@ -47,7 +47,7 @@ router = APIRouter()
 
 TITLE = "잡카드"
 BODY_HELP = "도움 요청이 있어요"
-URL_HELP = "/m#help"
+URL_HELP = "/manager#help"
 TTL_SEC = 300
 # requests의 (연결, 읽기) 시간 제한. 읽기는 받을 때마다 다시 세므로 한 번 도는 전체 상한(ROUND_BUDGET_SEC)도 둔다.
 TIMEOUT_SEC = (3, 5)

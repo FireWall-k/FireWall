@@ -1,8 +1,8 @@
-// 로그인(명세 5.1, R12). /m/login·/login·/ 이 함께 쓴다.
+// 로그인(명세 5.1, R12). /manager/login·/login·/ 이 함께 쓴다.
 // - 768 이상: 좌우 반반. 왼쪽 paper-100 패널(잡카드 로고 Gmarket Sans 28 · 소개 문구 · 단계 카드 예시 3장), 오른쪽 400 폼.
 // - 768 미만(390 휴대폰): 왼쪽 패널을 위쪽 120 띠로 접는다.
 // - form이라 Enter로 제출되고, 라벨은 눈에 보인다(KWCAG 7.3.2). [로그인]은 44 moss-600.
-// - 사업주/근로자 탭: 근로자 탭은 /w 키패드로 못 넣는 예전 긴 번호용 우회로다(/login?tab=worker).
+// - 사업주/근로자 탭: 근로자 탭은 /worker 키패드로 못 넣는 예전 긴 번호용 우회로다(/login?tab=worker).
 import { useEffect, useState, type FormEvent } from "react";
 import { GlassWater, Shirt, SoapDispenserDroplet, type LucideIcon } from "lucide-react";
 import { auth, type AuthState } from "../api";
@@ -12,7 +12,7 @@ import { login as copy } from "../manager/copy";
 
 type LoginTab = "employer" | "worker";
 
-// /login?tab=worker로 오면 근로자 탭을 연다(/w 키패드로 못 넣는 예전 긴 번호용 우회로).
+// /login?tab=worker로 오면 근로자 탭을 연다(/worker 키패드로 못 넣는 예전 긴 번호용 우회로).
 function initialTab(): LoginTab {
   try {
     return new URLSearchParams(window.location.search).get("tab") === "worker" ? "worker" : "employer";
@@ -227,11 +227,11 @@ export default function LoginPage({ onLogin }: { onLogin: (a: AuthState) => void
             </Button>
           </form>
 
-          {/* 근로자는 번호 키패드 화면(/w)으로. Router 밖에서도 렌더되도록(테스트) 일반 링크를 쓴다. */}
+          {/* 근로자는 번호 키패드 화면(/worker)으로. Router 밖에서도 렌더되도록(테스트) 일반 링크를 쓴다. */}
           <p className="mt-6 text-center text-ui-base text-ink-700">
             {copy.workerQuestion}{" "}
             <a
-              href="/w"
+              href="/worker"
               className="inline-flex min-h-control items-center font-semibold text-info-700 underline underline-offset-2 coarse:min-h-control-coarse"
             >
               {copy.workerLink}

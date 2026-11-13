@@ -254,7 +254,7 @@ export function WorkerSession({ token, onLogout, children }: { token: string; on
     leaving.current = true;
     const finish = () => {
       onLogout();
-      navigate("/w", { replace: true });
+      navigate("/worker", { replace: true });
     };
     if (!outbox || outbox.size === 0) return finish();
     let done = false;

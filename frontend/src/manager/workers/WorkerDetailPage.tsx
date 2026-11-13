@@ -1,4 +1,4 @@
-// 근로자 상세(/m/workers/:id, 명세 5.7). 탭 4개: 현황 · 화면 설정 · 접속 코드 · 동의·개인정보.
+// 근로자 상세(/manager/workers/:id, 명세 5.7). 탭 4개: 현황 · 화면 설정 · 접속 코드 · 동의·개인정보.
 // 고른 탭은 주소(?tab=)에 남아 새로고침·뒤로 가기에도 그대로다. 단건 조회 API가 없어 목록에서 찾는다.
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -64,7 +64,7 @@ export default function WorkerDetailPage() {
     return (
       <div className="flex flex-col gap-5">
         <h1 className="text-ui-xl text-ink-900">{workerDetail.notFound}</h1>
-        <Link to="/m/workers" className="text-ui-base font-semibold text-moss-600 underline">
+        <Link to="/manager/workers" className="text-ui-base font-semibold text-moss-600 underline">
           {workerDetail.back}
         </Link>
       </div>
@@ -80,7 +80,7 @@ export default function WorkerDetailPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <Link to="/m/workers" className="inline-flex w-fit items-center gap-1 text-ui-sm font-semibold text-ink-700 hover:text-ink-900 coarse:min-h-control-coarse">
+      <Link to="/manager/workers" className="inline-flex w-fit items-center gap-1 text-ui-sm font-semibold text-ink-700 hover:text-ink-900 coarse:min-h-control-coarse">
         <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
         {workerDetail.back}
       </Link>
@@ -114,7 +114,7 @@ export default function WorkerDetailPage() {
       <DeleteWorkerDialog
         worker={deleting ? worker : null}
         onClose={() => setDeleting(false)}
-        onDeleted={() => navigate("/m/workers", { replace: true })}
+        onDeleted={() => navigate("/manager/workers", { replace: true })}
       />
     </div>
   );

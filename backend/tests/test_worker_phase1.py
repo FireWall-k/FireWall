@@ -1152,7 +1152,7 @@ def test_device_token_for_other_workplace_or_forged_is_ignored(client, other_emp
 
 
 def test_four_digit_code_cannot_be_prefix_of_longer_code(client, employer_token, monkeypatch):
-    """/w 키패드는 4번째 숫자에서 바로 보낸다: '1234'(데모)가 있으면 '123456'을 만들 수 없고, 그 반대도."""
+    """/worker 키패드는 4번째 숫자에서 바로 보낸다: '1234'(데모)가 있으면 '123456'을 만들 수 없고, 그 반대도."""
     r = client.post("/api/workers", json={"display_name": "앞자리", "access_code": "123456"},
                     headers=auth(employer_token))
     assert r.status_code == 409 and "앞 4자리" in r.json()["detail"]

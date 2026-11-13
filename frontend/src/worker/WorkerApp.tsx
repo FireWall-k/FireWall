@@ -1,12 +1,12 @@
-// 근로자 화면(/w/*, 명세 3.2). 근로자가 머무는 곳은 홈(/w/today)과 단계 화면 두 곳뿐이다.
-//   /w                     번호 넣기(연결 안 된 기기면 '연결 안 됨' 화면)
-//   /w/setup               기기 연결(사업주가 함)
-//   /w/today               오늘 할 일
-//   /w/job/:aid            직무 시작
-//   /w/job/:aid/step/:n    단계(주소에 단계 번호 → 새로고침해도 그 자리)
-//   /w/job/:aid/done       직무 완료
-//   /w/history(/:aid)      했던 일 / 다시 보기
-// 쉼 화면(/w/job/:aid/rest)은 묶음 규칙(열린 질문 8)이 정해지면 넣는다.
+// 근로자 화면(/worker/*, 명세 3.2). 근로자가 머무는 곳은 홈(/worker/today)과 단계 화면 두 곳뿐이다.
+//   /worker                     번호 넣기(연결 안 된 기기면 '연결 안 됨' 화면)
+//   /worker/setup               기기 연결(사업주가 함)
+//   /worker/today               오늘 할 일
+//   /worker/job/:aid            직무 시작
+//   /worker/job/:aid/step/:n    단계(주소에 단계 번호 → 새로고침해도 그 자리)
+//   /worker/job/:aid/done       직무 완료
+//   /worker/history(/:aid)      했던 일 / 다시 보기
+// 쉼 화면(/worker/job/:aid/rest)은 묶음 규칙(열린 질문 8)이 정해지면 넣는다.
 import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import type { AuthState } from "../api";
@@ -41,7 +41,7 @@ export default function WorkerApp({ auth, onLogin, onLogout }: WorkerAppProps) {
   const isWorker = auth?.role === "worker";
   const location = useLocation();
   const navigate = useNavigate();
-  // (2d) 기기 연결 주소 /w?site=CODE: 첫 그리기 전에 사업장 코드를 저장한다(번호 넣기 화면이 그 값을 바로 읽게).
+  // (2d) 기기 연결 주소 /worker?site=CODE: 첫 그리기 전에 사업장 코드를 저장한다(번호 넣기 화면이 그 값을 바로 읽게).
   // 저장된 코드와 다르면 예전 가게 이름·호칭을 지운다(applySiteCode). 그 뒤 주소에서 site를 뺀다(replace).
   const [siteParam] = useState(() => {
     const site = new URLSearchParams(location.search).get("site");
@@ -68,7 +68,7 @@ export default function WorkerApp({ auth, onLogin, onLogout }: WorkerAppProps) {
 
   return (
     <Routes>
-      <Route index element={isWorker ? <Navigate to="/w/today" replace /> : <EntryScreen onLogin={onLogin} />} />
+      <Route index element={isWorker ? <Navigate to="/worker/today" replace /> : <EntryScreen onLogin={onLogin} />} />
       <Route path="setup" element={<SetupScreen />} />
       <Route
         path="*"
@@ -84,12 +84,12 @@ export default function WorkerApp({ auth, onLogin, onLogout }: WorkerAppProps) {
                 <Route path="job/:aid/done" element={<JobDoneScreen />} />
                 <Route path="history" element={<HistoryScreen />} />
                 <Route path="history/:aid" element={<HistoryDetailScreen />} />
-                <Route path="*" element={<Navigate to="/w/today" replace />} />
+                <Route path="*" element={<Navigate to="/worker/today" replace />} />
               </Routes>
               </TeacherTitleSync>
             </WorkerSession>
           ) : (
-            <Navigate to="/w" replace />
+            <Navigate to="/worker" replace />
           )
         }
       />

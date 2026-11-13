@@ -76,7 +76,7 @@ for (const [sizeName, vp] of SIZES) {
       test("번호 넣기(키패드)", async ({ page }) => {
         await mockWorkerBackend(page, newState());
         await pairedDevice(page);
-        await page.goto("/w");
+        await page.goto("/worker");
         await page.getByTestId("keypad").waitFor();
         await shot(page, `keypad-${tag}.png`);
       });
@@ -84,7 +84,7 @@ for (const [sizeName, vp] of SIZES) {
       test("오늘 할 일", async ({ page }) => {
         await mockWorkerBackend(page, newState());
         await loginAsWorker(page);
-        await page.goto("/w/today");
+        await page.goto("/worker/today");
         await page.getByTestId("today-screen").waitFor();
         await shot(page, `today-${tag}.png`);
       });
@@ -92,7 +92,7 @@ for (const [sizeName, vp] of SIZES) {
       test("시작", async ({ page }) => {
         await mockWorkerBackend(page, newState());
         await loginAsWorker(page);
-        await page.goto("/w/job/asg-1");
+        await page.goto("/worker/job/asg-1");
         await page.getByTestId("job-start-screen").waitFor();
         await shot(page, `start-${tag}.png`);
       });
@@ -100,10 +100,10 @@ for (const [sizeName, vp] of SIZES) {
       test("단계(띠 없음) 짧은 문장·긴 문장", async ({ page }) => {
         await mockWorkerBackend(page, newState());
         await loginAsWorker(page);
-        await page.goto("/w/job/asg-1/step/1");
+        await page.goto("/worker/job/asg-1/step/1");
         await page.getByTestId("step-player").waitFor();
         await shot(page, `step-${tag}.png`, { refit: true });
-        await page.goto("/w/job/asg-1/step/3");
+        await page.goto("/worker/job/asg-1/step/3");
         await page.getByTestId("step-player").waitFor();
         await shot(page, `step-long-${tag}.png`, { refit: true });
       });
@@ -111,7 +111,7 @@ for (const [sizeName, vp] of SIZES) {
       test("완료", async ({ page }) => {
         await mockWorkerBackend(page, newState());
         await loginAsWorker(page);
-        await page.goto("/w/job/asg-2/done");
+        await page.goto("/worker/job/asg-2/done");
         await page.getByTestId("job-done-screen").waitFor();
         await shot(page, `done-${tag}.png`);
       });
@@ -121,7 +121,7 @@ for (const [sizeName, vp] of SIZES) {
         await page.clock.setFixedTime(new Date("2026-11-09T10:00:00"));
         await mockWorkerBackend(page, { ...newState(), historyDate: "2026-11-09" });
         await loginAsWorker(page);
-        await page.goto("/w/history");
+        await page.goto("/worker/history");
         await page.getByTestId("history-screen").waitFor();
         await shot(page, `history-${tag}.png`);
       });

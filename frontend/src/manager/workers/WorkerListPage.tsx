@@ -1,4 +1,4 @@
-// 근로자 목록(/m/workers, 명세 5.7, contract §6.2).
+// 근로자 목록(/manager/workers, 명세 5.7, contract §6.2).
 // - 열: 이름, 오늘 상태 배지, 최근 7일 완료(작은 막대 + 숫자), 도움 요청 수, 동의 상태, 접속 코드(●●●● + 눈 5초), … 메뉴.
 // - 휴대폰(768 미만)은 이름 아래에 오늘 배지·동의를 한 줄로 보이고 나머지 열은 숨긴다(가로 스크롤 없음).
 // - [근로자 추가하기] → 이름·메모 → 4자리 번호를 크게, [복사하기]·[인쇄용 카드 만들기].
@@ -45,7 +45,7 @@ export default function WorkerListPage() {
   function menuItems(r: WorkerRow): MenuItem[] {
     const icon = (I: typeof Eye) => <I size={16} strokeWidth={2} aria-hidden="true" />;
     return [
-      { id: "open", label: workerList.open, icon: icon(Eye), onSelect: () => navigate(`/m/workers/${encodeURIComponent(r.id)}`) },
+      { id: "open", label: workerList.open, icon: icon(Eye), onSelect: () => navigate(`/manager/workers/${encodeURIComponent(r.id)}`) },
       { id: "delete", label: workerList.delete, icon: icon(Trash2), danger: true, onSelect: () => setToDelete(r) },
     ];
   }
@@ -59,7 +59,7 @@ export default function WorkerListPage() {
       cell: (r) => (
         <div className="flex min-w-0 flex-col gap-1">
           <Link
-            to={`/m/workers/${encodeURIComponent(r.id)}`}
+            to={`/manager/workers/${encodeURIComponent(r.id)}`}
             className="truncate font-semibold text-ink-900 underline-offset-2 hover:underline"
             title={r.display_name}
           >

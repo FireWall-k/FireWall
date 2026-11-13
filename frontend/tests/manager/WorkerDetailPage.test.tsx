@@ -37,13 +37,13 @@ vi.mock("../../src/manager/api/workers", () => ({
 import WorkerDetailPage from "../../src/manager/workers/WorkerDetailPage";
 import { ToastProvider } from "../../src/components/ui";
 
-function renderAt(path = "/m/workers/w1") {
+function renderAt(path = "/manager/workers/w1") {
   return render(
     <ToastProvider>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="/m/workers/:id" element={<WorkerDetailPage />} />
-          <Route path="/m/workers" element={<p>목록 화면</p>} />
+          <Route path="/manager/workers/:id" element={<WorkerDetailPage />} />
+          <Route path="/manager/workers" element={<p>목록 화면</p>} />
         </Routes>
       </MemoryRouter>
     </ToastProvider>,
@@ -95,7 +95,7 @@ describe("근로자 상세", () => {
       workerRow({ a11y_prefs: { ...workerRow().a11y_prefs, ...patch.a11y_prefs } }),
     );
     const user = userEvent.setup();
-    renderAt("/m/workers/w1?tab=prefs");
+    renderAt("/manager/workers/w1?tab=prefs");
     const group = await screen.findByRole("group", { name: "말 속도" });
     expect(within(group).getByRole("radio", { name: "보통 0.9" })).toBeChecked();
     await user.click(within(group).getByRole("radio", { name: "느리게 0.8" }));
@@ -110,7 +110,7 @@ describe("근로자 상세", () => {
   it("화면 설정 저장이 실패하면 되돌리고 오류 토스트", async () => {
     api.updateWorker.mockRejectedValue(new Error("x"));
     const user = userEvent.setup();
-    renderAt("/m/workers/w1?tab=prefs");
+    renderAt("/manager/workers/w1?tab=prefs");
     const group = await screen.findByRole("group", { name: "손 방향" });
     await user.click(within(group).getByRole("radio", { name: "왼손" }));
     await waitFor(() => expect(within(group).getByRole("radio", { name: "오른손" })).toBeChecked());
@@ -119,7 +119,7 @@ describe("근로자 상세", () => {
   it("접속 코드: [새 번호 만들기] 확인 → 새 번호는 결과 창에만 크게, 닫으면 다시 가림(명세 5.7)", async () => {
     api.reissueAccessCode.mockResolvedValue({ ...workerRow(), access_code: "5590" });
     const user = userEvent.setup();
-    renderAt("/m/workers/w1?tab=code");
+    renderAt("/manager/workers/w1?tab=code");
     const opener = await screen.findByRole("button", { name: "새 번호 만들기" });
     await user.click(opener);
     const dialog = screen.getByRole("dialog", { name: "김민지 님 번호를 새로 만들까요?" });
@@ -138,7 +138,7 @@ describe("근로자 상세", () => {
   it("동의: 배지는 '자동 처리 동의', 기록 창 제목은 '자동 처리·국외 이전 동의'(AI 없음)", async () => {
     api.grantConsent.mockResolvedValue({});
     const user = userEvent.setup();
-    renderAt("/m/workers/w1?tab=consent");
+    renderAt("/manager/workers/w1?tab=consent");
     expect(await screen.findByText("자동 처리 동의 아직 없음")).toBeInTheDocument();
     const card = screen.getByRole("heading", { name: "자동 처리·국외 이전 동의" }).closest("div")!.parentElement!;
     await user.click(within(card).getByRole("button", { name: "보호자에게 받았어요" }));
@@ -151,14 +151,14 @@ describe("근로자 상세", () => {
 
   it("동의 탭의 [이 근로자 지우기]는 이름 다시 적기 창을 연다", async () => {
     const user = userEvent.setup();
-    renderAt("/m/workers/w1?tab=consent");
+    renderAt("/manager/workers/w1?tab=consent");
     await user.click(await screen.findByRole("button", { name: "이 근로자 지우기" }));
     const dialog = screen.getByRole("alertdialog", { name: "김민지 님을 지울까요?" });
     expect(within(dialog).getByRole("button", { name: "지우기" })).toBeDisabled();
   });
 
   it("없는 근로자면 '근로자를 찾을 수 없어요'", async () => {
-    renderAt("/m/workers/zz");
+    renderAt("/manager/workers/zz");
     expect(await screen.findByRole("heading", { name: "근로자를 찾을 수 없어요" })).toBeInTheDocument();
   });
 });

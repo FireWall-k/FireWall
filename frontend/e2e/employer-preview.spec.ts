@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { API, loginEmployer } from "./employer-mock";
 import { fourStateDraft, mockEditor, type EditorMock } from "./editor-mock";
 
-// 2b-2 편집기 휴대폰 미리보기(tasks §5): [미리보기] → iframe(/m/preview/:taskId) 안 근로자 StepPlayer(review).
+// 2b-2 편집기 휴대폰 미리보기(tasks §5): [미리보기] → iframe(/manager/preview/:taskId) 안 근로자 StepPlayer(review).
 // 미리보기 동안 기록·도움·신호·측정 요청(performance-logs·worker/help·worker/presence·events)이 0건이어야 한다.
 const { defaultBrowserType: _ignored, ...DESKTOP } = devices["Desktop Chrome"];
 void _ignored;
@@ -45,7 +45,7 @@ test.describe("편집기 미리보기 1440", () => {
       if (r.url().startsWith(API) && BANNED.test(new URL(r.url()).pathname)) banned.push(`${r.method()} ${r.url()}`);
     });
 
-    await loginEmployer(page, `/m/tasks/${draft.id}`);
+    await loginEmployer(page, `/manager/tasks/${draft.id}`);
     await expect(page.getByTestId("task-editor")).toBeVisible();
     await page.getByTestId("preview-toggle").click();
     await expect(page.getByTestId("preview-toggle")).toHaveAttribute("aria-expanded", "true");
@@ -84,7 +84,7 @@ test.describe("편집기 미리보기 1440", () => {
 
     // 소리 자동 재생 없음: 미리보기 안에서 재생 중인 audio가 없다.
     const playing = await page
-      .frame({ url: /\/m\/preview\// })!
+      .frame({ url: /\/manager\/preview\// })!
       .evaluate(() => Array.from(document.querySelectorAll("audio")).some((a) => !a.paused));
     expect(playing).toBe(false);
 
@@ -119,7 +119,7 @@ test.describe("편집기 미리보기 390", () => {
       if (r.url().startsWith(API) && BANNED.test(new URL(r.url()).pathname)) banned.push(`${r.method()} ${r.url()}`);
     });
 
-    await loginEmployer(page, `/m/tasks/${draft.id}`);
+    await loginEmployer(page, `/manager/tasks/${draft.id}`);
     await expect(page.getByTestId("step-row-1")).toBeVisible();
     await expect(page.getByTestId("preview-toggle")).toBeHidden();
     const toggle = page.getByTestId("preview-toggle-mobile");

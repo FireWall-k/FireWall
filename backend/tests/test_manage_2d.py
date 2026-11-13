@@ -5,7 +5,7 @@
 - 근로자 지우기는 이름을 그대로 다시 적어야 한다(다르면 422 고정 문구). 옛 DELETE는 없다.
 - 호칭은 한글 1~6자(422 고정 문구), /api/worker/me에 반영된다.
 - 근로자 화면 기본값은 새 근로자에게만 쓴다.
-- device_link 모양: PUBLIC_FRONTEND_URL + /w?site=CODE.
+- device_link 모양: PUBLIC_FRONTEND_URL + /worker?site=CODE.
 - 목록 열(오늘 배지·7일 완료·7일 도움·동의 상태)과 근로자 현황(stats).
 """
 import os
@@ -213,12 +213,12 @@ def test_workplace_shape_and_device_link(client, monkeypatch):
     monkeypatch.delenv("PUBLIC_FRONTEND_URL", raising=False)
     wp = client.get("/api/workplace", headers=emp).json()
     code = wp["workplace_code"]
-    assert wp["device_link"] == f"http://localhost:5173/w?site={code}"
+    assert wp["device_link"] == f"http://localhost:5173/worker?site={code}"
     assert wp["teacher_title"] == "선생님"
     assert wp["worker_defaults"]["tts_rate"] == 0.9 and len(wp["worker_defaults"]) == 8
     monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://jobcard.example.kr/")
     assert client.get("/api/workplace", headers=emp).json()["device_link"] == \
-        f"https://jobcard.example.kr/w?site={code}"
+        f"https://jobcard.example.kr/worker?site={code}"
 
 
 @pytest.mark.parametrize("title", ["코치", "반장님", "선생님", "가나다라마바", " 팀장 "])

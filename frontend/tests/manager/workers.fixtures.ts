@@ -27,7 +27,7 @@ export function workplace(over: Partial<WorkplaceSettings> = {}): WorkplaceSetti
   return {
     workplace_code: "DEMO01",
     org_name: "햇살카페",
-    device_link: "http://localhost:5173/w?site=DEMO01",
+    device_link: "http://localhost:5173/worker?site=DEMO01",
     teacher_title: "선생님",
     worker_defaults: { ...DEFAULT_A11Y_PREFS },
     ...over,

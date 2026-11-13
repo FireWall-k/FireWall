@@ -38,23 +38,23 @@ function renderAt(url: string, props: Omit<Parameters<typeof Probe>[0], "onPicke
 
 describe("useFixParam", () => {
   it("불러온 뒤 ?step=의 그림 찾기를 한 번 열고 fix만 지운다(step은 남김)", () => {
-    const { onPicker } = renderAt("/m/tasks/t1?step=s2&fix=picture", { ready: true, steps: ["s1", "s2"] });
+    const { onPicker } = renderAt("/manager/tasks/t1?step=s2&fix=picture", { ready: true, steps: ["s1", "s2"] });
     expect(onPicker).toHaveBeenCalledTimes(1);
     expect(onPicker).toHaveBeenCalledWith("s2", "search");
     expect(screen.getByTestId("search").textContent).toBe("?step=s2");
   });
 
   it("fix=photo는 사진 올리기", () => {
-    const { onPicker } = renderAt("/m/tasks/t1?step=s1&fix=photo", { ready: true, steps: ["s1"] });
+    const { onPicker } = renderAt("/manager/tasks/t1?step=s1&fix=photo", { ready: true, steps: ["s1"] });
     expect(onPicker).toHaveBeenCalledWith("s1", "photo");
   });
 
   it("아직 불러오기 전이면 기다린다(창도 안 열고 주소도 그대로)", () => {
-    const { onPicker, view } = renderAt("/m/tasks/t1?step=s1&fix=picture", { ready: false, steps: [] });
+    const { onPicker, view } = renderAt("/manager/tasks/t1?step=s1&fix=picture", { ready: false, steps: [] });
     expect(onPicker).not.toHaveBeenCalled();
     expect(screen.getByTestId("search").textContent).toBe("?step=s1&fix=picture");
     view.rerender(
-      <MemoryRouter initialEntries={["/m/tasks/t1?step=s1&fix=picture"]}>
+      <MemoryRouter initialEntries={["/manager/tasks/t1?step=s1&fix=picture"]}>
         <Probe ready steps={["s1"]} onPicker={onPicker} />
       </MemoryRouter>,
     );
@@ -62,7 +62,7 @@ describe("useFixParam", () => {
   });
 
   it("직무에 없는 단계·step 없음·split은 창을 열지 않고 fix만 지운다", () => {
-    for (const url of ["/m/tasks/t1?step=gone&fix=picture", "/m/tasks/t1?fix=picture", "/m/tasks/t1?step=s1&fix=split"]) {
+    for (const url of ["/manager/tasks/t1?step=gone&fix=picture", "/manager/tasks/t1?fix=picture", "/manager/tasks/t1?step=s1&fix=split"]) {
       const { onPicker, view } = renderAt(url, { ready: true, steps: ["s1"] });
       expect(onPicker).not.toHaveBeenCalled();
       expect(screen.getByTestId("search").textContent).not.toContain("fix=");
@@ -71,7 +71,7 @@ describe("useFixParam", () => {
   });
 
   it("fix가 없으면 아무것도 하지 않는다", () => {
-    const { onPicker } = renderAt("/m/tasks/t1?step=s1", { ready: true, steps: ["s1"] });
+    const { onPicker } = renderAt("/manager/tasks/t1?step=s1", { ready: true, steps: ["s1"] });
     expect(onPicker).not.toHaveBeenCalled();
     expect(screen.getByTestId("search").textContent).toBe("?step=s1");
   });

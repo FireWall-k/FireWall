@@ -1,4 +1,4 @@
-// 오늘 할 일(홈, /w/today, 명세 4.2 + 창업자 결정 7).
+// 오늘 할 일(홈, /worker/today, 명세 4.2 + 창업자 결정 7).
 // - 사업주가 정한 순서대로 1열. 다음에 할 카드 하나만 강조한다. 다른 카드를 먼저 눌러도 막지 않는다.
 // - 다 한 카드는 맨 아래로(서버는 순서를 바꾸지 않는다 — 내리는 일은 화면이 한다).
 // - 새 일이 오면 '새 일이 왔어요'를 한 번 소리로 알린다(30초 폴링은 WorkerSession이 한다).
@@ -49,7 +49,7 @@ export default function TodayScreen() {
   }
 
   const openJob = (job: TodayJob, done: boolean) =>
-    navigate(done ? `/w/history/${job.assignment_id}` : `/w/job/${job.assignment_id}`);
+    navigate(done ? `/worker/history/${job.assignment_id}` : `/worker/job/${job.assignment_id}`);
 
   return (
     <WorkerScreen
@@ -69,7 +69,7 @@ export default function TodayScreen() {
       band={band}
       bottom={
         <BottomBar>
-          <SecondaryAction icon={IconHistory} onPress={() => navigate("/w/history")} className="w-full">
+          <SecondaryAction icon={IconHistory} onPress={() => navigate("/worker/history")} className="w-full">
             {COPY.btn.history}
           </SecondaryAction>
         </BottomBar>

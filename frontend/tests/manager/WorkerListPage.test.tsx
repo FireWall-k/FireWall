@@ -29,10 +29,10 @@ import { REVEAL_MS } from "../../src/manager/workers/helpers";
 function renderPage() {
   return render(
     <ToastProvider>
-      <MemoryRouter initialEntries={["/m/workers"]}>
+      <MemoryRouter initialEntries={["/manager/workers"]}>
         <Routes>
-          <Route path="/m/workers" element={<WorkerListPage />} />
-          <Route path="/m/workers/:id" element={<p>상세 화면</p>} />
+          <Route path="/manager/workers" element={<WorkerListPage />} />
+          <Route path="/manager/workers/:id" element={<p>상세 화면</p>} />
         </Routes>
       </MemoryRouter>
     </ToastProvider>,

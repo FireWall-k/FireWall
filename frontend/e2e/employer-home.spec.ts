@@ -26,7 +26,7 @@ async function axe(page: Page) {
 
 test("홈: 제목 줄 갱신 시각이 5초마다 바뀌고, 요약 4칸·표·코칭 카드가 보이며 완료율 %가 없다", async ({ page }) => {
   const m = await mockEmployer(page);
-  await loginEmployer(page, "/m");
+  await loginEmployer(page, "/manager");
   await expect(page.getByRole("heading", { level: 1, name: "오늘 현황" })).toBeVisible();
   const line = page.getByTestId("live-status-line");
   await expect(line).toHaveText(/\d+월 \d+일 .요일 · 마지막 갱신 \d\d:\d\d:\d\d/);
@@ -53,7 +53,7 @@ test("홈: 제목 줄 갱신 시각이 5초마다 바뀌고, 요약 4칸·표·�
 
 test("연결이 끊기면 토스트 없이 제목 줄에 '연결이 잠시 끊겼어요 · 마지막 갱신 …'", async ({ page }) => {
   const m = await mockEmployer(page);
-  await loginEmployer(page, "/m");
+  await loginEmployer(page, "/manager");
   await expect(page.getByTestId("live-status-line")).toContainText("마지막 갱신");
   m.liveDown = true;
   await expect(page.getByTestId("live-status-line")).toHaveText(/^연결이 잠시 끊겼어요 · 마지막 갱신 \d\d:\d\d:\d\d$/, { timeout: 12_000 });
@@ -65,7 +65,7 @@ test("연결이 끊기면 토스트 없이 제목 줄에 '연결이 잠시 끊�
 
 test("오늘 기록 서랍: 이름을 누르면 열리고 Esc로 닫히면 그 이름으로 초점이 돌아온다, 표로 보기", async ({ page }) => {
   await mockEmployer(page);
-  await loginEmployer(page, "/m");
+  await loginEmployer(page, "/manager");
   const name = page.getByRole("table", { name: "근로자 실시간 현황" }).getByRole("button", { name: "이수진", exact: true });
   await name.click();
   const dialog = page.getByRole("dialog", { name: "이수진 님 오늘 기록" });
@@ -81,39 +81,39 @@ test("오늘 기록 서랍: 이름을 누르면 열리고 Esc로 닫히면 그 �
 
 test("코칭 카드 [이 단계 고치기] → 편집기 그 단계로 1번(?step=&fix=)", async ({ page }) => {
   await mockEmployer(page);
-  await loginEmployer(page, "/m");
+  await loginEmployer(page, "/manager");
   const card = page.getByTestId("coaching-card").first();
   await expect(card).toContainText("다시 듣기 평균 3.4번");
   await expect(card).toContainText("사진으로 바꾸기");
   await card.getByRole("link", { name: /^이 단계 고치기/ }).click();
-  await expect(page).toHaveURL(/\/m\/tasks\/t3\?step=src5&fix=photo$/);
+  await expect(page).toHaveURL(/\/manager\/tasks\/t3\?step=src5&fix=photo$/);
 });
 
 test("도움 띠 [이 단계 고치기] → 편집기 그 단계로 1번(?step=)", async ({ page }) => {
   await mockEmployer(page);
-  await loginEmployer(page, "/m/tasks");
+  await loginEmployer(page, "/manager/tasks");
   const band = page.getByTestId("help-band");
   await expect(band).toContainText("김민지 님이 도움을 요청했어요 · 택배 상자 포장하고 운송장 붙이기 3단계");
   await band.getByRole("button", { name: "이 단계 고치기" }).click();
-  await expect(page).toHaveURL(/\/m\/tasks\/t3\?step=src3$/);
+  await expect(page).toHaveURL(/\/manager\/tasks\/t3\?step=src3$/);
 });
 
 test("새 사업장: 시작 점검표 3단계 + [바로 하기]", async ({ page }) => {
   await mockEmployer(page, { workers: false, help: false, coaching: false });
-  await loginEmployer(page, "/m");
+  await loginEmployer(page, "/manager");
   const empty = page.getByTestId("home-empty");
   await expect(empty).toBeVisible();
   await expect(empty.getByRole("listitem")).toHaveCount(3);
   await empty.getByRole("link", { name: "근로자 추가 바로 하기" }).click();
-  await expect(page).toHaveURL(/\/m\/workers$/);
+  await expect(page).toHaveURL(/\/manager\/workers$/);
 });
 
 test("서비스 워커: /w에는 없고, /m도 알림을 켜기 전에는 등록하지 않는다", async ({ page }) => {
   await mockEmployer(page);
-  await loginEmployer(page, "/m");
+  await loginEmployer(page, "/manager");
   await expect(page.getByTestId("live-status-line")).toContainText("마지막 갱신");
   expect(await page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length)).toBe(0);
-  await page.goto("/w");
+  await page.goto("/worker");
   await page.waitForLoadState("networkidle");
   expect(await page.evaluate(() => navigator.serviceWorker.controller === null)).toBe(true);
   expect(await page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length)).toBe(0);
@@ -132,14 +132,14 @@ test("두 화면: 근로자 [도와주세요] → 사업주 띠 → [도와줬�
   const ws = newState();
   await mockWorkerBackend(wpage, ws);
   const m = await mockEmployer(epage, { help: false });
-  await loginEmployer(epage, "/m");
+  await loginEmployer(epage, "/manager");
   await expect(epage.getByTestId("live-status-line")).toContainText("마지막 갱신");
   await expect(epage.getByTestId("help-band")).toHaveCount(0);
 
   // 화면 두 개를 번갈아 앞으로 둔다(뒤에 있는 화면은 브라우저가 타이머를 늦추거나 숨은 탭으로 볼 수 있다).
   await wpage.bringToFront();
   await loginAsWorker(wpage);
-  await wpage.goto("/w/job/asg-1/step/1");
+  await wpage.goto("/worker/job/asg-1/step/1");
   await wpage.getByTestId("help-button").click();
   await expect(wpage.getByTestId("help-band")).toContainText("선생님을 불렀어요");
   // 가짜 서버: 근로자가 부른 요청이 사업주 현황에 들어간다.
@@ -167,7 +167,7 @@ for (const width of [1440, 390] as const) {
 
     test("홈(띠 있음)·서랍 열림: axe 심각 0·button-name 0, 가로 스크롤 0", async ({ page }) => {
       await mockEmployer(page);
-      await loginEmployer(page, "/m");
+      await loginEmployer(page, "/manager");
       await expect(page.getByTestId("help-band")).toBeVisible();
       await expect(page.getByTestId("coaching-card").first()).toBeVisible();
       expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
@@ -190,7 +190,7 @@ test.describe("390 도움 띠", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   test("[이 단계 고치기]·[확인했어요]는 … 메뉴로, 보이는 버튼은 44 이상", async ({ page }) => {
     await mockEmployer(page);
-    await loginEmployer(page, "/m");
+    await loginEmployer(page, "/manager");
     const band = page.getByTestId("help-band");
     await expect(band.getByRole("button", { name: "도와줬어요" })).toBeVisible();
     await expect(band.getByRole("button", { name: "이 단계 고치기" })).toBeHidden();
@@ -203,13 +203,13 @@ test.describe("390 도움 띠", () => {
     expect(small).toEqual([]);
     await band.getByRole("button", { name: "김민지 님 도움 요청 메뉴 더 보기" }).click();
     await page.getByRole("menuitem", { name: "이 단계 고치기" }).click();
-    await expect(page).toHaveURL(/\/m\/tasks\/t3\?step=src3$/);
+    await expect(page).toHaveURL(/\/manager\/tasks\/t3\?step=src3$/);
   });
 });
 
 test("오늘 기록 서랍: Tab을 여러 번 눌러도 초점이 서랍 안에 있고, 그 뒤 Esc로 닫힌다(비활성 탭 tabindex=-1을 마지막으로 세지 않음)", async ({ page }) => {
   await mockEmployer(page);
-  await loginEmployer(page, "/m");
+  await loginEmployer(page, "/manager");
   const name = page.getByRole("table", { name: "근로자 실시간 현황" }).getByRole("button", { name: "이수진", exact: true });
   await name.focus();
   await page.keyboard.press("Enter");
@@ -233,7 +233,7 @@ test("오늘 기록 서랍: Tab을 여러 번 눌러도 초점이 서랍 안에 
 test("마지막 도움 요청에서 [도와줬어요]를 누르면 초점이 body가 아니라 본문(main)으로 간다", async ({ page }) => {
   const m = await mockEmployer(page);
   m.help.push({ ...makeHelp(), id: "h2", worker_id: "w2", worker_name: "이수진", created_at: new Date(Date.now() - 120_000).toISOString() });
-  await loginEmployer(page, "/m");
+  await loginEmployer(page, "/manager");
   const band = page.getByTestId("help-band");
   await expect(band.getByRole("button", { name: "도와줬어요" })).toHaveCount(2);
   await band.getByRole("button", { name: "도와줬어요" }).first().click();
@@ -251,7 +251,7 @@ for (const width of [390, 360] as const) {
     test.use({ viewport: { width, height: 844 }, hasTouch: true, isMobile: true });
     test("표가 상자 안에 다 들어가고 상태 배지·… 메뉴가 화면 안에 있다", async ({ page }) => {
       await mockEmployer(page);
-      await loginEmployer(page, "/m");
+      await loginEmployer(page, "/manager");
       const table = page.getByRole("table", { name: "근로자 실시간 현황" });
       await expect(table.getByText("김민지")).toBeVisible();
       const m = await page.getByTestId("live-table").evaluate((root) => {

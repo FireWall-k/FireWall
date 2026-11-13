@@ -110,9 +110,9 @@ def new_worker_prefs(employer: Employer | None) -> str:
 
 
 def device_link(workplace_code: str) -> str:
-    """기기 연결 QR·주소. /w가 site를 읽어 기기에 사업장 코드를 저장하고 주소에서 뺀다(프론트)."""
+    """기기 연결 QR·주소. /worker가 site를 읽어 기기에 사업장 코드를 저장하고 주소에서 뺀다(프론트)."""
     base = os.getenv("PUBLIC_FRONTEND_URL", "http://localhost:5173").rstrip("/")
-    return f"{base}/w?site={quote(workplace_code, safe='')}"
+    return f"{base}/worker?site={quote(workplace_code, safe='')}"
 
 
 def workplace_out(employer: Employer) -> WorkplaceOut:

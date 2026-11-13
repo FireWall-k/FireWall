@@ -18,7 +18,7 @@ test.describe("1280", () => {
   test("미리보기 서랍 자리는 접혀 있다가 [미리보기]로 상세 오른쪽 세 번째 칸에 열린다", async ({ page }) => {
     const t = fixedDraft();
     await mockEditor(page, { tasks: [t] });
-    await loginEmployer(page, `/m/tasks/${t.id}`);
+    await loginEmployer(page, `/manager/tasks/${t.id}`);
     const drawer = page.getByTestId("preview-drawer");
     await expect(drawer).toHaveAttribute("data-layout", "side");
     await expect(drawer).toHaveAttribute("data-state", "closed");
@@ -50,7 +50,7 @@ test.describe("820", () => {
   test("목록·상세 두 칸, 순서 손잡이는 늘 보이고, 미리보기는 아래 시트로 열린다", async ({ page }) => {
     const t = fixedDraft();
     await mockEditor(page, { tasks: [t] });
-    await loginEmployer(page, `/m/tasks/${t.id}`);
+    await loginEmployer(page, `/manager/tasks/${t.id}`);
     await expect(page.getByTestId("step-detail")).toBeVisible();
     await expect(page.getByTestId("editor-panes")).toHaveAttribute("data-panes", "2");
     const row = (await page.getByTestId("step-row-1").boundingBox())!;
@@ -82,7 +82,7 @@ test.describe("휴대폰", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     const t = fixedDraft();
     await mockEditor(page, { tasks: [t] });
-    await loginEmployer(page, `/m/tasks/${t.id}`);
+    await loginEmployer(page, `/manager/tasks/${t.id}`);
     await expect(page.getByTestId("step-row-1")).toBeVisible();
     await expect(page.getByTestId("step-detail")).toHaveCount(0);
     await expect(page.getByTestId("editor-panes")).toHaveAttribute("data-panes", "1");
@@ -107,7 +107,7 @@ test.describe("휴대폰", () => {
       if (route.request().method() === "GET") await gate;
       await route.fallback();
     });
-    await loginEmployer(page, `/m/tasks/${t.id}`);
+    await loginEmployer(page, `/manager/tasks/${t.id}`);
     await expect(page.getByTestId("editor-skeleton")).toBeVisible();
     expect(await scrollW(page), "뼈대 화면").toBeLessThanOrEqual(320);
     release();
@@ -132,7 +132,7 @@ test.describe("휴대폰", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     const t = fixedDraft();
     await mockEditor(page, { tasks: [t] });
-    await loginEmployer(page, `/m/tasks/${t.id}?step=${t.steps[1].id}&fix=picture`);
+    await loginEmployer(page, `/manager/tasks/${t.id}?step=${t.steps[1].id}&fix=picture`);
     await expect(page.getByRole("dialog", { name: "2단계 그림 찾기" })).toBeVisible();
     await expect(page).not.toHaveURL(/fix=/);
     await expect(page).toHaveURL(new RegExp(`step=${t.steps[1].id}`));
@@ -141,12 +141,12 @@ test.describe("휴대폰", () => {
   test("새 직무에서 나눈 단계가 있을 때 아래 탭으로 떠나면 '적던 내용이 사라져요'를 묻는다", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await mockEditor(page);
-    await loginEmployer(page, "/m/tasks/new");
+    await loginEmployer(page, "/manager/tasks/new");
     await page.getByLabel("어떤 일을 시킬까요?").fill(FIXED_SENTENCE);
     await page.getByRole("button", { name: "단계로 나누기" }).click();
     await expect(page.getByRole("heading", { name: /이렇게 나눴어요/ })).toBeVisible();
     await page.getByRole("link", { name: "홈" }).last().click();
     await expect(page.getByText("적던 내용이 사라져요")).toBeVisible();
-    await expect(page).toHaveURL(/\/m\/tasks\/new$/);
+    await expect(page).toHaveURL(/\/manager\/tasks\/new$/);
   });
 });

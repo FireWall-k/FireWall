@@ -305,7 +305,7 @@ export const accessCode = {
   shortCode: "예전에 만든 긴 번호예요. 새 번호를 만들면 4자리가 돼요.",
 } as const;
 
-/** 근로자 목록(/m/workers, 명세 5.7). */
+/** 근로자 목록(/manager/workers, 명세 5.7). */
 export const workerList = {
   title: "근로자",
   add: "근로자 추가하기",
@@ -362,7 +362,7 @@ export const workerDelete = {
   mentions: (n: number) => `직무 ${n}개에 이름이 남아 있어요 · 직무 문장을 고쳐 주세요`,
 } as const;
 
-/** 근로자 상세(/m/workers/:id) 탭. */
+/** 근로자 상세(/manager/workers/:id) 탭. */
 export const workerDetail = {
   tabsLabel: "근로자 상세",
   tabStats: "현황",
@@ -465,7 +465,7 @@ export const consent = {
   deleteButton: "이 근로자 지우기",
 } as const;
 
-/** 설정(/m/settings, 명세 5.8). PIN(선생님 모드)은 3차라 숨긴다. */
+/** 설정(/manager/settings, 명세 5.8). PIN(선생님 모드)은 3차라 숨긴다. */
 export const settings = {
   title: "설정",
   workplaceHeading: "사업장",
@@ -806,7 +806,7 @@ export const liveTable = {
   noWorkers: "아직 등록한 근로자가 없어요",
 } as const;
 
-/** 도움 요청 띠(모든 /m 화면 맨 위, 최대 3건 + '그 외 N건'). */
+/** 도움 요청 띠(모든 /manager 화면 맨 위, 최대 3건 + '그 외 N건'). */
 export const helpBand = {
   region: "도움 요청",
   requested: "님이 도움을 요청했어요",

@@ -49,7 +49,7 @@ test("실제 서버: 고정 문장은 6단계 모두 auto_high이고, [새 직�
     localStorage.setItem("jobcard_role", "employer");
     localStorage.setItem("jobcard_name", "통합 카페");
   }, token);
-  await page.goto("/m/tasks");
+  await page.goto("/manager/tasks");
 
   const seen: string[] = [];
   const click = async (l: Locator, label: string) => {

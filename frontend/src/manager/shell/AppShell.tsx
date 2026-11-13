@@ -2,8 +2,8 @@
 // - 1280 이상: 왼쪽 사이드바 240(흰 바탕, 오른쪽 1px paper-200)
 // - 768~1279: 사이드바를 72 아이콘 모드로 접음
 // - 768 미만: 사이드바 대신 아래 탭바(홈·직무·근로자·더보기)
-// - 본문 위: 상단 바 56 + 도움 요청 띠(모든 /m 화면, contract §2.2). 본문은 paper-50, 좌우 32(휴대폰 16).
-//   목록·홈은 최대 1200, 편집기(/m/tasks/:id)는 꽉 채운다.
+// - 본문 위: 상단 바 56 + 도움 요청 띠(모든 /manager 화면, contract §2.2). 본문은 paper-50, 좌우 32(휴대폰 16).
+//   목록·홈은 최대 1200, 편집기(/manager/tasks/:id)는 꽉 채운다.
 // 토스트와 오늘 현황 폴링(LiveProvider: 도움 띠·종·홈이 함께 씀)도 여기서 한 번만 연다.
 import { useEffect, useRef, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -49,7 +49,7 @@ export default function AppShell({ displayName, onLogout, children }: AppShellPr
 
   function logout() {
     onLogout();
-    navigate("/m/login", { replace: true });
+    navigate("/manager/login", { replace: true });
   }
 
   return (
@@ -156,7 +156,7 @@ function MobileTabBar({ onLogout }: { onLogout: () => void }) {
             align="right"
             className="flex-1"
             items={[
-              { id: "settings", label: nav.settings, icon: <Settings size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(() => navigate("/m/settings")) },
+              { id: "settings", label: nav.settings, icon: <Settings size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(() => navigate("/manager/settings")) },
               { id: "logout", label: shell.logout, icon: <LogOut size={16} strokeWidth={2} aria-hidden="true" />, onSelect: () => guardLeave(onLogout) },
             ]}
             trigger={(p) => (

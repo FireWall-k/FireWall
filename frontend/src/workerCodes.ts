@@ -135,7 +135,7 @@ export function saveTeacherTitle(title: unknown) {
 }
 
 /**
- * (2d) 기기 연결 주소(/w?site=CODE)로 열렸을 때: 기기 연결 화면(SetupScreen)이 하는 일을 미리 한다.
+ * (2d) 기기 연결 주소(/worker?site=CODE)로 열렸을 때: 기기 연결 화면(SetupScreen)이 하는 일을 미리 한다.
  * 저장된 코드와 다르면 예전 가게 이름·호칭·기기 표시를 지우고 새 코드를 저장한다. 바꿨으면 true.
  * 근로자 로그인 자체는 바꾸지 않는다(번호 4자리 + 저장된 사업장 코드).
  */

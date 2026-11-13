@@ -7,7 +7,7 @@ import { NEW_TASK_DRAFT_KEY } from "../../src/manager/tasks/new/draft";
 import { step, task } from "./editorFixtures";
 import { editorMock as m, renderAt, resetMocks } from "./editorHarness";
 
-// 새 직무(/m/tasks/new, 명세 5.4, tasks §4.3·4.4). 옛 ManagerPage·InputSplit 시험을 옮겨 왔다:
+// 새 직무(/manager/tasks/new, 명세 5.4, tasks §4.3·4.4). 옛 ManagerPage·InputSplit 시험을 옮겨 왔다:
 // 쓰는 순간 나누기(합치기·더 나누기·고치기·지우기) → [이대로 그림 고르기] → 초안 → 같은 Route의 편집기.
 // 새로: 720 한 칸·보이는 라벨·글자 수·[예시 넣기]·'더 알려 주기'·개인정보 안내, 새로고침 뒤 원문 남음, 떠날 때 Dialog,
 // 만드는 동안 편집기 모양 스켈레톤(퍼센트 없음), 나눈 방법·원문 조각·조심 제안을 함께 보냄.
@@ -39,7 +39,7 @@ beforeEach(() => {
   );
 });
 
-async function openNew(path = "/m/tasks/new") {
+async function openNew(path = "/manager/tasks/new") {
   const user = userEvent.setup();
   await renderAt(path);
   await screen.findByRole("heading", { level: 1, name: "새 직무" });
@@ -80,7 +80,7 @@ describe("입력 칸", () => {
   });
 
   it("?example=1이면 예시 지시문·업종을 채우고, 나누기는 사업주가 누를 때만 한다", async () => {
-    await openNew("/m/tasks/new?example=1");
+    await openNew("/manager/tasks/new?example=1");
     expect((input() as HTMLTextAreaElement).value).toMatch(/손을 깨끗이 씻어요/);
     expect(screen.getByTestId("example-note")).toBeInTheDocument();
     expect(m.splitPreview).not.toHaveBeenCalled();
@@ -256,13 +256,13 @@ describe("[이대로 그림 고르기] → 초안 → 편집기", () => {
     await screen.findByTestId("task-editor");
   });
 
-  it("초안을 만들면 같은 Route의 편집기(/m/tasks/:id)로 바뀌고, 방금 만든 초안을 다시 불러오지 않는다. 임시 저장도 지운다", async () => {
+  it("초안을 만들면 같은 Route의 편집기(/manager/tasks/:id)로 바뀌고, 방금 만든 초안을 다시 불러오지 않는다. 임시 저장도 지운다", async () => {
     const user = await openNew();
     await split(user);
     expect(localStorage.getItem(NEW_TASK_DRAFT_KEY)).not.toBeNull();
     await user.click(screen.getByRole("button", { name: "이대로 그림 고르기" }));
     await screen.findByTestId("task-editor");
-    expect(screen.getByTestId("where")).toHaveTextContent("/m/tasks/task-9");
+    expect(screen.getByTestId("where")).toHaveTextContent("/manager/tasks/task-9");
     expect(m.getTask).not.toHaveBeenCalled();
     expect(localStorage.getItem(NEW_TASK_DRAFT_KEY)).toBeNull();
     expect(screen.getByRole("heading", { level: 1, name: "출근 준비" })).toBeInTheDocument();
@@ -283,11 +283,11 @@ describe("떠날 때", () => {
     return import("../../src/manager/tasks/TaskWorkspace").then(({ default: TaskWorkspace }) =>
       render(
         <ToastProvider>
-          <MemoryRouter initialEntries={["/m/tasks/new"]}>
-            <Link to="/m/tasks">사이드바 직무</Link>
+          <MemoryRouter initialEntries={["/manager/tasks/new"]}>
+            <Link to="/manager/tasks">사이드바 직무</Link>
             <Routes>
-              <Route path="/m/tasks/:id" element={<TaskWorkspace key="ws" />} />
-              <Route path="/m/tasks" element={<p>직무 목록</p>} />
+              <Route path="/manager/tasks/:id" element={<TaskWorkspace key="ws" />} />
+              <Route path="/manager/tasks" element={<p>직무 목록</p>} />
             </Routes>
           </MemoryRouter>
         </ToastProvider>,

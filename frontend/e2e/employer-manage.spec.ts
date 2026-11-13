@@ -30,7 +30,7 @@ for (const width of [1440, 390] as const) {
     test("근로자 목록·번호 보기·행 메뉴·추가 창·지우기 창", async ({ page }) => {
       await mockEmployer(page);
       await mockWorkers(page);
-      await loginEmployer(page, "/m/workers");
+      await loginEmployer(page, "/manager/workers");
       await expect(page.getByRole("link", { name: "김민지" })).toBeVisible();
       await expect(page.getByRole("button", { name: "근로자 추가하기" })).toBeVisible();
       await check(page, "목록");
@@ -62,7 +62,7 @@ for (const width of [1440, 390] as const) {
     test("근로자 상세 4탭(현황·화면 설정·접속 코드·동의·개인정보)", async ({ page }) => {
       await mockEmployer(page);
       await mockWorkers(page);
-      await loginEmployer(page, "/m/workers/w1");
+      await loginEmployer(page, "/manager/workers/w1");
       await expect(page.getByRole("heading", { level: 1, name: "김민지 님" })).toBeVisible();
       await expect(page.getByText("2분 28초")).toBeVisible();
       await check(page, "현황");
@@ -89,10 +89,10 @@ for (const width of [1440, 390] as const) {
     test("설정(사업장·기기 연결 QR·기본값·호칭 미리보기·알림·계정)", async ({ page }) => {
       await mockEmployer(page);
       await mockWorkers(page);
-      await loginEmployer(page, "/m/settings");
+      await loginEmployer(page, "/manager/settings");
       await expect(page.getByRole("heading", { level: 1, name: "설정" })).toBeVisible();
       await expect(page.getByTestId("qr-code")).toBeVisible();
-      await expect(page.getByTestId("device-link")).toHaveText("http://localhost:5173/w?site=AB12CD");
+      await expect(page.getByTestId("device-link")).toHaveText("http://localhost:5173/worker?site=AB12CD");
       await check(page, "설정");
       await page.getByRole("button", { name: "인쇄용 카드 만들기" }).click();
       await expect(page.getByRole("dialog", { name: "기기 연결 카드" })).toBeVisible();
@@ -102,11 +102,11 @@ for (const width of [1440, 390] as const) {
     test("홈(2c 오늘 현황)·빈 근로자 목록", async ({ page }) => {
       await mockEmployer(page);
       await mockWorkers(page, { empty: true });
-      await loginEmployer(page, "/m");
+      await loginEmployer(page, "/manager");
       // (병합) 홈은 2c 오늘 현황 화면이다(2d의 '준비 중' 자리 화면은 지웠다).
       await expect(page.getByRole("heading", { level: 1, name: "오늘 현황" })).toBeVisible();
       await check(page, "홈");
-      await page.goto("/m/workers");
+      await page.goto("/manager/workers");
       await expect(page.getByText("아직 근로자가 없어요")).toBeVisible();
       await check(page, "빈 목록");
     });
@@ -117,7 +117,7 @@ test("키보드만으로: 근로자 추가 → 번호 확인 → 닫으면 초�
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockEmployer(page);
   await mockWorkers(page);
-  await loginEmployer(page, "/m/workers");
+  await loginEmployer(page, "/manager/workers");
   const add = page.getByRole("button", { name: "근로자 추가하기" });
   await add.focus();
   await page.keyboard.press("Enter");
@@ -138,7 +138,7 @@ test("키보드만으로: 근로자 지우기는 이름을 똑같이 적어야 �
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockEmployer(page);
   const m = await mockWorkers(page);
-  await loginEmployer(page, "/m/workers");
+  await loginEmployer(page, "/manager/workers");
   await page.getByRole("button", { name: "박서연 님 메뉴" }).focus();
   await page.keyboard.press("Enter");
   await page.getByRole("menuitem", { name: "지우기" }).focus();
@@ -159,7 +159,7 @@ test("설정: 호칭을 '코치'로 바꾸면 미리보기가 '코치를 불렀�
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockEmployer(page);
   const m = await mockWorkers(page);
-  await loginEmployer(page, "/m/settings");
+  await loginEmployer(page, "/manager/settings");
   const input = page.getByLabel(/^호칭/);
   await input.fill("코치");
   await expect(page.getByTestId("title-preview")).toContainText("코치를 불렀어요. 여기서 기다려요.");
@@ -172,7 +172,7 @@ test("근로자 상세: 말 속도 '느리게 0.8'을 고르면 바로 저장된
   await page.setViewportSize({ width: 390, height: 844 });
   await mockEmployer(page);
   const m = await mockWorkers(page);
-  await loginEmployer(page, "/m/workers/w1?tab=prefs");
+  await loginEmployer(page, "/manager/workers/w1?tab=prefs");
   await page.getByText("느리게 0.8").click();
   await expect(page.getByText("저장했어요")).toBeVisible();
   expect(m.workers.find((w) => w.id === "w1")!.a11y_prefs.tts_rate).toBe(0.8);
@@ -210,7 +210,7 @@ async function expectOnePagePrint(page: Page, mustShow: string[]) {
 test("인쇄용 카드: 근로자 카드는 이름·QR·번호가 1쪽에 온전히 인쇄된다", async ({ page }) => {
   await mockEmployer(page);
   await mockWorkers(page);
-  await loginEmployer(page, "/m/workers");
+  await loginEmployer(page, "/manager/workers");
   await page.getByRole("button", { name: "근로자 추가하기" }).click();
   await page.getByRole("dialog").getByLabel(/이름/).fill("한별");
   await page.getByRole("dialog").getByRole("button", { name: "추가하기" }).click();
@@ -223,7 +223,7 @@ test("인쇄용 카드: 근로자 카드는 이름·QR·번호가 1쪽에 온전
 test("인쇄용 카드: 기기 연결 카드는 사업장 코드까지 1쪽에 한 번만 인쇄된다", async ({ page }) => {
   await mockEmployer(page);
   await mockWorkers(page);
-  await loginEmployer(page, "/m/settings");
+  await loginEmployer(page, "/manager/settings");
   await expect(page.getByTestId("qr-code")).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 400));
   await page.getByRole("button", { name: "인쇄용 카드 만들기" }).click();
@@ -248,10 +248,10 @@ test.describe("390 터치 화면 누를 곳", () => {
   test("근로자 상세: 뒤로 링크·위 경로 링크·스위치가 44px 이상", async ({ page }) => {
     await mockEmployer(page);
     await mockWorkers(page);
-    await loginEmployer(page, "/m/workers/w1?tab=prefs");
+    await loginEmployer(page, "/manager/workers/w1?tab=prefs");
     expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true);
     await expect(page.getByRole("group", { name: "말 속도" })).toBeVisible();
-    const back = await sizes(page, "main a[href='/m/workers']");
+    const back = await sizes(page, "main a[href='/manager/workers']");
     expect(back.length).toBeGreaterThan(0);
     expect(back.filter((x) => x.h < 44)).toEqual([]);
     const crumbs = await sizes(page, "header nav a");
@@ -264,7 +264,7 @@ test.describe("390 터치 화면 누를 곳", () => {
   test("설정: 스위치가 44px 이상", async ({ page }) => {
     await mockEmployer(page);
     await mockWorkers(page);
-    await loginEmployer(page, "/m/settings");
+    await loginEmployer(page, "/manager/settings");
     await expect(page.getByRole("heading", { level: 1, name: "설정" })).toBeVisible();
     const sw = await sizes(page, "[role=switch]");
     expect(sw.length).toBeGreaterThan(0);

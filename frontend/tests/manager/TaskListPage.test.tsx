@@ -83,7 +83,7 @@ function Where() {
     <>
       <output data-testid="where">{l.pathname + l.search}</output>
       {/* 사이드바 '직무' 링크와 브라우저 뒤로 가기 흉내 */}
-      <Link to="/m/tasks">사이드바 직무</Link>
+      <Link to="/manager/tasks">사이드바 직무</Link>
       <button type="button" onClick={() => navigate(-1)}>
         뒤로 가기
       </button>
@@ -91,14 +91,14 @@ function Where() {
   );
 }
 
-function renderPage(path = "/m/tasks") {
+function renderPage(path = "/manager/tasks") {
   return render(
     <ToastProvider>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="/m/tasks" element={<TaskListPage />} />
-          <Route path="/m/tasks/new" element={<p>새 직무 화면</p>} />
-          <Route path="/m/tasks/:id" element={<p>편집기 화면</p>} />
+          <Route path="/manager/tasks" element={<TaskListPage />} />
+          <Route path="/manager/tasks/new" element={<p>새 직무 화면</p>} />
+          <Route path="/manager/tasks/:id" element={<p>편집기 화면</p>} />
         </Routes>
         <Where />
       </MemoryRouter>
@@ -143,17 +143,17 @@ describe("직무 목록 걸러보기", () => {
     expect(screen.getByText("컵 씻기")).toBeInTheDocument();
     expect(screen.getByText("상자 옮기기")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /확인 필요/ })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByTestId("where")).toHaveTextContent("/m/tasks?filter=needs_check");
+    expect(screen.getByTestId("where")).toHaveTextContent("/manager/tasks?filter=needs_check");
   });
 
   it("주소의 ?filter=archived로 바로 열 수 있고, 모르는 값은 '전체'로 본다", async () => {
-    renderPage("/m/tasks?filter=archived");
+    renderPage("/manager/tasks?filter=archived");
     expect(await screen.findByText("옛 청소")).toBeInTheDocument();
     expect(listEmployerTasks).toHaveBeenCalledWith("archived", "");
   });
 
   it("모르는 걸러보기 값은 '전체'", async () => {
-    renderPage("/m/tasks?filter=bogus");
+    renderPage("/manager/tasks?filter=bogus");
     await screen.findByText("컵 씻기");
     expect(listEmployerTasks).toHaveBeenCalledWith("all", "");
   });
@@ -198,7 +198,7 @@ describe("직무 목록 행", () => {
     expect(document.body.textContent).not.toMatch(/draft|published|archived|needs_check/);
   });
 
-  it("(2b-1) 고치기를 누르면 편집기(/m/tasks/:id)로 간다", async () => {
+  it("(2b-1) 고치기를 누르면 편집기(/manager/tasks/:id)로 간다", async () => {
     renderPage();
     const { user, menu } = await openMenu("컵 씻기");
     const edit = within(menu).getByRole("menuitem", { name: "고치기" });
@@ -210,7 +210,7 @@ describe("직무 목록 행", () => {
   it("(2b-1) 제목을 누르면 편집기로 간다", async () => {
     renderPage();
     const link = await screen.findByRole("link", { name: "컵 씻기" });
-    expect(link).toHaveAttribute("href", "/m/tasks/t1");
+    expect(link).toHaveAttribute("href", "/manager/tasks/t1");
   });
 
   it("초안에는 [다시 보내기]가 없다", async () => {
@@ -236,7 +236,7 @@ describe("보관·되살리기·복제·완전히 지우기", () => {
   });
 
   it("보관 걸러보기에서 꺼내기 → unarchive 호출", async () => {
-    renderPage("/m/tasks?filter=archived");
+    renderPage("/manager/tasks?filter=archived");
     const { user, menu } = await openMenu("옛 청소");
     await user.click(within(menu).getByRole("menuitem", { name: "보관함에서 꺼내기" }));
     expect(unarchiveTask).toHaveBeenCalledWith("t9");
@@ -254,7 +254,7 @@ describe("보관·되살리기·복제·완전히 지우기", () => {
   });
 
   it("완전히 지우기는 보관 걸러보기에서만, 지워지는 것 목록을 보이는 위험 창으로 확인받는다", async () => {
-    renderPage("/m/tasks?filter=archived");
+    renderPage("/manager/tasks?filter=archived");
     const { user, menu } = await openMenu("옛 청소");
     await user.click(within(menu).getByRole("menuitem", { name: "완전히 지우기" }));
     const dialog = screen.getByRole("alertdialog", { name: "'옛 청소'를 완전히 지울까요?" });
@@ -270,7 +270,7 @@ describe("보관·되살리기·복제·완전히 지우기", () => {
 
   it("서버가 막으면(409) 서버 문장을 오류 토스트로 보이고 저절로 닫지 않는다", async () => {
     deleteTask.mockRejectedValue(new ApiError(409, "보관함으로 옮긴 직무만 완전히 지울 수 있어요."));
-    renderPage("/m/tasks?filter=archived");
+    renderPage("/manager/tasks?filter=archived");
     const { user, menu } = await openMenu("옛 청소");
     await user.click(within(menu).getByRole("menuitem", { name: "완전히 지우기" }));
     await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "완전히 지우기" }));
@@ -308,14 +308,14 @@ describe("검색·빈 상태·오류", () => {
     listEmployerTasks.mockResolvedValue({ items: [], counts: { all: 0, draft: 0, needs_check: 0, published: 0, archived: 0 } });
     renderPage();
     expect(await screen.findByText("아직 만든 직무가 없어요")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "새 직무 만들기" })).toHaveAttribute("href", "/m/tasks/new");
+    expect(screen.getByRole("link", { name: "새 직무 만들기" })).toHaveAttribute("href", "/manager/tasks/new");
     // 새 직무 화면(옛 ManagerPage)이 ?example=1을 읽어 예시 지시문을 채운다.
-    expect(screen.getByRole("link", { name: "예시로 만들어 보기" })).toHaveAttribute("href", "/m/tasks/new?example=1");
+    expect(screen.getByRole("link", { name: "예시로 만들어 보기" })).toHaveAttribute("href", "/manager/tasks/new?example=1");
   });
 
   it("걸러보기에 맞는 직무가 없으면 그 걸러보기 이름으로 알린다", async () => {
     listEmployerTasks.mockResolvedValue({ items: [], counts: { ...COUNTS, published: 0 } });
-    renderPage("/m/tasks?filter=published");
+    renderPage("/manager/tasks?filter=published");
     expect(await screen.findByText("'보냄'에 해당하는 직무가 없어요")).toBeInTheDocument();
   });
 
@@ -330,7 +330,7 @@ describe("검색·빈 상태·오류", () => {
 });
 
 describe("검색칸과 주소의 q가 함께 간다", () => {
-  it("사이드바 '직무'(/m/tasks)로 가면 검색이 풀리고 검색어가 되살아나지 않는다", async () => {
+  it("사이드바 '직무'(/manager/tasks)로 가면 검색이 풀리고 검색어가 되살아나지 않는다", async () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("컵 씻기");
@@ -340,7 +340,7 @@ describe("검색칸과 주소의 q가 함께 간다", () => {
     expect(screen.getByLabelText("제목으로 찾기")).toHaveValue("");
     // 잠깐 멈춘 뒤에도 옛 검색어가 주소에 다시 쓰이지 않는다
     await new Promise((r) => setTimeout(r, 600));
-    expect(screen.getByTestId("where")).toHaveTextContent(/^\/m\/tasks$/);
+    expect(screen.getByTestId("where")).toHaveTextContent(/^\/manager\/tasks$/);
     await waitFor(() => expect(listEmployerTasks).toHaveBeenLastCalledWith("all", ""));
   });
 
@@ -413,7 +413,7 @@ describe("행이 사라진 뒤 키보드 초점(WCAG 2.4.3)", () => {
   });
 
   it("완전히 지워 목록이 비면 목록 칸(tabpanel)으로 초점이 간다", async () => {
-    renderPage("/m/tasks?filter=archived");
+    renderPage("/manager/tasks?filter=archived");
     const { user, menu } = await openMenu("옛 청소");
     deleteTask.mockImplementation(async () => {
       listEmployerTasks.mockResolvedValue({ items: [], counts: { ...COUNTS, archived: 0 } });
@@ -455,7 +455,7 @@ describe("행동 뒤 다시 받기는 지금 걸러보기·검색어로(2회차 
     await new Promise((r) => setTimeout(r, 20));
     expect(screen.getByText("옛 청소")).toBeInTheDocument();
     expect(screen.getByRole("table")).not.toHaveAttribute("aria-busy");
-    expect(screen.getByTestId("where")).toHaveTextContent("/m/tasks?filter=archived");
+    expect(screen.getByTestId("where")).toHaveTextContent("/manager/tasks?filter=archived");
   });
 
   it("보관 요청이 끝나기 전에 '초안' 탭을 누르면, 끝난 뒤에도 초안 목록이 보인다", async () => {
@@ -577,7 +577,7 @@ describe("(2b-1) 다시 보내기 — 클릭 3번", () => {
     expect(item).toHaveTextContent("확인할 것 1개가 남았어요");
     await user.click(item);
     expect(await screen.findByText("편집기 화면")).toBeInTheDocument();
-    expect(screen.getByTestId("where")).toHaveTextContent("/m/tasks/t3?review=1");
+    expect(screen.getByTestId("where")).toHaveTextContent("/manager/tasks/t3?review=1");
     expect(sendCheck).not.toHaveBeenCalled();
   });
 });

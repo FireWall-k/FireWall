@@ -1,12 +1,12 @@
 // 상단 바 사용자 메뉴의 '도움 알림 받기' 스위치(contract §5.2 웹 푸시).
-// 켜면: 서버 공개 키 확인 → 서비스 워커(/m-sw.js, scope /m) 등록 → 알림 권한 → 구독 → 서버에 저장.
+// 켜면: 서버 공개 키 확인 → 서비스 워커(/m-sw.js, scope /manager) 등록 → 알림 권한 → 구독 → 서버에 저장.
 // 끄면: 구독을 풀고 서버에서 지운다. 서버에 키가 없거나 브라우저가 웹 푸시를 못 하면 스위치를 숨긴다.
-// 근로자 화면(/w)에는 서비스 워커를 두지 않는다(scope가 /m이고, 이 스위치를 켤 때만 등록한다).
+// 근로자 화면(/worker)에는 서비스 워커를 두지 않는다(scope가 /manager이고, 이 스위치를 켤 때만 등록한다).
 import { useCallback, useEffect, useState } from "react";
 import { deletePushSubscription, getPushConfig, savePushSubscription } from "../api/live";
 
 export const SW_URL = "/m-sw.js";
-export const SW_SCOPE = "/m";
+export const SW_SCOPE = "/manager";
 
 export type PushToggleResult = "on" | "off" | "denied" | "failed";
 

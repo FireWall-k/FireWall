@@ -27,7 +27,7 @@ for (const width of [1440, 390] as const) {
       const t = fourStateDraft();
       const none = t.steps[3];
       await mockEditor(page, { tasks: [t] });
-      await loginEmployer(page, `/m/tasks/${t.id}`);
+      await loginEmployer(page, `/manager/tasks/${t.id}`);
       await page.getByTestId("step-row-4").getByRole("button").first().click();
       const detail = page.getByTestId("step-detail");
       await expect(detail).toHaveAttribute("data-state", "none");

@@ -1,4 +1,4 @@
-// 번호 넣기(/w, 명세 4.1 + 창업자 결정 3). 번호는 숫자 4자리, 4번째 숫자를 누르면 바로 들어간다
+// 번호 넣기(/worker, 명세 4.1 + 창업자 결정 3). 번호는 숫자 4자리, 4번째 숫자를 누르면 바로 들어간다
 // ([들어가기] 버튼 없음). 키패드 3×4, 맨 아래 줄 [지우기][0][비우기]. 넣은 숫자는 가리지 않고 보여 준다
 // (외우지 않아도 확인하며 누를 수 있게, WCAG 3.3.8).
 // 틀리면 '번호가 맞지 않아요. 다시 눌러 봐요.'(소리로도) + 칸을 비운다. 3번째부터 '(호칭)께 번호를 물어봐요.'.
@@ -113,7 +113,7 @@ export default function EntryScreen({ onLogin }: { onLogin: (a: AuthState) => vo
         const state = await authApi.loginWorker(workplaceCode, code);
         if (!alive.current) return;
         onLogin(state);
-        navigate("/w/today", { replace: true });
+        navigate("/worker/today", { replace: true });
       } catch (e) {
         if (!alive.current) return;
         setBusy(false);
@@ -146,7 +146,7 @@ export default function EntryScreen({ onLogin }: { onLogin: (a: AuthState) => vo
   };
 
   if (!workplaceCode) {
-    return <StatusScreen kind="unpaired" speak onSecondary={() => navigate("/w/setup")} />;
+    return <StatusScreen kind="unpaired" speak onSecondary={() => navigate("/worker/setup")} />;
   }
   if (fatal) {
     return <StatusScreen kind={fatal} speak onAction={() => setFatal(null)} />;

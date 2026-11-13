@@ -26,10 +26,10 @@ async function tabTo(page: Page, name: RegExp, max = 80) {
 
 test("키보드만으로: 새 직무 → 나누기 → 그림 고르기 → 순서 바꾸기 → Enter로 확인 → 그림 한눈에 일괄 확인 → 보내기", async ({ page }) => {
   const m = await mockEditor(page);
-  await loginEmployer(page, "/m/tasks");
+  await loginEmployer(page, "/manager/tasks");
   await tabTo(page, /^\|\|새 직무$/);
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/m\/tasks\/new$/);
+  await expect(page).toHaveURL(/\/manager\/tasks\/new$/);
   await tabTo(page, /어떤 일을 시킬까요\?/);
   await page.keyboard.type(FIXED_SENTENCE);
   await tabTo(page, /\|단계로 나누기$/);

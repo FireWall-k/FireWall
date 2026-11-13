@@ -1,7 +1,7 @@
 import { test, expect, devices } from "@playwright/test";
 import { emojiInText, horizontalOverflow, loginEmployer, mockEmployer } from "./employer-mock";
 
-// 사업주 새 틀(2a-1, tasks §3.4): 폭별 배치(사이드바 240·72, 아래 탭바), 가로 스크롤 0, 모든 /m 화면의 도움 띠,
+// 사업주 새 틀(2a-1, tasks §3.4): 폭별 배치(사이드바 240·72, 아래 탭바), 가로 스크롤 0, 모든 /manager 화면의 도움 띠,
 // 옛 주소 넘김, 오류 토스트 유지, 움직임 줄이기, 손가락 기기 44, 이모지 0, 로그인(Enter·390 위 띠 120·blue-700 0),
 // 직무 목록 시연 대본(직무 → 확인 필요 → 보관하기 → 보관에서 꺼내기).
 // 사업주는 주로 PC로 쓰므로 이 파일은 데스크톱 브라우저로 본다(손가락 기기 시험만 따로 휴대폰으로).
@@ -10,17 +10,17 @@ void _ignored;
 test.use({ ...DESKTOP, locale: "ko-KR" });
 
 const WIDTHS = [1440, 1279, 767, 390] as const;
-const ROUTES = ["/m", "/m/tasks", "/m/tasks/new", "/m/workers", "/m/settings"] as const;
+const ROUTES = ["/manager", "/manager/tasks", "/manager/tasks/new", "/manager/workers", "/manager/settings"] as const;
 
 for (const width of WIDTHS) {
   test.describe(`${width}폭`, () => {
     test.use({ viewport: { width, height: width === 390 ? 844 : 900 } });
 
-    test("모든 /m 화면: 가로 스크롤 0, 도움 띠 보임, 이모지 0", async ({ page }) => {
+    test("모든 /manager 화면: 가로 스크롤 0, 도움 띠 보임, 이모지 0", async ({ page }) => {
       // 화면 5개를 차례로 연다(2d: 근로자·설정이 실제 화면이 됨). 병렬로 돌 때 30초를 넘는 일이 있어 60초로 둔다.
       test.setTimeout(60_000);
       await mockEmployer(page);
-      await loginEmployer(page, "/m");
+      await loginEmployer(page, "/manager");
       for (const path of ROUTES) {
         await page.goto(path);
         await expect(page.getByTestId("help-band"), `${path} 도움 띠`).toBeVisible();
@@ -33,7 +33,7 @@ for (const width of WIDTHS) {
 
     test("사이드바·아이콘 모드·아래 탭바", async ({ page }) => {
       await mockEmployer(page);
-      await loginEmployer(page, "/m/tasks");
+      await loginEmployer(page, "/manager/tasks");
       await expect(page.getByRole("heading", { name: "직무", level: 1 })).toBeVisible();
       const sidebar = page.getByTestId("sidebar");
       const tabbar = page.getByTestId("mobile-tabbar");
@@ -59,13 +59,15 @@ for (const width of WIDTHS) {
 
 test("옛 주소는 새 주소로 넘어간다(뒤로 가기에 남지 않음)", async ({ page }) => {
   await mockEmployer(page);
-  await loginEmployer(page, "/m");
+  await loginEmployer(page, "/manager");
   for (const [from, to] of [
-    ["/manager", "/m/tasks/new"],
-    ["/dashboard", "/m"],
-    ["/workers", "/m/workers"],
-    ["/admin/tasks", "/m/tasks/new"],
-    ["/admin/dashboard", "/m"],
+    ["/m", "/manager"],
+    ["/m/tasks/new", "/manager/tasks/new"],
+    ["/m/workers", "/manager/workers"],
+    ["/dashboard", "/manager"],
+    ["/workers", "/manager/workers"],
+    ["/admin/tasks", "/manager/tasks/new"],
+    ["/admin/dashboard", "/manager"],
   ] as const) {
     await page.goto(from);
     await expect(page, from).toHaveURL(new RegExp(`${to.replace(/\//g, "\\/")}$`));
@@ -75,7 +77,7 @@ test("옛 주소는 새 주소로 넘어간다(뒤로 가기에 남지 않음)",
 
 test("로그인 화면: Enter로 로그인해 사업주 홈으로, [로그인]은 44px moss, blue-700 0건", async ({ page }) => {
   await mockEmployer(page);
-  await page.goto("/m/login");
+  await page.goto("/manager/login");
   const submit = page.getByRole("button", { name: "로그인", exact: true });
   const box = await submit.boundingBox();
   expect(box!.height).toBeGreaterThanOrEqual(44);
@@ -90,7 +92,7 @@ test("로그인 화면: Enter로 로그인해 사업주 홈으로, [로그인]�
   await page.getByLabel("아이디").fill("boss");
   await page.getByLabel("비밀번호").fill("pw");
   await page.getByLabel("비밀번호").press("Enter");
-  await expect(page).toHaveURL(/\/m$/);
+  await expect(page).toHaveURL(/\/manager$/);
   await expect(page.getByTestId("sidebar")).toBeVisible();
 });
 
@@ -98,7 +100,7 @@ test.describe("로그인 390", () => {
   test.use({ viewport: { width: 390, height: 844 } });
   test("왼쪽 소개 패널이 위쪽 120 띠로 접힌다", async ({ page }) => {
     await mockEmployer(page);
-    await page.goto("/m/login");
+    await page.goto("/manager/login");
     const band = page.getByTestId("login-intro");
     await expect(band).toBeVisible();
     const b = (await band.boundingBox())!;
@@ -111,7 +113,7 @@ test.describe("로그인 390", () => {
 test("오류 토스트는 10초 뒤에도 남고, 성공 토스트는 저절로 닫힌다", async ({ page }) => {
   await page.clock.install();
   const m = await mockEmployer(page);
-  await loginEmployer(page, "/m/tasks");
+  await loginEmployer(page, "/manager/tasks");
   await page.getByRole("button", { name: "앞치마 입기 메뉴" }).click();
   await page.getByRole("menuitem", { name: "보관하기" }).click();
   const ok = page.getByText("'앞치마 입기'를 보관함으로 옮겼어요");
@@ -131,7 +133,7 @@ test("오류 토스트는 10초 뒤에도 남고, 성공 토스트는 저절로 
 test("움직임 줄이기: 틀의 전환 시간이 0", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await mockEmployer(page);
-  await loginEmployer(page, "/m/tasks");
+  await loginEmployer(page, "/manager/tasks");
   await expect(page.getByRole("tab", { name: /전체/ })).toBeVisible();
   const durations = await page.evaluate(() =>
     Array.from(document.querySelectorAll("a, button, [role=tab]")).map((el) => {
@@ -150,7 +152,7 @@ test.describe("손가락 기기(휴대폰)", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   test("틀·직무 목록의 버튼·링크가 44 이상", async ({ page }) => {
     await mockEmployer(page);
-    await loginEmployer(page, "/m/tasks");
+    await loginEmployer(page, "/manager/tasks");
     await expect(page.getByText("컵 씻기")).toBeVisible();
     expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true);
     const small = await page.evaluate(() =>
@@ -170,7 +172,7 @@ test.describe("손가락 기기(휴대폰)", () => {
 
   test("로그인 화면의 단추·링크('근로자 화면으로 ›' 포함)도 44 이상", async ({ page }) => {
     await mockEmployer(page);
-    await page.goto("/m/login");
+    await page.goto("/manager/login");
     await expect(page.getByRole("link", { name: /근로자 화면으로/ })).toBeVisible();
     expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true);
     const small = await page.evaluate(() =>
@@ -184,7 +186,7 @@ test.describe("손가락 기기(휴대폰)", () => {
 
   test("390: 걸러보기 탭 5개가 한 줄에 다 보이고, 도움 띠 글이 좁은 칸에 꺾이지 않는다", async ({ page }) => {
     await mockEmployer(page);
-    await loginEmployer(page, "/m/tasks");
+    await loginEmployer(page, "/manager/tasks");
     const tablist = page.getByRole("tablist", { name: "직무 걸러보기" });
     await expect(page.getByRole("tab", { name: /보관/ })).toBeVisible();
     const fit = await tablist.evaluate((el) => {
@@ -214,9 +216,9 @@ test.describe("직무 목록 시연 대본", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
   test("사이드바 '직무' → '확인 필요' → 보관하기 → 보관에서 꺼내기", async ({ page }) => {
     const m = await mockEmployer(page);
-    await loginEmployer(page, "/m");
+    await loginEmployer(page, "/manager");
     await page.getByTestId("sidebar").getByRole("link", { name: "직무" }).click();
-    await expect(page).toHaveURL(/\/m\/tasks$/);
+    await expect(page).toHaveURL(/\/manager\/tasks$/);
     const table = page.getByRole("table", { name: "직무 목록" });
     await expect(table.getByText("컵 씻기")).toBeVisible();
 
@@ -249,7 +251,7 @@ test.describe("직무 목록 시연 대본", () => {
 
   test("완전히 지우기: 보관 걸러보기에서만, 지워지는 것 목록을 확인한 뒤", async ({ page }) => {
     const m = await mockEmployer(page);
-    await loginEmployer(page, "/m/tasks?filter=archived");
+    await loginEmployer(page, "/manager/tasks?filter=archived");
     await page.getByRole("button", { name: "옛 창고 정리 메뉴" }).click();
     await page.getByRole("menuitem", { name: "완전히 지우기" }).click();
     const dialog = page.getByRole("alertdialog");
@@ -274,7 +276,7 @@ test.describe("행동 뒤 키보드 초점(WCAG 2.4.3)", () => {
 
   test("키보드로 보관하기 → 초점이 다음 행 … 단추로, [실행 취소] → 그 직무로 돌아옴", async ({ page }) => {
     await mockEmployer(page);
-    await loginEmployer(page, "/m/tasks");
+    await loginEmployer(page, "/manager/tasks");
     const table = page.getByRole("table", { name: "직무 목록" });
     await expect(table.getByText("컵 씻기")).toBeVisible();
     await page.getByRole("button", { name: "컵 씻기 메뉴" }).focus();
@@ -296,7 +298,7 @@ test.describe("행동 뒤 키보드 초점(WCAG 2.4.3)", () => {
 
   test("완전히 지우기 → 마지막 행이 사라지면 목록 칸으로, 검색 [X] → 검색칸으로", async ({ page }) => {
     await mockEmployer(page);
-    await loginEmployer(page, "/m/tasks?filter=archived");
+    await loginEmployer(page, "/manager/tasks?filter=archived");
     await page.getByRole("button", { name: "옛 창고 정리 메뉴" }).focus();
     await page.keyboard.press("Enter");
     await page.keyboard.press("End");

@@ -104,7 +104,7 @@ def test_sends_to_each_subscription_without_worker_name(client, keys, sent):
     assert r.status_code == 201
     assert sorted(c["endpoint"] for c in calls) == ["https://fcm.googleapis.com/fcm/send/a", "https://fcm.googleapis.com/fcm/send/b"]
     for c in calls:
-        assert c["data"] == {"title": "잡카드", "body": "도움 요청이 있어요", "url": "/m#help"}
+        assert c["data"] == {"title": "잡카드", "body": "도움 요청이 있어요", "url": "/manager#help"}
         assert w["display_name"] not in json.dumps(c["data"], ensure_ascii=False)
         assert c["claims"]["sub"].startswith("mailto:")
     with SessionLocal() as db:

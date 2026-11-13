@@ -11,7 +11,7 @@ test.use({ ...DESKTOP, locale: "ko-KR", viewport: { width: 1440, height: 900 } }
 test("J/K로 단계를 옮겨 다니고, 입력칸 안에서는 꺼지고, ?로 안내 창(창이 열린 동안 J 꺼짐)", async ({ page }) => {
   const t = fixedDraft();
   await mockEditor(page, { tasks: [t] });
-  await loginEmployer(page, `/m/tasks/${t.id}`);
+  await loginEmployer(page, `/manager/tasks/${t.id}`);
   await expect(page.getByTestId("step-row-1")).toHaveAttribute("data-selected", "true");
   await blur(page);
 
@@ -64,7 +64,7 @@ test("J/K로 단계를 옮겨 다니고, 입력칸 안에서는 꺼지고, ?로 
 test("손잡이를 끌어 순서 바꾸기 → 서버에 새 순서", async ({ page }) => {
   const t = fixedDraft();
   const m = await mockEditor(page, { tasks: [t] });
-  await loginEmployer(page, `/m/tasks/${t.id}`);
+  await loginEmployer(page, `/manager/tasks/${t.id}`);
   const grip = page.getByTestId("step-grip-1");
   const target = page.getByTestId("step-row-3");
   const g = (await grip.boundingBox())!;

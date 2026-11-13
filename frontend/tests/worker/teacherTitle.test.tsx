@@ -16,7 +16,7 @@ import {
 } from "../../src/workerCodes";
 
 // (2d, contract §6.2) 호칭은 사업장 설정. 근로자 문구는 받침에 맞춰 조사를 붙이고, 로그인 전에는 저장값 또는 '선생님'.
-// /w?site=CODE는 기기에 사업장 코드를 저장하고(다르면 예전 가게 이름 지움) 주소에서 site를 뺀다.
+// /worker?site=CODE는 기기에 사업장 코드를 저장하고(다르면 예전 가게 이름 지움) 주소에서 site를 뺀다.
 
 function flat(v: unknown, p = ""): [string, string][] {
   if (typeof v === "string") return [[p, v]];
@@ -100,7 +100,7 @@ describe("COPY는 기기에 저장된 호칭으로 읽는다(로그인 전에는
   });
 });
 
-describe("/w?site=CODE", () => {
+describe("/worker?site=CODE", () => {
   it("저장된 코드가 없으면 저장한다(정규화)", () => {
     expect(applySiteCode(" demo-01 ")).toBe(true);
     expect(getSavedWorkplaceCode()).toBe("DEMO01");
@@ -146,14 +146,14 @@ describe("WorkerApp이 ?site=를 읽는다", () => {
     saveWorkplaceCode("OLD111");
     saveWorkplaceName("옛 가게");
     render(
-      <MemoryRouter initialEntries={["/w?site=new222&x=1"]}>
+      <MemoryRouter initialEntries={["/worker?site=new222&x=1"]}>
         <Routes>
-          <Route path="/w/*" element={<WorkerApp auth={null} onLogin={() => undefined} onLogout={() => undefined} />} />
+          <Route path="/worker/*" element={<WorkerApp auth={null} onLogin={() => undefined} onLogout={() => undefined} />} />
         </Routes>
       </MemoryRouter>,
     );
     const entry = await screen.findByTestId("entry");
-    expect(entry.textContent).toBe("/w?x=1|NEW222");
+    expect(entry.textContent).toBe("/worker?x=1|NEW222");
     expect(getSavedWorkplaceName()).toBeNull();
   });
 });

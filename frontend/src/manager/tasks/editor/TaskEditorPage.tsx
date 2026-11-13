@@ -1,4 +1,4 @@
-// 직무 편집기(/m/tasks/:id, 명세 5.5, tasks §4.3 TaskEditorPage). 사업주 화면의 중심.
+// 직무 편집기(/manager/tasks/:id, 명세 5.5, tasks §4.3 TaskEditorPage). 사업주 화면의 중심.
 // - 머리 64: 제목 바로 고치기 · 상태 배지 · SaveIndicator · ReviewQueueBar('확인할 것 n개 남음 · [다음 ▶]') ·
 //   [그림 한눈에] · [보내기](확인할 것이 남으면 꺼짐 + 툴팁). 보낸 직무면 아래에 VersionNotice.
 // - 넓은 화면(768 이상): 단계 목록 280~320 + 단계 상세. 390: 목록만 → 행을 누르면 상세 전체 화면, 아래 고정 줄에
@@ -608,7 +608,7 @@ export default function TaskEditorPage({ taskId, initialTask, onInitialUsed, onP
           ))}
         </>
       ),
-      action: { label: sendSheet.viewStatus, onClick: () => navigate("/m") },
+      action: { label: sendSheet.viewStatus, onClick: () => navigate("/manager") },
     });
     reload();
   }

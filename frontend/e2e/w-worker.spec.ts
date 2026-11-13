@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { FORBIDDEN_PATTERNS } from "../src/worker/copy";
 import { LONG_SENTENCE, loginAsWorker, mockWorkerBackend, newState, pairedDevice, type MockState } from "./w-mock";
 
-// 새 근로자 화면(/w) 자동 검사(명세 8.3의 1~6). 7번(백엔드)은 backend/tests/test_worker_phase1.py가 맡는다.
+// 새 근로자 화면(/worker) 자동 검사(명세 8.3의 1~6). 7번(백엔드)은 backend/tests/test_worker_phase1.py가 맡는다.
 // 실제 브라우저 레이아웃으로 잰다(jsdom은 배치를 계산하지 않는다). API는 w-mock.ts의 가짜 백엔드.
 
 const TOUCH_MIN_PX = 80;
@@ -75,7 +75,7 @@ test.describe("1. [다 했어요]가 늘 화면 안에 있다", () => {
       await loginAsWorker(page);
       await page.setViewportSize(vp);
       // 가장 긴 문장 단계(3단계)에서 잰다.
-      await page.goto("/w/job/asg-1/step/3");
+      await page.goto("/worker/job/asg-1/step/3");
       await expect(page.getByTestId("step-sentence")).toHaveText(LONG_SENTENCE);
       await expectDoneInViewport(page, `${name} 기본`);
 
@@ -93,7 +93,7 @@ test.describe("1. [다 했어요]가 늘 화면 안에 있다", () => {
   test("도움 띠 '불렀어요': 문장 왼쪽·[취소] 오른쪽 한 줄, [취소] 글자는 줄바꿈 없음(결정 8)", async ({ page }) => {
     await loginAsWorker(page);
     await page.setViewportSize({ width: 360, height: 640 });
-    await page.goto("/w/job/asg-1/step/1");
+    await page.goto("/worker/job/asg-1/step/1");
     await page.getByTestId("help-button").click();
     const text = page.getByTestId("help-band-text");
     const cancel = page.getByRole("button", { name: "취소" });
@@ -110,15 +110,15 @@ test.describe("1. [다 했어요]가 늘 화면 안에 있다", () => {
 
 test("2. 근로자 문장은 낱말 단위 줄바꿈(keep-all)", async ({ page }) => {
   await loginAsWorker(page);
-  await page.goto("/w/job/asg-1/step/3");
+  await page.goto("/worker/job/asg-1/step/3");
   const wb = await page.getByTestId("step-sentence").evaluate((el) => getComputedStyle(el).wordBreak);
   expect(wb).toBe("keep-all");
 });
 
-test.describe("3. 번호 넣기(/w)", () => {
+test.describe("3. 번호 넣기(/worker)", () => {
   test("키가 80px 이상이고 axe 심각 위반이 없다", async ({ page }) => {
     await pairedDevice(page);
-    await page.goto("/w");
+    await page.goto("/worker");
     await expect(page.getByRole("heading", { name: "내 번호를 눌러요" })).toBeVisible();
     // 보통 높이에서는 위 띠에(낮은 화면은 번호 칸 위로 옮긴다).
     await expect(page.locator("header").getByText("행복카페")).toBeVisible();
@@ -131,7 +131,7 @@ test.describe("3. 번호 넣기(/w)", () => {
 
   test("4번째 숫자에서 바로 들어가고, 틀리면 칸을 비우고, 3번째부터 선생님께 물어보라고 한다", async ({ page }) => {
     await pairedDevice(page);
-    await page.goto("/w");
+    await page.goto("/worker");
     const press = async (code: string) => {
       for (const d of code) await page.getByRole("button", { name: d, exact: true }).click();
     };
@@ -148,13 +148,13 @@ test.describe("3. 번호 넣기(/w)", () => {
     await expect(page.getByTestId("login-notice")).toContainText("선생님께 번호를 물어봐요.");
     await expectNoForbidden(page, "번호 틀림");
     await press("1234");
-    await expect(page).toHaveURL(/\/w\/today$/);
+    await expect(page).toHaveURL(/\/worker\/today$/);
     await expect(page.getByText("김민수 님, 안녕하세요")).toBeVisible();
     expect(state.loginAttempts).toEqual(["1235", "1236", "1237", "1234"]);
   });
 
   test("연결 안 된 기기는 '연결 안 됨' 화면", async ({ page }) => {
-    await page.goto("/w");
+    await page.goto("/worker");
     await expect(page.getByText("이 기기를 아직 연결하지 않았어요")).toBeVisible();
     await page.getByRole("button", { name: "선생님용: 기기 연결하기" }).click();
     await page.getByLabel("가게 코드").fill("demo01");
@@ -166,7 +166,7 @@ test.describe("3. 번호 넣기(/w)", () => {
 test.describe("4. 오프라인", () => {
   test("도움 요청이 닿지 않으면 '아직 못 불렀어요'와 [다시 부르기]", async ({ page }) => {
     await loginAsWorker(page);
-    await page.goto("/w/job/asg-1/step/1");
+    await page.goto("/worker/job/asg-1/step/1");
     await expect(page.getByTestId("step-sentence")).toBeVisible();
     state.helpOffline = true;
     await page.getByTestId("help-button").click();
@@ -181,7 +181,7 @@ test.describe("4. 오프라인", () => {
 
   test("끊긴 동안 끝낸 단계 기록은 대기열에 남았다가 다시 연결되면 보낸다", async ({ page }) => {
     await loginAsWorker(page);
-    await page.goto("/w/job/asg-2/step/1");
+    await page.goto("/worker/job/asg-2/step/1");
     await expect(page.getByTestId("step-sentence")).toHaveText("밀대로 바닥을 닦아요");
     state.offline = true;
     await page.evaluate(() => window.dispatchEvent(new Event("offline")));
@@ -206,11 +206,11 @@ test.describe("4. 오프라인", () => {
     state.jobs[0].done_step_ids = ["s1"];
     state.jobs[0].status = "in_progress";
     await loginAsWorker(page);
-    await page.goto("/w/today");
+    await page.goto("/worker/today");
     await expect(page.getByTestId("job-card").first()).toContainText("2단계부터 이어서 해요");
     await page.getByTestId("job-card").first().click();
     await page.getByRole("button", { name: "이어서 하기" }).click();
-    await expect(page).toHaveURL(/\/w\/job\/asg-1\/step\/2$/);
+    await expect(page).toHaveURL(/\/worker\/job\/asg-1\/step\/2$/);
     await page.reload();
     await expect(page.getByTestId("step-sentence")).toHaveText("테이프를 붙여요");
   });
@@ -218,7 +218,7 @@ test.describe("4. 오프라인", () => {
 
 test("5. 근로자 화면 전체에 금지어·영어가 없다", async ({ page }) => {
   await loginAsWorker(page);
-  await page.goto("/w/today");
+  await page.goto("/worker/today");
   await expect(page.getByTestId("today-screen")).toBeVisible();
   await expectNoForbidden(page, "홈");
   await expectTouchTargets(page);
@@ -242,12 +242,12 @@ test("5. 근로자 화면 전체에 금지어·영어가 없다", async ({ page 
   await expectNoSeriousAxe(page);
   await expect.poll(() => state.logs.length).toBe(3);
 
-  await page.goto("/w/history");
+  await page.goto("/worker/history");
   await expect(page.getByText("오늘", { exact: true })).toBeVisible();
   await expectNoForbidden(page, "했던 일");
 
   // 나가기 확인 화면.
-  await page.goto("/w/job/asg-2/step/1");
+  await page.goto("/worker/job/asg-2/step/1");
   await page.getByRole("button", { name: "나가기" }).click();
   await expect(page.getByText("일을 멈출까요?")).toBeVisible();
   await expectNoForbidden(page, "나가기 확인");
@@ -255,7 +255,7 @@ test("5. 근로자 화면 전체에 금지어·영어가 없다", async ({ page 
 
 test("[다 했어요]를 600ms 안에 두 번 눌러도 한 단계만 넘어간다", async ({ page }) => {
   await loginAsWorker(page);
-  await page.goto("/w/job/asg-1/step/1");
+  await page.goto("/worker/job/asg-1/step/1");
   await expect(page.getByTestId("step-sentence")).toHaveText("박스 바닥 덮개를 접어요");
   // 진짜 입력 이벤트 두 번을 '누른 시각' 450ms 간격으로 보낸다(CDP timestamp). 예전에는 페이지 안 setTimeout(450)으로
   // 눌렀는데, 다음 단계를 그리느라 화면이 바쁘면 그 타이머가 600ms 넘어서야 불려 '늦게 누른 것'이 되었다(2c).
@@ -281,7 +281,7 @@ test("[다 했어요]를 600ms 안에 두 번 눌러도 한 단계만 넘어간�
 test("6. 움직임 줄이기를 켜면 전환 시간이 0이다", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await loginAsWorker(page);
-  await page.goto("/w/job/asg-1/step/1");
+  await page.goto("/worker/job/asg-1/step/1");
   const cell = page.getByTestId("step-picture-cell");
   await expect(cell).toBeVisible();
   const { anim, trans } = await cell.evaluate((el) => {
@@ -315,7 +315,7 @@ test.describe("조심 띠 글자는 늘 한 줄(도움 띠 + 글자 130%)", () =
         document.addEventListener("DOMContentLoaded", set);
       });
       await page.setViewportSize(vp);
-      await page.goto("/w/job/asg-1/step/3");
+      await page.goto("/worker/job/asg-1/step/3");
       await page.getByTestId("caution-band").waitFor();
       await page.getByTestId("help-button").click();
       await page.getByTestId("help-band").waitFor();

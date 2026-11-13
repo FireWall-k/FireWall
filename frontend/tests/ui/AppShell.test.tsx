@@ -36,12 +36,12 @@ function help(over: Partial<EmployerHelp> = {}): EmployerHelp {
   };
 }
 
-function renderShell(path = "/m/tasks", onLogout = vi.fn()) {
+function renderShell(path = "/manager/tasks", onLogout = vi.fn()) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route
-          path="/m/*"
+          path="/manager/*"
           element={
             <AppShell displayName="테스트사장" onLogout={onLogout}>
               <Routes>
@@ -53,7 +53,7 @@ function renderShell(path = "/m/tasks", onLogout = vi.fn()) {
             </AppShell>
           }
         />
-        <Route path="/m/login" element={<p>로그인 화면</p>} />
+        <Route path="/manager/login" element={<p>로그인 화면</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -98,20 +98,20 @@ describe("AppShell(사이드바·상단 바·아래 탭바)", () => {
   });
 
   it("상단 바: 이동 경로, [새 직무], 도움 종, 사용자 메뉴", () => {
-    renderShell("/m/tasks/new");
+    renderShell("/manager/tasks/new");
     const crumbs = screen.getByRole("navigation", { name: "이동 경로" });
-    expect(within(crumbs).getByRole("link", { name: "직무" })).toHaveAttribute("href", "/m/tasks");
+    expect(within(crumbs).getByRole("link", { name: "직무" })).toHaveAttribute("href", "/manager/tasks");
     expect(within(crumbs).getByText("새 직무")).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "새 직무" })).toHaveAttribute("href", "/m/tasks/new");
+    expect(screen.getByRole("link", { name: "새 직무" })).toHaveAttribute("href", "/manager/tasks/new");
     expect(screen.getByRole("button", { name: "도움 요청 없음" })).toBeDisabled();
     expect(screen.getByRole("button", { name: /테스트사장\s*계정 메뉴/ })).toBeInTheDocument();
     expect(screen.getByText("새 직무 본문")).toBeInTheDocument();
   });
 
-  it("사용자 메뉴 [로그아웃] → onLogout + /m/login", async () => {
+  it("사용자 메뉴 [로그아웃] → onLogout + /manager/login", async () => {
     const user = userEvent.setup();
     const onLogout = vi.fn();
-    renderShell("/m", onLogout);
+    renderShell("/manager", onLogout);
     await user.click(screen.getByRole("button", { name: /테스트사장\s*계정 메뉴/ }));
     await user.click(screen.getByRole("menuitem", { name: "로그아웃" }));
     expect(onLogout).toHaveBeenCalled();
@@ -125,13 +125,13 @@ describe("AppShell(사이드바·상단 바·아래 탭바)", () => {
   });
 
   it("이동 경로·폭 규칙: 편집기만 꽉 채우고 목록·홈은 최대 1200", () => {
-    expect(crumbsFor("/m").map((c) => c.label)).toEqual(["홈"]);
-    expect(crumbsFor("/m/tasks/abc").map((c) => c.label)).toEqual(["직무", "직무 고치기"]);
-    expect(crumbsFor("/m/workers/w1").map((c) => c.label)).toEqual(["근로자", "근로자 상세"]);
-    expect(isFullWidth("/m/tasks/abc")).toBe(true);
-    expect(isFullWidth("/m/tasks/new")).toBe(false);
-    expect(isFullWidth("/m/tasks")).toBe(false);
-    expect(isFullWidth("/m")).toBe(false);
+    expect(crumbsFor("/manager").map((c) => c.label)).toEqual(["홈"]);
+    expect(crumbsFor("/manager/tasks/abc").map((c) => c.label)).toEqual(["직무", "직무 고치기"]);
+    expect(crumbsFor("/manager/workers/w1").map((c) => c.label)).toEqual(["근로자", "근로자 상세"]);
+    expect(isFullWidth("/manager/tasks/abc")).toBe(true);
+    expect(isFullWidth("/manager/tasks/new")).toBe(false);
+    expect(isFullWidth("/manager/tasks")).toBe(false);
+    expect(isFullWidth("/manager")).toBe(false);
   });
 });
 
@@ -139,7 +139,7 @@ describe("도움 띠·종이 LiveProvider 하나를 나눠 쓴다(contract §5.2
   it("띠와 종이 함께 있어도 현황 주소를 한 번만 부른다", async () => {
     vi.useFakeTimers();
     employerHelp.mockResolvedValue([help(), help({ id: "h2", worker_name: "이수진" })]);
-    renderShell("/m/tasks");
+    renderShell("/manager/tasks");
     await act(async () => {});
     expect(getLive).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId("help-band")).toHaveTextContent("김민지 님이 도움을 요청했어요");
@@ -150,10 +150,10 @@ describe("도움 띠·종이 LiveProvider 하나를 나눠 쓴다(contract §5.2
     expect(getLive).toHaveBeenCalledTimes(2);
   });
 
-  it("화면을 옮겨도 틀은 그대로라 다시 부르지 않고, 모든 /m 화면에서 띠가 보인다", async () => {
+  it("화면을 옮겨도 틀은 그대로라 다시 부르지 않고, 모든 /manager 화면에서 띠가 보인다", async () => {
     employerHelp.mockResolvedValue([help()]);
     const user = userEvent.setup();
-    renderShell("/m");
+    renderShell("/manager");
     await screen.findByTestId("help-band");
     for (const name of ["직무", "설정", "홈"]) {
       await user.click(within(screen.getByRole("navigation", { name: "주 메뉴" })).getByRole("link", { name }));
@@ -165,7 +165,7 @@ describe("도움 띠·종이 LiveProvider 하나를 나눠 쓴다(contract §5.2
   it("종을 누르면 띠의 첫 버튼으로 초점이 간다", async () => {
     employerHelp.mockResolvedValue([help()]);
     const user = userEvent.setup();
-    renderShell("/m/tasks");
+    renderShell("/manager/tasks");
     const bell = await screen.findByRole("button", { name: "도움 요청 1건 · 띠로 가기" });
     await user.click(bell);
     await waitFor(() => expect(screen.getByRole("button", { name: "보러 가기" })).toHaveFocus());

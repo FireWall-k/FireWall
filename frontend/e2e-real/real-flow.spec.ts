@@ -128,14 +128,14 @@ async function todayCard(page: Page, request: APIRequestContext, assignmentId: s
 }
 
 async function pairAndLogin(page: Page, request: APIRequestContext, s: Seed) {
-  await page.goto("/w/setup");
+  await page.goto("/worker/setup");
   await page.getByLabel("가게 코드").fill(s.workplaceCode);
   await page.getByRole("button", { name: "연결하기" }).click();
-  await expect(page).toHaveURL(/\/w$/);
+  await expect(page).toHaveURL(/\/worker$/);
   await page.getByTestId("keypad").waitFor();
   await shot(page, "01-entry");
   for (const d of s.code) await page.getByRole("button", { name: d, exact: true }).click();
-  await expect(page).toHaveURL(/\/w\/today$/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/\/worker\/today$/, { timeout: 15_000 });
   await page.getByTestId("job-card").first().waitFor();
   // 근로자가 받은 버전의 단계 id(편집 단계 id와 다름).
   const card = await todayCard(page, request, s.assignmentId);
@@ -156,7 +156,7 @@ async function pressDone(page: Page, expectUrl: RegExp) {
   await expect(page).toHaveURL(expectUrl, { timeout: 10_000 });
 }
 
-const stepUrl = (s: Seed, n: number) => new RegExp(`/w/job/${s.assignmentId}/step/${n}$`);
+const stepUrl = (s: Seed, n: number) => new RegExp(`/worker/job/${s.assignmentId}/step/${n}$`);
 
 test.describe("실제 백엔드 — 근로자 흐름", () => {
   test("키패드 → 오늘 → 단계 → 마지막 단계 도움(완료 아님) → 취소 → 완료 → 했던 일", async ({ page, request, browser }) => {
@@ -164,7 +164,7 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
     const n = s.sentences.length;
 
     // 틀린 번호 먼저: 칸이 비고 쉬운 문장이 나온다(서버 401 문장이 그대로 나오지 않는다).
-    await page.goto("/w/setup");
+    await page.goto("/worker/setup");
     await page.getByLabel("가게 코드").fill(s.workplaceCode);
     await page.getByRole("button", { name: "연결하기" }).click();
     await page.getByTestId("keypad").waitFor();
@@ -175,13 +175,13 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
     await shot(page, "02-entry-wrong");
 
     for (const d of s.code) await page.getByRole("button", { name: d, exact: true }).click();
-    await expect(page).toHaveURL(/\/w\/today$/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/worker\/today$/, { timeout: 15_000 });
     const card = page.getByTestId("job-card").filter({ hasText: s.title });
     await card.waitFor();
     await shot(page, "03-today");
 
     await card.click();
-    await expect(page).toHaveURL(new RegExp(`/w/job/${s.assignmentId}$`));
+    await expect(page).toHaveURL(new RegExp(`/worker/job/${s.assignmentId}$`));
     await shot(page, "04-start");
     await page.getByRole("button", { name: "시작하기" }).click();
     await expect(page).toHaveURL(stepUrl(s, 1));
@@ -233,7 +233,7 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
       localStorage.setItem("jobcard_role", "employer");
       localStorage.setItem("jobcard_name", "통합 카페");
     }, s.employer);
-    await bossPage.goto("/m/tasks/new");
+    await bossPage.goto("/manager/tasks/new");
     // 2c: 옛 HelpAlertStrip 대신 틀(AppShell) 맨 위 도움 띠(HelpBand). 1280폭이라 [확인했어요]가 바로 보인다.
     const strip = bossPage.getByTestId("help-band-item").filter({ hasText: s.workerName });
     await expect(strip).toContainText(`${n}단계`, { timeout: 15_000 });
@@ -244,7 +244,7 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
     await boss.close();
 
     // 확인된 요청이 열린 채로 [다 했어요] — 서버가 요청을 닫고 배정이 끝난다.
-    await pressDone(page, new RegExp(`/w/job/${s.assignmentId}/done$`));
+    await pressDone(page, new RegExp(`/worker/job/${s.assignmentId}/done$`));
     await shot(page, "09-job-done");
     c = await todayCard(page, request, s.assignmentId);
     expect(c.status).toBe("done");
@@ -252,17 +252,17 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
     expect(c.active_help).toBeNull();
 
     await page.getByRole("button", { name: "했던 일 보기" }).click();
-    await expect(page).toHaveURL(/\/w\/history$/);
+    await expect(page).toHaveURL(/\/worker\/history$/);
     await expect(page.getByText(s.title).first()).toBeVisible();
     await expect(page.getByText("다 했어요").first()).toBeVisible();
     await shot(page, "10-history");
     await page.getByText(s.title).first().click();
-    await expect(page).toHaveURL(new RegExp(`/w/history/${s.assignmentId}$`));
+    await expect(page).toHaveURL(new RegExp(`/worker/history/${s.assignmentId}$`));
     await expect(page.getByTestId("help-button")).toHaveCount(0);
     await shot(page, "11-history-review");
 
     // 홈: 다 한 카드는 체크와 함께 남는다.
-    await page.goto("/w/today");
+    await page.goto("/worker/today");
     await page.getByTestId("job-card").first().waitFor();
     await shot(page, "12-today-done");
   });
@@ -271,7 +271,7 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
     const s = await seed(request, `끊김${test.info().project.name}`);
     const n = s.sentences.length;
     await pairAndLogin(page, request, s);
-    await page.goto(`/w/job/${s.assignmentId}`);
+    await page.goto(`/worker/job/${s.assignmentId}`);
     await page.getByRole("button", { name: "시작하기" }).click();
     await pressDone(page, stepUrl(s, 2));
     // 1단계 기록이 서버에 닿은 뒤에 끊는다(느린 기계에서는 보내는 중에 끊겨 대기열로 가서 아래 비교가 흔들렸다, 2c).
@@ -310,7 +310,7 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
     await shot(page, "15-synced");
 
     for (let i = 4; i < n; i++) await pressDone(page, stepUrl(s, i + 1));
-    await pressDone(page, new RegExp(`/w/job/${s.assignmentId}/done$`));
+    await pressDone(page, new RegExp(`/worker/job/${s.assignmentId}/done$`));
     c = await todayCard(page, request, s.assignmentId);
     expect(c.status).toBe("done");
     expect(new Set(c.done_step_ids)).toEqual(new Set(s.stepIds));
@@ -333,7 +333,7 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
   test("일하는 중 새로고침하면 그 단계에서 이어 간다", async ({ page, request }) => {
     const s = await seed(request, `이어${test.info().project.name}`);
     await pairAndLogin(page, request, s);
-    await page.goto(`/w/job/${s.assignmentId}`);
+    await page.goto(`/worker/job/${s.assignmentId}`);
     await page.getByRole("button", { name: "시작하기" }).click();
     await pressDone(page, stepUrl(s, 2));
     await pressDone(page, stepUrl(s, 3));
@@ -345,7 +345,7 @@ test.describe("실제 백엔드 — 근로자 흐름", () => {
     await shot(page, "16-reload-resume");
 
     // 홈에서 다시 들어와도 3단계부터.
-    await page.goto("/w/today");
+    await page.goto("/worker/today");
     const card = page.getByTestId("job-card").filter({ hasText: s.title });
     await expect(card).toContainText("3단계부터 이어서 해요");
     await shot(page, "17-today-resume-card");
@@ -375,7 +375,7 @@ test.describe("실제 백엔드 — 하는 중에 고쳐도 그대로", () => {
     const n = s.sentences.length;
     const h = auth(s.employer);
     await pairAndLogin(page, request, s);
-    await page.goto(`/w/job/${s.assignmentId}`);
+    await page.goto(`/worker/job/${s.assignmentId}`);
     await page.getByRole("button", { name: "시작하기" }).click();
     await expect(page.getByTestId("step-sentence")).toHaveText(s.sentences[0]);
     await pressDone(page, stepUrl(s, 2));
@@ -423,7 +423,7 @@ test.describe("실제 백엔드 — 하는 중에 고쳐도 그대로", () => {
       await pressDone(page, stepUrl(s, i + 1));
       await expect(page.getByTestId("step-sentence")).toHaveText(s.sentences[i]);
     }
-    await pressDone(page, new RegExp(`/w/job/${s.assignmentId}/done$`));
+    await pressDone(page, new RegExp(`/worker/job/${s.assignmentId}/done$`));
     c = await todayCard(page, request, s.assignmentId);
     expect(c.status).toBe("done");
     expect(c.done_step_ids).toEqual(s.stepIds);
@@ -454,10 +454,10 @@ test.describe("실제 백엔드 — 하는 중에 고쳐도 그대로", () => {
     expect(fresh!.steps).toHaveLength(n);
 
     // 근로자 화면: 새 카드로 들어가면 바뀐 순서의 첫 단계부터.
-    await page.goto("/w/today");
+    await page.goto("/worker/today");
     const card = page.locator(`[data-testid="job-card"]:not([data-done])`).filter({ hasText: s.title });
     await card.first().click();
-    await expect(page).toHaveURL(new RegExp(`/w/job/${fresh!.assignment_id}$`));
+    await expect(page).toHaveURL(new RegExp(`/worker/job/${fresh!.assignment_id}$`));
     await page.getByRole("button", { name: "시작하기" }).click();
     await expect(page.getByTestId("step-sentence")).toHaveText(current.steps[0].sentence);
     await shot(page, "31-edit-during-work-next-assignment");
@@ -504,7 +504,7 @@ test.describe("실제 백엔드 — 사업주", () => {
       localStorage.setItem("jobcard_role", "employer");
       localStorage.setItem("jobcard_name", "통합 카페");
     }, employer);
-    await page.goto("/m/tasks/new");
+    await page.goto("/manager/tasks/new");
     await page.getByLabel("어떤 일을 시킬까요?").fill("테이블을 행주로 닦아요. 의자를 테이블 안으로 넣어요. 쀍쀍을 흔들어요.");
     await page.getByRole("button", { name: "단계로 나누기" }).click();
     await expect(page.getByRole("heading", { name: /이렇게 나눴어요/ })).toBeVisible({ timeout: 30_000 });
@@ -552,12 +552,12 @@ test.describe("실제 백엔드 — 사업주", () => {
       expect(r.sw, `${label}: scrollWidth ${r.sw} > ${r.cw}, 화면 밖 버튼 ${JSON.stringify(r.off)}`).toBeLessThanOrEqual(r.cw);
       expect(r.off, label).toEqual([]);
     };
-    await page.goto("/m/workers");
+    await page.goto("/manager/workers");
     // (2d) 새 근로자 목록: 행마다 [… 메뉴]가 있다(옛 [삭제] 단추는 이름 다시 적기 창으로 옮김).
     await page.getByRole("button", { name: /님 메뉴$/ }).first().waitFor();
     await noSideScroll("근로자 목록");
     await shot(page, "21-employer-workers-390");
-    await page.goto("/m/tasks/new");
+    await page.goto("/manager/tasks/new");
     await page.getByLabel("어떤 일을 시킬까요?").fill(RAW);
     await page.getByRole("button", { name: "단계로 나누기" }).click();
     await expect(page.getByLabel("1단계 문장")).toBeVisible({ timeout: 60_000 });

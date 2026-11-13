@@ -608,14 +608,14 @@ def _access_code_taken(db: Session, employer_id: str, code: str, exclude_worker_
     return db.scalar(query) is not None
 
 
-_PREFIX_CLASH_DETAIL = ("앞 4자리가 다른 근로자의 접속 코드와 겹칩니다. 근로자 화면(/w)은 4자리를 누르면 바로 "
+_PREFIX_CLASH_DETAIL = ("앞 4자리가 다른 근로자의 접속 코드와 겹칩니다. 근로자 화면(/worker)은 4자리를 누르면 바로 "
                         "들어가므로 다른 코드를 입력해 주세요.")
 
 
 def _code_prefix_clash(db: Session, employer_id: str, code: str, exclude_worker_id: str | None = None) -> bool:
     """4자리 코드와 더 긴 코드의 앞 4자리가 겹치는지(2차 검증).
 
-    근로자 키패드(/w)는 4번째 숫자에서 바로 보낸다. 동료가 '1234', 내가 '123456'이면 내가 /w에서 앞 4자리를
+    근로자 키패드(/worker)는 4번째 숫자에서 바로 보낸다. 동료가 '1234', 내가 '123456'이면 내가 /worker에서 앞 4자리를
     누르는 순간 동료 계정으로 들어간다. 그래서 4자리 코드는 긴 코드의 앞 4자리와, 긴 코드의 앞 4자리는 4자리 코드와
     같으면 안 된다. 긴 코드의 평문은 암호문(access_code_cipher)을 풀어 본다 — 암호문이 없는 아주 옛 근로자는
     알 수 없어 건너뛴다(그 근로자가 한 번 로그인하면 채워진다).

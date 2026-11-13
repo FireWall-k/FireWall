@@ -29,7 +29,7 @@ function counter(page: Page) {
 
 test("새 직무 → 보내기: 클릭 7번, 퍼센트 글자 0건", async ({ page }) => {
   const m = await mockEditor(page);
-  await loginEmployer(page, "/m/tasks");
+  await loginEmployer(page, "/manager/tasks");
   const c = counter(page);
   await c.click(page.getByRole("link", { name: "새 직무" }).first(), "새 직무");
   await page.getByLabel("어떤 일을 시킬까요?").fill(FIXED_SENTENCE);
@@ -62,7 +62,7 @@ test("다시 보내기: 클릭 3번(지난번 받은 사람 미리 체크, 점�
       { id: "w2", display_name: "이서준", access_code: "7390" },
     ],
   });
-  await loginEmployer(page, "/m/tasks");
+  await loginEmployer(page, "/manager/tasks");
   const c = counter(page);
   await c.click(page.getByRole("button", { name: "매장 정리 메뉴" }), "…");
   await c.click(page.getByRole("menuitem", { name: "다시 보내기" }), "다시 보내기");
@@ -83,7 +83,7 @@ test("스켈레톤에도 퍼센트 숫자가 없다(그림을 고르고 있어�
     await new Promise((r) => setTimeout(r, 3500));
     return route.fallback();
   });
-  await loginEmployer(page, "/m/tasks/new");
+  await loginEmployer(page, "/manager/tasks/new");
   await page.getByLabel("어떤 일을 시킬까요?").fill(FIXED_SENTENCE);
   await page.getByRole("button", { name: "단계로 나누기" }).click();
   await page.getByRole("button", { name: "이대로 그림 고르기" }).click();

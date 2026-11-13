@@ -5,7 +5,7 @@ import { ApiError, NetworkError } from "../../src/apiErrors";
 import { FORBIDDEN_PATTERNS } from "../../src/worker/copy";
 import EntryScreen from "../../src/worker/EntryScreen";
 
-// /w 번호 넣기(창업자 결정 3): 4자리, 4번째 숫자에서 바로 들어감, [들어가기] 없음,
+// /worker 번호 넣기(창업자 결정 3): 4자리, 4번째 숫자에서 바로 들어감, [들어가기] 없음,
 // 맨 아래 줄 [지우기][0][비우기], 틀리면 칸 비움 + 3번째부터 '선생님께 번호를 물어봐요.'
 const loginWorker = vi.fn();
 vi.mock("../../src/api", async (orig) => {
@@ -17,11 +17,11 @@ const onLogin = vi.fn();
 
 function renderEntry() {
   return render(
-    <MemoryRouter initialEntries={["/w"]}>
+    <MemoryRouter initialEntries={["/worker"]}>
       <Routes>
-        <Route path="/w" element={<EntryScreen onLogin={onLogin} />} />
-        <Route path="/w/today" element={<p>홈 화면</p>} />
-        <Route path="/w/setup" element={<p>연결 화면</p>} />
+        <Route path="/worker" element={<EntryScreen onLogin={onLogin} />} />
+        <Route path="/worker/today" element={<p>홈 화면</p>} />
+        <Route path="/worker/setup" element={<p>연결 화면</p>} />
         <Route path="/login" element={<p>로그인 화면</p>} />
       </Routes>
     </MemoryRouter>,

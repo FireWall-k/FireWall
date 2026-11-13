@@ -71,12 +71,12 @@ test("2c 시연 대본: [도와주세요] → 홈 띠 → [이 단계 고치기]
   await ok(await request.post(`${API}/api/tasks/${task.id}/send`, { headers: auth(employer), data: { worker_ids: [w.id], day: "today" } }));
 
   // 근로자: 가게 코드 → 번호 → 오늘 → 시작 → 2단계
-  await page.goto("/w/setup");
+  await page.goto("/worker/setup");
   await page.getByLabel("가게 코드").fill(wp.workplace_code);
   await page.getByRole("button", { name: "연결하기" }).click();
   await page.getByTestId("keypad").waitFor();
   for (const d of w.access_code) await page.getByRole("button", { name: d, exact: true }).click();
-  await expect(page).toHaveURL(/\/w\/today$/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/\/worker\/today$/, { timeout: 15_000 });
   await page.getByTestId("job-card").filter({ hasText: task.title }).click();
   await page.getByRole("button", { name: "시작하기" }).click();
   await expect(page).toHaveURL(/\/step\/1$/);
@@ -106,11 +106,11 @@ test("2c 시연 대본: [도와주세요] → 홈 띠 → [이 단계 고치기]
   // ② 컴퓨터 홈 맨 위 띠
   const boss = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: "ko-KR" });
   const bp = await boss.newPage();
-  await bp.goto("/m/login");
+  await bp.goto("/manager/login");
   await bp.getByLabel("아이디").fill(LOGIN);
   await bp.getByLabel("비밀번호").fill(PASSWORD);
   await bp.getByLabel("비밀번호").press("Enter");
-  await expect(bp).toHaveURL(/\/m(\?|$)/, { timeout: 15_000 });
+  await expect(bp).toHaveURL(/\/manager(\?|$)/, { timeout: 15_000 });
   const item = bp.getByTestId("help-band-item").filter({ hasText: workerName });
   await expect(item).toContainText(`${workerName} 님이 도움을 요청했어요`, { timeout: 15_000 });
   await expect(item).toContainText("2단계");
@@ -124,11 +124,11 @@ test("2c 시연 대본: [도와주세요] → 홈 띠 → [이 단계 고치기]
 
   // ③ [이 단계 고치기] → 편집기 그 단계(1번)
   await item.getByRole("button", { name: "이 단계 고치기" }).click();
-  await expect(bp).toHaveURL((u) => u.pathname === `/m/tasks/${task.id}` && u.searchParams.get("step") === task.steps[1].id);
+  await expect(bp).toHaveURL((u) => u.pathname === `/manager/tasks/${task.id}` && u.searchParams.get("step") === task.steps[1].id);
 
   // ④ 돌아와 [도와줬어요]
   await bp.goBack();
-  await expect(bp).toHaveURL(/\/m(\?|$)/);
+  await expect(bp).toHaveURL(/\/manager(\?|$)/);
   await bp.getByTestId("help-band-item").filter({ hasText: workerName }).getByRole("button", { name: "도와줬어요" }).click();
   await expect(bp.getByTestId("help-band-item").filter({ hasText: workerName })).toHaveCount(0);
   // 서버에서 닫혔다(도움 목록은 캐시 없음). 현황(live)은 사업장마다 4초 저장분이라 다음 주기에 빠진다.

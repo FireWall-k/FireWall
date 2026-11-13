@@ -48,7 +48,7 @@ export default function SummaryCards({ summary, openHelp, filter, onFilter }: Su
         );
       })}
       <li className="min-w-0">
-        <Link to="/m/tasks?filter=needs_check" data-testid="summary-needs-check" className={cn(CARD, "border-paper-200 hover:bg-paper-50")}>
+        <Link to="/manager/tasks?filter=needs_check" data-testid="summary-needs-check" className={cn(CARD, "border-paper-200 hover:bg-paper-50")}>
           <span className="text-ui-sm font-semibold text-ink-700">{copy.needsCheck}</span>
           <span className="flex items-end justify-between gap-2">
             <span className="font-display text-ui-xl font-bold tabular-nums text-ink-900">{copy.needsCheckValue(summary.needs_check_tasks)}</span>

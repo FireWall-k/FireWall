@@ -1,4 +1,4 @@
-// 직무 완료 / 오늘 일 끝(/w/job/:aid/done, 명세 4.6). 마지막 기록을 서버가 아직 못 받았어도(오프라인) 이 화면은
+// 직무 완료 / 오늘 일 끝(/worker/job/:aid/done, 명세 4.6). 마지막 기록을 서버가 아직 못 받았어도(오프라인) 이 화면은
 // 그대로 보이고, 기록은 대기열이 다시 연결될 때 보낸다.
 // - 다음 일이 있으면: 칭찬 + 다음 일 미리 보기 + [방금 일 다시 보기](보조) / [다음 일 하기](주).
 // - 모두 끝났으면: '오늘 일을 다 했어요' / '(호칭)께 알려 주세요.' + [했던 일 보기](보조) / [끝내기](주).
@@ -43,7 +43,7 @@ export default function JobDoneScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aid]);
 
-  if (!job) return <Navigate to="/w/today" replace />;
+  if (!job) return <Navigate to="/worker/today" replace />;
   if (confirmEnd) {
     return (
       <ConfirmScreen kind="end" speak={prefs.autoplay_sound} ttsRate={prefs.tts_rate}
@@ -57,7 +57,7 @@ export default function JobDoneScreen() {
       top={
         <TopBar
           left={
-            <SecondaryAction icon={IconHome} onPress={() => navigate("/w/today")} className="!gap-2 !px-3">
+            <SecondaryAction icon={IconHome} onPress={() => navigate("/worker/today")} className="!gap-2 !px-3">
               {COPY.btn.home}
             </SecondaryAction>
           }
@@ -68,16 +68,16 @@ export default function JobDoneScreen() {
         <BottomBar stacked>
           {next ? (
             <>
-              <SecondaryAction icon={IconHistory} onPress={() => navigate(`/w/history/${job.assignment_id}`)} className={SECONDARY_CLASS}>
+              <SecondaryAction icon={IconHistory} onPress={() => navigate(`/worker/history/${job.assignment_id}`)} className={SECONDARY_CLASS}>
                 {COPY.btn.replayJob}
               </SecondaryAction>
-              <PrimaryAction icon={IconNext} onPress={() => navigate(`/w/job/${next.assignment_id}`)} className={PRIMARY_CLASS}>
+              <PrimaryAction icon={IconNext} onPress={() => navigate(`/worker/job/${next.assignment_id}`)} className={PRIMARY_CLASS}>
                 {COPY.btn.nextJob}
               </PrimaryAction>
             </>
           ) : (
             <>
-              <SecondaryAction icon={IconHistory} onPress={() => navigate("/w/history")} className={SECONDARY_CLASS}>
+              <SecondaryAction icon={IconHistory} onPress={() => navigate("/worker/history")} className={SECONDARY_CLASS}>
                 {COPY.btn.history}
               </SecondaryAction>
               <PrimaryAction icon={IconEnd} onPress={() => setConfirmEnd(true)} className={PRIMARY_CLASS}>

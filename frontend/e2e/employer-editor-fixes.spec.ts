@@ -16,7 +16,7 @@ test.describe("1440", () => {
 
   test("새 직무를 만든 뒤 [+ 새 직무] → 뒤로 가기: 편집기는 서버의 지금 상태를 보인다(만들 때 초안 아님)", async ({ page }) => {
     await mockEditor(page);
-    await loginEmployer(page, "/m/tasks/new");
+    await loginEmployer(page, "/manager/tasks/new");
     await page.getByLabel("어떤 일을 시킬까요?").fill(FIXED_SENTENCE);
     await page.getByRole("button", { name: "단계로 나누기" }).click();
     await page.getByRole("button", { name: "이대로 그림 고르기" }).click();
@@ -24,7 +24,7 @@ test.describe("1440", () => {
     await page.getByTestId("step-detail").getByRole("button", { name: "이 그림이 맞아요" }).click();
     await expect(page.getByTestId("review-queue").first()).toHaveAttribute("data-remaining", "5");
     await page.getByRole("link", { name: "새 직무" }).first().click();
-    await expect(page).toHaveURL(/\/m\/tasks\/new$/);
+    await expect(page).toHaveURL(/\/manager\/tasks\/new$/);
     await page.goBack();
     await expect(page.getByTestId("task-editor")).toBeVisible();
     await expect(page.getByTestId("review-queue").first()).toHaveAttribute("data-remaining", "5");
@@ -34,7 +34,7 @@ test.describe("1440", () => {
   test("확인한 자동 그림의 설명에는 ✦가 없다", async ({ page }) => {
     const t = fourStateDraft();
     await mockEditor(page, { tasks: [t] });
-    await loginEmployer(page, `/m/tasks/${t.id}`);
+    await loginEmployer(page, `/manager/tasks/${t.id}`);
     await page.getByTestId("step-row-1").getByRole("button").first().click();
     const cap = page.getByTestId("step-detail").locator("figcaption");
     await expect(cap).toContainText("확인한 그림");
@@ -49,7 +49,7 @@ test.describe("1440", () => {
   test("문장 칸에서 Enter로 저장하면 초점은 상세 제목(body로 빠지지 않음)", async ({ page }) => {
     const t = fourStateDraft();
     await mockEditor(page, { tasks: [t] });
-    await loginEmployer(page, `/m/tasks/${t.id}`);
+    await loginEmployer(page, `/manager/tasks/${t.id}`);
     await page.getByTestId("step-row-1").getByRole("button").first().click();
     const field = page.getByTestId("step-detail").getByLabel("문장", { exact: true });
     await field.fill("앞치마를 단단히 입어요.");
@@ -63,7 +63,7 @@ test.describe("1440", () => {
     await mockEditor(page, { tasks: [t] });
     const broken = t.steps[2].url as string;
     await page.route(broken, (r) => r.abort());
-    await loginEmployer(page, `/m/tasks/${t.id}`);
+    await loginEmployer(page, `/manager/tasks/${t.id}`);
     await page.getByRole("button", { name: "그림 한눈에" }).first().click();
     await expect(page.getByTestId("overview-card-3")).toHaveAttribute("data-broken", "true");
     await expect(page.getByTestId("overview-broken-note")).toHaveText("불러오지 못한 그림 1장은 빼고 확인해요");
@@ -79,7 +79,7 @@ test.describe("1440", () => {
     const t = fixedDraft();
     for (const s of t.steps) s.state = "confirmed";
     await mockEditor(page, { tasks: [t] });
-    await loginEmployer(page, `/m/tasks/${t.id}`);
+    await loginEmployer(page, `/manager/tasks/${t.id}`);
     await page.getByTestId("editor-send").click();
     const sheet = page.getByRole("dialog", { name: "보내기 전에 확인해요" });
     await expect(sheet.getByTestId("send-checklist")).toContainText("✦ 자동으로 켠 조심 표시가 1개 있어요");
@@ -89,14 +89,14 @@ test.describe("1440", () => {
 
   test("새 직무에 적던 중 계정 메뉴 → 설정으로 가면 먼저 묻는다", async ({ page }) => {
     await mockEditor(page);
-    await loginEmployer(page, "/m/tasks/new");
+    await loginEmployer(page, "/manager/tasks/new");
     await page.getByLabel("어떤 일을 시킬까요?").fill(FIXED_SENTENCE);
     await page.getByRole("button", { name: "단계로 나누기" }).click();
     await expect(page.getByRole("heading", { name: /이렇게 나눴어요/ })).toBeVisible();
     await page.getByRole("button", { name: /계정 메뉴/ }).click();
     await page.getByRole("menuitem", { name: "설정" }).click();
     await expect(page.getByText("적던 내용이 사라져요")).toBeVisible();
-    await expect(page).toHaveURL(/\/m\/tasks\/new$/);
+    await expect(page).toHaveURL(/\/manager\/tasks\/new$/);
   });
 });
 
@@ -108,7 +108,7 @@ test.describe("휴대폰", () => {
       await page.setViewportSize({ width, height: 800 });
       const t = fixedDraft();
       await mockEditor(page, { tasks: [t] });
-      await loginEmployer(page, `/m/tasks/${t.id}`);
+      await loginEmployer(page, `/manager/tasks/${t.id}`);
       const bar = page.getByTestId("editor-bottom-bar");
       const next = bar.getByRole("button", { name: /다음/ });
       await expect(next).toBeVisible();
@@ -130,7 +130,7 @@ test.describe("휴대폰", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     const t = fixedDraft();
     await mockEditor(page, { tasks: [t] });
-    await loginEmployer(page, `/m/tasks/${t.id}`);
+    await loginEmployer(page, `/manager/tasks/${t.id}`);
     // aria-disabled라 Playwright는 '꺼짐'으로 보고 기다린다 — 사람은 누를 수 있으므로 force로 누른다.
     await page.getByTestId("editor-send-mobile").tap({ force: true });
     const toast = page.getByText("확인할 것 6개가 남았어요. 확인하면 보낼 수 있어요").filter({ visible: true }).last();
@@ -144,7 +144,7 @@ test.describe("휴대폰", () => {
     const t = fourStateDraft();
     const neighbor = t.steps[3].id;
     await mockEditor(page, { tasks: [t] });
-    await loginEmployer(page, `/m/tasks/${t.id}`);
+    await loginEmployer(page, `/manager/tasks/${t.id}`);
     await page.getByTestId("step-row-3").getByRole("button").first().click();
     await page.getByRole("button", { name: "이 단계 지우기" }).click();
     await page.getByRole("button", { name: "지우기", exact: true }).click();
@@ -158,7 +158,7 @@ test.describe("휴대폰", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     const t = fourStateDraft();
     await mockEditor(page, { tasks: [t] });
-    await loginEmployer(page, `/m/tasks/${t.id}`);
+    await loginEmployer(page, `/manager/tasks/${t.id}`);
     const box = await page.getByRole("button", { name: "1단계 순서 바꾸기" }).boundingBox();
     expect(box!.width).toBeGreaterThanOrEqual(44);
     expect(box!.height).toBeGreaterThanOrEqual(44);
@@ -170,7 +170,7 @@ test.describe("휴대폰", () => {
       await page.setViewportSize({ width, height: 800 });
       const t = fixedDraft();
       await mockEditor(page, { tasks: [t] });
-      await loginEmployer(page, `/m/tasks/${t.id}`);
+      await loginEmployer(page, `/manager/tasks/${t.id}`);
       await page.getByTestId("editor-send-mobile").tap({ force: true });
       const toast = page.locator("[data-toast-layer] > *").last();
       await expect(toast).toBeVisible();
@@ -180,7 +180,7 @@ test.describe("휴대폰", () => {
       // 고정 줄 단추를 그대로 누를 수 있다(토스트가 가로채지 않음).
       await page.getByTestId("editor-bottom-bar").getByRole("button", { name: "그림 한눈에" }).tap();
       await expect(page.getByTestId("picture-overview")).toBeVisible();
-      await page.goto(`/m/tasks/${t.id}`);
+      await page.goto(`/manager/tasks/${t.id}`);
       await page.getByTestId("editor-send-mobile").tap({ force: true });
       const tip = page.getByRole("tooltip").filter({ visible: true });
       if (await tip.count()) {
@@ -195,7 +195,7 @@ test.describe("휴대폰", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     const t = fixedDraft();
     await mockEditor(page, { tasks: [t] });
-    await loginEmployer(page, `/m/tasks/${t.id}`);
+    await loginEmployer(page, `/manager/tasks/${t.id}`);
     const hitHeight = (sel: import("@playwright/test").Locator) =>
       sel.evaluate((el) => {
         const r = el.getBoundingClientRect();
@@ -216,7 +216,7 @@ test.describe("휴대폰", () => {
     const sw = page.getByTestId("step-detail").getByRole("switch");
     await sw.scrollIntoViewIfNeeded();
     expect(await hitHeight(sw)).toBeGreaterThanOrEqual(44);
-    await page.goto(`/m/tasks/${t.id}`);
+    await page.goto(`/manager/tasks/${t.id}`);
     await page.getByTestId("editor-bottom-bar").getByRole("button", { name: "그림 한눈에" }).tap();
     const box = page.getByTestId("picture-overview").getByRole("checkbox").first();
     // 가운데로 굴린다: scrollIntoViewIfNeeded는 화면 끝에 겨우 맞춰, 머리 높이에 따라 아래 고정 줄에 반쯤 가려진 채 잴 수 있다.
@@ -226,7 +226,7 @@ test.describe("휴대폰", () => {
     const done = fixedDraft();
     for (const st of done.steps) st.state = "confirmed";
     await mockEditor(page, { tasks: [done] });
-    await page.goto(`/m/tasks/${done.id}`);
+    await page.goto(`/manager/tasks/${done.id}`);
     await page.getByTestId("editor-send-mobile").tap();
     const who = page.getByRole("dialog", { name: "보내기 전에 확인해요" }).getByRole("checkbox", { name: /김민지 님/ });
     await who.scrollIntoViewIfNeeded();
@@ -236,14 +236,14 @@ test.describe("휴대폰", () => {
   test("390: 새 직무에서 나눈 뒤 [뒤로] → [앞으로]로 돌아와도 나눈 단계 목록이 남는다", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await mockEditor(page);
-    await loginEmployer(page, "/m/tasks");
-    await page.goto("/m/tasks/new");
+    await loginEmployer(page, "/manager/tasks");
+    await page.goto("/manager/tasks/new");
     await page.getByLabel("어떤 일을 시킬까요?").fill(FIXED_SENTENCE);
     await page.getByRole("button", { name: "단계로 나누기" }).click();
     await expect(page.getByRole("button", { name: "이대로 그림 고르기" })).toBeVisible();
     await page.goBack();
     await page.goForward();
-    await expect(page).toHaveURL(/\/m\/tasks\/new$/);
+    await expect(page).toHaveURL(/\/manager\/tasks\/new$/);
     await expect(page.getByRole("button", { name: "이대로 그림 고르기" })).toBeVisible();
   });
 });

@@ -1,4 +1,4 @@
-// /w/job/:aid/step/:n — 일하는 중인 단계 화면(StepPlayer live)에 데이터를 잇는다.
+// /worker/job/:aid/step/:n — 일하는 중인 단계 화면(StepPlayer live)에 데이터를 잇는다.
 // - 어디서 이어 갈지: 주소의 n + 서버 done_step_ids + 대기열(resume.ts). 새로고침·다른 기기에서도 그 자리.
 // - [다 했어요] → 대기열에 기록(오프라인이어도 잃지 않음) → 다음 단계 / 마지막이면 완료 화면.
 // - 도움 요청은 따로(useHelp), [다 했어요]를 누르면 서버가 열린 요청을 닫는다.
@@ -42,7 +42,7 @@ function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
   // 단계를 실제로 보일 때만 켠다. 이미 끝난 일의 단계 주소로 오면 곧바로 완료 화면으로 가므로 켜지 않는다.
   useWakeLock(index != null && String(index + 1) === n);
 
-  const base = `/w/job/${job.assignment_id}`;
+  const base = `/worker/job/${job.assignment_id}`;
   // [다 했어요]를 누른 순간 기록을 대기열에 넣는다(2차 검증: 예전에는 0.4초 칭찬 뒤에 넣어서, 그 사이 뒤로 가기·
   // 화면 잠금으로 화면이 사라지면 기록이 영영 없어졌다). 다음 단계로 넘어가는 것만 칭찬 뒤에 한다.
   const onRecord = useCallback(
@@ -84,7 +84,7 @@ function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
       onRecord={onRecord}
       onDone={onDone}
       onPrev={() => navigate(`${base}/step/${Math.max(1, index)}`, { replace: true })}
-      onExit={() => navigate("/w/today")}
+      onExit={() => navigate("/worker/today")}
       onMediaError={onMediaError}
       onSignal={onSignal}
       onEvent={onEvent}
@@ -96,7 +96,7 @@ export default function StepRoute() {
   const { aid, n } = useParams();
   const { jobs } = useWorkerSession();
   const job = jobs.find((j) => j.assignment_id === aid);
-  if (!job || job.steps.length === 0) return <Navigate to="/w/today" replace />;
+  if (!job || job.steps.length === 0) return <Navigate to="/worker/today" replace />;
   // 배정이 바뀌면 도움·소리 상태를 새로 시작한다.
   return <LiveStep key={job.assignment_id} job={job} n={n} />;
 }

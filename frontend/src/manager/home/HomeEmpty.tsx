@@ -11,7 +11,7 @@ export interface HomeEmptyProps {
   done: [boolean, boolean, boolean];
 }
 
-const TARGETS = ["/m/workers", "/m/workers", "/m/tasks/new"] as const;
+const TARGETS = ["/manager/workers", "/manager/workers", "/manager/tasks/new"] as const;
 
 export default function HomeEmpty({ done }: HomeEmptyProps) {
   const next = done.findIndex((d) => !d);

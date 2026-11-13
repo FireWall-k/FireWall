@@ -1,4 +1,4 @@
-// (2b-2) /m/preview/:taskId — 편집기 미리보기 iframe 안에 그리는 근로자 화면(명세 5.6).
+// (2b-2) /manager/preview/:taskId — 편집기 미리보기 iframe 안에 그리는 근로자 화면(명세 5.6).
 // 근로자와 같은 StepPlayer를 review 모드로 쓴다: 소리 자동 재생 없음, 도와주세요 없음, 기록 없음.
 // 여기서는 기록·도움·신호·측정 호출(performance-logs·worker/help·worker/presence·events)을 하나도 부르지 않는다 —
 // StepPlayer에 onRecord·onDone·onSignal·onEvent·help를 넘기지 않는다. AppShell(도움 폴링)도 씌우지 않는다.

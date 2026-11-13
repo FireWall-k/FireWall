@@ -39,7 +39,7 @@ export async function mockWorkers(page: Page, opts: { empty?: boolean } = {}): P
           makeWorker({ id: "w4", display_name: "최하늘", today_badge: "not_started", consent_state: "missing", personal_info_consent: false }),
         ],
     workplace: {
-      workplace_code: "AB12CD", org_name: "햇살카페", device_link: "http://localhost:5173/w?site=AB12CD",
+      workplace_code: "AB12CD", org_name: "햇살카페", device_link: "http://localhost:5173/worker?site=AB12CD",
       teacher_title: "선생님", worker_defaults: { ...PREFS },
     },
     calls: [],

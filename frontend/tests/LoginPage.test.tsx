@@ -212,7 +212,7 @@ describe("LoginPage 오류 문구·근로자 입구(0차)", () => {
 
   it("'근로자이신가요? 근로자 화면으로 ›' 링크가 /w로 간다", () => {
     render(<LoginPage onLogin={vi.fn()} />);
-    expect(screen.getByRole("link", { name: "근로자 화면으로 ›" })).toHaveAttribute("href", "/w");
+    expect(screen.getByRole("link", { name: "근로자 화면으로 ›" })).toHaveAttribute("href", "/worker");
   });
 
   it("/login?tab=worker로 오면 근로자 탭이 열려 있다(예전 긴 번호용 우회로)", () => {

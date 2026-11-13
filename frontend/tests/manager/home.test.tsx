@@ -77,7 +77,7 @@ function Where() {
   return <p data-testid="where">{l.pathname + l.search}</p>;
 }
 
-function renderWith(ui: React.ReactNode, f: LiveFeed = feed(), path = "/m") {
+function renderWith(ui: React.ReactNode, f: LiveFeed = feed(), path = "/manager") {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <LiveContext.Provider value={f}>
@@ -140,7 +140,7 @@ describe("HelpBand(도움 요청 띠)", () => {
     const user = userEvent.setup();
     renderWith(<HelpBand />, feed({ help: [help()] }));
     await user.click(screen.getByRole("button", { name: "이 단계 고치기" }));
-    expect(screen.getByTestId("where")).toHaveTextContent("/m/tasks/t1?step=src3");
+    expect(screen.getByTestId("where")).toHaveTextContent("/manager/tasks/t1?step=src3");
   });
 
   it("[도와줬어요] → 서버에 닫기 + 화면에 먼저 반영(markHelp) + 다시 불러오기", async () => {
@@ -184,7 +184,7 @@ describe("SummaryCards(요약 4칸)", () => {
     expect(screen.getByTestId("summary-working")).toHaveTextContent("지금 일하는 사람2/3명");
     expect(screen.getByTestId("summary-help")).toHaveTextContent("도움 요청1건");
     expect(screen.getByTestId("summary-stuck")).toHaveTextContent("막힘 의심1단계");
-    expect(screen.getByTestId("summary-needs-check")).toHaveAttribute("href", "/m/tasks?filter=needs_check");
+    expect(screen.getByTestId("summary-needs-check")).toHaveAttribute("href", "/manager/tasks?filter=needs_check");
     expect(document.body.textContent).not.toMatch(/%/);
   });
 
@@ -317,7 +317,7 @@ describe("HomePage(오늘 현황)", () => {
     expect(c).toHaveTextContent("도움 2번");
     expect(c).toHaveTextContent("사진으로 바꾸기");
     await user.click(within(c).getByRole("link", { name: /^이 단계 고치기/ }));
-    expect(screen.getByTestId("where")).toHaveTextContent("/m/tasks/t1?step=src2&fix=photo");
+    expect(screen.getByTestId("where")).toHaveTextContent("/manager/tasks/t1?step=src2&fix=photo");
   });
 
   it("새 사업장: 시작 점검표 3단계와 [바로 하기]", async () => {
@@ -328,8 +328,8 @@ describe("HomePage(오늘 현황)", () => {
       expect.stringContaining("기기 연결"),
       expect.stringContaining("첫 직무 보내기"),
     ]);
-    expect(within(empty).getByRole("link", { name: "근로자 추가 바로 하기" })).toHaveAttribute("href", "/m/workers");
-    expect(within(empty).getByRole("link", { name: "첫 직무 보내기 바로 하기" })).toHaveAttribute("href", "/m/tasks/new");
+    expect(within(empty).getByRole("link", { name: "근로자 추가 바로 하기" })).toHaveAttribute("href", "/manager/workers");
+    expect(within(empty).getByRole("link", { name: "첫 직무 보내기 바로 하기" })).toHaveAttribute("href", "/manager/tasks/new");
     expect(screen.queryByTestId("live-table")).not.toBeInTheDocument();
     await waitFor(() => expect(getCoaching).toHaveBeenCalled());
   });

@@ -157,17 +157,17 @@ test.describe("2a-1 직무 목록(실제 서버)", () => {
     const before = (await list(request, s.token)).counts;
 
     // ① 로그인 화면에서 Enter
-    await page.goto("/m/login");
+    await page.goto("/manager/login");
     await page.getByLabel("아이디").fill(LOGIN);
     await page.getByLabel("비밀번호").fill(PASSWORD);
     await shot(page, width, "01-login");
     await page.getByLabel("비밀번호").press("Enter");
-    await expect(page).toHaveURL(/\/m(\?|$)/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/manager(\?|$)/, { timeout: 15_000 });
 
     // ② 사이드바(390은 아래 탭바) '직무'
     const nav = width === 390 ? page.getByTestId("mobile-tabbar") : page.getByTestId("sidebar");
     await nav.getByRole("link", { name: "직무" }).click();
-    await expect(page).toHaveURL(/\/m\/tasks$/);
+    await expect(page).toHaveURL(/\/manager\/tasks$/);
     const table = page.getByRole("table", { name: "직무 목록" });
     for (const t of [s.draft, s.sent, s.edited]) await expect(table.getByText(t.title, { exact: true })).toBeVisible();
     await expect(page.getByRole("tab", { name: /전체/ })).toContainText(String(before.all));
@@ -241,7 +241,7 @@ test.describe("2a-1 직무 목록(실제 서버)", () => {
       localStorage.setItem("jobcard_role", "employer");
       localStorage.setItem("jobcard_name", "통합 카페");
     }, token);
-    await page.goto("/m/tasks");
+    await page.goto("/manager/tasks");
     const table = page.getByRole("table", { name: "직무 목록" });
     await page.getByRole("button", { name: `${orig.title} 메뉴` }).click();
     await page.getByRole("menuitem", { name: "복제해서 고치기" }).click();
@@ -283,7 +283,7 @@ test.describe("2a-1 직무 목록(실제 서버)", () => {
       localStorage.setItem("jobcard_role", "employer");
       localStorage.setItem("jobcard_name", "통합 카페");
     }, token);
-    await page.goto("/m/tasks/new?example=1");
+    await page.goto("/manager/tasks/new?example=1");
     // 2b-1: 라벨은 '어떤 일을 시킬까요?'. 업종은 '더 알려 주기' 안에 있고, 예시는 업종을 채우므로 펼쳐진 채 연다.
     await expect(page.getByLabel("어떤 일을 시킬까요?")).toHaveValue(/손을 깨끗이 씻어요/);
     await expect(page.getByLabel("업종")).toHaveValue("카페");

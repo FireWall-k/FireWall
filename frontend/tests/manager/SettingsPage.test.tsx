@@ -36,7 +36,7 @@ describe("설정", () => {
   it("사업장 코드·기기 연결 주소·QR이 보이고 PIN 칸은 없다", async () => {
     renderPage();
     expect(await screen.findByTestId("workplace-code")).toHaveTextContent("DEMO01");
-    expect(screen.getByTestId("device-link")).toHaveTextContent("http://localhost:5173/w?site=DEMO01");
+    expect(screen.getByTestId("device-link")).toHaveTextContent("http://localhost:5173/worker?site=DEMO01");
     expect(screen.getByRole("img", { name: "기기 연결 주소" })).toBeInTheDocument();
     expect(screen.queryByText(/PIN|선생님 모드/)).toBeNull();
     expect(screen.getByRole("switch", { name: "도움 알림 받기" })).toBeDisabled();
