@@ -243,6 +243,14 @@ export async function mockEmployer(
     }
     // 근로자·설정·새 직무 화면이 처음 부르는 것들.
     if (path === "/api/workers" && method === "GET") return json([]);
+    // 설정 화면 자동 처리 사용량 카드(읽기만). 알림 기준 아래(경고 줄 없음).
+    if (path === "/api/workplace/ai-usage") {
+      return json({
+        available: true, enabled: true, month: "2026-11", calls: 42, prompt_tokens: 30000, completion_tokens: 4000,
+        usd: 0.0069, by_kind: { decompose: { calls: 2, usd: 0.0012 }, rerank: { calls: 40, usd: 0.0057 } },
+        alert_usd: 5, over_alert: false, last_7_days: [],
+      });
+    }
     // (2d) GET /api/workplace는 device_link·teacher_title·worker_defaults를 함께 준다(contract §6.2).
     if (path === "/api/workplace") {
       return json({

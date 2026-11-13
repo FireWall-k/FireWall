@@ -4,14 +4,16 @@
 // - 근로자 화면 기본값(명세 4.12, 새 근로자에게만), 호칭(한글 1~6자, 근로자 화면 미리보기).
 // - 알림: '도움 알림 받기' — 상단 바 메뉴와 같은 웹 푸시 스위치(usePushToggle, 3-0 M11). 서버에 키가 없거나
 //   브라우저가 웹 푸시를 못 하면 꺼진 채 '켤 수 없어요'를 보인다. 계정: 이름·로그아웃. 선생님 모드 PIN은 3차라 숨긴다.
+// - 자동 처리 사용량(이번 달, 읽기만): 사용 횟수·어림 요금($·원)·알림 기준을 넘으면 경고 줄. 따로 불러와서
+//   실패해도 설정 화면 나머지는 그대로 보인다.
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { Copy, LogOut, Printer } from "lucide-react";
+import { Copy, LogOut, Printer, TriangleAlert } from "lucide-react";
 import type { A11yPrefs } from "../../api";
 import { Button, Card, EmptyState, Field, Input, Switch, useToast } from "../../components/ui";
 import { teacherCopy } from "../../worker/copy";
 import { prefs as prefsCopy, settings as copy } from "../copy";
-import { getWorkplace, updateWorkplace } from "../api/workers";
-import type { WorkplaceSettings } from "../api/workerTypes";
+import { getAiUsage, getWorkplace, updateWorkplace } from "../api/workers";
+import type { AiUsage, WorkplaceSettings } from "../api/workerTypes";
 import { pushToast, usePushToggle } from "../shell/pushToggle";
 import { errorMessage } from "../tasks/listHelpers";
 import PrefsForm from "../workers/PrefsForm";
@@ -30,6 +32,72 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       <h2 className="text-ui-lg font-bold text-ink-900">{title}</h2>
       {children}
     </Card>
+  );
+}
+
+/** 1달러 ≈ 1,400원(어림). */
+const WON_PER_USD = 1400;
+
+/** 1달러가 안 되면 센트 아래 한 자리까지 보인다(작은 요금이 $0.00으로 보이지 않게). */
+function formatUsd(usd: number): string {
+  return usd >= 1 || usd === 0 ? usd.toFixed(2) : usd.toFixed(3);
+}
+
+function formatWon(usd: number): string {
+  return Math.round(usd * WON_PER_USD).toLocaleString("ko-KR");
+}
+
+function UsageSection() {
+  const [usage, setUsage] = useState<AiUsage | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    getAiUsage()
+      .then((u) => alive && setUsage(u))
+      .catch(() => alive && setFailed(true));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  let body: ReactNode;
+  if (failed || (usage && !usage.available)) {
+    body = <p className="text-ui-base text-ink-700">{copy.usageUnavailable}</p>;
+  } else if (!usage) {
+    body = null;
+  } else {
+    body = (
+      <>
+        {!usage.enabled && <p className="text-ui-base text-ink-700">{copy.usageOff}</p>}
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-ui-base">
+          <dt className="text-ink-700">{copy.usageCalls}</dt>
+          <dd data-testid="usage-calls" className="font-semibold text-ink-900">
+            {copy.usageCallsValue(usage.calls)}
+          </dd>
+          <dt className="text-ink-700">{copy.usageCost}</dt>
+          <dd data-testid="usage-cost" className="font-semibold text-ink-900">
+            {copy.usageCostValue(formatUsd(usage.usd), formatWon(usage.usd))}
+          </dd>
+        </dl>
+        {usage.over_alert && (
+          <p
+            role="status"
+            className="flex items-start gap-2 rounded-control border border-warn-line/40 bg-warn-50 px-3 py-2 text-ui-base font-semibold text-warn-700"
+          >
+            <TriangleAlert size={18} strokeWidth={2} aria-hidden="true" className="mt-0.5 shrink-0" />
+            {copy.usageOver(String(usage.alert_usd))}
+          </p>
+        )}
+      </>
+    );
+  }
+  return (
+    <Section title={copy.usageHeading}>
+      <div data-testid="usage-card" className="flex flex-col gap-3">
+        {body}
+        <p className="text-ui-sm text-ink-500">{copy.usageNote}</p>
+      </div>
+    </Section>
   );
 }
 
@@ -216,6 +284,8 @@ export default function SettingsPage({ displayName, onLogout }: SettingsPageProp
           onChange={() => void togglePush()}
         />
       </Section>
+
+      <UsageSection />
 
       <Section title={copy.accountHeading}>
         <div className="flex flex-wrap items-center justify-between gap-3">

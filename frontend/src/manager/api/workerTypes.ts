@@ -47,6 +47,21 @@ export interface WorkplaceSettings {
   worker_defaults: A11yPrefs;
 }
 
+/** 설정 화면 자동 처리 사용량(GET /api/workplace/ai-usage). 요금은 어림값(달러). available=false면 숫자는 0이다. */
+export interface AiUsage {
+  available: boolean;
+  enabled: boolean;
+  month: string;
+  calls: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  usd: number;
+  by_kind: Record<string, { calls: number; usd: number }>;
+  alert_usd: number;
+  over_alert: boolean;
+  last_7_days: { date: string; calls: number; usd: number }[];
+}
+
 export interface WorkplacePatch {
   org_name?: string;
   teacher_title?: string;
