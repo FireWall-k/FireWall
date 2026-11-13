@@ -145,6 +145,9 @@ services:
       TTS_ORPHAN_GRACE_HOURS: "${TTS_ORPHAN_GRACE_HOURS:-24}"
       # 사진·TTS 공통 유예시간. 비우면 예전 TTS_ORPHAN_GRACE_HOURS 값을 그대로 쓴다.
       MEDIA_ORPHAN_GRACE_HOURS: "${MEDIA_ORPHAN_GRACE_HOURS:-${TTS_ORPHAN_GRACE_HOURS:-24}}"
+      # DB 백업 사본 보존(일). /app/data/backups의 jobcard-*.db(.gz) — 마이그레이션 직전 자동 백업·야간 백업 —
+      # 중 이보다 오래된 것을 purge가 지운다(근로자를 지워도 사본에는 남기 때문, 3-0 M8).
+      BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-30}"
       # 마지막 성공 시각 기록(maintenance.py). backend가 같은 볼륨의 같은 파일을 읽어 /health의 purge에 싣는다.
       PURGE_STATUS_FILE: "/app/data/maintenance/purge_status.json"
     secrets:

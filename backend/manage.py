@@ -126,6 +126,8 @@ def purge(dry_run: bool) -> None:
           f"(보존 {retention.performance_log_retention_days()}일)")
     print(f"접근 감사 로그 {report['access_audit_logs']}건 {verb} "
           f"(보존 {retention.access_audit_retention_days()}일)")
+    print(f"DB 백업 사본 {report.get('backup_files', 0)}개 {verb} "
+          f"(보존 {retention.backup_retention_days()}일)")
     _print_media_report(report, verb)
     if report.get("wal_checkpointed") is False:
         # 다른 연결이 읽는 중이라 WAL을 비우지 못했다. 지운 데이터가 -wal 파일에 남아 있을 수 있다.
@@ -140,7 +142,8 @@ def _print_media_report(report: dict, verb: str) -> None:
 
 
 def _print_purge_report(report: dict) -> None:
-    print(f"수행 로그 {report['performance_logs']}건 지움, 접근 감사 로그 {report['access_audit_logs']}건 지움")
+    print(f"수행 로그 {report['performance_logs']}건 지움, 접근 감사 로그 {report['access_audit_logs']}건 지움, "
+          f"DB 백업 사본 {report.get('backup_files', 0)}개 지움")
     _print_media_report(report, "지움")
     if report.get("wal_checkpointed") is False:
         print("경고: WAL 체크포인트를 끝내지 못했습니다. 다음 실행에서 다시 합니다.")

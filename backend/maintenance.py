@@ -23,7 +23,7 @@ from typing import Callable
 logger = logging.getLogger("jobcard.maintenance")
 
 _REPORT_KEYS = ("performance_logs", "access_audit_logs", "media_records", "photo_files", "tts_files",
-                "wal_checkpointed")
+                "backup_files", "wal_checkpointed")
 
 
 def status_path() -> Path:
