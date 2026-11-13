@@ -18,6 +18,7 @@ import re
 
 import httpx
 
+import gpt_usage
 from secret_env import read_secret
 
 logger = logging.getLogger("ai_harness.llm")
@@ -45,8 +46,10 @@ def llm_available() -> bool:
     return bool(OPENAI_API_KEY)
 
 
-def embed_texts(texts: list[str], *, timeout: float = 20.0) -> list[list[float]]:
-    """텍스트 목록을 임베딩 벡터로 바꾼다. 실패 시 예외(호출부가 폴백 처리)."""
+def embed_texts(texts: list[str], *, timeout: float = 20.0, purpose: str = "embed") -> list[list[float]]:
+    """텍스트 목록을 임베딩 벡터로 바꾼다. 실패 시 예외(호출부가 폴백 처리).
+
+    성공한 응답은 토큰 수만 gpt_usage에 남긴다(purpose = 사용량 화면의 종류, 문장은 남기지 않음)."""
     resp = _http.post(
         f"{OPENAI_BASE_URL}/embeddings",
         headers={
@@ -57,18 +60,21 @@ def embed_texts(texts: list[str], *, timeout: float = 20.0) -> list[list[float]]
         timeout=timeout,
     )
     resp.raise_for_status()
-    data = resp.json()["data"]
-    return [row["embedding"] for row in data]
+    body = resp.json()
+    gpt_usage.record_response(purpose, body, EMBED_MODEL)
+    return [row["embedding"] for row in body["data"]]
 
 
 def chat_json(system: str, user: str, *, max_tokens: int = 1200,
-              timeout: float | None = None, temperature: float = 0.2) -> dict:
+              timeout: float | None = None, temperature: float = 0.2, purpose: str = "other") -> dict:
     """OpenAI Chat Completions(JSON 모드) 호출 후 dict로 반환. 실패 시 예외.
 
     timeout을 주면 그 값(초)을 쓴다. 그림 재순위(aac_rerank.py)처럼 늦으면 규칙 결과로 바로
     넘어가야 하는 호출이 기본값(LLM_TIMEOUT, 20초)을 기다리지 않게 하려는 것이다.
     temperature: 직무 단계 나누기(llm_decompose)는 0을 준다 — 같은 지시문이면 같은 단계가 나와야 한다.
     재순위·코칭은 예전 값(0.2) 그대로다.
+    purpose: 사용량 기록(gpt_usage)의 종류 — decompose / rerank / coaching / other. 응답을 받으면 JSON 해석
+    성공 여부와 상관없이(토큰은 이미 쓴 것이다) 모델·토큰 수만 남긴다.
     """
     resp = _http.post(
         f"{OPENAI_BASE_URL}/chat/completions",
@@ -89,7 +95,9 @@ def chat_json(system: str, user: str, *, max_tokens: int = 1200,
         timeout=LLM_TIMEOUT if timeout is None else timeout,
     )
     resp.raise_for_status()
-    content = resp.json()["choices"][0]["message"]["content"]
+    body = resp.json()
+    gpt_usage.record_response(purpose, body, OPENAI_MODEL)
+    content = body["choices"][0]["message"]["content"]
     return json.loads(content)
 
 
@@ -340,7 +348,8 @@ def llm_decompose(raw_input: str, context: dict | None = None,
         parts.append(f"작업 환경: {ctx['work_environment']}")
     if ctx.get("worker_note"):
         parts.append(f"근로자 특성(개별화 참고): {ctx['worker_note']}")
-    raw = chat_json(_DECOMPOSE_SYSTEM, "\n".join(parts), temperature=DECOMPOSE_TEMPERATURE)
+    raw = chat_json(_DECOMPOSE_SYSTEM, "\n".join(parts), temperature=DECOMPOSE_TEMPERATURE,
+                    purpose="decompose")
     check_negation(raw_input, raw)
     return raw
 
@@ -451,4 +460,4 @@ def llm_coaching(task_title: str, steps: list[dict], context: dict | None = None
     steps = [{k: s[k] for k in _COACHING_STEP_KEYS if k in s} for s in steps]
     payload = {"task_title": task_title, "context": ctx, "steps": steps}
     user = "다음 수행 데이터를 분석해 제안하세요:\n" + json.dumps(payload, ensure_ascii=False)
-    return chat_json(_COACHING_SYSTEM, user, max_tokens=1200)
+    return chat_json(_COACHING_SYSTEM, user, max_tokens=1200, purpose="coaching")

@@ -339,7 +339,8 @@ def _ask(sentence: str, business_type: str, keywords: list[str], top: list[dict]
     deadline = timeout()
     try:
         raw = _run_with_deadline(
-            lambda: llm.chat_json(RERANK_SYSTEM, user, max_tokens=MAX_TOKENS, timeout=deadline), deadline)
+            lambda: llm.chat_json(RERANK_SYSTEM, user, max_tokens=MAX_TOKENS, timeout=deadline,
+                                  purpose="rerank"), deadline)
         verdict = parse_verdict(raw, len(top))
     except _Busy:
         # 요청을 보내지 않았다 — GPT 장애가 아니므로 쉬는 시간·연속 실패 수를 건드리지 않는다.

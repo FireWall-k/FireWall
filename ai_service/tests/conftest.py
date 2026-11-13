@@ -11,6 +11,10 @@ os.environ["AAC_EMBEDDINGS"] = "off"
 os.environ["AAC_LLM_RERANK"] = "off"
 # 재순위 판정 파일(SQLite)도 개발자 셸 값을 쓰지 않는다. 파일 캐시를 검증하는 테스트만 tmp 경로로 켠다.
 os.environ.pop("AAC_LLM_RERANK_CACHE_DB", None)
+# GPT 사용량 기록(gpt_usage.py)도 기본 끈다 — 개발자 셸 값이 있으면 시험의 가짜 응답이 운영 기록에 섞인다.
+# 사용량을 검증하는 테스트만 tmp 경로로 켠다.
+os.environ.pop("GPT_USAGE_DB", None)
+os.environ.pop("GPT_MONTHLY_ALERT_USD", None)
 # 개발자 셸의 OPENAI_API_KEY_FILE이 실제 키를 읽어 오지 않게 한다(secret_env.py는 파일을 우선한다).
 os.environ.pop("OPENAI_API_KEY_FILE", None)
 # 직접 넣은 OPENAI_API_KEY도 지운다 — 남아 있으면 GPT를 막지 않은 테스트(규칙 경로 검사)가 실제 GPT를 불러

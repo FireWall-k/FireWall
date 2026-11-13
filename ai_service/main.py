@@ -16,6 +16,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 
 import embeddings
+import gpt_usage
 import local_aac
 import llm
 from local_aac import search_assets
@@ -62,6 +63,15 @@ MAX_RETRIES = 2  # (가정) 스키마 검증 실패 시 재시도 횟수
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/ai/usage")
+def ai_usage() -> dict:
+    """이번 달(한국 시간) GPT 사용량 합계·종류별·최근 7일과 알림 기준(GPT_MONTHLY_ALERT_USD).
+
+    요금은 토큰 수로 셈한 추정값이다. 내용(문장)은 기록하지 않는다(gpt_usage.py).
+    """
+    return gpt_usage.summary()
 
 
 @app.post("/ai/decompose", response_model=DecomposeResult)
