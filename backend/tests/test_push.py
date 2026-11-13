@@ -75,6 +75,17 @@ def test_config_disabled_without_keys(client):
     assert client.get("/api/employer/push-config", headers=site.h).json() == {"enabled": False, "public_key": None}
 
 
+def test_config_disabled_with_blank_private_key_file(client, tmp_path, monkeypatch):
+    """(3-0 ops-1) init-secrets가 만든 빈 개인 키 자리면 공개 키가 있어도 꺼진 채다(보내다 깨지지 않게)."""
+    blank = tmp_path / "vapid_private.pem"
+    blank.write_bytes(b"\n  \n")
+    monkeypatch.setenv("VAPID_PUBLIC_KEY", "BPk" + "a" * 84)
+    monkeypatch.setenv("VAPID_PRIVATE_KEY_FILE", str(blank))
+    assert push.enabled() is False
+    site = Site(client, task=False)
+    assert client.get("/api/employer/push-config", headers=site.h).json() == {"enabled": False, "public_key": None}
+
+
 def test_config_enabled_with_keys(client, keys):
     site = Site(client, task=False)
     assert client.get("/api/employer/push-config", headers=site.h).json() == {"enabled": True, "public_key": keys}

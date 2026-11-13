@@ -70,8 +70,16 @@ def public_key() -> str | None:
 
 
 def _private_key_file() -> str | None:
+    """개인 키 파일 경로. 없거나 비어 있으면(init-secrets가 만든 빈 자리, 공백만 있어도) None — 웹 푸시를 끈다."""
     path = (os.getenv("VAPID_PRIVATE_KEY_FILE") or "").strip()
-    return path if path and os.path.isfile(path) else None
+    if not path or not os.path.isfile(path):
+        return None
+    try:
+        with open(path, "rb") as f:
+            blank = not f.read(4096).strip(b" \t\r\n\xef\xbb\xbf")
+    except OSError:
+        return None
+    return None if blank else path
 
 
 def enabled() -> bool:

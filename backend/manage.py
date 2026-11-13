@@ -195,7 +195,12 @@ def vapid_keys(out: str, force: bool = False) -> str:
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric import ec
 
-    if os.path.exists(out) and not force:
+    # init-secrets가 만든 빈 자리 파일(공백만)은 덮어써도 된다 — 키가 들어 있을 때만 --force를 요구한다.
+    blank = False
+    if os.path.isfile(out):
+        with open(out, "rb") as f:
+            blank = not f.read().strip()
+    if os.path.exists(out) and not blank and not force:
         raise SystemExit(f"이미 있는 파일이에요: {out} (바꾸려면 --force. 바꾸면 알림 구독을 모두 다시 켜야 해요)")
     key = ec.generate_private_key(ec.SECP256R1())
     pem = key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,

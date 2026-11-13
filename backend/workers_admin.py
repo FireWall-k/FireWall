@@ -111,7 +111,9 @@ def new_worker_prefs(employer: Employer | None) -> str:
 
 def device_link(workplace_code: str) -> str:
     """기기 연결 QR·주소. /worker가 site를 읽어 기기에 사업장 코드를 저장하고 주소에서 뺀다(프론트)."""
-    base = os.getenv("PUBLIC_FRONTEND_URL", "http://localhost:5173").rstrip("/")
+    # 비어 있으면(compose의 "${PUBLIC_FRONTEND_URL:-}"처럼 빈 값이 넘어와도) 로컬 개발 주소. 빈 값을 그대로 쓰면
+    # '/worker?site=…'만 남아 QR이 아무 기기에서도 열리지 않는다.
+    base = (os.getenv("PUBLIC_FRONTEND_URL") or "").strip().rstrip("/") or "http://localhost:5173"
     return f"{base}/worker?site={quote(workplace_code, safe='')}"
 
 

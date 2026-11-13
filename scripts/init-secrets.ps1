@@ -49,7 +49,8 @@ function Protect-File([string]$Path) {
 }
 
 $keys = @{ 'openai_api_key.txt' = 'OPENAI_API_KEY'; 'jobcard_secret.txt' = 'JOBCARD_SECRET' }
-foreach ($name in @('openai_api_key.txt', 'jobcard_secret.txt', 'google-tts.json')) {
+# vapid_private.pem(3-0): 웹 푸시 개인 키 자리. .env에서 옮기지 않는다(키는 manage.py vapid-keys로 만든다).
+foreach ($name in @('openai_api_key.txt', 'jobcard_secret.txt', 'google-tts.json', 'vapid_private.pem')) {
     $path = Join-Path $SecretsDir $name
     $key = $keys[$name]
     $value = if ($key) { Get-EnvValue $key } else { '' }
