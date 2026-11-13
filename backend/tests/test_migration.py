@@ -1162,13 +1162,14 @@ def test_0008_resumes_when_some_columns_already_added():
     db_migrate.upgrade_to_head(engine)
     assert db_migrate.is_at_head(engine)
     assert _diff_against_models(engine) == []
-    assert db_migrate.head_revision() == _V11  # 0008 → 0009(2c) → 0010(2d) → 0011(그림 후보 순서)
+    assert db_migrate.head_revision() == _V12  # 0008 → 0009(2c) → 0010(2d) → 0011(그림 후보 순서) → 0012(3b-1)
 
 
 # --- 0010 사업장 설정 (2d) --------------------------------------------------------------
 
 _V10 = "0010_workplace_settings"
 _V11 = "0011_step_symbol_candidates"
+_V12 = "0012_event_assignment_id"
 
 
 def test_0010_adds_settings_with_defaults_and_roundtrips():
@@ -1215,7 +1216,8 @@ def _script_down_revision(rev: str) -> str:
 def test_phase2_revisions_form_one_line():
     """2b-1·2c·2d가 모두 0007에서 갈라졌던 것을 병합 때 0007 → 0008 → 0009 → 0010 한 줄로 이었다(head 하나)."""
     script = db_migrate._script()
-    assert script.get_heads() == [_V11]
+    assert script.get_heads() == [_V12]
+    assert _script_down_revision(_V12) == _V11
     assert _script_down_revision(_V11) == _V10
     assert _script_down_revision(_V10) == "0009_live_push"
     assert _script_down_revision("0009_live_push") == _V8
@@ -1232,6 +1234,46 @@ def test_0011_resumes_when_column_already_added():
         assert "symbol_candidates" not in {c["name"] for c in inspect(conn).get_columns("steps")}
     with engine.begin() as conn:  # 중간에 멈춘 모양: 칸은 붙었는데 리비전은 0010
         conn.execute(text("ALTER TABLE steps ADD COLUMN symbol_candidates TEXT NOT NULL DEFAULT ''"))
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []
+
+
+# --- 0012 측정 이벤트 배정 id (3b-1 사용 측정) -------------------------------------------------
+
+def _event_cols(conn) -> set[str]:
+    return {c["name"] for c in inspect(conn).get_columns("client_events")}
+
+
+def test_0012_adds_nullable_assignment_id_and_roundtrips():
+    engine = _new_engine("v12_roundtrip")
+    db_migrate.upgrade_to_head(engine)
+    db_migrate.downgrade(engine, _V11)
+    with engine.connect() as conn:
+        assert "assignment_id" not in _event_cols(conn)
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO client_events (id, employer_id, actor, name, created_at) "
+                          "VALUES ('ev1', 'e1', 'worker', 'step_view', '2026-11-14 00:00:00')"))
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+    assert _diff_against_models(engine) == []
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT assignment_id FROM client_events WHERE id='ev1'")).scalar() is None
+        assert "ix_client_events_assignment_id" in {i["name"] for i in inspect(conn).get_indexes("client_events")}
+    db_migrate.downgrade(engine, _V11)
+    with engine.connect() as conn:
+        assert "assignment_id" not in _event_cols(conn)
+        assert conn.execute(text("SELECT COUNT(*) FROM client_events")).scalar() == 1  # 행은 남는다
+    db_migrate.upgrade_to_head(engine)
+    assert db_migrate.is_at_head(engine)
+
+
+def test_0012_resumes_when_column_already_added():
+    engine = _new_engine("v12_resume")
+    db_migrate.upgrade_to_head(engine)
+    db_migrate.downgrade(engine, _V11)
+    with engine.begin() as conn:  # 중간에 멈춘 모양: 칸은 붙었는데 색인·리비전은 아직
+        conn.execute(text("ALTER TABLE client_events ADD COLUMN assignment_id VARCHAR"))
     db_migrate.upgrade_to_head(engine)
     assert db_migrate.is_at_head(engine)
     assert _diff_against_models(engine) == []

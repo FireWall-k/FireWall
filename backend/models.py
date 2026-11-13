@@ -390,7 +390,12 @@ class PushSubscription(Base):
 
 
 class ClientEvent(Base):
-    """(0009) 화면 측정 이벤트(명세 8.4). 이름·문장 같은 개인정보 칸은 두지 않는다(누가 했는지는 actor 종류뿐)."""
+    """(0009) 화면 측정 이벤트(명세 8.4). 이름·문장 같은 개인정보 칸은 두지 않는다(누가 했는지는 actor 종류뿐).
+
+    (0012, 3b-1) assignment_id: 근로자 이벤트가 어느 배정(직무 한 번) 안에서 났는지. 배정은 근로자와 이어지므로
+    가명 정보다(docs/privacy/data-map.md '사용 측정(가명)'). 근로자 본인의 배정일 때만 남기고, 근로자·직무를 지우면
+    함께 지운다. 보고서(manage.py usability-report)는 이 값을 묶음 기준으로만 쓰고 출력하지 않는다.
+    """
     __tablename__ = "client_events"
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
     employer_id: Mapped[str] = mapped_column(String, index=True)
@@ -398,6 +403,7 @@ class ClientEvent(Base):
     name: Mapped[str] = mapped_column(String)
     task_id: Mapped[str | None] = mapped_column(String, nullable=True)
     step_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    assignment_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     value_num: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
