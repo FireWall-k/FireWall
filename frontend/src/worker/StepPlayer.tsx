@@ -129,15 +129,25 @@ function useSentenceFit(stepId: string, basePx: number, layoutKey: string) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const cellRef = useRef<HTMLDivElement | null>(null);
   const [vp, setVp] = useState(() => (typeof window === "undefined" ? "" : `${window.innerWidth}x${window.innerHeight}`));
-  const key = `${stepId}|${basePx}|${vp}|${layoutKey}`;
+  // 글꼴이 늦게 오면(처음엔 대체 글꼴로 재서 3줄 → 글자를 줄임) 다 온 뒤 다시 잰다. 예전에는 fonts.ready 뒤 화면 크기
+  // 문자열을 다시 넣었지만 값이 같아 다시 재지 않아, 큰 글자가 들어가는데도 작은 글자로 남았다(기준 이미지 390×740 130%).
+  // key에 글꼴 세대를 넣어 대체 글꼴로 잰 결과를 다시 쓰지 않는다.
+  const [fontGen, setFontGen] = useState(0);
+  const key = `${stepId}|${basePx}|${vp}|${layoutKey}|f${fontGen}`;
   const [fit, setFit] = useState<{ key: string; level: number }>({ key, level: 0 });
   const level = fit.key === key ? fit.level : 0;
 
   useEffect(() => {
     const onResize = () => setVp(`${window.innerWidth}x${window.innerHeight}`);
+    const onFonts = () => setFontGen((g) => g + 1);
+    const fonts = typeof document === "undefined" ? undefined : document.fonts;
     window.addEventListener("resize", onResize);
-    document.fonts?.ready.then(onResize).catch(() => {});
-    return () => window.removeEventListener("resize", onResize);
+    fonts?.ready.then(onFonts).catch(() => {});
+    fonts?.addEventListener?.("loadingdone", onFonts);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      fonts?.removeEventListener?.("loadingdone", onFonts);
+    };
   }, []);
 
   useLayoutEffect(() => {
