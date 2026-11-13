@@ -1428,6 +1428,52 @@ def condition_prefix(text: str) -> str | None:
     return text[:s.matches[found].end()].strip()
 
 
+# GPT가 불규칙 동사를 규칙처럼 활용한 꼴('영수증을 줍어요' — 2026-11-14 3a 실제 GPT 시험 run2)을 바로잡는다.
+# 원형이 하나로만 읽히는 ㅂ·ㅅ·ㄷ 불규칙 어간만 넣는다. 걷다(걷어/걸어)·묻다·굽다·씻다·벗다처럼 규칙 동사이거나
+# 규칙·불규칙 두 원형이 있는 어간은 넣지 않는다 — 고치면 뜻이 바뀔 수 있다.
+# 어간: (-어/-아 꼴, -었/-았 꼴, -으 꼴)
+_IRREGULAR_FIX = {
+    "줍": ("주워", "주웠", "주우"),
+    "돕": ("도와", "도왔", "도우"),
+    "눕": ("누워", "누웠", "누우"),
+    "붓": ("부어", "부었", "부으"),
+    "젓": ("저어", "저었", "저으"),
+    "긋": ("그어", "그었", "그으"),
+    "잇": ("이어", "이었", "이으"),
+    "싣": ("실어", "실었", "실으"),
+    "듣": ("들어", "들었", "들으"),
+}
+# 낱말 첫머리(앞이 한글이 아님)의 어간 + 틀린 어미 첫 글자. '어/아' 꼴은 뒤에 한글이 오거나 낱말이 끝나도 되고,
+# '으' 꼴은 동사 어미(세요·시·면·며·니·러·려)가 이어질 때만 — '붓으로'(붓 + 으로, 이름씨)는 건드리지 않는다.
+_IRREGULAR_RE = re.compile(
+    r"(?<![가-힣])(" + "|".join(_IRREGULAR_FIX) + r")(어|아|었|았|으(?=[세시면며니러려]))")
+
+
+# GPT가 명사형을 '-으기'처럼 잘못 만든 꼴('영수증 주우기' — 3a run3 제목). 명사형은 어간 + 기('줍기')다.
+# '주우'·'도우'처럼 활용 어간 뒤에 '기'가 오는 말은 국어에 없어(다른 낱말로 읽히지 않아) 바로 되돌린다.
+_NOMINAL_FIX = {v[2]: k for k, v in _IRREGULAR_FIX.items()}   # '주우' → '줍'
+_NOMINAL_RE = re.compile(r"(?<![가-힣])(" + "|".join(_NOMINAL_FIX) + r")기")
+
+
+def _irregular_sub(m: re.Match) -> str:
+    a, past, eu = _IRREGULAR_FIX[m.group(1)]
+    tail = m.group(2)
+    return a if tail in ("어", "아") else past if tail in ("었", "았") else eu
+
+
+def fix_irregular(text: str) -> str:
+    """GPT 단계 문장·제목의 깨진 불규칙 활용을 고친다('줍어요' → '주워요', '붓으세요' → '부으세요').
+    표(_IRREGULAR_FIX)에 있는 어간만, 낱말 첫머리에서만 바꾼다. 따옴표 속도 바꾼다(근로자가 그대로 듣는다)."""
+    text = _NOMINAL_RE.sub(lambda m: _NOMINAL_FIX[m.group(1)] + "기", text or "")
+    return _IRREGULAR_RE.sub(_irregular_sub, text)
+
+
+def broken_irregular(text: str) -> list[str]:
+    """fix_irregular가 고칠 깨진 꼴 목록(검사·보고용)."""
+    return ([m.group(0) for m in _NOMINAL_RE.finditer(text or "")]
+            + [m.group(0) for m in _IRREGULAR_RE.finditer(text or "")])
+
+
 def fix_polite(sentence: str) -> tuple[str, bool]:
     """'-아/어세요' 꼴로 틀린 지시형(눌러세요·알려세요·둘러세요·깔아세요)을 바로잡는다. (문장, 확실한가).
 

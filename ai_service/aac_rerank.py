@@ -11,7 +11,10 @@
      - top3: GPT가 확신하고 고른 카드가 규칙 상위 3장 안이면 그 카드를 자동 채택한다.
      - top3q(Docker 기본): 그림 검색어를 함께 보낸 단계는 top3, 검색어가 없거나 문장 낱말뿐인 단계는 top1.
        검색어 없는 top3은 틀린 자동 그림을 두 배로 늘렸다(아래 2026-11-13 근거).
-  4) 자동 채택하지 않을 때, GPT가 고른 카드가 상위 3장 안이면 사업주에게 보여 줄 후보 맨 앞에 둔다.
+  4) GPT가 고른 카드(상위 10장 안 아무 번호)는 사업주에게 보여 줄 후보 맨 앞에 둔다(자동 채택 여부와 따로).
+     2026-11-14 3a(M5): 예전에는 상위 3장 안일 때만 올려, 실제 GPT 시험(realsmoke 12단계)에서 GPT가 확신하고
+     4·5·6번을 고른 3단계는 그 카드가 사업주 후보 3장에 아예 없었다. 아래 표에서 GPT가 고른 카드 정답률(pick)이 보여 준 1번
+     정답률(top1)보다 높았다(블라인드1 0.809 > 0.742, 시험지2 0.679 > 0.667). 자동 채택 기준(정책)은 그대로다.
   5) 키 없음·꺼짐·시간 초과·오류·이상한 응답이면 규칙 판정을 그대로 돌려준다(지금과 같은 동작).
      시간 제한(AAC_LLM_RERANK_TIMEOUT)은 호출 전체의 마감이다 — httpx timeout은 연결·읽기 단계마다 따로
      세므로, 응답이 조금씩 흘러들어오면 넘을 수 있어 호출을 작업 스레드에서 돌리고 결과를 마감까지만 기다린다.
@@ -72,7 +75,7 @@ logger = logging.getLogger("ai_harness.aac_rerank")
 
 # GPT에 보여 줄 규칙 후보 수. 실측(블라인드1·2)에서 이 값으로 쟀다.
 TOP_N = 10
-# 사업주 검토 화면에 보여 주는 후보 수(symbols._SHORTLIST와 같다). GPT가 고른 카드를 앞으로 올리는 범위.
+# 사업주 검토 화면에 보여 주는 후보 수(symbols._SHORTLIST와 같다). top3 정책이 자동 채택하는 범위.
 SHORTLIST = 3
 
 # 2026-11-13: 그림 검색어 줄을 설명하는 문장을 더했다(그 전은 scratchpad gptexp.py RERANK_SYS 그대로).
@@ -382,8 +385,9 @@ def apply_policy(decision: dict, choice: int, confident: bool, rule_policy: str 
     else:
         accept = confident and idx == 0
 
-    # GPT가 고른 카드가 보여 줄 후보 안에 있으면 맨 앞으로 올린다(나머지 순서는 그대로).
-    if idx is not None and 0 < idx < SHORTLIST:
+    # GPT가 고른 카드를 보여 줄 후보 맨 앞으로 올린다(나머지 순서는 그대로). 4~10번이어도 올린다 — 안 그러면
+    # 사업주 화면 후보 3장에 GPT가 고른 그림이 없다(3a M5). 자동 채택(accept)은 위에서 이미 정했다.
+    if idx is not None and idx > 0:
         cands = [cands[idx]] + cands[:idx] + cands[idx + 1:]
     out["candidates"] = cands
 

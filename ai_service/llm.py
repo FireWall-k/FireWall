@@ -28,6 +28,8 @@ OPENAI_API_KEY = read_secret("OPENAI_API_KEY").strip()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
 LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "20"))
+# 직무 단계 나누기는 temperature 0(2026-11-14 3a) — 같은 지시문을 다시 넣으면 같은 단계·말투가 나오게.
+DECOMPOSE_TEMPERATURE = 0.0
 
 # AAC 매칭의 임베딩 가산 항(local_aac.py, embeddings.py)에서 쓴다.
 EMBED_MODEL = os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-large")
@@ -60,11 +62,13 @@ def embed_texts(texts: list[str], *, timeout: float = 20.0) -> list[list[float]]
 
 
 def chat_json(system: str, user: str, *, max_tokens: int = 1200,
-              timeout: float | None = None) -> dict:
+              timeout: float | None = None, temperature: float = 0.2) -> dict:
     """OpenAI Chat Completions(JSON 모드) 호출 후 dict로 반환. 실패 시 예외.
 
     timeout을 주면 그 값(초)을 쓴다. 그림 재순위(aac_rerank.py)처럼 늦으면 규칙 결과로 바로
     넘어가야 하는 호출이 기본값(LLM_TIMEOUT, 20초)을 기다리지 않게 하려는 것이다.
+    temperature: 직무 단계 나누기(llm_decompose)는 0을 준다 — 같은 지시문이면 같은 단계가 나와야 한다.
+    재순위·코칭은 예전 값(0.2) 그대로다.
     """
     resp = _http.post(
         f"{OPENAI_BASE_URL}/chat/completions",
@@ -79,7 +83,7 @@ def chat_json(system: str, user: str, *, max_tokens: int = 1200,
                 {"role": "user", "content": user},
             ],
             "response_format": {"type": "json_object"},
-            "temperature": 0.2,
+            "temperature": temperature,
             "max_tokens": max_tokens,
         },
         timeout=LLM_TIMEOUT if timeout is None else timeout,
@@ -128,8 +132,23 @@ _DECOMPOSE_SYSTEM = (
     "- 헷갈리면 덜 나눕니다. 단계 수를 늘리기 위해 원문에 없는 행동을 만들어내면 안 됩니다.\n"
     "- 사용자 메시지에 '원문 조각' 번호 목록이 있으면, 각 단계의 src에 그 단계가 나온 조각 번호를 적습니다.\n"
 
-    "2) sentence는 근로자에게 실제로 보여줄 짧고 명확한 한국어 명령형입니다. "
+    # 2026-11-14 3a(M2·M3): 실제 GPT 시험(직무 3개 12단계)에서 11단계가 '~세요' 명령조로 바뀌었고(보내기 점검의
+    # command_tone 경고), '행주로'·'빗자루로' 같은 도구 낱말이 문장에서 빠졌다. 말투·도구·동작 하나 규칙을 적었다.
+    # 2026-11-13 수정안 1은 '국자로 떠서 담아요 → 2단계' 같은 나누기 예시를 더해 1단계 문장을 더 나눴다(과분할 6→7) —
+    # 그래서 여기에는 나누기 예시를 더하지 않고, 도구 예시도 한 단계 문장만 쓴다. 예시는 정답셋·realsmoke 문장이 아니다.
+    "2) sentence는 근로자에게 실제로 보여줄 짧고 명확한 한국어 지시문입니다. "
     "가능하면 20자 안팎으로 유지합니다.\n"
+    "- 말투: 사업주가 쓰는 '~해요/~어요/~아요' 말투로 씁니다(예: '닦아요', '넣어요', '정리해요'). "
+    "'~하세요', '~하십시오', '~해라', '~해' 같은 명령조로 바꾸지 않습니다. "
+    "원문이 '~세요'로 쓰였어도 sentence는 '~해요' 말투로 씁니다.\n"
+    "- 불규칙 동사는 바르게 활용합니다: '줍다' → '주워요'('줍어요'는 틀림), '붓다' → '부어요', '돕다' → '도와요', "
+    "'듣다' → '들어요'.\n"
+    "- 도구 낱말: 원문에 도구·수단 낱말('행주로', '빗자루로', '집게로', '수세미로'처럼 '~로/~으로')이 있으면 "
+    "그 동작의 sentence에 그대로 남깁니다. 짧게 만들려고 도구 낱말을 빼지 않습니다.\n"
+    "  예: '집게로 빵을 집어 주세요' → '집게로 빵을 집어요.' ('빵을 집어요.'는 도구가 빠져 안 됩니다)\n"
+    "- 동작 하나: sentence 하나에는 그림 한 장으로 그릴 동작 하나만 씁니다. "
+    "규칙 1에서 나눈 두 동작을 '~하고', '~해서', '~한 뒤'로 한 sentence에 다시 잇지 않습니다. "
+    "규칙 1에서 한 단계로 둔 문장(대상 나열, 방법·도구 앞 동사, '-며', 이동·방향, 조건, 금지)은 그대로 한 sentence입니다.\n"
     "- 문장을 쉽게 바꾸더라도 원문의 핵심 의미는 유지합니다.\n"
     "- 대상, 동작, 방향, 위치, 상태, 수량, 순서, 비교 조건, 긍정·부정 의미 중 "
     "작업을 구분하는 데 필요한 정보는 삭제하지 않습니다.\n"
@@ -144,8 +163,8 @@ _DECOMPOSE_SYSTEM = (
     "- 원문의 조건을 단순한 '정리하다', '처리하다', '준비하다' 같은 "
     "포괄적인 표현으로 축약하지 않습니다.\n"
     "예: '물건의 방향을 같은 쪽으로 맞춘다'를 "
-    "'물건을 정리하세요'로 바꾸면 안 됩니다. "
-    "'물건의 방향을 맞추세요'처럼 핵심 조건을 유지합니다.\n"
+    "'물건을 정리해요'로 바꾸면 안 됩니다. "
+    "'물건의 방향을 맞춰요'처럼 핵심 조건을 유지합니다.\n"
 
     "3) 전체 작업의 직무 job을 반드시 하나 고릅니다.\n"
     "- assembly: 부품 조립, 체결, 전선 연결, 제조 조립 작업\n"
@@ -177,19 +196,19 @@ _DECOMPOSE_SYSTEM = (
     "\n"
     "좋은 예:\n"
     "- 원문: '큰 부품과 작은 부품을 나눠주세요'\n"
-    "  sentence: '큰 부품과 작은 부품을 나누세요.'\n"
+    "  sentence: '큰 부품과 작은 부품을 나눠요.'\n"
     "  symbol_query: ['큰 부품과 작은 부품을 나누다']\n"
     "- 원문: '드라이버로 나사를 조여주세요'\n"
-    "  sentence: '나사를 조이세요.'\n"
+    "  sentence: '드라이버로 나사를 조여요.'\n"
     "  symbol_query: ['드라이버로 나사를 조이다']\n"
     "- 원문: '전선과 커넥터를 연결해주세요'\n"
-    "  sentence: '커넥터를 연결하세요.'\n"
+    "  sentence: '전선과 커넥터를 연결해요.'\n"
     "  symbol_query: ['전선과 커넥터를 연결하다']\n"
     "- 원문: '작업대 위에 남은 부품을 한곳에 모아주세요'\n"
-    "  sentence: '남은 부품을 모으세요.'\n"
+    "  sentence: '남은 부품을 한곳에 모아요.'\n"
     "  symbol_query: ['작업대 위 남은 부품을 한곳에 모으다']\n"
     "- 원문: '상품이 올바른 위치에 있는지 확인해주세요'\n"
-    "  sentence: '상품 위치를 확인하세요.'\n"
+    "  sentence: '상품 위치를 확인해요.'\n"
     "  symbol_query: ['상품이 올바른 위치에 있는지 확인하다']\n"
     "\n"
     "나쁜 예:\n"
@@ -222,9 +241,15 @@ _DECOMPOSE_SYSTEM = (
     "예: '나사를 너무 세게 조이지 마세요'는 "
     "sentence와 symbol_query 모두 금지 의미를 유지합니다.\n"
     "- '사용하지 않는다', '섞지 않는다', '넘지 않는다', '놓지 않는다' 같은 부정 조건도 유지합니다.\n"
+    "- 금지 sentence도 '~해요' 말투로 씁니다: '~하면 안 돼요', '~지 않아요'. 금지를 빼고 동작만 남기지 않습니다.\n"
+    "- 조건('~하면', '~할 때', '~이 없으면', '~가 아니면')은 sentence에 남기고, 조건과 동작의 짝·뜻을 "
+    "뒤집지 않습니다. 예: '컵에 금이 갔으면 쓰지 않아요'를 '컵을 써요'로, '불이 켜지면 문을 열어요'를 "
+    "'불을 켜요'로 바꾸면 안 됩니다.\n"
 
     "7) 위험 요소가 있으면 safety_flags에 한국어로 적고, 없으면 빈 배열입니다.\n"
     "- 원문이나 작업 맥락에서 확인할 수 없는 위험 요소를 임의로 추가하지 않습니다.\n"
+    "- 위험한 도구도 sentence의 도구 낱말은 그대로 남깁니다. 위험은 safety_flags에 따로 적습니다. "
+    "예: '칼로 포장 끈을 잘라요' → sentence '칼로 포장 끈을 잘라요.', safety_flags ['칼 조심'].\n"
 
     "8) 단계는 최대 10개입니다.\n"
     "- 원문에 실제 행동이 적으면 10개를 채울 필요가 없습니다.\n"
@@ -237,15 +262,35 @@ _DECOMPOSE_SYSTEM = (
     "- 방향, 위치, 상태, 수량, 순서, 부정 의미 등 중요한 조건이 사라지지 않았는지 확인합니다.\n"
     "- 확인, 이동, 분류, 조립 등 서로 다른 행동으로 의미가 바뀌지 않았는지 확인합니다.\n"
     "- symbol_query에 대상과 구체적인 행동이 모두 포함되어 있는지 확인합니다.\n"
+    "- sentence가 '~해요' 말투인지('~세요'·'~십시오'·'~해라'로 끝나지 않는지) 확인합니다.\n"
+    "- 원문의 도구 낱말('~로/~으로')이 그 동작의 sentence에 남았는지 확인합니다.\n"
+    "- sentence 하나에 동작이 하나뿐인지, 금지·조건의 뜻이 원문과 같은지 확인합니다.\n"
+    "- task_title이 모든 일 묶음을 담았는지 확인합니다(규칙 10).\n"
     "위 조건을 만족하지 않는 단계는 출력 전에 수정하거나 제거합니다.\n"
+
+    # 2026-11-14 3a(N9): 실제 GPT 시험에서 제목이 첫 묶음만 담았다(뜨거운 물 붓기 + 테이블 닦기 → '테이블 청소').
+    # 2026-11-14 run1·run2(temperature 0): 단계 6개 직무 제목이 두 묶음만 담았다('상자 열기와 상품 정리' — 테이블·바닥
+    # 청소와 손 씻기 빠짐). 원인으로 본 것: 예시가 모두 'A와 B' 두 부분이었고(셋 묶음 예시도 동사 둘로 줄임), '20자 안팎'과
+    # '묶음'의 뜻이 정해지지 않았다. 묶음을 정의하고, 세 부분 예시를 '·'로 잇고, 마지막 문장까지 넣으라고 적었다(25자 이내).
+    # run3: 이번엔 단계 6개를 모두 묶음으로 써 35자가 됐다 — 묶음은 '작은 목표 하나를 향한 이어진 단계들'이고 보통 2~4개,
+    # 단계 수보다 적다고 적었다. 코드 가드(decompose.guard_title)가 25자·부분 수를 넘는 제목을 줄인다.
+    "10) task_title은 이 직무 전체를 부르는 짧은 이름입니다.\n"
+    "- 일 묶음: 작은 목표 하나(예: 진열, 청소, 설거지, 포장)를 향해 이어지는 단계들입니다. 단계 하나하나가 묶음이 아닙니다. "
+    "보통 2~4묶음이고, 묶음 수는 단계 수의 절반 이하입니다. "
+    "원문의 모든 문장은 어느 묶음엔가 들어갑니다. 첫 문장부터 마지막 문장까지 빠지는 묶음이 없어야 합니다.\n"
+    "- 제목에는 모든 묶음의 이름이 들어갑니다. 묶음마다 2~5글자 이름을 쓰고 '·'로 잇습니다.\n"
+    "  예(단계 5개, 3묶음): 박스를 뜯고, 컵을 꺼내 진열대에 놓고, 바닥을 쓸고 쓰레기를 버리는 지시 → "
+    "'박스 뜯기·컵 진열·청소' ('박스 뜯기·컵 꺼내기·컵 놓기·바닥 쓸기·쓰레기 버리기'는 단계를 늘어놓은 것이라 안 됩니다)\n"
+    "  예(2묶음): 창문을 닦고 화분에 물을 주는 지시 → '창문 닦기·화분 물 주기'\n"
+    "- 제목은 25자 이내로 짧게 쓰되, 짧게 하려고 묶음을 빼지 않습니다. 원문에 없는 일을 넣지 않습니다.\n"
 
     "출력은 반드시 JSON 하나입니다. 형식:\n"
     "{"
-    "\"task_title\":\"짧은 제목\","
+    "\"task_title\":\"모든 묶음 이름을 · 로 이은 짧은 제목\","
     "\"job\":\"assembly | cafe | cleaning | packaging | retail | serving | display | delivery | gas | unknown\","
     "\"steps\":["
     "{"
-    "\"sentence\":\"명령형 문장\","
+    "\"sentence\":\"'~해요' 말투의 동작 하나 문장\","
     "\"symbol_query\":[\"대상+구체적 행동\"],"
     "\"action_type\":\"observe|move|sort|stack|pack|clean|wear|operate|assemble|other\","
     "\"safety_flags\":[],"
@@ -259,18 +304,18 @@ _DECOMPOSE_SYSTEM = (
     "(원문 조각: 1) 조립대에서 큰 부품과 작은 부품을 나누고 2) 전선과 커넥터를 연결해주세요)\n"
     "예시 출력:\n"
     "{"
-    "\"task_title\":\"부품 조립\","
+    "\"task_title\":\"부품 나누기·커넥터 연결\","
     "\"job\":\"assembly\","
     "\"steps\":["
     "{"
-    "\"sentence\":\"큰 부품과 작은 부품을 나누세요.\","
+    "\"sentence\":\"큰 부품과 작은 부품을 나눠요.\","
     "\"symbol_query\":[\"큰 부품과 작은 부품을 나누다\"],"
     "\"action_type\":\"sort\","
     "\"safety_flags\":[],"
     "\"src\":1"
     "},"
     "{"
-    "\"sentence\":\"커넥터를 연결하세요.\","
+    "\"sentence\":\"전선과 커넥터를 연결해요.\","
     "\"symbol_query\":[\"전선과 커넥터를 연결하다\"],"
     "\"action_type\":\"assemble\","
     "\"safety_flags\":[],"
@@ -295,7 +340,7 @@ def llm_decompose(raw_input: str, context: dict | None = None,
         parts.append(f"작업 환경: {ctx['work_environment']}")
     if ctx.get("worker_note"):
         parts.append(f"근로자 특성(개별화 참고): {ctx['worker_note']}")
-    raw = chat_json(_DECOMPOSE_SYSTEM, "\n".join(parts))
+    raw = chat_json(_DECOMPOSE_SYSTEM, "\n".join(parts), temperature=DECOMPOSE_TEMPERATURE)
     check_negation(raw_input, raw)
     return raw
 

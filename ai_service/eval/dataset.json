@@ -1,5 +1,5 @@
 {
-  "_comment": "직무 분해 평가용 정답셋(사무직·카페 도메인). raw_input은 사업주가 입력하는 원문, expect는 채점 기준. 자유롭게 추가/수정하세요.",
+  "_comment": "직무 분해 평가용 정답셋(사무직·카페 도메인). raw_input은 사업주가 입력하는 원문, expect는 채점 기준. 자유롭게 추가/수정하세요. acc3a_* 11문항(2026-11-14, 3a 문장 정확도)은 '도구로 ~'·'~어요'·두 동작·부정·조건 문장이고 expect에 keep_in_sentence(단계 문장에 남아야 할 낱말)·haeyo(명령조 끝맺음 없음)·keep_negation(금지·부정 보존)을 더 적는다 — run_eval이 점수와 따로 '정확도 검사'로 센다. 분할 정답셋·realsmoke 문장이 아닌 새 문장.",
   "rubric_weights": {
     "steps_in_range": 1.0,
     "sentence_brevity": 1.0,
@@ -114,6 +114,83 @@
       "raw_input": "반납된 책을 모아 책장에 꽂아주세요.",
       "context": {"business_type": "사무직", "work_environment": "사무실"},
       "expect": {"min_steps": 2, "max_steps": 3, "must_have_keywords": ["책"]}
+    },
+    {
+      "id": "acc3a_tool_haeyo",
+      "domain": "cleaning",
+      "raw_input": "걸레로 창틀을 닦아요.",
+      "context": {"business_type": "청소", "work_environment": "사무실"},
+      "expect": {"min_steps": 1, "max_steps": 1, "must_have_keywords": ["창틀"], "keep_in_sentence": ["걸레로"], "haeyo": true}
+    },
+    {
+      "id": "acc3a_tool_seyo",
+      "domain": "cleaning",
+      "raw_input": "집게로 화단의 쓰레기를 주워 주세요.",
+      "context": {"business_type": "청소", "work_environment": "건물 밖"},
+      "expect": {"min_steps": 1, "max_steps": 1, "must_have_keywords": ["쓰레기"], "keep_in_sentence": ["집게로"], "haeyo": true}
+    },
+    {
+      "id": "acc3a_tool_two_actions",
+      "domain": "cleaning",
+      "raw_input": "걸레로 복도를 닦고 쓰레기통을 비워요.",
+      "context": {"business_type": "청소", "work_environment": "복도"},
+      "expect": {"min_steps": 2, "max_steps": 2, "must_have_keywords": ["복도", "쓰레기통"], "keep_in_sentence": ["걸레로"], "haeyo": true}
+    },
+    {
+      "id": "acc3a_tool_push_two_actions",
+      "domain": "cleaning",
+      "raw_input": "밀대로 복도를 밀고 쓰레기통을 비워요.",
+      "context": {"business_type": "청소", "work_environment": "복도"},
+      "expect": {"min_steps": 2, "max_steps": 2, "must_have_keywords": ["복도", "쓰레기통"], "keep_in_sentence": ["밀대로"], "haeyo": true}
+    },
+    {
+      "id": "acc3a_haeyo_two_actions",
+      "domain": "cafe",
+      "raw_input": "우유를 냉장고에서 꺼내서 컵에 따라요.",
+      "context": {"business_type": "카페", "work_environment": "바"},
+      "expect": {"min_steps": 2, "max_steps": 2, "must_have_keywords": ["우유", "컵"], "haeyo": true}
+    },
+    {
+      "id": "acc3a_haeyo_fold_stack",
+      "domain": "retail",
+      "raw_input": "빈 박스를 접어서 창고에 쌓아요.",
+      "context": {"business_type": "마트", "work_environment": "창고"},
+      "expect": {"min_steps": 2, "max_steps": 2, "must_have_keywords": ["박스", "창고"], "haeyo": true}
+    },
+    {
+      "id": "acc3a_negation_haeyo",
+      "domain": "cafe",
+      "raw_input": "뜨거운 컵은 맨손으로 잡지 않아요.",
+      "context": {"business_type": "카페", "work_environment": "바"},
+      "expect": {"min_steps": 1, "max_steps": 1, "must_have_keywords": ["컵"], "keep_negation": true, "haeyo": true}
+    },
+    {
+      "id": "acc3a_negation_seyo",
+      "domain": "serving",
+      "raw_input": "깨진 컵은 쓰지 말고 따로 모으세요.",
+      "context": {"business_type": "식당", "work_environment": "주방"},
+      "expect": {"min_steps": 1, "max_steps": 2, "must_have_keywords": ["컵"], "keep_negation": true, "haeyo": true}
+    },
+    {
+      "id": "acc3a_condition_haeyo",
+      "domain": "serving",
+      "raw_input": "손님이 부르면 테이블로 가요.",
+      "context": {"business_type": "식당", "work_environment": "홀"},
+      "expect": {"min_steps": 1, "max_steps": 1, "must_have_keywords": ["테이블"], "keep_in_sentence": ["부르면"], "haeyo": true}
+    },
+    {
+      "id": "acc3a_condition_negation",
+      "domain": "cleaning",
+      "raw_input": "바닥이 젖어 있으면 뛰지 않아요.",
+      "context": {"business_type": "청소", "work_environment": "복도"},
+      "expect": {"min_steps": 1, "max_steps": 1, "must_have_keywords": ["바닥"], "keep_in_sentence": ["젖어"], "keep_negation": true, "haeyo": true}
+    },
+    {
+      "id": "acc3a_condition_two_actions",
+      "domain": "display",
+      "raw_input": "빵이 다 떨어지면 창고에서 빵을 가져와서 진열대에 채워요.",
+      "context": {"business_type": "빵집", "work_environment": "매장"},
+      "expect": {"min_steps": 1, "max_steps": 2, "must_have_keywords": ["빵", "진열대"], "keep_in_sentence": ["떨어지면"], "haeyo": true}
     }
   ]
 }
