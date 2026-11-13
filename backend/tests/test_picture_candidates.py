@@ -99,6 +99,22 @@ def test_create_stores_gpt_order_and_editor_keeps_it(client, employer_token, mon
     assert len({c["asset_id"] for c in body["candidates"]}) == len(body["candidates"])  # 겹침 없음
 
 
+def test_gpt_pick_outside_rule_top3_is_candidate_one(client, employer_token, monkeypatch):
+    """3a M5: GPT 재순위가 규칙 4~10번 카드를 골랐을 때(실제 GPT 시험 a-1처럼 자동 채택은 안 됨) ai_service는 그 카드를
+    후보 맨 앞에 둔다(aac_rerank.apply_policy). 편집기의 규칙만 검색 결과(상위 3장)에는 그 카드가 아예 없어도,
+    편집기 두 길(모든 단계 후보·한 단계 후보) 모두 GPT가 고른 카드가 후보 1번이다."""
+    gpt_pick = "PACKAGING_050"
+    monkeypatch.setattr(ai_client, "map_symbols", _low_margin([gpt_pick] + RULE_ORDER[:2]))
+    task = _create(client, employer_token, [_row("완성된 박스를 출고 구역에 놓아요.", ("완성된 박스를 출고 구역에 놓다",))])
+    sid = task["steps"][0]["id"]
+    assert task["steps"][0]["picture_state"] == "none"
+    monkeypatch.setattr(ai_client, "map_symbols", _low_margin(RULE_ORDER))   # 편집기 조회 때: 규칙만, GPT 카드 없음
+    assert _candidates(client, employer_token, task["id"])[sid] == [gpt_pick] + RULE_ORDER[:2]
+    r = client.get(f"/api/tasks/{task['id']}/steps/{sid}/symbol-candidates", headers=auth(employer_token))
+    assert r.status_code == 200, r.text
+    assert r.json()["candidates"][0]["asset_id"] == gpt_pick
+
+
 def test_accepted_pick_first_then_rule_fill(client, employer_token, monkeypatch):
     """자동 채택한 단계는 채택 그림 하나만 남고, 나머지는 지금 규칙 검색으로 채운다(겹침 없음)."""
     monkeypatch.setattr(ai_client, "map_symbols", _accepted("PACKAGING_030"))

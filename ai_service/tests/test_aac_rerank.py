@@ -101,11 +101,19 @@ def test_choice_zero_hands_off_without_reordering():
     assert [c["asset_id"] for c in out["candidates"]] == [f"A{i}" for i in range(1, 11)]
 
 
-def test_pick_outside_shortlist_is_not_moved_forward():
-    out = aac_rerank.apply_policy(_decision("low_score"), 5, True)
-    assert out["match"] is None
-    assert out["reason"] == "low_score"
-    assert [c["asset_id"] for c in out["candidates"][:3]] == ["A1", "A2", "A3"]
+@pytest.mark.parametrize("choice", [4, 5, 10])
+@pytest.mark.parametrize("confident", [True, False])
+def test_pick_outside_shortlist_moves_to_candidate_one(choice, confident):
+    # 3a M5: 상위 3장 밖(4~10번)을 골라도 GPT가 고른 카드가 후보 1번이다. 자동 채택은 하지 않는다(정책 그대로).
+    for policy in ("top1", "top3", "top3q"):
+        out = aac_rerank.apply_policy(_decision("low_score"), choice, confident, policy, with_query=True)
+        assert out["match"] is None
+        assert out["reason"] == "low_score"
+        rest = [f"A{i}" for i in range(1, 11) if i != choice]
+        assert [c["asset_id"] for c in out["candidates"]] == [f"A{choice}"] + rest
+    out = aac_rerank.apply_policy(_decision("accepted"), choice, confident)
+    assert out["match"] is None and out["reason"] == "llm_disagree"
+    assert out["candidates"][0]["asset_id"] == f"A{choice}"
 
 
 def test_top3_policy_accepts_confident_pick_within_top3():
@@ -366,6 +374,17 @@ def test_map_symbols_llm_disagreement_becomes_low_margin_shortlist(gpt):
     assert s.decided_by == "llm"
     assert len(s.candidates) == 3
     assert s.candidates[1].asset_id == "RETAIL_029"  # 규칙 1순위는 GPT가 고른 카드 다음
+
+
+def test_map_symbols_gpt_pick_from_rank_five_is_candidate_one(gpt):
+    # 3a M5: GPT가 규칙 5번 카드를 고르면 사업주에게 보여 줄 후보 3장의 1번이 그 카드다(예전엔 3장에 없었다).
+    import local_aac
+    top = local_aac.search_for_step_detailed(_STEP[0], dict(_STEP[1]), limit=aac_rerank.TOP_N)["candidates"]
+    assert len(top) >= 5
+    gpt({"choice": 5, "confident": True})
+    s = symbols.map_symbols(*_STEP).symbols[0]
+    assert s.needs_fallback is True and s.decided_by == "llm"
+    assert [c.asset_id for c in s.candidates] == [top[4]["asset_id"], top[0]["asset_id"], top[1]["asset_id"]]
 
 
 def test_map_symbols_falls_back_on_error(gpt):
