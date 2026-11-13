@@ -28,6 +28,10 @@ def test_prompt_keeps_employer_haeyo_tone_and_forbids_command_tone():
     assert "명령형" not in P   # 예전 '짧고 명확한 한국어 명령형' 지시가 남아 있지 않다
 
 
+def test_prompt_reminds_irregular_conjugation():
+    assert "'줍다' → '주워요'('줍어요'는 틀림)" in P
+
+
 def test_prompt_keeps_tool_words():
     for tool in ("'행주로'", "'빗자루로'", "'집게로'"):
         assert tool in P
@@ -48,8 +52,12 @@ def test_prompt_keeps_negation_and_condition_meaning():
 
 def test_prompt_title_covers_all_groups():
     assert "10) task_title" in P
-    assert "첫 묶음만 쓰지 말고 모든 묶음을 담습니다" in P
+    assert "제목에는 모든 묶음의 이름이 들어갑니다" in P
+    assert "첫 문장부터 마지막 문장까지 빠지는 묶음이 없어야" in P
+    assert "'박스 접기·라벨 붙이기·바닥 청소'" in P        # 세 부분 예시
+    assert "짧게 하려고 묶음을 빼지 않습니다" in P
     assert "task_title이 모든 일 묶음을 담았는지" in P
+    assert "20자 안팎)입니다" not in P                       # 제목을 두 부분으로 줄이게 하던 글자 수 지시가 없다
 
 
 def _quoted_sentences(prompt: str) -> list[str]:
@@ -66,7 +74,7 @@ def test_prompt_examples_are_haeyo_and_keep_tools():
         assert not s.rstrip(".").endswith(("세요", "십시오")), s
     assert "드라이버로 나사를 조여요." in sentences   # 도구 낱말을 남긴 예시
     example = json.loads(P[P.index("예시 출력:\n") + len("예시 출력:\n"):])
-    assert example["task_title"] == "부품 나누기와 커넥터 연결"   # 두 묶음을 모두 담은 제목
+    assert example["task_title"] == "부품 나누기·커넥터 연결"   # 두 묶음을 모두 담은 제목
 
 
 # ---------- temperature 0 ----------
@@ -214,3 +222,50 @@ def test_accuracy_checks_catch_flipped_negation():
     kept = DecomposeResult(task_title="t", job="cleaning", steps=[
         Step(order=1, sentence="바닥이 젖어 있으면 뛰면 안 돼요.", keywords=[], action_type="other")])
     assert run_eval.accuracy_checks(kept, case) == {"steps": True, "tone": True, "keep_words": True, "negation": True}
+
+
+# ---------- 깨진 불규칙 활용 고치기(run2 '영수증을 줍어요.') ----------
+
+import pytest  # noqa: E402
+
+import step_split  # noqa: E402
+
+
+@pytest.mark.parametrize("broken,fixed", [
+    ("영수증을 줍어요.", "영수증을 주워요."),
+    ("동료를 돕아요.", "동료를 도와요."),
+    ("매트에 눕어요.", "매트에 누워요."),
+    ("물을 주전자에 붓어요.", "물을 주전자에 부어요."),
+    ("소스를 젓어요.", "소스를 저어요."),
+    ("자로 선을 긋어요.", "자로 선을 그어요."),
+    ("호스를 잇어요.", "호스를 이어요."),
+    ("상자를 수레에 싣어요.", "상자를 수레에 실어요."),
+    ("안내 방송을 듣어요.", "안내 방송을 들어요."),
+    ("영수증을 줍었어요.", "영수증을 주웠어요."),
+    ("영수증을 줍으세요.", "영수증을 주우세요."),
+    ("떨어지면 줍으면 돼요.", "떨어지면 주우면 돼요."),
+    ("영수증 줍어서 버리기", "영수증 주워서 버리기"),
+])
+def test_fix_irregular_fixes_unambiguous_stems(broken, fixed):
+    assert step_split.broken_irregular(broken)
+    assert step_split.fix_irregular(broken) == fixed
+    assert step_split.fix_irregular(fixed) == fixed and not step_split.broken_irregular(fixed)
+
+
+@pytest.mark.parametrize("text", [
+    "소매를 걷어요.", "길을 걸어요.", "장갑에 흙이 묻어요.", "길을 물어요.", "빵을 굽어요.", "고기를 구워요.",
+    "손을 씻어요.", "앞치마를 벗어요.", "물건이 있어요.", "잇몸", "붓으로 칠해요.", "붓이 젖었어요.", "듣는 사람", "듣기 연습", "줍다",
+    "영수증을 주워요.", "물을 부어요.",
+])
+def test_fix_irregular_leaves_regular_and_ambiguous_words(text):
+    assert step_split.fix_irregular(text) == text
+    assert step_split.broken_irregular(text) == []
+
+
+def test_decompose_fixes_broken_irregular_in_gpt_sentence_and_title(monkeypatch):
+    _gpt(monkeypatch, {"task_title": "영수증 줍어 버리기", "job": "cleaning", "steps": [
+        {"sentence": "영수증을 줍어요.", "symbol_query": ["영수증을 줍다"], "action_type": "move", "src": 1},
+        {"sentence": "영수증을 버려요.", "symbol_query": ["영수증을 버리다"], "action_type": "clean", "src": 1}]})
+    result = dec.decompose("바닥에 떨어진 영수증을 주워서 버려요.", {})
+    assert [s.sentence for s in result.steps] == ["영수증을 주워요.", "영수증을 버려요."]
+    assert result.task_title == "영수증 주워 버리기"

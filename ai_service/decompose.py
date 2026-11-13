@@ -498,6 +498,8 @@ def _build_from_llm(raw: dict, clauses: list[Clause] | None = None) -> Decompose
         if not sentence:
             continue
         sentence = sentence[:_MAX_SENTENCE]
+        # GPT가 쓴 깨진 불규칙 활용('줍어요')을 먼저 고친다 — 근로자는 이 문장을 그대로 듣는다(3a).
+        sentence = step_split.fix_irregular(sentence)
         # GPT가 쓴 틀린 지시형('눌러세요'·'알려세요')을 바로잡는다. 못 고치면 노란 줄(근로자는 이 문장을 그대로 듣는다).
         sentence, form_ok = step_split.fix_polite(sentence)
         sentence = step_split.restyle(sentence, style)
@@ -523,7 +525,7 @@ def _build_from_llm(raw: dict, clauses: list[Clause] | None = None) -> Decompose
         # 검산이 문장을 원문으로 바꿨으면(조건 되살리기) 다시 본다.
         if id(st) in bad_form and not step_split.fix_polite(st.sentence)[1]:
             st.split_check = True
-    title = str(raw.get("task_title") or steps[0].sentence)[:40]
+    title = step_split.fix_irregular(str(raw.get("task_title") or steps[0].sentence))[:40]
     job = str(raw.get("job") or "unknown")
     if job not in VALID_JOBS:
         job = "unknown"
