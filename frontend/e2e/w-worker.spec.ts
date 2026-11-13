@@ -255,16 +255,25 @@ test("5. 근로자 화면 전체에 금지어·영어가 없다", async ({ page 
 
 test("[다 했어요]를 600ms 안에 두 번 눌러도 한 단계만 넘어간다", async ({ page }) => {
   await loginAsWorker(page);
+  // 페이지가 받은 click의 '누른 시각'(event.timeStamp)을 적어 둔다 — 시험이 정말 450ms 간격 두 누름을 만들었는지 확인용.
+  await page.addInitScript(() => {
+    const w = window as unknown as { __clickTs: number[] };
+    w.__clickTs = [];
+    document.addEventListener("click", (e) => w.__clickTs.push(e.timeStamp), true);
+  });
   await page.goto("/worker/job/asg-1/step/1");
   await expect(page.getByTestId("step-sentence")).toHaveText("박스 바닥 덮개를 접어요");
   // 진짜 입력 이벤트 두 번을 '누른 시각' 450ms 간격으로 보낸다(CDP timestamp). 예전에는 페이지 안 setTimeout(450)으로
   // 눌렀는데, 다음 단계를 그리느라 화면이 바쁘면 그 타이머가 600ms 넘어서야 불려 '늦게 누른 것'이 되었다(2c).
   // 버튼은 이제 처리한 때가 아니라 누른 때(event.timeStamp)로 재므로, 둘째 누름이 다음 단계에서 늦게 처리되어도 막는다.
+  // (3-0 M6) 예전 흔들림 기록(b1·d 마감, 2c 수정 전)은 모두 2c 이전 코드·시험이었다. 기준 시각은 시험 프로세스의
+  // Date.now()가 아니라 페이지 시계로 잡는다: CDP 시각이 페이지 시작(timeOrigin)보다 앞서면 timeStamp가 0이 되거나
+  // 렌더러가 죽는다(3-0에서 확인함). 그래서 두 시계가 조금 어긋나도 시험이 흔들리지 않게 한다.
   const box = (await doneButton(page).boundingBox())!;
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
   const cdp = await page.context().newCDPSession(page);
-  const t0 = Date.now() / 1000;
+  const t0 = await page.evaluate(() => (performance.timeOrigin + performance.now()) / 1000);
   const tap = async (ts: number) => {
     await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1, timestamp: ts });
     await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1, timestamp: ts + 0.01 });
@@ -276,6 +285,12 @@ test("[다 했어요]를 600ms 안에 두 번 눌러도 한 단계만 넘어간�
   await page.waitForTimeout(700);
   await expect(page.getByTestId("step-sentence")).toHaveText("테이프를 붙여요");
   await expect(page).toHaveURL(/step\/2$/);
+  // 브라우저가 우리가 준 누른 시각을 그대로 썼는지(둘 다 0보다 크고 간격 약 450ms) — 아니면 이 시험은 아무것도 재지 않은 것이다.
+  const ts = await page.evaluate(() => (window as unknown as { __clickTs: number[] }).__clickTs);
+  expect(ts).toHaveLength(2);
+  expect(ts[0]).toBeGreaterThan(0);
+  expect(ts[1] - ts[0]).toBeGreaterThan(430);
+  expect(ts[1] - ts[0]).toBeLessThan(470);
 });
 
 test("6. 움직임 줄이기를 켜면 전환 시간이 0이다", async ({ page }) => {
