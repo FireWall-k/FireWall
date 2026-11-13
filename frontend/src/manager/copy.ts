@@ -493,7 +493,7 @@ export const settings = {
   notifyHeading: "알림",
   notifyLabel: "도움 알림 받기",
   notifyHint: "근로자가 도움을 요청하면 이 기기에 알림이 와요. 잠금 화면에는 이름이 보이지 않아요.",
-  notifyLater: "알림은 다음 업데이트에서 켤 수 있어요.",
+  notifyUnavailable: "이 기기에서는 아직 도움 알림을 켤 수 없어요.",
   accountHeading: "계정",
   accountName: "로그인한 이름",
   logout: "로그아웃",

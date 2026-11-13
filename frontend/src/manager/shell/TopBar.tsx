@@ -8,7 +8,7 @@ import { cn } from "../../cn";
 import { nav, pushToggle, shell } from "../copy";
 import { crumbsFor } from "./navItems";
 import { guardLeave } from "../tasks/new/useLeaveGuard";
-import { usePushToggle } from "./pushToggle";
+import { pushToast, usePushToggle } from "./pushToggle";
 import { useLive } from "./useLive";
 
 export interface TopBarProps {
@@ -34,11 +34,7 @@ export default function TopBar({ displayName, onLogout }: TopBarProps) {
   const helpCount = help.length;
 
   async function togglePush() {
-    const r = await push.toggle();
-    if (r === "on") toast.show({ tone: "success", message: pushToggle.turnedOn });
-    else if (r === "off") toast.show({ tone: "info", message: pushToggle.turnedOff });
-    else if (r === "denied") toast.show({ tone: "error", message: pushToggle.denied });
-    else toast.show({ tone: "error", message: pushToggle.failed });
+    toast.show(pushToast(await push.toggle()));
   }
 
   const menuItems: MenuItem[] = [
