@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+import ai_client
 import clock
 import versions
 from auth import decrypt_access_code, require_employer
@@ -41,6 +42,7 @@ from privacy import CONSENT_PERSONAL_INFO, record_access, workers_with_active_co
 from ratelimit import LoginThrottle
 from schemas import (
     AccessCodeRevealOut,
+    AiUsageOut,
     WorkerDayStat,
     WorkerDeleteRequest,
     WorkerStatsOut,
@@ -128,6 +130,21 @@ def workplace_out(employer: Employer) -> WorkplaceOut:
 def my_workplace(db: Session = Depends(get_db), user: dict = Depends(require_employer)) -> WorkplaceOut:
     """사업장 코드·이름·기기 연결 주소·호칭·근로자 화면 기본값. 근로자 관리·설정 화면에 보여 준다."""
     return workplace_out(_employer(db, user))
+
+
+@router.get("/api/workplace/ai-usage", response_model=AiUsageOut)
+def workplace_ai_usage(user: dict = Depends(require_employer)) -> AiUsageOut:
+    """설정 화면 'AI 사용량 (이번 달)'. 서비스 전체의 GPT 사용 횟수·추정 요금(달러)·알림 기준.
+
+    AI 하네스에 닿지 못하면 500 대신 available=False를 준다. 내용(문장)은 하네스도 기록하지 않는다.
+    """
+    body = ai_client.ai_usage()
+    if body is None:
+        return AiUsageOut(available=False, enabled=False)
+    try:
+        return AiUsageOut.model_validate({**body, "available": True})
+    except ValueError:
+        return AiUsageOut(available=False, enabled=False)
 
 
 @router.patch("/api/workplace", response_model=WorkplaceOut)

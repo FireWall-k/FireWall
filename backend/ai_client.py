@@ -130,3 +130,15 @@ def coaching(task_title: str, steps: list[dict], context: dict | None = None,
     except Exception as e:  # noqa: BLE001
         logger.warning("coaching fallback: %s", e)
         return {"summary": "AI 코칭을 불러오지 못했습니다.", "suggestions": []}
+
+
+def ai_usage() -> dict | None:
+    """이번 달 GPT 사용량(AI 하네스 GET /ai/usage). 하네스에 닿지 못하거나 응답이 이상하면 None."""
+    try:
+        resp = _http.get(f"{AI_BASE_URL}/ai/usage", timeout=3)
+        resp.raise_for_status()
+        body = resp.json()
+        return body if isinstance(body, dict) else None
+    except Exception as e:  # noqa: BLE001
+        logger.warning("ai_usage unavailable: %s", type(e).__name__)
+        return None

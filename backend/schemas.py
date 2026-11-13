@@ -664,6 +664,36 @@ class WorkplaceOut(BaseModel):
     worker_defaults: A11yPrefs = Field(default_factory=A11yPrefs)
 
 
+class AiUsageKindOut(BaseModel):
+    calls: int = 0
+    usd: float = 0.0
+
+
+class AiUsageDayOut(BaseModel):
+    date: str
+    calls: int = 0
+    usd: float = 0.0
+
+
+class AiUsageOut(BaseModel):
+    """설정 화면 'AI 사용량 (이번 달)' 카드(GET /api/workplace/ai-usage). AI 하네스 GET /ai/usage를 그대로 옮긴다.
+
+    available=False면 AI 하네스에 닿지 못한 것이다(숫자는 0). 요금은 토큰 수로 셈한 추정값(달러)이다.
+    """
+    available: bool = True
+    # 하네스에 GPT_USAGE_DB가 없어 기록을 안 하는 중이면 False.
+    enabled: bool = True
+    month: str = ""
+    calls: int = 0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    usd: float = 0.0
+    by_kind: dict[str, AiUsageKindOut] = Field(default_factory=dict)
+    alert_usd: float = 5.0
+    over_alert: bool = False
+    last_7_days: list[AiUsageDayOut] = Field(default_factory=list)
+
+
 class WorkplaceUpdate(BaseModel):
     """(2d) 설정 화면. 보낸 필드만 바꾼다. 호칭·이름 검사는 라우트가 해서 정해진 문구로 422를 준다."""
     model_config = ConfigDict(extra="forbid")
