@@ -47,7 +47,7 @@ test.describe("1280", () => {
 test.describe("820", () => {
   test.use({ ...DESKTOP, locale: "ko-KR", viewport: { width: 820, height: 1180 } });
 
-  test("목록·상세 두 칸, [↑][↓]는 늘 보이고, 미리보기는 아래 시트로 열린다", async ({ page }) => {
+  test("목록·상세 두 칸, 순서 손잡이는 늘 보이고, 미리보기는 아래 시트로 열린다", async ({ page }) => {
     const t = fixedDraft();
     await mockEditor(page, { tasks: [t] });
     await loginEmployer(page, `/m/tasks/${t.id}`);
@@ -57,8 +57,7 @@ test.describe("820", () => {
     const det = (await page.getByTestId("step-detail").boundingBox())!;
     expect(det.x).toBeGreaterThan(row.x + row.width - 1);
     for (const n of [2, 3]) {
-      await expect(page.getByRole("button", { name: `${n}단계 위로` })).toBeVisible();
-      await expect(page.getByRole("button", { name: `${n}단계 아래로` })).toBeVisible();
+      await expect(page.getByRole("button", { name: `${n}단계 순서 바꾸기` })).toBeVisible();
     }
     expect(await scrollW(page)).toBeLessThanOrEqual(820);
 

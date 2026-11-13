@@ -423,13 +423,11 @@ describe("순서 바꾸기", () => {
     expect(screen.getByTestId("reorder-live")).toHaveTextContent("순서를 그대로 뒀어요");
   });
 
-  it("[↑][↓] 단추로도 바꾼다(첫 단계의 ↑, 마지막 단계의 ↓는 꺼짐)", async () => {
-    const { user } = await open();
-    m.reorderSteps.mockResolvedValue(FOUR());
-    expect(screen.getByRole("button", { name: "1단계 위로" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "4단계 아래로" })).toBeDisabled();
-    await user.click(screen.getByRole("button", { name: "3단계 아래로" }));
-    expect(m.reorderSteps).toHaveBeenCalledWith("task-1", ["s1", "s2", "s4", "s3"]);
+  it("[↑][↓] 단추는 없다 — 순서는 손잡이로만 바꾼다", async () => {
+    await open();
+    expect(screen.queryByRole("button", { name: /단계 위로$/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /단계 아래로$/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "3단계 순서 바꾸기" })).toBeInTheDocument();
   });
 });
 

@@ -1,11 +1,11 @@
 // 편집기 단계 목록(명세 5.5 '단계 목록', tasks §4.3 StepList).
 // - 행 88: 번호(tabular), 썸네일 64, 문장 2줄, 상태 줄(점 + 아이콘 + 글: 확인함·✦ 자동 · 확인 필요·골라 주세요·그림 없음).
-// - 순서 바꾸기는 [↑][↓] 단추와 키보드 손잡이(Space로 들고 ↑↓로 옮긴 뒤 Space로 놓음, Esc 취소, aria-live로 알림) — WCAG 2.5.7.
+// - 순서 바꾸기는 손잡이 끌기와 키보드 손잡이(Space로 들고 ↑↓로 옮긴 뒤 Space로 놓음, Esc 취소, aria-live로 알림).
 //   마우스·손가락 끌기는 손잡이를 누른 채 끌기(usePointerReorder, 2b-2).
 // - [+ 단계 추가]. 9단계가 넘으면 행마다 [묶음 나누기](group_break, 구분선)를 쓸 수 있다(데이터만, contract §3.1).
-import { useLayoutEffect, useRef, useState, type KeyboardEvent, type Ref } from "react";
-import { ArrowDown, ArrowUp, GripVertical, Plus, Scissors, TriangleAlert } from "lucide-react";
-import { Badge, Button, IconButton, Input } from "../../../components/ui";
+import { useRef, useState, type KeyboardEvent, type Ref } from "react";
+import { GripVertical, Plus, Scissors, TriangleAlert } from "lucide-react";
+import { Badge, Button, Input } from "../../../components/ui";
 import { cn } from "../../../cn";
 import type { EditorStep } from "../../api/types";
 import { editor as copy, pictureStatus } from "../../copy";
@@ -54,41 +54,6 @@ export default function StepList({
   const [adding, setAdding] = useState("");
   const [addBusy, setAddBusy] = useState(false);
   const handles = useRef<Map<string, HTMLButtonElement>>(new Map());
-  const arrows = useRef<Map<string, HTMLButtonElement>>(new Map());
-  /** [↑][↓]로 옮긴 단계: 옮긴 뒤 같은 방향 단추에 초점을 두고, 끝에 닿아 꺼지면 반대 방향 단추로(1회차 검증). */
-  const moveFocus = useRef<{ id: string; dir: "up" | "down" } | null>(null);
-
-  useLayoutEffect(() => {
-    const want = moveFocus.current;
-    if (!want) return;
-    const at = steps.findIndex((x) => x.id === want.id);
-    if (at < 0) {
-      moveFocus.current = null;
-      return;
-    }
-    const canUp = at > 0;
-    const canDown = at < steps.length - 1;
-    const dir = want.dir === "up" ? (canUp ? "up" : canDown ? "down" : null) : canDown ? "down" : canUp ? "up" : null;
-    const el = dir ? arrows.current.get(`${want.id}:${dir}`) : handles.current.get(want.id);
-    moveFocus.current = null;
-    el?.focus();
-  }, [steps]);
-
-  function moveBy(step: EditorStep, index: number, dir: "up" | "down") {
-    if (busy || grab) return;
-    const to = dir === "up" ? index - 1 : index + 1;
-    if (to < 0 || to >= steps.length) return;
-    moveFocus.current = { id: step.id, dir };
-    onMove(index, to);
-  }
-
-  function arrowRef(id: string, dir: "up" | "down") {
-    return (el: HTMLButtonElement | null) => {
-      if (el) arrows.current.set(`${id}:${dir}`, el);
-      else arrows.current.delete(`${id}:${dir}`);
-    };
-  }
-
   const pointer = usePointerReorder({ ids: steps.map((s) => s.id), disabled: busy || !!grab, onMove });
   const active = grab ?? pointer.drag;
   const shown = active ? moved(steps, active.from, active.at) : steps;
@@ -216,16 +181,6 @@ export default function StepList({
                   </span>
                 </button>
                 <div className="flex shrink-0 flex-col items-center justify-center gap-0.5 border-l border-paper-200 px-1 py-1">
-                  {/* 저장하는 동안·손잡이를 든 동안은 disabled 대신 aria-disabled — 초점이 있던 단추가 꺼지면 body로 빠진다. */}
-                  <IconButton
-                    ref={arrowRef(s.id, "up")}
-                    aria-label={copy.moveUp(n)}
-                    icon={<ArrowUp size={16} strokeWidth={2} aria-hidden="true" />}
-                    disabled={i === 0}
-                    aria-disabled={busy || !!grab || undefined}
-                    onClick={() => moveBy(s, i, "up")}
-                    className="size-8 coarse:size-10"
-                  />
                   <button
                     type="button"
                     ref={(el) => {
@@ -252,15 +207,6 @@ export default function StepList({
                   >
                     <GripVertical size={16} strokeWidth={2} aria-hidden="true" />
                   </button>
-                  <IconButton
-                    ref={arrowRef(s.id, "down")}
-                    aria-label={copy.moveDown(n)}
-                    icon={<ArrowDown size={16} strokeWidth={2} aria-hidden="true" />}
-                    disabled={i === steps.length - 1}
-                    aria-disabled={busy || !!grab || undefined}
-                    onClick={() => moveBy(s, i, "down")}
-                    className="size-8 coarse:size-10"
-                  />
                 </div>
               </div>
               {showGroup && i > 0 && !active && (

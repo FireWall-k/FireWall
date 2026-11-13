@@ -58,23 +58,6 @@ test.describe("1440", () => {
     expect(await onBody(page)).toBe(false);
   });
 
-  test("[↑][↓]로 옮겨도 초점이 body로 빠지지 않고, 끝에 닿으면 반대 방향 단추로 간다", async ({ page }) => {
-    const t = fourStateDraft();
-    await mockEditor(page, { tasks: [t] });
-    await loginEmployer(page, `/m/tasks/${t.id}`);
-    await page.getByRole("button", { name: "2단계 위로" }).focus();
-    await page.keyboard.press("Enter");
-    await expect(page.getByRole("button", { name: "1단계 아래로" })).toBeFocused();
-    await page.getByRole("button", { name: "3단계 아래로" }).focus();
-    await page.keyboard.press("Enter");
-    await expect(page.getByRole("button", { name: "4단계 위로" })).toBeFocused();
-    await page.getByRole("button", { name: "2단계 아래로" }).focus();
-    await page.keyboard.press("Enter");
-    await expect(page.getByRole("button", { name: "3단계 아래로" })).toBeFocused();
-    await page.waitForTimeout(800);
-    expect(await onBody(page)).toBe(false);
-  });
-
   test("그림 한눈에: 그림 하나를 못 불러와도 나머지로 [모두 맞아요]를 누를 수 있다", async ({ page }) => {
     const t = fixedDraft();
     await mockEditor(page, { tasks: [t] });

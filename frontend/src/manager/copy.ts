@@ -587,8 +587,6 @@ export const editor = {
   /** 단계 행 번호 뒤에 화면 읽기 프로그램만 읽는 말(보이는 번호 + "단계"). */
   stepWord: "단계",
   caution: "조심",
-  moveUp: (n: number) => `${n}단계 위로`,
-  moveDown: (n: number) => `${n}단계 아래로`,
   grab: (n: number) => `${n}단계 순서 바꾸기`,
   grabHint: "스페이스 키로 들고 위아래 화살표 키로 옮긴 뒤 스페이스 키로 놓아요. 그만두려면 이스케이프 키를 눌러요.",
   grabbed: (n: number) => `${n}단계를 들었어요. 위아래 화살표 키로 옮기고 스페이스 키로 놓아요.`,
