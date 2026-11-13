@@ -2,6 +2,7 @@
 // 오류는 req가 던지는 ApiError·NetworkError·AuthError 그대로다(message = 서버의 한국어 detail).
 import { req, type A11yPrefs } from "../../api";
 import type {
+  AiUsage,
   Consent,
   ConsentSubject,
   ConsentType,
@@ -87,6 +88,11 @@ export function exportWorker(workerId: string): Promise<Record<string, unknown>>
 
 export function getWorkplace(): Promise<WorkplaceSettings> {
   return req<WorkplaceSettings>("/api/workplace");
+}
+
+/** 이번 달 자동 처리 사용량(서비스 전체, 읽기만). 서버가 처리 서버에 닿지 못하면 available=false로 준다. */
+export function getAiUsage(): Promise<AiUsage> {
+  return req<AiUsage>("/api/workplace/ai-usage");
 }
 
 /** 보낸 칸만 바꾼다. 한 칸이라도 틀리면 아무것도 저장하지 않는다(호칭 422 '호칭은 한글 1~6자로 적어 주세요.'). */

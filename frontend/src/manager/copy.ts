@@ -497,6 +497,17 @@ export const settings = {
   accountHeading: "계정",
   accountName: "로그인한 이름",
   logout: "로그아웃",
+  // 자동 처리 사용량 카드(읽기만). 이 파일 규칙상 'AI'·공급자 이름 대신 '자동 처리'라고 쓴다(동의 이름과 같은 결정).
+  // 요금은 토큰 수로 셈한 어림값(달러)이고, 원은 1달러 ≈ 1,400원으로 셈한다.
+  usageHeading: "자동 처리 사용량 (이번 달)",
+  usageCalls: "사용 횟수",
+  usageCallsValue: (n: number) => `${n.toLocaleString("ko-KR")}번`,
+  usageCost: "어림 요금",
+  usageCostValue: (usd: string, won: string) => `$${usd} (약 ${won}원)`,
+  usageOver: (limit: string) => `이번 달 자동 처리 사용 요금이 알림 기준 $${limit}를 넘었어요`,
+  usageNote: "실제 청구 금액은 자동 처리 서비스 회사의 사용량 화면이 정확해요.",
+  usageOff: "아직 사용량을 기록하지 않고 있어요.",
+  usageUnavailable: "지금은 사용량을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.",
 } as const;
 
 /** 새 직무 화면(명세 5.4, tasks §4.3 NewTaskPage). */

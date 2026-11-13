@@ -6,11 +6,19 @@ import { ApiError } from "../../src/apiErrors";
 import { workplace } from "./workers.fixtures";
 
 // 설정(tasks §7): 사업장 이름·코드 복사, 기기 연결 QR·주소, 근로자 화면 기본값, 호칭(미리보기·한글 1~6자), 알림, 계정.
-const api = { getWorkplace: vi.fn(), updateWorkplace: vi.fn() };
+const api = { getWorkplace: vi.fn(), updateWorkplace: vi.fn(), getAiUsage: vi.fn() };
 vi.mock("../../src/manager/api/workers", () => ({
   getWorkplace: () => api.getWorkplace(),
   updateWorkplace: (p: unknown) => api.updateWorkplace(p),
+  getAiUsage: () => api.getAiUsage(),
 }));
+
+function usage(over: Record<string, unknown> = {}) {
+  return {
+    available: true, enabled: true, month: "2026-11", calls: 1234, prompt_tokens: 0, completion_tokens: 0,
+    usd: 0.42, by_kind: {}, alert_usd: 5, over_alert: false, last_7_days: [], ...over,
+  };
+}
 
 // (3-0 M11) '도움 알림 받기' 스위치는 상단 바와 같은 usePushToggle을 쓴다. 서버 호출만 가짜로 바꾼다.
 const live = { getPushConfig: vi.fn(), savePushSubscription: vi.fn(), deletePushSubscription: vi.fn() };
@@ -76,7 +84,51 @@ beforeEach(() => {
   live.deletePushSubscription.mockReset().mockResolvedValue(undefined);
   api.getWorkplace.mockReset().mockResolvedValue(workplace());
   api.updateWorkplace.mockReset();
+  api.getAiUsage.mockReset().mockResolvedValue(usage());
   onLogout.mockReset();
+});
+
+describe("자동 처리 사용량 (이번 달)", () => {
+  it("사용 횟수·어림 요금($·원)과 실제 청구 안내가 보이고, 기준 아래면 경고가 없다", async () => {
+    renderPage();
+    const card = await screen.findByTestId("usage-card");
+    expect(screen.getByRole("heading", { name: "자동 처리 사용량 (이번 달)" })).toBeInTheDocument();
+    expect(await within(card).findByTestId("usage-calls")).toHaveTextContent("1,234번");
+    // $0.42 × 1,400원 = 588원
+    expect(within(card).getByTestId("usage-cost")).toHaveTextContent("$0.420 (약 588원)");
+    expect(within(card).getByText("실제 청구 금액은 자동 처리 서비스 회사의 사용량 화면이 정확해요.")).toBeInTheDocument();
+    expect(within(card).queryByText(/알림 기준/)).toBeNull();
+    expect(card.textContent).not.toMatch(/\bAI\b|GPT|OpenAI/);
+  });
+
+  it("알림 기준을 넘으면 경고 줄이 보인다", async () => {
+    api.getAiUsage.mockResolvedValue(usage({ usd: 6.5, over_alert: true }));
+    renderPage();
+    expect(await screen.findByText("이번 달 자동 처리 사용 요금이 알림 기준 $5를 넘었어요")).toBeInTheDocument();
+    expect(screen.getByTestId("usage-cost")).toHaveTextContent("$6.50 (약 9,100원)");
+  });
+
+  it("처리 서버에 닿지 못하면 안내 문구만 보이고 설정 화면 나머지는 그대로다", async () => {
+    api.getAiUsage.mockResolvedValue(usage({ available: false, enabled: false, calls: 0, usd: 0 }));
+    renderPage();
+    expect(await screen.findByText("지금은 사용량을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.")).toBeInTheDocument();
+    expect(screen.queryByTestId("usage-calls")).toBeNull();
+    expect(screen.getByTestId("workplace-code")).toHaveTextContent("DEMO01");
+  });
+
+  it("요청이 실패해도 설정 화면은 열린다", async () => {
+    api.getAiUsage.mockRejectedValue(new ApiError(500, "서버 오류"));
+    renderPage();
+    expect(await screen.findByText("지금은 사용량을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.")).toBeInTheDocument();
+    expect(screen.getByTestId("workplace-code")).toBeInTheDocument();
+  });
+
+  it("기록이 꺼져 있으면 그렇게 알려 준다", async () => {
+    api.getAiUsage.mockResolvedValue(usage({ enabled: false, calls: 0, usd: 0 }));
+    renderPage();
+    expect(await screen.findByText("아직 사용량을 기록하지 않고 있어요.")).toBeInTheDocument();
+    expect(screen.getByTestId("usage-cost")).toHaveTextContent("$0.00 (약 0원)");
+  });
 });
 
 describe("설정", () => {
