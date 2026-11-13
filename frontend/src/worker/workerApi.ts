@@ -157,11 +157,19 @@ export interface PresenceBody {
   client_sent_at: string;
 }
 
-/** (2c) 근로자 측정 이벤트(이름은 서버 목록만, 개인정보 없음). */
+/** (2c) 근로자 측정 이벤트(이름은 서버 목록만, 이름·문장 없음). (3b-1) 사용 측정 이름과 배정 id(가명 정보,
+ *  서버가 본인 배정일 때만 남긴다)·숫자 값(step_done = 단계에 머문 초, offline_flushed = 보낸 기록 수)을 더했다. */
+export type WorkerEventName =
+  | "step_view" | "step_replay" | "step_prev" | "help_open"
+  | "step_done" | "tap_debounced" | "help_cancel" | "exit_confirm" | "exit_cancel"
+  | "offline_queued" | "offline_flushed" | "coach_override";
+
 export interface WorkerEvent {
-  name: "step_view" | "step_replay" | "step_prev" | "help_open";
+  name: WorkerEventName;
   task_id?: string | null;
   step_id?: string | null;
+  assignment_id?: string | null;
+  value_num?: number | null;
   at: string;
 }
 

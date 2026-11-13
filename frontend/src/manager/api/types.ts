@@ -414,7 +414,11 @@ export interface PushConfig {
 
 /** 측정 이벤트 이름(contract §5.2, 명세 8.4). 서버가 역할마다 이 목록만 받는다. */
 export type EmployerEventName = "task_create_start" | "task_send_done" | "send_click_disabled" | "send_click_count";
-export type WorkerEventName = "step_view" | "step_replay" | "step_prev" | "help_open";
+export type WorkerEventName =
+  | "step_view" | "step_replay" | "step_prev" | "help_open"
+  // (3b-1) 사용 측정(명세 8.4). coach_override는 선생님 모드(3b-2)에서 보낸다.
+  | "step_done" | "tap_debounced" | "help_cancel" | "exit_confirm" | "exit_cancel"
+  | "offline_queued" | "offline_flushed" | "coach_override";
 
 export interface ClientEvent<N extends string = string> {
   name: N;
