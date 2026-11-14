@@ -159,6 +159,8 @@ for (const [sizeName, vp] of SIZES) {
         await shot(page, `hcleft-step-${tag}.png`, { refit: true });
         await page.getByTestId("help-button").click();
         await page.getByTestId("help-band").waitFor();
+        // 띠가 뜬 뒤 문장 칸을 내리는 일(requestAnimationFrame)과 글자 맞춤이 끝난 뒤 찍는다(병렬 실행에서 454px 차이가 났다).
+        await page.waitForTimeout(400);
         await shot(page, `hcleft-step-help-${tag}.png`, { refit: true });
       });
     });
