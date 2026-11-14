@@ -1105,6 +1105,8 @@ class CoachingCardOut(BaseModel):
 class EventIn(BaseModel):
     name: str = Field(min_length=1, max_length=40)
     task_id: str | None = Field(default=None, max_length=64)
+    # (3b-1) 근로자 이벤트가 난 배정. 서버는 이 근로자 본인 배정일 때만 남긴다.
+    assignment_id: str | None = Field(default=None, max_length=64)
     step_id: str | None = Field(default=None, max_length=64)
     value_num: float | None = Field(default=None, ge=-1e9, le=1e9)
     at: Any = None

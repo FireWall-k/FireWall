@@ -72,7 +72,9 @@ def test_event_batch_limits_and_auth(client):
 
 def test_no_personal_columns():
     cols = {c["name"] for c in inspect(engine).get_columns("client_events")}
-    assert cols == {"id", "employer_id", "actor", "name", "task_id", "step_id", "value_num", "created_at"}
+    # (0012) assignment_id는 가명 정보(배정 → 근로자)다. 이름·문장·근로자 id 칸은 여전히 없다.
+    assert cols == {"id", "employer_id", "actor", "name", "task_id", "step_id", "assignment_id", "value_num",
+                    "created_at"}
 
 
 def test_foreign_task_id_dropped_and_bad_ids_cleaned(client):
@@ -108,3 +110,66 @@ def test_event_rate_limit(client, monkeypatch):
     codes = [client.post("/api/events", headers=site.h, json={"events": [{"name": "send_click_count"}]}).status_code
              for _ in range(3)]
     assert codes == [204, 204, 429]
+
+
+# --- 3b-1 사용 측정 이벤트·배정 id -------------------------------------------------------------
+
+NEW_WORKER_EVENTS = ("step_done", "tap_debounced", "help_cancel", "exit_confirm", "exit_cancel",
+                     "offline_queued", "offline_flushed", "coach_override")
+
+
+def test_usability_event_names_allowed_for_worker_only(client):
+    site = Site(client)
+    w = site.workers[0]
+    r = client.post("/api/events", headers=w["h"], json={"events": [{"name": n} for n in NEW_WORKER_EVENTS]})
+    assert r.status_code == 204, r.text
+    assert sorted(x.name for x in _rows(site.employer_id)) == sorted(NEW_WORKER_EVENTS)
+    for n in NEW_WORKER_EVENTS:
+        assert client.post("/api/events", headers=site.h, json={"events": [{"name": n}]}).status_code == 422, n
+    # step_back_quick은 이벤트로 만들지 않는다(보고서가 step_done·step_prev 시각으로 계산).
+    for n in ("step_back_quick", "step_back", "replay"):
+        assert client.post("/api/events", headers=w["h"], json={"events": [{"name": n}]}).status_code == 422, n
+    assert {"step_prev", "step_replay"} <= events.WORKER_EVENTS
+
+
+def test_assignment_id_kept_only_for_own_assignment(client):
+    site = Site(client, n_workers=2)
+    a, b = site.workers
+    aid_a = site.card(a)["assignment_id"]
+    aid_b = site.card(b)["assignment_id"]
+    r = client.post("/api/events", headers=a["h"], json={"events": [
+        {"name": "step_done", "assignment_id": aid_a, "value_num": 4.5},
+        {"name": "step_done", "assignment_id": aid_b},       # 남의 배정
+        {"name": "step_done", "assignment_id": "없는-배정"},
+        {"name": "step_done", "assignment_id": "<script>"}]})
+    assert r.status_code == 204, r.text
+    got = sorted((x.assignment_id or "") for x in _rows(site.employer_id))
+    assert got == ["", "", "", aid_a]
+    # 사업주 이벤트는 배정 id를 남기지 않는다.
+    r = client.post("/api/events", headers=site.h, json={"events": [
+        {"name": "task_send_done", "assignment_id": aid_a}]})
+    assert r.status_code == 204
+    assert next(x for x in _rows(site.employer_id) if x.name == "task_send_done").assignment_id is None
+
+
+def test_worker_delete_removes_assignment_events(client):
+    site = Site(client)
+    w = site.workers[0]
+    aid = site.card(w)["assignment_id"]
+    assert client.post("/api/events", headers=w["h"], json={"events": [
+        {"name": "step_done", "assignment_id": aid}, {"name": "step_view"}]}).status_code == 204
+    r = client.post(f"/api/workers/{w['id']}/delete", headers=site.h, json={"confirm_name": w["display_name"]})
+    assert r.status_code == 200, r.text
+    left = _rows(site.employer_id)
+    assert [x.name for x in left] == ["step_view"]  # 배정 id 없는 이벤트만 남는다
+
+
+def test_task_delete_removes_assignment_events(client):
+    site = Site(client)
+    w = site.workers[0]
+    aid = site.card(w)["assignment_id"]
+    assert client.post("/api/events", headers=w["h"], json={"events": [
+        {"name": "step_done", "assignment_id": aid, "task_id": site.task["id"]}]}).status_code == 204
+    assert client.post(f"/api/tasks/{site.task['id']}/archive", headers=site.h).status_code == 200
+    assert client.delete(f"/api/tasks/{site.task['id']}", headers=site.h).status_code == 200
+    assert _rows(site.employer_id) == []

@@ -92,14 +92,14 @@ describe("usePresence", () => {
 });
 
 describe("근로자 측정 이벤트", () => {
-  it("2초 모아 한 번에 보낸다, 오프라인이면 버린다(대기열 없음)", () => {
+  it("2초 모아 한 번에 보낸다. (3b-1) 끊긴 동안 것은 기기에 저장하지 않고 메모리에 두었다가 함께 보낸다", () => {
     const send = vi.fn().mockResolvedValue(undefined);
     trackWorkerEvent("step_view", { task_id: "t1", step_id: "s1" }, true);
     trackWorkerEvent("step_replay", { task_id: "t1", step_id: "s1" }, true);
     trackWorkerEvent("step_prev", { task_id: "t1", step_id: "s1" }, false);
     flushWorkerEvents(send);
     expect(send).toHaveBeenCalledTimes(1);
-    expect(send.mock.calls[0][0].map((e: { name: string }) => e.name)).toEqual(["step_view", "step_replay"]);
+    expect(send.mock.calls[0][0].map((e: { name: string }) => e.name)).toEqual(["step_view", "step_replay", "step_prev"]);
     // 이름·문장 같은 개인정보 칸이 없다.
     for (const e of send.mock.calls[0][0]) expect(Object.keys(e).sort()).toEqual(["at", "name", "step_id", "task_id"]);
     expect(WORKER_EVENT_FLUSH_MS).toBe(2000);

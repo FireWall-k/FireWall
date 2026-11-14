@@ -77,6 +77,7 @@ from database import get_db
 import workers_admin
 from models import (
     Assignment,
+    ClientEvent,
     Employer,
     HelpRequest,
     MediaFile,
@@ -1188,6 +1189,8 @@ def delete_task(task_id: str, db: Session = Depends(get_db),
     if assignment_ids:
         db.execute(delete(HelpRequest).where(HelpRequest.assignment_id.in_(assignment_ids)))
         db.execute(delete(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids)))
+        # (3b-1) 배정 id가 붙은 측정 이벤트(가명 정보)도 배정과 함께 지운다.
+        db.execute(delete(ClientEvent).where(ClientEvent.assignment_id.in_(assignment_ids)))
         # (2c) 지운 배정을 보던 근로자의 '지금 단계'는 비운다(근로자 줄은 남기고 가리키는 곳만 지움).
         db.execute(update(WorkerPresence).where(WorkerPresence.assignment_id.in_(assignment_ids))
                    .values(assignment_id=None, step_id=None, step_started_at=None))

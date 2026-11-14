@@ -3,6 +3,8 @@
 // - 오늘 할 일은 30초마다, 화면이 다시 보일 때 조용히 다시 받는다(기기 연결 신호도 겸함, 명세 4.2).
 // - 완료 기록은 대기열(outbox.ts)로 보낸다: 바로, 다시 연결될 때(online), 30초마다.
 // - 인터넷이 끊겨도 받아 둔 일은 할 수 있게 마지막 응답을 기기에 둔다(같은 날·같은 로그인일 때만 쓴다).
+// - (3b-1) 사용 측정: 끊긴 동안 끝낸 단계는 offline_queued, 쌓인 기록을 다 보내면 offline_flushed(보낸 수).
+//   다시 연결되면 메모리에 미뤄 둔 측정 이벤트도 보낸다. 나갈 때 보내지 못한 측정 이벤트는 버린다.
 // - 401(로그인 풀림)이면 '다시 들어와 주세요' 화면. 대기열은 지우지 않는다(다시 들어오면 보낸다).
 // - 모든 호출은 세션을 연 토큰(token)으로 보낸다(3차 검증). 저장된 로그인은 기기에 하나라, 앞사람이 [끝내기]를 누른 뒤
 //   (대기열은 계속 보낸다) 뒷사람이 들어오거나 다른 탭에서 다른 근로자가 들어오면, 예전에는 앞사람 기록이 뒷사람
@@ -13,6 +15,7 @@ import { getAuth, type Step } from "../api";
 import { NetworkError } from "../apiErrors";
 import { mergeStepMedia, useMediaRefresh } from "../media";
 import { COPY, toWorkerMessage } from "./copy";
+import { discardWorkerEvents, flushWorkerEvents, trackWorkerEvent } from "./hooks/usePresence";
 import { getOutbox, type Outbox } from "./outbox";
 import { preloadPictures } from "./preload";
 import { jobProgress, mergeDoneIds } from "./resume";
@@ -34,6 +37,10 @@ export function WorkerSession({ token, onLogout, children }: { token: string; on
   const [, setOutboxTick] = useState(0);
   const backlog = useRef(false);
   const meRef = useRef<WorkerMe | null>(null);
+  const onlineRef = useRef(online);
+  useEffect(() => {
+    onlineRef.current = online;
+  }, [online]);
 
   const outbox: Outbox | null = useMemo(() => (me ? getOutbox(me.id) : null), [me]);
 
@@ -140,6 +147,7 @@ export function WorkerSession({ token, onLogout, children }: { token: string; on
     if (r.remaining === 0 && backlog.current) {
       backlog.current = false;
       setSynced(true);
+      trackWorkerEvent("offline_flushed", { value_num: r.sent }, true);
     }
   }, [outbox, token, replaced]);
 
@@ -180,6 +188,7 @@ export function WorkerSession({ token, onLogout, children }: { token: string; on
       setOnline(true);
       void flush();
       void refresh();
+      flushWorkerEvents();
     };
     const onOffline = () => setOnline(false);
     document.addEventListener("visibilitychange", onVisible);
@@ -232,6 +241,9 @@ export function WorkerSession({ token, onLogout, children }: { token: string; on
         return prev.includes(step.id) ? cur : { ...cur, [job.assignment_id]: [...prev, step.id] };
       });
       if (!outbox) return;
+      if (!onlineRef.current) {
+        trackWorkerEvent("offline_queued", { task_id: job.task_id, step_id: step.id, assignment_id: job.assignment_id }, false);
+      }
       outbox.put({
         assignment_id: job.assignment_id,
         step_id: step.id,
@@ -253,6 +265,16 @@ export function WorkerSession({ token, onLogout, children }: { token: string; on
     if (leaving.current) return;
     leaving.current = true;
     const finish = () => {
+      // 측정 이벤트: 연결돼 있으면 이 근로자 토큰이 남아 있는 지금 보내고, 끊겼으면 버린다(다음 근로자 토큰으로 가지 않게).
+      if (onlineRef.current) flushWorkerEvents();
+      else discardWorkerEvents();
+      // (3b-1) 내 정보 사본(이름·화면 설정)은 이 로그인 토큰일 때만 쓰므로 나가면 지운다 — 로그인 전 화면·다음 근로자에게
+      // 앞사람 화면 설정(고대비·왼손)이 기기에 남지 않게.
+      try {
+        localStorage.removeItem(ME_CACHE_KEY);
+      } catch {
+        /* 저장소가 막힌 기기 */
+      }
       onLogout();
       navigate("/worker", { replace: true });
     };

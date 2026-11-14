@@ -3,7 +3,8 @@
 // - [다 했어요] → 대기열에 기록(오프라인이어도 잃지 않음) → 다음 단계 / 마지막이면 완료 화면.
 // - 도움 요청은 따로(useHelp), [다 했어요]를 누르면 서버가 열린 요청을 닫는다.
 // - 화면 꺼짐 방지는 이 화면에 있는 동안 켠다.
-// - (2c) 지금 보는 단계를 사업주 홈에 알린다(usePresence). 측정 이벤트는 모아 보낸다(실패·오프라인이면 버림).
+// - (2c) 지금 보는 단계를 사업주 홈에 알린다(usePresence). 측정 이벤트는 모아 보낸다(실패는 버림, 끊긴 동안은 메모리에).
+// - (3b-1) 사용 측정: 모든 이벤트에 배정 id(가명 정보)를 단다. [다 했어요]는 step_done(머문 초), 띠 [취소]는 help_cancel.
 import { useCallback } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useHelp } from "./hooks/useHelp";
@@ -28,7 +29,9 @@ function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
     assignmentId: job.assignment_id,
     stepId,
     initial: job.active_help,
-    onSend: () => trackWorkerEvent("help_open", { task_id: job.task_id, step_id: stepId }, online),
+    onSend: () => trackWorkerEvent("help_open", { task_id: job.task_id, step_id: stepId, assignment_id: job.assignment_id }, online),
+    onCancel: () =>
+      trackWorkerEvent("help_cancel", { task_id: job.task_id, step_id: stepId, assignment_id: job.assignment_id }, online),
   });
   const report = usePresence({ assignmentId: job.assignment_id, online });
   const onSignal = useCallback(
@@ -36,8 +39,9 @@ function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
     [report],
   );
   const onEvent = useCallback(
-    (name: StepEventName, s: { id: string }) => trackWorkerEvent(name, { task_id: job.task_id, step_id: s.id }, online),
-    [job.task_id, online],
+    (name: StepEventName, s: { id: string }) =>
+      trackWorkerEvent(name, { task_id: job.task_id, step_id: s.id, assignment_id: job.assignment_id }, online),
+    [job.task_id, job.assignment_id, online],
   );
   // 단계를 실제로 보일 때만 켠다. 이미 끝난 일의 단계 주소로 오면 곧바로 완료 화면으로 가므로 켜지 않는다.
   useWakeLock(index != null && String(index + 1) === n);
@@ -54,8 +58,12 @@ function LiveStep({ job, n }: { job: TodayJob; n: string | undefined }) {
         prevCount: info.prevCount,
       });
       help.markStepDone(info.step.id);
+      trackWorkerEvent("step_done", {
+        task_id: job.task_id, step_id: info.step.id, assignment_id: job.assignment_id,
+        value_num: Math.round(info.durationSec * 10) / 10,
+      }, online);
     },
-    [completeStep, job, help],
+    [completeStep, job, help, online],
   );
   const onDone = useCallback(
     (info: StepDoneInfo) => {

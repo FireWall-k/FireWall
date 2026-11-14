@@ -3,12 +3,17 @@
 // - 오프라인이거나 화면이 숨어 있으면 보내지 않는다. 다시 보이거나 연결되면 바로 한 번 보낸다.
 // - 실패는 버린다(화면에 아무것도 띄우지 않음, 오프라인 대기열에 넣지 않음). 서버가 같은 내용은 15초 안에 다시 쓰지 않는다.
 // - 시각은 기기 시계로 적어 보낸다(단계를 연 시각·보낸 시각). 서버는 둘의 차이만 쓴다 — 기기 시계가 틀려도 머문 시간은 맞다.
-// 측정 이벤트(step_view·step_replay·step_prev·help_open)는 trackWorkerEvent로 모아 2초 뒤 한 번에 보낸다(실패는 버림).
+// 측정 이벤트(step_view·step_replay·step_prev·help_open, 3b-1 사용 측정 이름들)는 trackWorkerEvent로 모아 2초 뒤 한 번에
+// 보낸다(실패는 버림). (3b-1) 끊긴 동안 생긴 이벤트는 기기에 저장하지 않고 이 화면 메모리에만 최대 HELD_MAX건 두었다가,
+// 다시 연결된 뒤 처음 기록할 때 함께 보낸다(끊긴 동안 끝낸 단계의 step_done·offline_queued가 사라지지 않게). 새로고침·
+// 끊긴 채 나가면(discardWorkerEvents) 버린다 — 다음 근로자 토큰으로 앞사람 기록을 보내지 않게.
 import { useCallback, useEffect, useRef } from "react";
 import { signalApi, type PresenceBody, type WorkerEvent } from "../workerApi";
 
 export const PRESENCE_HEARTBEAT_MS = 30_000;
 export const WORKER_EVENT_FLUSH_MS = 2_000;
+/** 끊긴 동안 메모리에 두는 이벤트 수(넘으면 오래된 것부터 버린다). */
+export const HELD_MAX = 100;
 
 export interface PresenceSignal {
   stepId: string | null;
@@ -106,20 +111,36 @@ export function flushWorkerEvents(send: (e: WorkerEvent[]) => Promise<unknown> =
   if (queue.length > 0) flushWorkerEvents(send);
 }
 
-/** 이벤트 하나를 모은다. 오프라인이면 버린다(대기열에 넣지 않음, contract §5.2). */
-export function trackWorkerEvent(
-  name: WorkerEvent["name"],
-  extra: { task_id?: string | null; step_id?: string | null },
-  online: boolean,
-): void {
-  if (!online) return;
-  queue.push({ name, ...extra, at: new Date().toISOString() });
-  if (!timer) timer = setTimeout(() => flushWorkerEvents(), WORKER_EVENT_FLUSH_MS);
+export interface WorkerEventExtra {
+  task_id?: string | null;
+  step_id?: string | null;
+  /** (3b-1) 이 이벤트가 난 배정(직무 한 번). */
+  assignment_id?: string | null;
+  value_num?: number | null;
+}
+
+/**
+ * 이벤트 하나를 모은다. 기기 저장 대기열(outbox)에는 넣지 않는다(contract §5.2). 오프라인이면 보내기를 미루고 메모리에만
+ * 둔다(최대 HELD_MAX건) — 연결된 뒤 다음 이벤트가 함께 보낸다.
+ */
+export function trackWorkerEvent(name: WorkerEvent["name"], extra: WorkerEventExtra, online: boolean): void {
+  const e: WorkerEvent = { name, at: new Date().toISOString() };
+  for (const [k, v] of Object.entries(extra) as [keyof WorkerEventExtra, unknown][]) {
+    if (v !== undefined) (e as unknown as Record<string, unknown>)[k] = v;
+  }
+  queue.push(e);
+  if (queue.length > HELD_MAX) queue = queue.slice(queue.length - HELD_MAX);
+  if (online && !timer) timer = setTimeout(() => flushWorkerEvents(), WORKER_EVENT_FLUSH_MS);
+}
+
+/** 보내지 않은 이벤트를 버린다(근로자가 나갈 때 — 다음 근로자 토큰으로 보내지 않게). */
+export function discardWorkerEvents(): void {
+  queue = [];
+  if (timer) clearTimeout(timer);
+  timer = null;
 }
 
 /** 시험용. */
 export function resetWorkerEventsForTest(): void {
-  queue = [];
-  if (timer) clearTimeout(timer);
-  timer = null;
+  discardWorkerEvents();
 }

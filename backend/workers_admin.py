@@ -27,6 +27,7 @@ from auth import decrypt_access_code, require_employer
 from database import checkpoint_wal, get_db
 from models import (
     Assignment,
+    ClientEvent,
     Employer,
     HelpRequest,
     PerformanceLog,
@@ -289,6 +290,8 @@ def delete_worker(worker_id: str, payload: WorkerDeleteRequest, request: Request
     db.execute(delete(HelpRequest).where(HelpRequest.worker_id == worker_id))
     if assignment_ids:
         db.execute(delete(PerformanceLog).where(PerformanceLog.assignment_id.in_(assignment_ids)))
+        # (3b-1) 배정 id가 붙은 측정 이벤트는 이 근로자와 이어지는 가명 정보라 함께 지운다.
+        db.execute(delete(ClientEvent).where(ClientEvent.assignment_id.in_(assignment_ids)))
         db.execute(delete(Assignment).where(Assignment.worker_id == worker_id))
     db.execute(delete(WorkerConsent).where(WorkerConsent.worker_id == worker_id))
     # (2c) 지금 보던 단계(worker_presence)도 근로자 기록이다(contract §1.7).

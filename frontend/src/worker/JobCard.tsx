@@ -46,7 +46,9 @@ export function JobCard({
         "flex min-h-32 w-full shrink-0 items-center gap-4 rounded-worker-card p-4 text-left shadow-worker-card land:min-h-0 land:gap-3 land:p-3",
         done ? "border-2 border-worker-primary bg-worker-primary-tint" : "bg-worker-card",
         highlight ? "border-4 border-worker-primary" : !done && "border-2 border-worker-line-soft",
+        // 고대비: 버튼 테두리 3px 검정(명세 6.1). 강조 카드는 4px 그대로(3b-1 대비 시험: 예전에는 2px였다).
         "hc:border-black",
+        !highlight && "hc:border-[3px]",
       )}
     >
       <span className="relative shrink-0">

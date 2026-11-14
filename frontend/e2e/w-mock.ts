@@ -67,13 +67,20 @@ export interface MockState {
   events?: Record<string, unknown>[];
 }
 
-export function newState(): MockState {
+/** (3b-1) 근로자 화면 설정 조합. 고대비·왼손(명세 4.12·6.1). */
+export const HIGH_CONTRAST = { contrast: "high" } as const;
+export const LEFT_HAND = { hand: "left" } as const;
+export const HC_LEFT = { ...HIGH_CONTRAST, ...LEFT_HAND } as const;
+
+/** prefs를 주면 기본 화면 설정 위에 덮는다(예: newState(HC_LEFT)). */
+export function newState(prefs: Record<string, unknown> = {}): MockState {
   return {
     jobs: makeJobs(), offline: false, helpOffline: false, helpState: "open", logs: [], helpCreates: 0,
     loginAttempts: [],
     prefs: {
       font_size: "normal", autoplay_sound: true, tts_rate: 0.9, sfx: true, vibration: false,
       praise: "normal", hand: "right", contrast: "normal",
+      ...prefs,
     },
   };
 }
