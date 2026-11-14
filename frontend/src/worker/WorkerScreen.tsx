@@ -134,7 +134,8 @@ export function Band({
         "w-full shrink-0 border-b-2 [container-name:band] [container-type:inline-size]",
         tone === "help" && "border-worker-help-line bg-worker-help text-worker-help-ink",
         tone === "offline" && "border-worker-caution-ink bg-worker-caution text-worker-caution-ink",
-        tone === "synced" && "border-worker-primary bg-worker-primary-tint text-worker-primary",
+        // 글자는 primary-pressed(#1E4D33, tint 위 8.43:1, 명세 6.1). 3b-1 대비 시험: primary(#1F6340)는 tint 위 6.26:1로 7:1에 못 미쳤다.
+        tone === "synced" && "border-worker-primary bg-worker-primary-tint text-worker-primary-pressed",
         "hc:border-black hc:bg-white hc:text-black",
       )}
     >

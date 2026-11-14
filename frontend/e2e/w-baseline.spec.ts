@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { loginAsWorker, mockWorkerBackend, newState, pairedDevice } from "./w-mock";
+import { HC_LEFT, loginAsWorker, mockWorkerBackend, newState, pairedDevice } from "./w-mock";
 
 // 근로자 화면 기준 이미지(2a-0 §2.1). cfa5396 화면을 기준으로 삼아, 이후 2a-0·2a-1·2b-1·2d가
 // 근로자 화면을 바꾸지 않았는지 비교한다(띠 없는 단계 화면 포함).
@@ -19,14 +19,14 @@ const SCALES = [
 ] as const;
 
 /** 시스템 글자 130%(html 글자 크기) — w-layout.spec의 bigText와 같다. */
-async function bigText(page: Page) {
-  await page.addInitScript(() => {
+async function bigText(page: Page, pct = 130) {
+  await page.addInitScript((p) => {
     const set = () => {
-      document.documentElement.style.fontSize = "130%";
+      document.documentElement.style.fontSize = `${p}%`;
     };
     if (document.documentElement) set();
     document.addEventListener("DOMContentLoaded", set);
-  });
+  }, pct);
 }
 
 /** 글꼴·그림이 다 그려진 뒤에 찍는다(글꼴 늦게 오는 실패 제거). */
@@ -124,6 +124,42 @@ for (const [sizeName, vp] of SIZES) {
         await page.goto("/worker/history");
         await page.getByTestId("history-screen").waitFor();
         await shot(page, `history-${tag}.png`);
+      });
+    });
+  }
+}
+
+// (3b-1) 고대비 + 왼손 + 글자 130%·200% 조합 화면 사진(명세 4.12·6.1). 기존 기준 이미지와 따로 둔다(hcleft-*).
+// 처음 찍기: npx playwright test e2e/w-baseline.spec.ts -g 고대비 --update-snapshots=missing
+// 주의: 200% 글자는 360·390 폭과 가로 844×390에서 기록용이다. 명세 4.0이 약속하는 범위(확대 뒤 CSS 폭 320px 이상)를
+// 넘어서 위 띠 버튼이 겹치고 [다 했어요] 글자가 잘린다 — 지금 모습을 남겨 두고 고칠지는 창업자가 정한다(3b-1 보고).
+const HC_SCALES = [130, 200] as const;
+
+for (const [sizeName, vp] of SIZES) {
+  for (const pct of HC_SCALES) {
+    const tag = `${sizeName}-${pct}`;
+
+    test.describe(`근로자 기준 이미지 고대비·왼손 ${tag}`, () => {
+      test.beforeEach(async ({ page }) => {
+        await bigText(page, pct);
+        await page.setViewportSize(vp);
+        await mockWorkerBackend(page, newState(HC_LEFT));
+        await loginAsWorker(page);
+      });
+
+      test("오늘 할 일", async ({ page }) => {
+        await page.goto("/worker/today");
+        await page.getByTestId("today-screen").waitFor();
+        await shot(page, `hcleft-today-${tag}.png`);
+      });
+
+      test("단계·도움 띠", async ({ page }) => {
+        await page.goto("/worker/job/asg-1/step/2");
+        await page.getByTestId("step-player").waitFor();
+        await shot(page, `hcleft-step-${tag}.png`, { refit: true });
+        await page.getByTestId("help-button").click();
+        await page.getByTestId("help-band").waitFor();
+        await shot(page, `hcleft-step-help-${tag}.png`, { refit: true });
       });
     });
   }

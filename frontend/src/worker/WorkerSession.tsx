@@ -268,6 +268,13 @@ export function WorkerSession({ token, onLogout, children }: { token: string; on
       // 측정 이벤트: 연결돼 있으면 이 근로자 토큰이 남아 있는 지금 보내고, 끊겼으면 버린다(다음 근로자 토큰으로 가지 않게).
       if (onlineRef.current) flushWorkerEvents();
       else discardWorkerEvents();
+      // (3b-1) 내 정보 사본(이름·화면 설정)은 이 로그인 토큰일 때만 쓰므로 나가면 지운다 — 로그인 전 화면·다음 근로자에게
+      // 앞사람 화면 설정(고대비·왼손)이 기기에 남지 않게.
+      try {
+        localStorage.removeItem(ME_CACHE_KEY);
+      } catch {
+        /* 저장소가 막힌 기기 */
+      }
       onLogout();
       navigate("/worker", { replace: true });
     };

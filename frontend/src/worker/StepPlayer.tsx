@@ -303,7 +303,8 @@ function SpeakButton({ playing, blocked, onPress, compact = false }: { playing: 
         // 4차 검증 2회: 옆으로 두면 130%에서 103px이라 진행 표시 칸을 먹었다 — 높이 80px 안에서 아이콘을 글자 위로 둔다.
         compact ? "h-[80px] min-w-touch flex-col gap-0 px-2 leading-tight" : "size-20 flex-col gap-0.5",
         blocked ? "border-[3px] border-worker-sound-ink" : "border-2 border-transparent",
-        "hc:border-black hc:bg-white hc:text-black",
+        // 고대비: 모든 버튼처럼 3px 검정 테두리(명세 6.1). 3b-1 대비 시험: 예전에는 2px였다.
+        "hc:border-[3px] hc:border-black hc:bg-white hc:text-black",
       )}
     >
       {/* 이름이 '듣기'↔'멈춤'으로 바뀌므로 aria-pressed는 쓰지 않는다(3차 검증: 화면낭독기가 '멈춤, 눌림'으로 상태를
