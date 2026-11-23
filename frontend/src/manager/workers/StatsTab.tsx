@@ -2,7 +2,8 @@
 // - 위: 다 한 일·도움 요청·단계 평균 시간('2분 28초').
 // - 날마다 다 한 일(막대 7개, 막대마다 숫자), 단계별 평균 시간(가로 막대 + '2분 28초').
 // - [표로 보기]를 누르면 같은 값을 표로 보인다(명세 8.2: 차트에는 숫자 레이블과 표로 보기).
-// 한 계열 차트라 범례 없이 제목이 이름을 대신한다. 색은 moss-600 하나(뜻은 숫자와 글).
+// 단계별 평균 시간: 도움 요청이 있었던 단계는 빨간 막대 + '도움 요청 N번' 글자(색만으로 뜻을 전하지 않는다, 명세 8.2).
+// 다시 듣기가 있으면 '다시 듣기 N번'도 함께 적는다. 날마다 다 한 일은 moss-600 하나.
 import { useCallback, useEffect, useState } from "react";
 import { Card, Button, EmptyState } from "../../components/ui";
 import { duration, workerStats as copy } from "../copy";
@@ -107,29 +108,40 @@ export default function StatsTab({ workerId }: { workerId: string }) {
             </ul>
           </Card>
           <Card>
-            <h3 className="mb-3 text-ui-base font-semibold text-ink-900">{copy.stepChart}</h3>
+            <h3 className="text-ui-base font-semibold text-ink-900">{copy.stepChart}</h3>
+            <p className="mb-3 text-ui-sm text-ink-700">
+              <span className="font-semibold text-danger-700">{copy.stepLegendRed}</span>
+              {copy.stepLegendPost}
+            </p>
             {data.steps.length === 0 ? (
               <EmptyState kind="empty" title={copy.emptyTitle} description={copy.emptyBody} />
             ) : (
               <ul className="flex flex-col gap-3" data-testid="step-chart">
-                {data.steps.map((s) => (
-                  <li key={`${s.task_id}-${s.order}`} className="flex flex-col gap-1">
-                    <span className="text-ui-sm text-ink-700">
-                      {s.task_title} · {copy.stepName(s.order, s.sentence)}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <span aria-hidden="true" className="h-3 flex-1 rounded-r bg-paper-100">
-                        <span
-                          className="block h-3 rounded-r bg-moss-600"
-                          style={{ width: `${Math.max(2, (s.avg_duration_sec / maxSec) * 100)}%` }}
-                        />
+                {data.steps.map((s) => {
+                  const helped = s.help_count > 0;
+                  return (
+                    <li key={`${s.task_id}-${s.order}`} className="flex flex-col gap-1" data-helped={helped ? "true" : undefined}>
+                      <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-ui-sm text-ink-700">
+                        <span>
+                          {s.task_title} · {copy.stepName(s.order, s.sentence)}
+                        </span>
+                        {helped && <span className="font-semibold text-danger-700">{copy.helpTag(s.help_count)}</span>}
+                        {s.replay_count > 0 && <span className="text-ink-700">{copy.replayTag(s.replay_count)}</span>}
                       </span>
-                      <span className="w-24 shrink-0 whitespace-nowrap text-right text-ui-sm font-semibold tabular-nums text-ink-900">
-                        {duration(s.avg_duration_sec)}
+                      <span className="flex items-center gap-2">
+                        <span aria-hidden="true" className="h-3 flex-1 rounded-r bg-paper-100">
+                          <span
+                            className={helped ? "block h-3 rounded-r bg-signal-red" : "block h-3 rounded-r bg-moss-600"}
+                            style={{ width: `${Math.max(2, (s.avg_duration_sec / maxSec) * 100)}%` }}
+                          />
+                        </span>
+                        <span className="w-24 shrink-0 whitespace-nowrap text-right text-ui-sm font-semibold tabular-nums text-ink-900">
+                          {duration(s.avg_duration_sec)}
+                        </span>
                       </span>
-                    </span>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </Card>
